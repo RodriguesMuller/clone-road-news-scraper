@@ -1,0 +1,20 @@
+# Ambiente virtual
+.venv/
+venv/
+env/
+
+# Variáveis de ambiente locais — nunca commitar
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store

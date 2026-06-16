@@ -1,0 +1,64 @@
+# =============================================================
+# Fontes e keywords para o scraper de notícias rodoviárias
+# Edite este arquivo para adicionar/remover fontes e termos
+# =============================================================
+
+keywords:
+  - acidente
+  - colisão
+  - tombamento
+  - capotamento
+  - engavetamento
+  - atropelamento
+  - rodovia
+  - "BR-"
+  - estrada
+  - transporte rodoviário
+  - caminhão
+  - ônibus
+  - carreta
+  - bitrem
+  - bloqueio
+  - interdição
+  - pista
+  - vítima
+  - morto
+  - ferido
+  - catástrofe
+  - desastre
+
+# ------ Fontes RSS (preferência sempre que disponível) ------
+rss_sources:
+  - name: "G1 - Brasil"
+    url: "https://g1.globo.com/rss/g1/"
+    category: "geral"
+
+  - name: "CNN Brasil"
+    url: "https://www.cnnbrasil.com.br/feed/"
+    category: "geral"
+
+# ------ Fontes HTML (scraping direto) ------
+# O campo "type" mapeia para o scraper específico em scraper/sources/html.py
+html_sources:
+  - name: "Band - Notícias"
+    url: "https://www.band.com.br/noticias"
+    category: "geral"
+    type: "band"
+
+# ------ Avisos meteorológicos do INMET ------
+# Filtrados por SEVERIDADE (não pelas keywords rodoviárias), pois o objetivo
+# é capturar clima severo que afeta as rodovias.
+#   severities: níveis a incluir — "Perigo Potencial", "Perigo", "Grande Perigo"
+#   eventos:    (opcional) restringe a tipos específicos, ex.: Tempestade
+inmet_sources:
+  - name: "INMET - Avisos Meteorológicos"
+    url: "https://apiprevmet3.inmet.gov.br/avisos/rss"
+    category: "clima"
+    severities:
+      - "Perigo"
+      - "Grande Perigo"
+    # eventos:
+    #   - Tempestade
+    #   - Chuvas Intensas
+    #   - Acumulado de Chuva
+    #   - Vendaval
