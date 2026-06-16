@@ -32,6 +32,8 @@ jobs:
       - name: Executar scraper
         env:
           # Secret configurado em: Settings → Secrets → Actions
-          # Use a connection string do "Session pooler" do Supabase (IPv4).
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # O secret se chama SUPABASE e contém a connection string do
+          # "Session pooler" do Supabase (IPv4); aqui mapeamos para a variável
+          # DATABASE_URL que o main.py lê.
+          DATABASE_URL: ${{ secrets.SUPABASE }}
         run: python main.py
