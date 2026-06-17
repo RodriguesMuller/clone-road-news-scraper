@@ -80,7 +80,6 @@ rss_sources:
     url: "https://www.cnnbrasil.com.br/feed/"
     category: "geral"
 
-
 # ------------------------------------------------------------------------------
 # 3) FONTES HTML  (Band)  —  filtradas pelas keywords acima
 # ------------------------------------------------------------------------------
@@ -92,6 +91,11 @@ html_sources:
     url: "https://www.band.com.br/noticias"
     category: "geral"
     type: "band"
+
+  - name: "PRF Noticias"
+    url: "https://www.gov.br/prf/pt-br/noticias"
+    category: "geral"
+    type: "prf"
 
 
 # ------------------------------------------------------------------------------

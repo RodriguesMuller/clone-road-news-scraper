@@ -12,6 +12,7 @@ via **GitHub Actions**.
 | G1 | RSS | keywords rodoviárias |
 | CNN Brasil | RSS | keywords rodoviárias |
 | Band | HTML | keywords rodoviárias |
+| PRF Notícias | HTML | keywords rodoviárias |
 | INMET (avisos) | RSS | severidade (`Perigo` / `Grande Perigo`) |
 
 Tudo configurável em [`config/sources.yaml`](config/sources.yaml).
