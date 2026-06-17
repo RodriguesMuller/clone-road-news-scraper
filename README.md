@@ -30,10 +30,11 @@ Tudo o que influencia os resultados fica em **[`config/sources.yaml`](config/sou
 é o "painel de controle" do projeto, todo comentado de forma didática:
 
 - **`keywords`** — palavras que tornam uma notícia relevante (G1, CNN, Band).
-  Casam por pedaço de texto e ignoram maiúsculas/minúsculas; termos genéricos
-  (ex.: `morto`, `pista`) trazem falsos positivos.
-- **Filtro em título/subtítulo** — o scraper agora valida keywords apenas no
-  título e no subtítulo/resumo das notícias, não no texto completo da página.
+  Agora o scraper aplica as `keywords` apenas ao **título** da notícia
+  (não ao resumo ou ao corpo). Além disso, keywords compostas apenas por
+  letras/dígitos/espaços são casadas por **palavra inteira** para evitar
+  falsos positivos (ex.: `ferido` não casa com `ferimentos`). Palavras com
+  pontuação relevante (ex.: `BR-`) seguem correspondência por substring.
 - **`severities` do INMET** — quais níveis de aviso de clima guardar
   (`Perigo`, `Grande Perigo`, etc.).
 - **As fontes** (`rss_sources`, `html_sources`, `inmet_sources`) — quais

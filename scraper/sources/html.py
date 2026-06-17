@@ -75,7 +75,8 @@ def scrape_prf(source: dict, keywords) -> list:
         if parent:
             summary = clean_text(parent.get_text())
 
-        if matches_keywords(f"{title} {summary}", keywords):
+        # Filtrar apenas pelo título (não pelo resumo) conforme solicitado
+        if matches_keywords(title, keywords):
             news.append(
                 _build_item(
                     title=title,
@@ -146,7 +147,8 @@ def scrape_band(source: dict, keywords: list) -> list:
         except ValueError:
             published_at = ""
 
-        if matches_keywords(f"{title} {summary}", keywords):
+        # Filtrar apenas pelo título (não pelo resumo) conforme solicitado
+        if matches_keywords(title, keywords):
             news.append(_build_item(title, url, summary, source, published_at))
 
     return news

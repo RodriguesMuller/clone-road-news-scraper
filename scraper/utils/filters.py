@@ -15,10 +15,33 @@ def matches_keywords(text: str, keywords: list) -> bool:
       • por substring: "morto" casa com "mortos", "amortecedor"... — por isso
         termos genéricos geram falsos positivos.
     """
-    if not text:
+    if not text or not keywords:
         return False
-    text_lower = text.lower()
-    return any(kw.lower() in text_lower for kw in keywords)
+
+    # Para evitar falsos positivos (ex: 'ferido' casando com 'ferimentos'),
+    # usamos correspondência por palavra inteira para keywords compostas apenas
+    # por caracteres de palavra/espaço (letras, dígitos, underscore, unicode).
+    # Para keywords que contêm pontuação relevante (ex: 'BR-'), preservamos
+    # a busca por substring para manter o comportamento esperado.
+    for kw in keywords:
+        if not kw:
+            continue
+        kw = kw.strip()
+        if not kw:
+            continue
+
+        # se a keyword contém apenas caracteres de palavra ou espaços,
+        # aplicamos limites de palavra para casar apenas termos exatos
+        if re.match(r"^[\w\s]+$", kw, re.UNICODE):
+            pattern = rf"(?<!\w){re.escape(kw)}(?!\w)"
+            if re.search(pattern, text, flags=re.IGNORECASE):
+                return True
+        else:
+            # caso contrário (ex.: 'BR-'), mantemos substring
+            if kw.lower() in text.lower():
+                return True
+
+    return False
 
 
 def clean_text(text: str) -> str:

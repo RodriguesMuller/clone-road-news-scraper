@@ -28,7 +28,8 @@ def scrape_rss(source: dict, keywords: list) -> list:
             title = clean_text(entry.get("title", ""))
             summary = clean_text(entry.get("summary", entry.get("description", "")))
 
-            if not matches_keywords(f"{title} {summary}", keywords):
+            # Filtrar apenas pelo título (não pelo resumo) conforme solicitado
+            if not matches_keywords(title, keywords):
                 continue
 
             # Normaliza a data de publicação

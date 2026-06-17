@@ -42,26 +42,27 @@
 #  lá embaixo no item 3, porque "Tempestade" nunca casaria com estas palavras.)
 
 keywords:
-  - acidente
-  - colisão
-  - tombamento
-  - capotamento
-  - engavetamento
-  - atropelamento
-  - rodovia
   - "BR-"
+  - rodovia
   - estrada
-  - transporte rodoviário
-  - caminhão
-  - ônibus
   - carreta
+  - caminhão
   - bitrem
+  - tombamento
+  - engavetamento
   - bloqueio
   - interdição
-  - pista
-  - ferido
-  - catástrofe
-  - desastre
+  - carga espalhada
+  - derramamento de carga
+  - incêndio em caminhão
+  - queda de barreira
+  - deslizamento
+  - ponte interditada
+  - viaduto interditado
+  - alagamento
+  - enchente
+  - neblina
+  - baixa visibilidade
 
 
 # ------------------------------------------------------------------------------
