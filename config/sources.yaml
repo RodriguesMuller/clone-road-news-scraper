@@ -19,8 +19,11 @@
 # ------------------------------------------------------------------------------
 # 1) KEYWORDS  👈 PRINCIPAL PONTO DE AJUSTE
 # ------------------------------------------------------------------------------
-# Uma notícia do G1, CNN ou Band só é GUARDADA se o título (e o resumo, quando
-# existe) contiver AO MENOS UMA das palavras abaixo.
+# Uma notícia do G1, CNN ou Band só é GUARDADA se o título (e o subtítulo/
+# resumo, quando existir) contiver AO MENOS UMA das palavras abaixo.
+#
+# A busca considera apenas título e subtítulo/resumo da notícia, não o texto
+# completo da página.
 #
 # Como o casamento funciona (importante para entender os resultados):
 #   • Ignora maiúsculas/minúsculas:  "Acidente" == "acidente".
@@ -37,6 +40,7 @@
 #
 # (Os avisos do INMET NÃO usam esta lista — eles são filtrados por severidade,
 #  lá embaixo no item 3, porque "Tempestade" nunca casaria com estas palavras.)
+
 keywords:
   - acidente
   - colisão
@@ -55,8 +59,6 @@ keywords:
   - bloqueio
   - interdição
   - pista
-  - vítima
-  - morto
   - ferido
   - catástrofe
   - desastre

@@ -66,6 +66,7 @@ def scrape_band(source: dict, keywords: list) -> list:
 
         # Título: prioriza heading interno, depois alt da imagem, por fim o
         # texto do link (que pode vir com prefixo de seção, então o limpamos).
+        raw_text = clean_text(a.get_text())
         title = ""
         head = a.find(["h1", "h2", "h3", "h4"])
         if head:
@@ -75,9 +76,13 @@ def scrape_band(source: dict, keywords: list) -> list:
             if img:
                 title = clean_text(img["alt"])
         if not title:
-            title = clean_text(a.get_text())
+            title = raw_text
         if not title:
             continue
+
+        summary = ""
+        if raw_text and raw_text != title:
+            summary = raw_text.replace(title, "", 1).strip()
 
         # Data de publicação a partir do timestamp na URL (AAAAMMDDHHMM)
         ts = match.group(1)
@@ -89,8 +94,8 @@ def scrape_band(source: dict, keywords: list) -> list:
         except ValueError:
             published_at = ""
 
-        if matches_keywords(title, keywords):
-            news.append(_build_item(title, url, "", source, published_at))
+        if matches_keywords(f"{title} {summary}", keywords):
+            news.append(_build_item(title, url, summary, source, published_at))
 
     return news
 

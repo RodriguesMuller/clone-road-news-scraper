@@ -31,6 +31,8 @@ Tudo o que influencia os resultados fica em **[`config/sources.yaml`](config/sou
 - **`keywords`** — palavras que tornam uma notícia relevante (G1, CNN, Band).
   Casam por pedaço de texto e ignoram maiúsculas/minúsculas; termos genéricos
   (ex.: `morto`, `pista`) trazem falsos positivos.
+- **Filtro em título/subtítulo** — o scraper agora valida keywords apenas no
+  título e no subtítulo/resumo das notícias, não no texto completo da página.
 - **`severities` do INMET** — quais níveis de aviso de clima guardar
   (`Perigo`, `Grande Perigo`, etc.).
 - **As fontes** (`rss_sources`, `html_sources`, `inmet_sources`) — quais
