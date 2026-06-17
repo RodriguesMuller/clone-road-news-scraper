@@ -1,8 +1,42 @@
-# =============================================================
-# Fontes e keywords para o scraper de notícias rodoviárias
-# Edite este arquivo para adicionar/remover fontes e termos
-# =============================================================
+# ==============================================================================
+#  PAINEL DE CONTROLE DO SCRAPER  —  É AQUI QUE VOCÊ MEXE  👈
+# ==============================================================================
+#  Este arquivo controla TUDO o que o scraper coleta e guarda no banco.
+#  Você NÃO precisa editar código Python para mudar os resultados: basta
+#  alterar este arquivo, salvar e subir pro GitHub (o GitHub Actions sempre
+#  usa a versão que estiver no repositório).
+#
+#  Três coisas aqui influenciam o output (os registros que entram no banco):
+#     1) keywords    → filtram as NOTÍCIAS (G1, CNN, Band)
+#     2) severities  → filtram os AVISOS de clima do INMET
+#     3) as fontes   → quais sites/feeds são consultados
+#
+#  Dica: depois de editar, dá pra testar localmente com `python main.py`
+#  (sem DATABASE_URL ele só mostra os resultados na tela, não grava).
+# ==============================================================================
 
+
+# ------------------------------------------------------------------------------
+# 1) KEYWORDS  👈 PRINCIPAL PONTO DE AJUSTE
+# ------------------------------------------------------------------------------
+# Uma notícia do G1, CNN ou Band só é GUARDADA se o título (e o resumo, quando
+# existe) contiver AO MENOS UMA das palavras abaixo.
+#
+# Como o casamento funciona (importante para entender os resultados):
+#   • Ignora maiúsculas/minúsculas:  "Acidente" == "acidente".
+#   • Casa por PEDAÇO do texto (substring), não pela palavra inteira. Ou seja,
+#     "morto" também casa com "mortos", "amortecedor", etc. É por isso que
+#     termos genéricos como "morto", "ferido" ou "pista" trazem FALSOS
+#     POSITIVOS (notícias de crime/geral). Para mais precisão, prefira termos
+#     bem ligados a rodovia.
+#
+# Como ajustar:
+#   • INCLUIR um termo  → adicione uma linha:   - novo termo
+#   • REMOVER um termo  → apague a linha dele.
+#   • Termos com símbolos (ex.: BR-) precisam de aspas:   "BR-"
+#
+# (Os avisos do INMET NÃO usam esta lista — eles são filtrados por severidade,
+#  lá embaixo no item 3, porque "Tempestade" nunca casaria com estas palavras.)
 keywords:
   - acidente
   - colisão
@@ -27,7 +61,14 @@ keywords:
   - catástrofe
   - desastre
 
-# ------ Fontes RSS (preferência sempre que disponível) ------
+
+# ------------------------------------------------------------------------------
+# 2) FONTES RSS  (G1 e CNN)  —  filtradas pelas keywords acima
+# ------------------------------------------------------------------------------
+# Para adicionar um feed RSS: copie um bloco e troque name/url/category.
+#   name     → como a fonte aparece na coluna "source" do banco
+#   url      → endereço do feed RSS
+#   category → rótulo livre, salvo na coluna "category"
 rss_sources:
   - name: "G1 - Brasil"
     url: "https://g1.globo.com/rss/g1/"
@@ -37,19 +78,37 @@ rss_sources:
     url: "https://www.cnnbrasil.com.br/feed/"
     category: "geral"
 
-# ------ Fontes HTML (scraping direto) ------
-# O campo "type" mapeia para o scraper específico em scraper/sources/html.py
+
+# ------------------------------------------------------------------------------
+# 3) FONTES HTML  (Band)  —  filtradas pelas keywords acima
+# ------------------------------------------------------------------------------
+# Sites sem RSS, raspados direto do HTML. O campo "type" liga a fonte ao
+# raspador específico em scraper/sources/html.py (não mexa no "type" sem
+# criar/ajustar o raspador correspondente lá).
 html_sources:
   - name: "Band - Notícias"
     url: "https://www.band.com.br/noticias"
     category: "geral"
     type: "band"
 
-# ------ Avisos meteorológicos do INMET ------
-# Filtrados por SEVERIDADE (não pelas keywords rodoviárias), pois o objetivo
-# é capturar clima severo que afeta as rodovias.
-#   severities: níveis a incluir — "Perigo Potencial", "Perigo", "Grande Perigo"
-#   eventos:    (opcional) restringe a tipos específicos, ex.: Tempestade
+
+# ------------------------------------------------------------------------------
+# 4) AVISOS DO INMET  (clima)  👈 AJUSTE AQUI O QUE É CLIMA RELEVANTE
+# ------------------------------------------------------------------------------
+# Os avisos meteorológicos NÃO usam as keywords — eles são filtrados por:
+#
+#   severities → níveis de gravidade que você quer guardar. Opções, do mais
+#                leve ao mais grave:
+#                   "Perigo Potencial"  (amarelo)
+#                   "Perigo"            (laranja)
+#                   "Grande Perigo"     (vermelho)
+#                Hoje pegamos só "Perigo" e "Grande Perigo". Para receber
+#                TAMBÉM os mais leves, adicione "Perigo Potencial" à lista.
+#
+#   eventos    → (OPCIONAL) restringe a tipos específicos de fenômeno. Se
+#                ficar comentado/ausente, TODOS os eventos da severidade
+#                escolhida entram. Para filtrar, descomente e liste os tipos
+#                (ex.: Tempestade, Chuvas Intensas, Vendaval, Acumulado de Chuva).
 inmet_sources:
   - name: "INMET - Avisos Meteorológicos"
     url: "https://apiprevmet3.inmet.gov.br/avisos/rss"

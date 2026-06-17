@@ -2,7 +2,19 @@ import re
 
 
 def matches_keywords(text: str, keywords: list) -> bool:
-    """Retorna True se o texto contiver ao menos uma keyword (case-insensitive)."""
+    """Decide se uma notícia é relevante: True se o texto contiver ao menos uma keyword.
+
+    ┌─────────────────────────────────────────────────────────────────────────┐
+    │ ONDE AJUSTAR AS KEYWORDS: você NÃO mexe aqui — a lista de palavras fica   │
+    │ em  config/sources.yaml  (seção "keywords"). Este é só o motor que a      │
+    │ aplica em G1, CNN e Band. (O INMET não passa por aqui.)                   │
+    └─────────────────────────────────────────────────────────────────────────┘
+
+    Regra do casamento (igual à documentada no sources.yaml):
+      • case-insensitive: "Acidente" == "acidente";
+      • por substring: "morto" casa com "mortos", "amortecedor"... — por isso
+        termos genéricos geram falsos positivos.
+    """
     if not text:
         return False
     text_lower = text.lower()

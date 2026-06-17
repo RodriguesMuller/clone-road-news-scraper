@@ -23,6 +23,23 @@ Tudo configurável em [`config/sources.yaml`](config/sources.yaml).
 3. Os itens são gravados no Postgres, deduplicados por URL
    (`scraper/storage/postgres.py`).
 
+## Ajustando o que é coletado (sem mexer no código) 👈
+
+Tudo o que influencia os resultados fica em **[`config/sources.yaml`](config/sources.yaml)** —
+é o "painel de controle" do projeto, todo comentado de forma didática:
+
+- **`keywords`** — palavras que tornam uma notícia relevante (G1, CNN, Band).
+  Casam por pedaço de texto e ignoram maiúsculas/minúsculas; termos genéricos
+  (ex.: `morto`, `pista`) trazem falsos positivos.
+- **`severities` do INMET** — quais níveis de aviso de clima guardar
+  (`Perigo`, `Grande Perigo`, etc.).
+- **As fontes** (`rss_sources`, `html_sources`, `inmet_sources`) — quais
+  sites/feeds são consultados.
+
+Basta editar esse arquivo, salvar e dar `git push`: o GitHub Actions passa a
+usar a nova configuração na próxima execução. O motor que aplica as keywords
+fica em `scraper/utils/filters.py` (não precisa ser editado para ajustar a lista).
+
 ## Rodar localmente
 
 ```bash
