@@ -121,11 +121,16 @@ inmet_sources:
   - name: "INMET - Avisos Meteorológicos"
     url: "https://apiprevmet3.inmet.gov.br/avisos/rss"
     category: "clima"
+
     severities:
       - "Perigo"
       - "Grande Perigo"
-    # eventos:
-    #   - Tempestade
-    #   - Chuvas Intensas
-    #   - Acumulado de Chuva
-    #   - Vendaval
+
+    eventos:
+      - "Tempestade"
+      - "Chuvas Intensas"
+      - "Acumulado de Chuva"
+      - "Vendaval"
+      - "Granizo"
+      - "Alagamento"
+      - "Inundação"

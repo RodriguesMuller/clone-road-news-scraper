@@ -10,7 +10,7 @@ no config/sources.yaml.
 O feed RSS traz, em cada item, uma tabela HTML no campo <summary> com os
 campos: Status, Evento, Severidade, Início, Fim, Descrição, Área e Link Gráfico.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests
 import feedparser
@@ -63,9 +63,26 @@ def scrape_inmet(source: dict, keywords: list | None = None) -> list:
         feed = feedparser.parse(resp.text)
 
         for entry in feed.entries:
+            print("INMET:", entry.get("title"), entry.get("published"))
             fields = _parse_summary(entry.get("summary", ""))
             evento = fields.get("Evento", "")
             severidade = fields.get("Severidade", "")
+
+            inicio = fields.get("Início", "")
+            data_inicio = None
+            if inicio:
+                try:
+                    data_inicio = datetime.fromisoformat(inicio)
+                except ValueError:
+                    try:
+                        data_inicio = datetime.strptime(inicio, "%d/%m/%Y %H:%M")
+                    except ValueError:
+                        data_inicio = None
+
+            if data_inicio is not None:
+                limite = datetime.now() - timedelta(days=3)
+                if data_inicio < limite:
+                    continue
 
             if severities and severidade not in severities:
                 continue
