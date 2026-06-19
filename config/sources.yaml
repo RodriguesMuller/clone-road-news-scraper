@@ -125,6 +125,7 @@ inmet_sources:
     severities:
       - "Perigo"
       - "Grande Perigo"
+      - "Perigo Potencial"
 
     eventos:
       - "Tempestade"
