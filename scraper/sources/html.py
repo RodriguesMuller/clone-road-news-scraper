@@ -97,6 +97,51 @@ def scrape_prf(source: dict, keywords) -> list:
 _BAND_URL_RE = re.compile(r"/noticias/.+-(\d{12})$")
 
 
+def _extract_band_summary(url: str) -> str:
+    """Tenta extrair o resumo de uma notícia da Band a partir da página do artigo."""
+    soup = _get_soup(url)
+    if not soup:
+        return ""
+
+    article = soup.find("article")
+    if article:
+        # A Band rendeirza o corpo da notícia dentro de um <article> e usa
+        # parágrafos para o texto principal. Extraímos o texto desses parágrafos
+        # para obter o resumo completo do artigo.
+        body = article.find("div", class_=lambda value: value and "space-y" in value)
+        if body:
+            paragraphs = [
+                p.get_text(" ", strip=True)
+                for p in body.find_all("p")
+                if p.get_text(strip=True)
+            ]
+            if paragraphs:
+                return clean_text(" ".join(paragraphs))
+
+        paragraphs = [
+            p.get_text(" ", strip=True)
+            for p in article.find_all("p")
+            if p.get_text(strip=True)
+        ]
+        if paragraphs:
+            return clean_text(" ".join(paragraphs))
+
+    for attrs in (
+        {"name": "description"},
+        {"property": "og:description"},
+        {"name": "twitter:description"},
+    ):
+        meta = soup.find("meta", attrs=attrs)
+        if meta and meta.get("content"):
+            return clean_text(meta["content"])
+
+    first_p = soup.find("p")
+    if first_p:
+        return clean_text(first_p.get_text(" ", strip=True))
+
+    return ""
+
+
 def scrape_band(source: dict, keywords: list) -> list:
     """Scraping do portal de notícias da Band."""
     news = []
@@ -133,10 +178,6 @@ def scrape_band(source: dict, keywords: list) -> list:
         if not title:
             continue
 
-        summary = ""
-        if raw_text and raw_text != title:
-            summary = raw_text.replace(title, "", 1).strip()
-
         # Data de publicação a partir do timestamp na URL (AAAAMMDDHHMM)
         ts = match.group(1)
         try:
@@ -149,6 +190,7 @@ def scrape_band(source: dict, keywords: list) -> list:
 
         # Filtrar apenas pelo título (não pelo resumo) conforme solicitado
         if matches_keywords(title, keywords):
+            summary = _extract_band_summary(url)
             news.append(_build_item(title, url, summary, source, published_at))
 
     return news
