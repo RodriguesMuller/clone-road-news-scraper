@@ -11,6 +11,12 @@ on:
   # Permite disparar manualmente pelo painel do GitHub
   workflow_dispatch:
 
+# Permissões do token usado nas execuções (GITHUB_TOKEN). "actions: write"
+# permite disparar outros workflows via API quando necessário.
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
