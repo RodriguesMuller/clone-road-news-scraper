@@ -5,6 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from scraper.sources import HEADERS
+from scraper.sources.arteris import scrape_arteris
 from scraper.utils.filters import matches_keywords, clean_text
 
 
@@ -148,4 +149,5 @@ def scrape_band(source: dict, keywords: list) -> list:
 # ---------------------------------------------------------------
 HTML_SCRAPERS = {
     "band": scrape_band,
+    "arteris": scrape_arteris,
 }

@@ -116,6 +116,16 @@ html_sources:
     category: "geral"
     type: "band"
 
+  # Arteris Fluminense — situação EM TEMPO REAL da rodovia (BR-101/RJ).
+  # Lê a API JSON do mapa interativo (obras, acidentes, congestionamento).
+  # Não usa keywords: toda ocorrência em rodovia é relevante. Deduplica por
+  # hash do conteúdo (não há URL por ocorrência). "page_url" = página pública.
+  - name: "Arteris Fluminense (tempo real)"
+    url: "https://www.arteris.com.br/api/mapa-interativo/fluminense"
+    page_url: "https://www.arteris.com.br/nossas-rodovias/fluminense/em-tempo-real/"
+    category: "rodovia"
+    type: "arteris"
+
 
 # ------------------------------------------------------------------------------
 # 4) AVISOS DO INMET  (clima)  👈 AJUSTE AQUI O QUE É CLIMA RELEVANTE
