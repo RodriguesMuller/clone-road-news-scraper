@@ -2,11 +2,9 @@ name: Road News Scraper
 
 on:
   schedule:
-    # Executa a cada 2 horas (horário UTC — ajuste conforme necessário)
-    # Para rodar às horas pares no horário de Brasília (UTC-3):
-    # BRT  06:00 → UTC 09:00 → cron: 0 9 * * *
-    # Ou simplesmente a cada 2h:
-    - cron: "0 */2 * * *"
+    # Executa de 1 em 1 hora (horário UTC). O cron do GitHub roda em UTC:
+    # "0 * * * *" = no minuto 0 de toda hora, todos os dias.
+    - cron: "0 * * * *"
 
   # Permite disparar manualmente pelo painel do GitHub
   workflow_dispatch:

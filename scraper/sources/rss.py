@@ -1,6 +1,8 @@
 import feedparser
+import requests
 from datetime import datetime
 
+from scraper.sources import HEADERS
 from scraper.utils.filters import matches_keywords, clean_text
 
 
@@ -19,7 +21,17 @@ def scrape_rss(source: dict, keywords: list) -> list:
 
     try:
         print(f"    → Buscando: {source['url']}")
-        feed = feedparser.parse(source["url"])
+        # Busca via requests com User-Agent de navegador. Vários portais (G1,
+        # CNN) limitam/bloqueiam o User-Agent padrão do feedparser e IPs de
+        # datacenter (como os do GitHub Actions); o cabeçalho de navegador
+        # reduz esse bloqueio. Cai no feedparser direto se a requisição falhar.
+        try:
+            resp = requests.get(source["url"], headers=HEADERS, timeout=20)
+            resp.raise_for_status()
+            feed = feedparser.parse(resp.content)
+        except Exception as fetch_err:
+            print(f"    ⚠ Falha ao buscar via requests ({fetch_err}); tentando feedparser direto")
+            feed = feedparser.parse(source["url"])
 
         if feed.bozo:
             print(f"    ⚠ Feed malformado em '{source['name']}' — tentando mesmo assim")
