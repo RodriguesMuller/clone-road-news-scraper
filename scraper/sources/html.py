@@ -34,60 +34,6 @@ def _build_item(title: str, url: str, summary: str, source: dict,
         "type": "HTML",
     }
 
-def scrape_prf(source: dict, keywords) -> list:
-    """Scraping das notícias da PRF."""
-
-    news = []
-
-    soup = _get_soup(source["url"])
-
-    if not soup:
-        return news
-
-    seen = set()
-
-    for a in soup.find_all("a", href=True):
-
-        href = a.get("href", "")
-
-        if "/noticias/" not in href:
-            continue
-
-        title = clean_text(a.get_text())
-
-        if not title:
-            continue
-
-        if len(title) < 15:
-            continue
-
-        if href.startswith("/"):
-            href = "https://www.gov.br" + href
-
-        if href in seen:
-            continue
-
-        seen.add(href)
-
-        summary = ""
-
-        parent = a.parent
-        if parent:
-            summary = clean_text(parent.get_text())
-
-        # Filtrar apenas pelo título (não pelo resumo) conforme solicitado
-        if matches_keywords(title, keywords):
-            news.append(
-                _build_item(
-                    title=title,
-                    url=href,
-                    summary=summary,
-                    source=source,
-                )
-            )
-
-    return news
-
 # ---------------------------------------------------------------
 # Band — portal de notícias (band.com.br)
 # ---------------------------------------------------------------
@@ -202,5 +148,4 @@ def scrape_band(source: dict, keywords: list) -> list:
 # ---------------------------------------------------------------
 HTML_SCRAPERS = {
     "band": scrape_band,
-    "prf": scrape_prf,
 }

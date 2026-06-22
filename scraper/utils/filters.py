@@ -1,5 +1,12 @@
 import re
 
+# Conectivos ignorados ao casar keywords de várias palavras (ex.: em
+# "incêndio em caminhão", só "incêndio" e "caminhão" precisam aparecer).
+_STOPWORDS = {
+    "de", "da", "do", "das", "dos", "e", "em", "a", "o", "as", "os",
+    "na", "no", "nas", "nos", "com", "para", "por", "ao", "à", "um", "uma",
+}
+
 
 def matches_keywords(text: str, keywords: list) -> bool:
     """Decide se uma notícia é relevante: True se o texto contiver ao menos uma keyword.
@@ -12,8 +19,11 @@ def matches_keywords(text: str, keywords: list) -> bool:
 
     Regra do casamento (igual à documentada no sources.yaml):
       • case-insensitive: "Acidente" == "acidente";
-      • por substring: "morto" casa com "mortos", "amortecedor"... — por isso
-        termos genéricos geram falsos positivos.
+      • palavra inteira: "ferido" NÃO casa com "ferimentos";
+      • keyword com VÁRIAS palavras (ex.: "incêndio em caminhão") casa quando
+        TODAS as suas palavras aparecem no texto (em qualquer posição), sem
+        exigir a frase exata;
+      • keyword com pontuação (ex.: "BR-") casa por substring.
     """
     if not text or not keywords:
         return False
@@ -31,10 +41,18 @@ def matches_keywords(text: str, keywords: list) -> bool:
             continue
 
         # se a keyword contém apenas caracteres de palavra ou espaços,
-        # aplicamos limites de palavra para casar apenas termos exatos
+        # aplicamos limites de palavra. Para keywords de VÁRIAS palavras,
+        # casamos quando TODAS as palavras aparecem (em qualquer posição) —
+        # assim "incêndio em caminhão" casa com um título que tenha "incêndio"
+        # e "caminhão", sem exigir a frase exata.
         if re.match(r"^[\w\s]+$", kw, re.UNICODE):
-            pattern = rf"(?<!\w){re.escape(kw)}(?!\w)"
-            if re.search(pattern, text, flags=re.IGNORECASE):
+            palavras = [p for p in kw.split() if p.lower() not in _STOPWORDS]
+            if not palavras:  # keyword só de conectivos (raro): usa todas
+                palavras = kw.split()
+            if all(
+                re.search(rf"(?<!\w){re.escape(p)}(?!\w)", text, flags=re.IGNORECASE)
+                for p in palavras
+            ):
                 return True
         else:
             # caso contrário (ex.: 'BR-'), mantemos substring

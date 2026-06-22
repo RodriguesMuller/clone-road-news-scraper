@@ -2,7 +2,7 @@
 """
 Road News Scraper — ponto de entrada.
 Executa o scraping de todas as fontes em config/sources.yaml
-e persiste os resultados no Google Sheets.
+e persiste os resultados em um banco PostgreSQL (Supabase).
 """
 import os
 import sys

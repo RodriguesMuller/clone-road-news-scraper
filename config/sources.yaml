@@ -27,11 +27,12 @@
 #
 # Como o casamento funciona (importante para entender os resultados):
 #   • Ignora maiúsculas/minúsculas:  "Acidente" == "acidente".
-#   • Casa por PEDAÇO do texto (substring), não pela palavra inteira. Ou seja,
-#     "morto" também casa com "mortos", "amortecedor", etc. É por isso que
-#     termos genéricos como "morto", "ferido" ou "pista" trazem FALSOS
-#     POSITIVOS (notícias de crime/geral). Para mais precisão, prefira termos
-#     bem ligados a rodovia.
+#   • Casa por PALAVRA INTEIRA: "ferido" NÃO casa com "ferimentos" — isso evita
+#     falsos positivos, então prefira termos bem ligados a rodovia.
+#   • Keyword com VÁRIAS palavras (ex.: "incêndio em caminhão") casa quando
+#     TODAS as palavras aparecem no título (em qualquer posição), sem exigir a
+#     frase exata.
+#   • Keyword com pontuação (ex.: "BR-") casa por pedaço do texto (substring).
 #
 # Como ajustar:
 #   • INCLUIR um termo  → adicione uma linha:   - novo termo
@@ -93,11 +94,6 @@ html_sources:
     url: "https://www.band.com.br/noticias"
     category: "geral"
     type: "band"
-
-  - name: "PRF Noticias"
-    url: "https://www.gov.br/prf/pt-br/noticias"
-    category: "geral"
-    type: "prf"
 
 
 # ------------------------------------------------------------------------------

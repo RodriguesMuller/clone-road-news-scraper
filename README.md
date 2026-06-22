@@ -12,7 +12,6 @@ via **GitHub Actions**.
 | G1 | RSS | keywords rodoviárias |
 | CNN Brasil | RSS | keywords rodoviárias |
 | Band | HTML | keywords rodoviárias |
-| PRF Notícias | HTML | keywords rodoviárias |
 | INMET (avisos) | RSS | severidade (`Perigo` / `Grande Perigo`) |
 
 Tudo configurável em [`config/sources.yaml`](config/sources.yaml).
@@ -30,11 +29,11 @@ Tudo o que influencia os resultados fica em **[`config/sources.yaml`](config/sou
 é o "painel de controle" do projeto, todo comentado de forma didática:
 
 - **`keywords`** — palavras que tornam uma notícia relevante (G1, CNN, Band).
-  Agora o scraper aplica as `keywords` apenas ao **título** da notícia
-  (não ao resumo ou ao corpo). Além disso, keywords compostas apenas por
-  letras/dígitos/espaços são casadas por **palavra inteira** para evitar
-  falsos positivos (ex.: `ferido` não casa com `ferimentos`). Palavras com
-  pontuação relevante (ex.: `BR-`) seguem correspondência por substring.
+  O scraper aplica as `keywords` apenas ao **título** da notícia. O casamento é
+  por **palavra inteira** (`ferido` não casa com `ferimentos`); keywords com
+  **várias palavras** (ex.: `incêndio em caminhão`) casam quando **todas** as
+  palavras aparecem no título; e keywords com pontuação (ex.: `BR-`) casam por
+  substring.
 - **`severities` do INMET** — quais níveis de aviso de clima guardar
   (`Perigo`, `Grande Perigo`, etc.).
 - **As fontes** (`rss_sources`, `html_sources`, `inmet_sources`) — quais
