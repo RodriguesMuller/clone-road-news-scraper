@@ -83,6 +83,27 @@ rss_sources:
     url: "https://www.cnnbrasil.com.br/feed/"
     category: "geral"
 
+  # Google News (busca) — agrega notícias rodoviárias de TODAS as fontes do
+  # Brasil num único feed. As queries (parâmetro "q=", percent-encoded) já
+  # filtram por rodovia/caminhão, então rendem alta relevância (~75-98 itens
+  # rodoviários por busca). Os links são redirects (news.google.com/...).
+  - name: "Google News - Incidentes em rodovia"
+    url: "https://news.google.com/rss/search?q=%28rodovia+OR+%22BR-%22+OR+estrada%29+%28acidente+OR+interdi%C3%A7%C3%A3o+OR+interditada+OR+bloqueio+OR+tombou+OR+tombamento+OR+engavetamento+OR+capotou%29&hl=pt-BR&gl=BR&ceid=BR%3Apt"
+    category: "rodovia"
+
+  - name: "Google News - Caminhão/carreta"
+    url: "https://news.google.com/rss/search?q=%28caminh%C3%A3o+OR+carreta+OR+bitrem%29+%28acidente+OR+tomba+OR+tombou+OR+capotou+OR+%22pega+fogo%22+OR+inc%C3%AAndio+OR+tombamento%29&hl=pt-BR&gl=BR&ceid=BR%3Apt"
+    category: "rodovia"
+
+  # Portais especializados (WordPress /feed/) — foco em transporte/rodovia
+  - name: "Estradas.com.br"
+    url: "https://estradas.com.br/feed/"
+    category: "rodovia"
+
+  - name: "Blog do Caminhoneiro"
+    url: "https://blogdocaminhoneiro.com/feed/"
+    category: "transporte"
+
 # ------------------------------------------------------------------------------
 # 3) FONTES HTML  (Band)  —  filtradas pelas keywords acima
 # ------------------------------------------------------------------------------
