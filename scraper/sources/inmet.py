@@ -1,32 +1,26 @@
 """
-Scraper de avisos meteorológicos do INMET.
+Scraper de avisos meteorologicos do INMET.
 
-Diferente das fontes de notícias, os avisos do INMET NÃO são filtrados pelas
-keywords rodoviárias (que nunca casariam com 'Tempestade', 'Geada' etc.). O
-objetivo aqui é capturar clima severo que impacta as rodovias, então o filtro
-é por SEVERIDADE (e, opcionalmente, por tipo de evento) — ambos configuráveis
-no config/sources.yaml.
-
-O feed RSS traz, em cada item, uma tabela HTML no campo <summary> com os
-campos: Status, Evento, Severidade, Início, Fim, Descrição, Área e Link Gráfico.
+Os avisos do INMET nao usam as keywords rodoviarias. Eles sao filtrados por
+severidade e, opcionalmente, por tipo de evento, conforme config/sources.yaml.
 """
 from datetime import datetime, timedelta
+from time import sleep
 
-import requests
 import feedparser
+import requests
 from bs4 import BeautifulSoup
 
 from scraper.sources import HEADERS
 
-# Severidades possíveis, da menor para a maior gravidade.
 SEVERITY_ORDER = ["Perigo Potencial", "Perigo", "Grande Perigo"]
-
-# Padrão: ignora o nível mais baixo ("Perigo Potencial") para reduzir ruído.
 DEFAULT_SEVERITIES = ["Perigo", "Grande Perigo"]
+
+INMET_TIMEOUT = (30, 60)
+INMET_RETRIES = 3
 
 
 def _parse_summary(summary_html: str) -> dict:
-    """Extrai os pares campo→valor da tabela HTML do aviso."""
     soup = BeautifulSoup(summary_html, "lxml")
     fields = {}
     for tr in soup.find_all("tr"):
@@ -36,49 +30,52 @@ def _parse_summary(summary_html: str) -> dict:
     return fields
 
 
+def _fetch_feed(url: str) -> str:
+    last_error = None
+    for attempt in range(1, INMET_RETRIES + 1):
+        try:
+            response = requests.get(url, headers=HEADERS, timeout=INMET_TIMEOUT)
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as exc:
+            last_error = exc
+            if attempt < INMET_RETRIES:
+                wait = attempt * 5
+                print(f"    tentativa {attempt} falhou; nova tentativa em {wait}s")
+                sleep(wait)
+    raise last_error
+
+
+def _parse_start(value: str) -> datetime | None:
+    if not value:
+        return None
+    for parser in (
+        lambda raw: datetime.fromisoformat(raw),
+        lambda raw: datetime.strptime(raw, "%d/%m/%Y %H:%M"),
+    ):
+        try:
+            return parser(value)
+        except ValueError:
+            continue
+    return None
+
+
 def scrape_inmet(source: dict, keywords: list | None = None) -> list:
-    """
-    Coleta avisos meteorológicos do INMET, filtrando por severidade.
-
-    Args:
-        source: dict do sources.yaml. Campos relevantes:
-            - url: feed RSS de avisos
-            - severities: lista de severidades a incluir (default: Perigo +
-              Grande Perigo)
-            - eventos: (opcional) lista de tipos de evento a incluir; se
-              omitido, todos os eventos da severidade escolhida são mantidos
-        keywords: ignorado (mantido por compatibilidade de assinatura)
-
-    Returns:
-        Lista de dicionários padronizados de aviso.
-    """
     alerts = []
     severities = source.get("severities", DEFAULT_SEVERITIES)
-    eventos = source.get("eventos")  # None = todos
+    eventos = source.get("eventos")
 
     try:
-        print(f"    → Buscando: {source['url']}")
-        resp = requests.get(source["url"], headers=HEADERS, timeout=20)
-        resp.raise_for_status()
-        feed = feedparser.parse(resp.text)
+        print(f"    Buscando: {source['url']}")
+        feed = feedparser.parse(_fetch_feed(source["url"]))
 
         for entry in feed.entries:
-            print("INMET:", entry.get("title"), entry.get("published"))
             fields = _parse_summary(entry.get("summary", ""))
             evento = fields.get("Evento", "")
             severidade = fields.get("Severidade", "")
-
             inicio = fields.get("Início", "")
-            data_inicio = None
-            if inicio:
-                try:
-                    data_inicio = datetime.fromisoformat(inicio)
-                except ValueError:
-                    try:
-                        data_inicio = datetime.strptime(inicio, "%d/%m/%Y %H:%M")
-                    except ValueError:
-                        data_inicio = None
 
+            data_inicio = _parse_start(inicio)
             if data_inicio is not None:
                 limite = datetime.now() - timedelta(days=3)
                 if data_inicio < limite:
@@ -95,18 +92,17 @@ def scrape_inmet(source: dict, keywords: list | None = None) -> list:
 
             alerts.append(
                 {
-                    "title": f"{evento} — {severidade}",
+                    "title": f"{evento} - {severidade}",
                     "url": entry.get("link", ""),
                     "source": source["name"],
                     "category": source.get("category", "clima"),
-                    "published_at": fields.get("Início", "") or entry.get("published", ""),
+                    "published_at": inicio or entry.get("published", ""),
                     "summary": summary[:500],
                     "scraped_at": datetime.now().isoformat(),
                     "type": "INMET",
                 }
             )
-
-    except Exception as e:
-        print(f"    ✗ Erro ao processar '{source['name']}': {e}")
+    except Exception as exc:
+        print(f"    Erro ao processar '{source['name']}': {exc}")
 
     return alerts
