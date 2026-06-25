@@ -1,52 +1,102 @@
-# Deploy do painel no Vercel
+# Como publicar o painel no Vercel (passo a passo)
 
-O painel web (dashboard) mora **no mesmo repositório** do scraper. O Vercel
-publica só a parte web; o GitHub Actions continua rodando o scraper. Os dois
-conversam pelo **mesmo banco Supabase**.
+Este guia é para subir o **painel web** (dashboard) do Road News no Vercel, do
+zero. Não precisa saber programar — é seguir os passos clicando.
+
+## O que é este painel
+
+Uma página web que mostra **como está o fluxo de coleta** (última coleta,
+quantas notícias na última hora, nas últimas 24h, total e quebra por fonte) e a
+**lista das notícias mais recentes**. Ele apenas **lê** o banco Supabase que o
+scraper já alimenta — não coleta nem escreve nada.
+
+> O **scraper** continua rodando no GitHub Actions (de hora em hora). O **painel**
+> roda no Vercel. Os dois compartilham o mesmo banco Supabase. Você não precisa
+> mexer no scraper para publicar o painel.
 
 ```
-api/stats.py         → GET  /api/stats        (visão geral do fluxo)
-api/news.py          → GET  /api/news?limit=25 (notícias recentes)
-api/send_digest.py   → POST /api/send_digest   (gera + envia o boletim da última hora)
-public/index.html    → painel servido em /
-vercel.json          → config (Python serverless)
-.python-version      → 3.12
-requirements.txt     → dependências (psycopg, requests, …)
+api/stats.py       → /api/stats   (números do fluxo)
+api/news.py        → /api/news     (notícias recentes)
+public/index.html  → a tela do painel (servida em "/")
 ```
 
-## Passo a passo
+## Pré-requisitos
 
-1. **Importar o repositório**
-   - Acesse [vercel.com](https://vercel.com) → **Add New… → Project**.
-   - Importe `BrunoJordao-OH/road-news-scraper`.
-   - **Framework Preset:** *Other* · **Root Directory:** `./` (raiz do repo).
-   - Não precisa mexer em build/output — o Vercel detecta `api/` (Python) e
-     serve `public/` como estático automaticamente.
+1. O código já está no GitHub: **github.com/BrunoJordao-OH/road-news-scraper** ✅
+2. A connection string do Supabase (a mesma usada pelo scraper). Você vai pegá-la
+   no passo 3.
 
-2. **Variáveis de ambiente** (Settings → Environment Variables)
-   - `DATABASE_URL` — connection string do Supabase. Para serverless, prefira o
-     **Transaction pooler** (porta `6543`): `Connect → Transaction pooler`.
-     Já com a senha no lugar do `[YOUR-PASSWORD]`.
-   - `RESEND_API_KEY` — *(para o botão de boletim enviar de fato)* chave do Resend.
-   - `EMAIL_TO` — destinatário(s), separados por vírgula.
-   - `EMAIL_FROM` — *(opcional)* remetente verificado, ex.: `Road News <noticias@over-haul.com>`.
-     Sem isso, usa `onboarding@resend.dev` (só envia para o e-mail da sua conta Resend).
+---
 
-3. **Deploy** → o painel fica na URL do Vercel; a API em `/api/...`.
+## Passo 1 — Criar conta / entrar no Vercel
 
-## Comportamento
+1. Acesse **https://vercel.com** e clique em **Sign Up** (ou **Log In**).
+2. Escolha **Continue with GitHub** e autorize o Vercel a acessar seus repositórios.
 
-- O painel mostra **status do fluxo** (última coleta, última hora, 24h, total e
-  contagem por fonte) e as **principais notícias** recentes, lendo do Supabase.
-- O botão **"Gerar boletim da última hora"**:
-  - se `RESEND_API_KEY` + `EMAIL_TO` estiverem configurados, **envia o e-mail**;
-  - senão, retorna quantos itens entrariam (sem enviar).
-- Se a API estiver indisponível, o painel cai em **modo demonstração** (dados de
-  exemplo), então a tela nunca aparece vazia.
+## Passo 2 — Importar o repositório
 
-## Observações
+1. No painel do Vercel, clique em **Add New… → Project**.
+2. Na lista de repositórios, encontre **road-news-scraper** e clique em **Import**.
+   - Se não aparecer, clique em **Adjust GitHub App Permissions** e libere o repo.
+3. Na tela de configuração do projeto:
+   - **Framework Preset:** selecione **Other**.
+   - **Root Directory:** deixe **`./`** (a raiz do repositório).
+   - **Build & Output Settings:** não mexa (deixe em branco/automático — o Vercel
+     detecta a pasta `api/` como funções Python e serve a `public/` como site).
+   - ⚠️ **Ainda não clique em Deploy** — primeiro adicione a variável do passo 3.
 
-- O mesmo `DATABASE_URL` do scraper serve aqui. Use o **pooler** (IPv4) do
-  Supabase — funções serverless são conexões curtas.
-- As funções são **autossuficientes** (não importam o pacote `scraper/`), então o
-  bundle de cada função fica leve mesmo com o `requirements.txt` completo.
+## Passo 3 — Pegar a connection string no Supabase
+
+1. Em **supabase.com**, abra seu projeto → botão **Connect** (no topo).
+2. Aba **Transaction pooler** (recomendado para o Vercel, que usa conexões
+   curtas). Copie a URI, parecida com:
+   ```
+   postgresql://postgres.xxxx:[YOUR-PASSWORD]@aws-1-us-east-1.pooler.supabase.com:6543/postgres
+   ```
+3. Troque **`[YOUR-PASSWORD]`** pela senha do banco.
+   - Esqueceu a senha? **Settings → Database → Reset database password**.
+
+## Passo 4 — Adicionar a variável de ambiente no Vercel
+
+Ainda na tela de configuração do projeto (ou depois em **Settings →
+Environment Variables**), adicione **uma** variável:
+
+| Name | Value |
+|------|-------|
+| `DATABASE_URL` | a connection string completa do passo 3 (já com a senha) |
+
+Deixe marcada para **Production** (e Preview, se quiser). Clique em **Add**.
+
+## Passo 5 — Deploy
+
+1. Clique em **Deploy** e aguarde (~1–2 min).
+2. Ao terminar, o Vercel te dá uma URL, tipo `https://road-news-scraper.vercel.app`.
+3. Abra a URL — o painel deve carregar com os dados reais do Supabase.
+
+---
+
+## Como saber se deu certo
+
+- O painel mostra os números e a lista de notícias **reais**.
+- Se aparecer a faixa **"Modo demonstração — API indisponível"**, significa que o
+  painel não conseguiu ler o banco (geralmente `DATABASE_URL` ausente ou senha
+  errada). Ele cai em dados de exemplo para nunca ficar em branco.
+
+## Se algo der errado
+
+- **Modo demonstração ligado / dados não aparecem:** revise a `DATABASE_URL`
+  (senha correta? usou o **Transaction pooler**, porta `6543`?). Após corrigir a
+  variável, faça um **Redeploy** (Deployments → menu `...` → Redeploy).
+- **Ver logs:** no projeto do Vercel → **Logs** (ou abra uma função em
+  **Functions**) para ver mensagens de erro das rotas `/api/stats` e `/api/news`.
+- **Testar a API direto:** abra `https://SUA-URL.vercel.app/api/stats` no
+  navegador — deve retornar um JSON com os números.
+
+## Atualizações futuras
+
+Como o Vercel está conectado ao GitHub, **todo `git push` na branch `main`
+dispara um novo deploy automaticamente**. Não precisa repetir esses passos.
+
+> Observação: o envio de **boletim por e-mail foi removido por enquanto**. O
+> painel hoje é só de visualização. Quando o e-mail voltar, este guia será
+> atualizado com a configuração necessária.
