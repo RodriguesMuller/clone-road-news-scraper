@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overhaul · Road News — Painel</title>
+<style>
+  :root{
+    --midnight:#0F1814; --dark-green:#2A3E33; --green:#1EFF95; --mint:#D0FFEC;
+    --purple:#5029FF; --lilac:#C6BDFC; --dim:#6F7472; --steel:#9FA3A1; --dust:#CFD1D0;
+    --alabaster:#E7E7E7; --smoke:#F3F3F3; --grey:#F4F9FA; --white:#fff;
+    --orange:#FC3700; --yellow:#FFCD00;
+    --font:"Archivo","Helvetica Neue",Arial,sans-serif;
+    --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--smoke);font-family:var(--font);color:var(--midnight);-webkit-font-smoothing:antialiased;}
+  a{color:var(--purple);}
+  .wrap{max-width:980px;margin:0 auto;padding:0 16px 48px;}
+
+  /* Header */
+  header{background:var(--midnight);}
+  .hd{max-width:980px;margin:0 auto;padding:22px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;}
+  .brand{font-size:20px;font-weight:900;letter-spacing:-0.01em;color:#fff;}
+  .brand .dot{color:var(--green);}
+  .brand .sub{display:block;margin-top:6px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--green);}
+  .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .btn{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border-radius:8px;border:1px solid transparent;padding:11px 16px;cursor:pointer;}
+  .btn-accent{background:var(--green);color:var(--midnight);}
+  .btn-accent:disabled{opacity:.5;cursor:default;}
+  .btn-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.25);}
+
+  .feedback{max-width:980px;margin:0 auto;padding:0 16px;}
+  .toast{margin-top:14px;border-radius:8px;padding:12px 16px;font-size:14px;line-height:1.45;display:none;}
+  .toast.ok{background:var(--mint);color:var(--dark-green);border:1px solid #9fe9c8;}
+  .toast.warn{background:#FFF6D6;color:#6b5800;border:1px solid #ecd680;}
+  .toast.err{background:#FFE2DB;color:#8a1c08;border:1px solid #f4a795;}
+  .demo-note{max-width:980px;margin:14px auto 0;padding:0 16px;font-family:var(--mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--steel);display:none;}
+
+  /* Seções */
+  h2{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--midnight);margin:32px 0 14px;display:flex;align-items:center;gap:8px;}
+  h2 .tick{width:10px;height:10px;background:var(--green);border-radius:2px;}
+
+  /* Stat cards */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .stat{background:var(--white);border:1px solid var(--alabaster);border-radius:10px;padding:16px;}
+  .stat .lbl{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--dim);}
+  .stat .val{font-size:30px;font-weight:700;letter-spacing:-0.02em;margin-top:6px;line-height:1;}
+  .stat .val.accent{color:#0a8f54;}
+  .stat .meta{font-size:12px;color:var(--dim);margin-top:6px;}
+
+  .sources{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+  .src-chip{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.04em;background:var(--white);border:1px solid var(--alabaster);border-radius:999px;padding:6px 12px;color:var(--midnight);}
+  .src-chip b{color:#0a8f54;margin-left:6px;}
+
+  /* News list */
+  .card{background:var(--white);border:1px solid var(--alabaster);border-radius:10px;padding:15px 16px;margin-bottom:10px;}
+  .card .top{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap;}
+  .pill{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border-radius:999px;padding:3px 9px;}
+  .pill.news{background:var(--mint);color:var(--dark-green);}
+  .pill.road{background:var(--green);color:var(--midnight);}
+  .pill.weather{background:var(--lilac);color:#2d1a6b;}
+  .card .src{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--dim);}
+  .card .title{font-size:16px;font-weight:600;line-height:1.32;color:var(--midnight);margin:0 0 9px;}
+  .card .title a{color:inherit;text-decoration:none;}
+  .card .read{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--purple);text-decoration:none;}
+
+  footer{max-width:980px;margin:0 auto;padding:24px 16px;font-family:var(--mono);font-size:11px;letter-spacing:0.06em;color:var(--steel);text-transform:uppercase;}
+
+  @media (max-width:720px){ .stats{grid-template-columns:repeat(2,1fr);} }
+</style>
+</head>
+<body>
+  <header>
+    <div class="hd">
+      <div class="brand">Overhaul <span class="dot">·</span> Road News
+        <span class="sub">Painel de monitoramento</span>
+      </div>
+      <div class="controls">
+        <button id="refresh" class="btn btn-ghost">Atualizar</button>
+        <button id="digest" class="btn btn-accent">Gerar boletim da última hora</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="feedback"><div id="toast" class="toast"></div></div>
+  <div id="demo" class="demo-note">Modo demonstração — API indisponível, exibindo dados de exemplo.</div>
+
+  <div class="wrap">
+    <h2><span class="tick"></span> Status do fluxo</h2>
+    <div class="stats" id="stats"></div>
+    <div class="sources" id="sources"></div>
+
+    <h2><span class="tick"></span> Principais notícias</h2>
+    <div id="news"></div>
+  </div>
+
+  <footer>Fontes: Google News · G1 · CNN Brasil · Band · INMET · Arteris — coleta a cada hora via GitHub Actions</footer>
+
+<script>
+const SAMPLE_STATS = {
+  total: 1284, last_hour: 14, last_24h: 207,
+  last_created: new Date(Date.now()-7*60000).toISOString(),
+  sources: [
+    {source:"Google News - Caminhão/carreta", count:98},
+    {source:"Google News - Incidentes em rodovia", count:76},
+    {source:"INMET - Avisos Meteorológicos", count:13},
+    {source:"G1 - Brasil", count:11},
+    {source:"Band - Notícias", count:6},
+    {source:"Arteris Fluminense (tempo real)", count:3},
+  ]
+};
+const SAMPLE_NEWS = { items: [
+  {title:"Caminhão tomba e interdita a BR-101 em São Miguel dos Campos, AL", source:"Google News", category:"rodovia", type:"RSS", url:"#", created_at:new Date(Date.now()-12*60000).toISOString()},
+  {title:"Mãe e duas filhas morrem em acidente entre carro e carreta na BR-285", source:"G1 - Brasil", category:"geral", type:"RSS", url:"#", created_at:new Date(Date.now()-28*60000).toISOString()},
+  {title:"Obras na Pista (km 305–297): congestionamento no sentido norte", source:"Arteris Fluminense (tempo real)", category:"rodovia", type:"ARTERIS", url:"#", created_at:new Date(Date.now()-33*60000).toISOString()},
+  {title:"Tempestade — Perigo", source:"INMET - Avisos Meteorológicos", category:"clima", type:"INMET", url:"#", created_at:new Date(Date.now()-40*60000).toISOString()},
+  {title:"Carreta desgovernada destrói casas após perder os freios no Paraná", source:"Band - Notícias", category:"geral", type:"HTML", url:"#", created_at:new Date(Date.now()-52*60000).toISOString()},
+]};
+
+function ago(iso){
+  if(!iso) return "—";
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime())/1000);
+  if (s < 90) return "há instantes";
+  const m = Math.round(s/60);
+  if (m < 60) return "há " + m + " min";
+  const h = Math.round(m/60);
+  if (h < 48) return "há " + h + "h";
+  return "há " + Math.round(h/24) + "d";
+}
+function esc(s){ const d=document.createElement("div"); d.textContent=s==null?"":s; return d.innerHTML; }
+function typeMeta(t){
+  if (t === "ARTERIS") return {cls:"road", label:"Rodovia"};
+  if (t === "INMET")   return {cls:"weather", label:"Clima"};
+  return {cls:"news", label:"Notícia"};
+}
+
+function renderStats(s){
+  document.getElementById("stats").innerHTML = [
+    `<div class="stat"><div class="lbl">Última coleta</div><div class="val">${ago(s.last_created)}</div><div class="meta">registro mais recente</div></div>`,
+    `<div class="stat"><div class="lbl">Na última hora</div><div class="val accent">${s.last_hour}</div><div class="meta">novos registros</div></div>`,
+    `<div class="stat"><div class="lbl">Últimas 24h</div><div class="val">${s.last_24h}</div><div class="meta">registros</div></div>`,
+    `<div class="stat"><div class="lbl">Total na base</div><div class="val">${s.total}</div><div class="meta">notícias acumuladas</div></div>`,
+  ].join("");
+  document.getElementById("sources").innerHTML = (s.sources||[]).map(
+    x => `<span class="src-chip">${esc(x.source)}<b>${x.count}</b></span>`
+  ).join("");
+}
+function renderNews(items){
+  document.getElementById("news").innerHTML = (items||[]).map(it => {
+    const tm = typeMeta(it.type);
+    const src = [it.source, it.category].filter(Boolean).join(" · ");
+    return `<div class="card">
+      <div class="top"><span class="pill ${tm.cls}">${tm.label}</span><span class="src">${esc(src)} · ${ago(it.created_at)}</span></div>
+      <p class="title"><a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title)}</a></p>
+      <a class="read" href="${esc(it.url)}" target="_blank" rel="noopener">Abrir →</a>
+    </div>`;
+  }).join("") || `<div class="card"><div class="src">Nenhuma notícia recente.</div></div>`;
+}
+function toast(msg, kind){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "toast " + (kind||"ok"); t.style.display = "block";
+}
+
+async function loadAll(){
+  try{
+    const [st, nw] = await Promise.all([
+      fetch("/api/stats").then(r=>{ if(!r.ok) throw 0; return r.json(); }),
+      fetch("/api/news?limit=25").then(r=>{ if(!r.ok) throw 0; return r.json(); }),
+    ]);
+    if (st.error || nw.error) throw 0;
+    document.getElementById("demo").style.display = "none";
+    renderStats(st); renderNews(nw.items);
+  }catch(e){
+    document.getElementById("demo").style.display = "block";
+    renderStats(SAMPLE_STATS); renderNews(SAMPLE_NEWS.items);
+  }
+}
+
+document.getElementById("refresh").addEventListener("click", loadAll);
+document.getElementById("digest").addEventListener("click", async () => {
+  const btn = document.getElementById("digest");
+  btn.disabled = true; const orig = btn.textContent; btn.textContent = "Gerando…";
+  try{
+    const r = await fetch("/api/send_digest", { method:"POST" });
+    const d = await r.json();
+    if (d.sent) toast(`Boletim enviado para ${ (d.to||[]).join(", ") } (${d.count} itens).`, "ok");
+    else toast(`${d.reason || d.error || "Não enviado."}${d.count!=null ? " ("+d.count+" itens na última hora)" : ""}`, d.error ? "err" : "warn");
+  }catch(e){
+    toast("Falha ao chamar a API de envio.", "err");
+  }finally{
+    btn.disabled = false; btn.textContent = orig;
+  }
+});
+
+loadAll();
+</script>
+</body>
+</html>
