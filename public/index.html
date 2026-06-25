@@ -131,6 +131,19 @@
       return `${Math.round(hours / 24)}d`;
     }
 
+    function formatDate(iso) {
+      if (!iso) return "Data nao informada";
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return "Data nao informada";
+      return new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(date);
+    }
+
     function withinHours(item, hours) {
       const created = item.created_at ? new Date(item.created_at).getTime() : 0;
       return created >= Date.now() - hours * 60 * 60 * 1000;
@@ -322,63 +335,73 @@
       const h = canvas.height;
       const summary = smartSummary(item);
       const source = [item.source, item.category].filter(Boolean).join(" · ");
+      const published = formatDate(item.published_at || item.created_at);
 
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = "#0d1712";
       ctx.fillRect(0, 0, w, h);
       drawGrid(ctx, w, h);
 
-      ctx.fillStyle = "rgba(18,217,129,.08)";
-      ctx.fillRect(72, 92, w - 144, h - 184);
-      ctx.strokeStyle = "rgba(18,217,129,.42)";
+      const cardX = 86;
+      const cardY = 84;
+      const cardW = w - 172;
+      const cardH = h - 168;
+      ctx.fillStyle = "rgba(18,217,129,.075)";
+      ctx.fillRect(cardX, cardY, cardW, cardH);
+      ctx.strokeStyle = "rgba(18,217,129,.48)";
       ctx.lineWidth = 3;
-      ctx.strokeRect(72, 92, w - 144, h - 184);
+      ctx.strokeRect(cardX, cardY, cardW, cardH);
 
       ctx.fillStyle = "#12d981";
       ctx.beginPath();
-      ctx.moveTo(140, 92);
-      ctx.lineTo(202, 92);
-      ctx.lineTo(172, 132);
+      ctx.moveTo(158, 84);
+      ctx.lineTo(224, 84);
+      ctx.lineTo(191, 128);
       ctx.closePath();
       ctx.fill();
 
       ctx.fillStyle = "#d7e4de";
-      ctx.font = "800 48px Segoe UI, Arial, sans-serif";
-      ctx.fillText("OVERHAUL", 220, 128);
+      ctx.font = "800 46px Segoe UI, Arial, sans-serif";
+      ctx.fillText("OVERHAUL", 248, 126);
       ctx.fillStyle = "#12d981";
-      ctx.font = "800 28px Segoe UI, Arial, sans-serif";
-      ctx.fillText("ROAD NEWS", 220, 166);
+      ctx.font = "800 25px Segoe UI, Arial, sans-serif";
+      ctx.fillText("ROAD NEWS", 250, 166);
 
       ctx.fillStyle = "#12d981";
-      ctx.font = "800 34px Segoe UI, Arial, sans-serif";
-      ctx.fillText("Resumo da noticia", 110, 248);
+      ctx.font = "800 30px Segoe UI, Arial, sans-serif";
+      ctx.fillText("Resumo da noticia", 136, 258);
 
       ctx.fillStyle = "#f5fbf8";
-      ctx.font = "900 48px Segoe UI, Arial, sans-serif";
-      let nextY = wrapCanvasText(ctx, item.title, 110, 318, 860, 58, 4);
+      ctx.font = "900 44px Segoe UI, Arial, sans-serif";
+      let nextY = wrapCanvasText(ctx, item.title, 136, 326, 808, 55, 3);
+      nextY += 16;
 
-      ctx.fillStyle = "rgba(255,255,255,.08)";
-      ctx.fillRect(110, nextY + 26, 860, 292);
+      ctx.fillStyle = "rgba(255,255,255,.09)";
+      ctx.fillRect(136, nextY + 22, 808, 310);
       ctx.strokeStyle = "rgba(18,217,129,.35)";
-      ctx.strokeRect(110, nextY + 26, 860, 292);
+      ctx.strokeRect(136, nextY + 22, 808, 310);
 
       ctx.fillStyle = "#d7e4de";
-      ctx.font = "600 28px Segoe UI, Arial, sans-serif";
-      wrapCanvasText(ctx, summary, 140, nextY + 80, 800, 39, 6);
+      ctx.font = "600 27px Segoe UI, Arial, sans-serif";
+      wrapCanvasText(ctx, summary, 168, nextY + 78, 744, 39, 6);
 
+      ctx.fillStyle = "#12d981";
+      ctx.font = "800 23px Segoe UI, Arial, sans-serif";
+      ctx.fillText("Fonte", 136, 894);
+      ctx.fillStyle = "#f5fbf8";
+      ctx.font = "700 27px Segoe UI, Arial, sans-serif";
+      wrapCanvasText(ctx, source || "Road News", 136, 932, 560, 34, 2);
+
+      ctx.fillStyle = "#d7e4de";
+      ctx.font = "700 22px Segoe UI, Arial, sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText("Publicado em", 944, 910);
+      ctx.fillStyle = "#f5fbf8";
+      ctx.font = "800 24px Segoe UI, Arial, sans-serif";
+      ctx.fillText(published, 944, 946);
       ctx.fillStyle = "#12d981";
       ctx.font = "800 24px Segoe UI, Arial, sans-serif";
-      ctx.fillText("Fonte", 110, 900);
-      ctx.fillStyle = "#f5fbf8";
-      ctx.font = "700 28px Segoe UI, Arial, sans-serif";
-      wrapCanvasText(ctx, source || "Road News", 110, 938, 620, 34, 2);
-
-      ctx.fillStyle = "#d7e4de";
-      ctx.font = "700 24px Segoe UI, Arial, sans-serif";
-      ctx.textAlign = "right";
-      ctx.fillText(`Atualizado ${age(item.created_at)}`, 970, 940);
-      ctx.fillStyle = "#12d981";
-      ctx.fillText("road-news", 970, 978);
+      ctx.fillText("road-news", 944, 984);
       ctx.textAlign = "left";
     }
 
