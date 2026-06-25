@@ -1,8 +1,16 @@
 .env
+.env.example
 .venv
 venv
 env
 __pycache__
 *.pyc
 .git
+.github
+.python-version
 api
+config
+main.py
+requirements.txt
+scraper
+VERCEL_DEPLOY.md
