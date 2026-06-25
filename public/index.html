@@ -258,6 +258,46 @@
       return y + lines.length * lineHeight;
     }
 
+    function truncateClean(text, maxLength) {
+      const clean = String(text || "").replace(/\s+/g, " ").trim();
+      if (clean.length <= maxLength) return clean;
+
+      const slice = clean.slice(0, maxLength + 1);
+      const sentenceEnd = Math.max(slice.lastIndexOf(". "), slice.lastIndexOf("; "), slice.lastIndexOf("! "), slice.lastIndexOf("? "));
+      if (sentenceEnd > maxLength * .55) return slice.slice(0, sentenceEnd + 1).trim();
+
+      const separators = [", ", " e ", " ou ", " - ", " — ", " "];
+      for (const sep of separators) {
+        const index = slice.lastIndexOf(sep);
+        if (index > maxLength * .62) return `${slice.slice(0, index).trim()}...`;
+      }
+
+      return `${clean.slice(0, maxLength).trim()}...`;
+    }
+
+    function smartSummary(item) {
+      let text = String(item.summary || "").replace(/<[^>]+>/g, " ");
+      text = text
+        .replace(/\s+/g, " ")
+        .replace(/\bINMET publica aviso iniciando em:\s*[^.]+\.?\s*/i, "")
+        .replace(/\bAviso para as [ÁA]reas?:\s*.*$/i, "")
+        .replace(/\b[ÁA]reas?:\s*.*$/i, "")
+        .replace(/\bBaixo risco de\b/gi, "Risco de")
+        .trim();
+
+      if (!text) {
+        text = item.title || "Resumo indisponivel no banco. Abra a noticia para ver os detalhes completos.";
+      }
+
+      if (item.type === "INMET" && /chuvas intensas/i.test(item.title || "")) {
+        text = text
+          .replace(/^Chuva entre/i, "Chuva intensa com acumulados entre")
+          .replace(/ventos intensos/i, "ventos fortes");
+      }
+
+      return truncateClean(text, 285);
+    }
+
     function drawGrid(ctx, width, height) {
       ctx.strokeStyle = "rgba(18,217,129,.10)";
       ctx.lineWidth = 2;
@@ -280,7 +320,7 @@
       const ctx = canvas.getContext("2d");
       const w = canvas.width;
       const h = canvas.height;
-      const summary = item.summary || "Resumo indisponivel no banco. Abra a noticia para ver os detalhes completos.";
+      const summary = smartSummary(item);
       const source = [item.source, item.category].filter(Boolean).join(" · ");
 
       ctx.clearRect(0, 0, w, h);
@@ -318,13 +358,13 @@
       let nextY = wrapCanvasText(ctx, item.title, 110, 318, 860, 58, 4);
 
       ctx.fillStyle = "rgba(255,255,255,.08)";
-      ctx.fillRect(110, nextY + 26, 860, 260);
+      ctx.fillRect(110, nextY + 26, 860, 292);
       ctx.strokeStyle = "rgba(18,217,129,.35)";
-      ctx.strokeRect(110, nextY + 26, 860, 260);
+      ctx.strokeRect(110, nextY + 26, 860, 292);
 
       ctx.fillStyle = "#d7e4de";
-      ctx.font = "500 30px Segoe UI, Arial, sans-serif";
-      wrapCanvasText(ctx, summary, 140, nextY + 82, 800, 42, 5);
+      ctx.font = "600 28px Segoe UI, Arial, sans-serif";
+      wrapCanvasText(ctx, summary, 140, nextY + 80, 800, 39, 6);
 
       ctx.fillStyle = "#12d981";
       ctx.font = "800 24px Segoe UI, Arial, sans-serif";
