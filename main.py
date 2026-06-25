@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Road News Scraper — ponto de entrada.
+Road News Scraper - ponto de entrada.
 Executa o scraping de todas as fontes em config/sources.yaml
 e persiste os resultados em um banco PostgreSQL (Supabase).
 """
@@ -15,15 +15,13 @@ from scraper.sources.rss import scrape_rss
 from scraper.sources.inmet import scrape_inmet
 from scraper.storage.postgres import save_to_postgres
 
-# Garante saída UTF-8 no console (Windows usa cp1252 por padrão, que
-# não suporta os caracteres Unicode usados nos prints abaixo).
 for _stream in (sys.stdout, sys.stderr):
     try:
         _stream.reconfigure(encoding="utf-8")
     except (AttributeError, ValueError):
         pass
 
-load_dotenv()  # carrega .env se rodar localmente
+load_dotenv()
 
 
 def load_config(path: str = "config/sources.yaml") -> dict:
@@ -31,66 +29,77 @@ def load_config(path: str = "config/sources.yaml") -> dict:
         return yaml.safe_load(f)
 
 
-def run() -> None:
+def collect_news(config_path: str = "config/sources.yaml") -> list:
+    config = load_config(config_path)
+    keywords: list = config.get("keywords", [])
+    all_news: list = []
+
+    rss_sources = config.get("rss_sources", [])
+    print(f"\n[RSS] {len(rss_sources)} fonte(s) configurada(s)")
+    for source in rss_sources:
+        print(f"  - {source['name']}")
+        items = scrape_rss(source, keywords)
+        print(f"    {len(items)} noticia(s) encontrada(s)")
+        all_news.extend(items)
+
+    html_sources = config.get("html_sources", [])
+    print(f"\n[HTML] {len(html_sources)} fonte(s) configurada(s)")
+    for source in html_sources:
+        print(f"  - {source['name']}")
+        scraper_fn = HTML_SCRAPERS.get(source.get("type", ""))
+        if not scraper_fn:
+            print(f"    Scraper nao encontrado para type='{source.get('type')}'")
+            continue
+        items = scraper_fn(source, keywords)
+        print(f"    {len(items)} noticia(s) encontrada(s)")
+        all_news.extend(items)
+
+    inmet_sources = config.get("inmet_sources", [])
+    print(f"\n[INMET] {len(inmet_sources)} fonte(s) configurada(s)")
+    for source in inmet_sources:
+        print(f"  - {source['name']}")
+        items = scrape_inmet(source)
+        print(f"    {len(items)} aviso(s) relevante(s)")
+        all_news.extend(items)
+
+    return all_news
+
+
+def run(save: bool = True) -> dict:
     print("=" * 50)
     print("  Road News Scraper")
     print("=" * 50)
 
-    config = load_config()
-    keywords: list = config.get("keywords", [])
-    all_news: list = []
+    all_news = collect_news()
+    print(f"\n[Total] {len(all_news)} noticia(s) coletada(s)")
 
-    # ── RSS ──────────────────────────────────────────────
-    rss_sources = config.get("rss_sources", [])
-    print(f"\n[RSS] {len(rss_sources)} fonte(s) configurada(s)")
-    for source in rss_sources:
-        print(f"  • {source['name']}")
-        items = scrape_rss(source, keywords)
-        print(f"    ✓ {len(items)} notícia(s) encontrada(s)")
-        all_news.extend(items)
-
-    # ── HTML ─────────────────────────────────────────────
-    html_sources = config.get("html_sources", [])
-    print(f"\n[HTML] {len(html_sources)} fonte(s) configurada(s)")
-    for source in html_sources:
-        print(f"  • {source['name']}")
-        scraper_fn = HTML_SCRAPERS.get(source.get("type", ""))
-        if not scraper_fn:
-            print(f"    ✗ Scraper não encontrado para type='{source.get('type')}'")
-            continue
-        items = scraper_fn(source, keywords)
-        print(f"    ✓ {len(items)} notícia(s) encontrada(s)")
-        all_news.extend(items)
-
-    # ── INMET (avisos meteorológicos) ────────────────────
-    inmet_sources = config.get("inmet_sources", [])
-    print(f"\n[INMET] {len(inmet_sources)} fonte(s) configurada(s)")
-    for source in inmet_sources:
-        print(f"  • {source['name']}")
-        items = scrape_inmet(source)
-        print(f"    ✓ {len(items)} aviso(s) relevante(s)")
-        all_news.extend(items)
-
-    print(f"\n[Total] {len(all_news)} notícia(s) coletada(s)")
-
-    # ── Storage ──────────────────────────────────────────
     database_url = os.environ.get("DATABASE_URL")
 
-    if not database_url:
-        print("\n[Aviso] DATABASE_URL não definido.")
+    if not save or not database_url:
+        print("\n[Aviso] DATABASE_URL nao definido.")
         print("        Exibindo resultados no terminal:\n")
         for item in all_news:
             print(f"  [{item['source']}] {item['title']}")
             print(f"  {item['url']}\n")
-        sys.exit(0)
+        return {
+            "collected": len(all_news),
+            "saved": 0,
+            "database_configured": bool(database_url),
+        }
 
+    new_count = 0
     if all_news:
         new_count = save_to_postgres(all_news, database_url)
         print(f"[Postgres] {new_count} novo(s) registro(s) salvo(s).")
     else:
-        print("[Postgres] Nenhuma notícia nova para salvar.")
+        print("[Postgres] Nenhuma noticia nova para salvar.")
 
-    print("\nConcluído.")
+    print("\nConcluido.")
+    return {
+        "collected": len(all_news),
+        "saved": new_count,
+        "database_configured": True,
+    }
 
 
 if __name__ == "__main__":
