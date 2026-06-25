@@ -1,173 +1,230 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Overhaul · Road News — Painel</title>
-<style>
-  :root{
-    --midnight:#0F1814; --dark-green:#2A3E33; --green:#1EFF95; --mint:#D0FFEC;
-    --purple:#5029FF; --lilac:#C6BDFC; --dim:#6F7472; --steel:#9FA3A1; --dust:#CFD1D0;
-    --alabaster:#E7E7E7; --smoke:#F3F3F3; --grey:#F4F9FA; --white:#fff;
-    --orange:#FC3700; --yellow:#FFCD00;
-    --font:"Archivo","Helvetica Neue",Arial,sans-serif;
-    --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--smoke);font-family:var(--font);color:var(--midnight);-webkit-font-smoothing:antialiased;}
-  a{color:var(--purple);}
-  .wrap{max-width:980px;margin:0 auto;padding:0 16px 48px;}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Road News</title>
+  <style>
+    :root {
+      --ink: #101614;
+      --muted: #65706c;
+      --line: #dfe6e2;
+      --paper: #fff;
+      --soft: #f4f7f5;
+      --accent: #12d981;
+      --accent-dark: #087548;
+      --violet: #6247ff;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
-  /* Header */
-  header{background:var(--midnight);}
-  .hd{max-width:980px;margin:0 auto;padding:22px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;}
-  .brand{font-size:20px;font-weight:900;letter-spacing:-0.01em;color:#fff;}
-  .brand .dot{color:var(--green);}
-  .brand .sub{display:block;margin-top:6px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--green);}
-  .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  .btn{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;border-radius:8px;border:1px solid transparent;padding:11px 16px;cursor:pointer;}
-  .btn-accent{background:var(--green);color:var(--midnight);}
-  .btn-accent:disabled{opacity:.5;cursor:default;}
-  .btn-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.25);}
-
-  .demo-note{max-width:980px;margin:14px auto 0;padding:0 16px;font-family:var(--mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--steel);display:none;}
-
-  /* Seções */
-  h2{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--midnight);margin:32px 0 14px;display:flex;align-items:center;gap:8px;}
-  h2 .tick{width:10px;height:10px;background:var(--green);border-radius:2px;}
-
-  /* Stat cards */
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
-  .stat{background:var(--white);border:1px solid var(--alabaster);border-radius:10px;padding:16px;}
-  .stat .lbl{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--dim);}
-  .stat .val{font-size:30px;font-weight:700;letter-spacing:-0.02em;margin-top:6px;line-height:1;}
-  .stat .val.accent{color:#0a8f54;}
-  .stat .meta{font-size:12px;color:var(--dim);margin-top:6px;}
-
-  .sources{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
-  .src-chip{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.04em;background:var(--white);border:1px solid var(--alabaster);border-radius:999px;padding:6px 12px;color:var(--midnight);}
-  .src-chip b{color:#0a8f54;margin-left:6px;}
-
-  /* News list */
-  .card{background:var(--white);border:1px solid var(--alabaster);border-radius:10px;padding:15px 16px;margin-bottom:10px;}
-  .card .top{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap;}
-  .pill{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border-radius:999px;padding:3px 9px;}
-  .pill.news{background:var(--mint);color:var(--dark-green);}
-  .pill.road{background:var(--green);color:var(--midnight);}
-  .pill.weather{background:var(--lilac);color:#2d1a6b;}
-  .card .src{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--dim);}
-  .card .title{font-size:16px;font-weight:600;line-height:1.32;color:var(--midnight);margin:0 0 9px;}
-  .card .title a{color:inherit;text-decoration:none;}
-  .card .read{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--purple);text-decoration:none;}
-
-  footer{max-width:980px;margin:0 auto;padding:24px 16px;font-family:var(--mono);font-size:11px;letter-spacing:0.06em;color:var(--steel);text-transform:uppercase;}
-
-  @media (max-width:720px){ .stats{grid-template-columns:repeat(2,1fr);} }
-</style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--soft); color: var(--ink); }
+    header { background: var(--ink); color: white; border-bottom: 4px solid var(--accent); }
+    .bar, main, footer { max-width: 1120px; margin: 0 auto; }
+    .bar { padding: 22px 18px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .brand { font-size: 22px; font-weight: 800; line-height: 1.1; }
+    .brand span { display: block; margin-top: 6px; color: #b6c3bd; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    button { border: 0; border-radius: 6px; background: var(--accent); color: #07100c; cursor: pointer; font-weight: 800; padding: 11px 16px; }
+    button:disabled { cursor: wait; opacity: .65; }
+    main { padding: 24px 18px 48px; }
+    footer { padding: 0 18px 28px; color: var(--muted); font-size: 12px; }
+    .notice { display: none; margin-bottom: 18px; border: 1px solid #edd780; background: #fff8d7; border-radius: 8px; padding: 12px 14px; color: #4a3b00; font-size: 14px; }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .stat, .panel, .item { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; }
+    .stat { padding: 16px; min-height: 104px; }
+    .label, h2 { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    h2 { margin: 0 0 14px; color: var(--ink); }
+    .value { margin-top: 10px; font-size: 32px; font-weight: 800; line-height: 1; }
+    .hint { margin-top: 8px; color: var(--muted); font-size: 13px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+    .panel { padding: 16px; }
+    .list, .sources { display: grid; gap: 10px; }
+    .item { padding: 14px 15px; }
+    .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .tag { border-radius: 999px; background: #daf8ea; color: var(--accent-dark); padding: 4px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+    .tag.weather { background: #ebe7ff; color: var(--violet); }
+    .tag.road { background: #d6fff0; color: #055c39; }
+    .title { margin: 0; font-size: 16px; font-weight: 750; line-height: 1.35; }
+    .title a { color: inherit; text-decoration: none; }
+    .title a:hover { text-decoration: underline; }
+    .source { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 8px; color: var(--muted); font-size: 13px; }
+    .source:last-child { border-bottom: 0; padding-bottom: 0; }
+    .source b { color: var(--ink); }
+    @media (max-width: 820px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 480px) { .stats { grid-template-columns: 1fr; } .value { font-size: 28px; } }
+  </style>
 </head>
 <body>
   <header>
-    <div class="hd">
-      <div class="brand">Overhaul <span class="dot">·</span> Road News
-        <span class="sub">Painel de monitoramento</span>
-      </div>
-      <div class="controls">
-        <button id="refresh" class="btn btn-accent">Atualizar</button>
-      </div>
+    <div class="bar">
+      <div class="brand">Road News<span>GitHub Actions + Supabase + Vercel frontend</span></div>
+      <button id="refresh" type="button">Atualizar</button>
     </div>
   </header>
 
-  <div id="demo" class="demo-note">Modo demonstração — API indisponível, exibindo dados de exemplo.</div>
+  <main>
+    <div id="notice" class="notice"></div>
+    <section class="stats" id="stats"></section>
+    <section class="layout">
+      <div class="panel">
+        <h2>Noticias recentes</h2>
+        <div id="news" class="list"></div>
+      </div>
+      <aside class="panel">
+        <h2>Fontes nas ultimas 24h</h2>
+        <div id="sources" class="sources"></div>
+      </aside>
+    </section>
+  </main>
 
-  <div class="wrap">
-    <h2><span class="tick"></span> Status do fluxo</h2>
-    <div class="stats" id="stats"></div>
-    <div class="sources" id="sources"></div>
+  <footer>
+    O scraper roda no GitHub Actions e grava no Supabase. Esta pagina apenas le dados publicos da tabela news.
+  </footer>
 
-    <h2><span class="tick"></span> Principais notícias</h2>
-    <div id="news"></div>
-  </div>
+  <script>
+    const SUPABASE_URL = "https://vdyilgbqxnrwqgoairat.supabase.co";
+    const SUPABASE_ANON_KEY = "COLE_AQUI_A_SUPABASE_ANON_KEY";
+    const TABLE = "news";
 
-  <footer>Fontes: Google News · G1 · CNN Brasil · Band · INMET · Arteris — coleta a cada hora via GitHub Actions</footer>
+    const state = { items: [], total: 0 };
 
-<script>
-const SAMPLE_STATS = {
-  total: 1284, last_hour: 14, last_24h: 207,
-  last_created: new Date(Date.now()-7*60000).toISOString(),
-  sources: [
-    {source:"Google News - Caminhão/carreta", count:98},
-    {source:"Google News - Incidentes em rodovia", count:76},
-    {source:"INMET - Avisos Meteorológicos", count:13},
-    {source:"G1 - Brasil", count:11},
-    {source:"Band - Notícias", count:6},
-    {source:"Arteris Fluminense (tempo real)", count:3},
-  ]
-};
-const SAMPLE_NEWS = { items: [
-  {title:"Caminhão tomba e interdita a BR-101 em São Miguel dos Campos, AL", source:"Google News", category:"rodovia", type:"RSS", url:"#", created_at:new Date(Date.now()-12*60000).toISOString()},
-  {title:"Mãe e duas filhas morrem em acidente entre carro e carreta na BR-285", source:"G1 - Brasil", category:"geral", type:"RSS", url:"#", created_at:new Date(Date.now()-28*60000).toISOString()},
-  {title:"Obras na Pista (km 305–297): congestionamento no sentido norte", source:"Arteris Fluminense (tempo real)", category:"rodovia", type:"ARTERIS", url:"#", created_at:new Date(Date.now()-33*60000).toISOString()},
-  {title:"Tempestade — Perigo", source:"INMET - Avisos Meteorológicos", category:"clima", type:"INMET", url:"#", created_at:new Date(Date.now()-40*60000).toISOString()},
-  {title:"Carreta desgovernada destrói casas após perder os freios no Paraná", source:"Band - Notícias", category:"geral", type:"HTML", url:"#", created_at:new Date(Date.now()-52*60000).toISOString()},
-]};
+    function escapeHtml(value) {
+      const div = document.createElement("div");
+      div.textContent = value == null ? "" : String(value);
+      return div.innerHTML;
+    }
 
-function ago(iso){
-  if(!iso) return "—";
-  const s = Math.max(0, (Date.now() - new Date(iso).getTime())/1000);
-  if (s < 90) return "há instantes";
-  const m = Math.round(s/60);
-  if (m < 60) return "há " + m + " min";
-  const h = Math.round(m/60);
-  if (h < 48) return "há " + h + "h";
-  return "há " + Math.round(h/24) + "d";
-}
-function esc(s){ const d=document.createElement("div"); d.textContent=s==null?"":s; return d.innerHTML; }
-function typeMeta(t){
-  if (t === "ARTERIS") return {cls:"road", label:"Rodovia"};
-  if (t === "INMET")   return {cls:"weather", label:"Clima"};
-  return {cls:"news", label:"Notícia"};
-}
+    function age(iso) {
+      if (!iso) return "-";
+      const diff = Math.max(0, Date.now() - new Date(iso).getTime());
+      const minutes = Math.round(diff / 60000);
+      if (minutes < 2) return "agora";
+      if (minutes < 60) return `${minutes} min`;
+      const hours = Math.round(minutes / 60);
+      if (hours < 48) return `${hours}h`;
+      return `${Math.round(hours / 24)}d`;
+    }
 
-function renderStats(s){
-  document.getElementById("stats").innerHTML = [
-    `<div class="stat"><div class="lbl">Última coleta</div><div class="val">${ago(s.last_created)}</div><div class="meta">registro mais recente</div></div>`,
-    `<div class="stat"><div class="lbl">Na última hora</div><div class="val accent">${s.last_hour}</div><div class="meta">novos registros</div></div>`,
-    `<div class="stat"><div class="lbl">Últimas 24h</div><div class="val">${s.last_24h}</div><div class="meta">registros</div></div>`,
-    `<div class="stat"><div class="lbl">Total na base</div><div class="val">${s.total}</div><div class="meta">notícias acumuladas</div></div>`,
-  ].join("");
-  document.getElementById("sources").innerHTML = (s.sources||[]).map(
-    x => `<span class="src-chip">${esc(x.source)}<b>${x.count}</b></span>`
-  ).join("");
-}
-function renderNews(items){
-  document.getElementById("news").innerHTML = (items||[]).map(it => {
-    const tm = typeMeta(it.type);
-    const src = [it.source, it.category].filter(Boolean).join(" · ");
-    return `<div class="card">
-      <div class="top"><span class="pill ${tm.cls}">${tm.label}</span><span class="src">${esc(src)} · ${ago(it.created_at)}</span></div>
-      <p class="title"><a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title)}</a></p>
-      <a class="read" href="${esc(it.url)}" target="_blank" rel="noopener">Abrir →</a>
-    </div>`;
-  }).join("") || `<div class="card"><div class="src">Nenhuma notícia recente.</div></div>`;
-}
-async function loadAll(){
-  try{
-    const [st, nw] = await Promise.all([
-      fetch("/api/stats").then(r=>{ if(!r.ok) throw 0; return r.json(); }),
-      fetch("/api/news?limit=25").then(r=>{ if(!r.ok) throw 0; return r.json(); }),
-    ]);
-    if (st.error || nw.error) throw 0;
-    document.getElementById("demo").style.display = "none";
-    renderStats(st); renderNews(nw.items);
-  }catch(e){
-    document.getElementById("demo").style.display = "block";
-    renderStats(SAMPLE_STATS); renderNews(SAMPLE_NEWS.items);
-  }
-}
+    function withinHours(item, hours) {
+      const created = item.created_at ? new Date(item.created_at).getTime() : 0;
+      return created >= Date.now() - hours * 60 * 60 * 1000;
+    }
 
-document.getElementById("refresh").addEventListener("click", loadAll);
+    function tagFor(item) {
+      if (item.type === "INMET") return ["weather", "Clima"];
+      if (item.type === "ARTERIS" || item.category === "rodovia") return ["road", "Rodovia"];
+      return ["", "Noticia"];
+    }
 
-loadAll();
-</script>
+    async function supabaseFetch(path, options = {}) {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+        ...options,
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          Prefer: "count=exact",
+          ...(options.headers || {}),
+        },
+      });
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(detail || `Supabase HTTP ${response.status}`);
+      }
+      return response;
+    }
+
+    async function loadNews() {
+      if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("COLE_AQUI")) {
+        throw new Error("Configure SUPABASE_ANON_KEY no arquivo public/index.html antes do deploy.");
+      }
+
+      const columns = "title,url,source,category,published_at,created_at,type";
+      const newsResponse = await supabaseFetch(`${TABLE}?select=${columns}&order=created_at.desc&limit=50`);
+      const countResponse = await supabaseFetch(`${TABLE}?select=id`, { method: "HEAD" });
+
+      state.items = await newsResponse.json();
+      state.total = Number(countResponse.headers.get("content-range")?.split("/")?.[1] || state.items.length);
+    }
+
+    function renderStats() {
+      const lastHour = state.items.filter((item) => withinHours(item, 1)).length;
+      const lastDay = state.items.filter((item) => withinHours(item, 24)).length;
+      const last = state.items[0]?.created_at;
+      const cards = [
+        ["Ultima coleta", age(last), "registro mais recente"],
+        ["Ultima hora", lastHour, "registros recentes"],
+        ["Ultimas 24h", lastDay, "na amostra carregada"],
+        ["Total", state.total, "registros no Supabase"],
+      ];
+
+      document.getElementById("stats").innerHTML = cards.map(([label, value, hint]) => `
+        <article class="stat">
+          <div class="label">${label}</div>
+          <div class="value">${value}</div>
+          <div class="hint">${hint}</div>
+        </article>
+      `).join("");
+    }
+
+    function renderSources() {
+      const counts = new Map();
+      state.items.filter((item) => withinHours(item, 24)).forEach((item) => {
+        const source = item.source || "Sem fonte";
+        counts.set(source, (counts.get(source) || 0) + 1);
+      });
+
+      const rows = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
+      document.getElementById("sources").innerHTML = rows.length
+        ? rows.map(([source, count]) => `<div class="source"><span>${escapeHtml(source)}</span><b>${count}</b></div>`).join("")
+        : `<div class="hint">Sem registros nas ultimas 24h.</div>`;
+    }
+
+    function renderNews() {
+      document.getElementById("news").innerHTML = state.items.length
+        ? state.items.map((item) => {
+            const [tagClass, tagLabel] = tagFor(item);
+            const meta = [item.source, item.category, age(item.created_at)].filter(Boolean).join(" · ");
+            return `
+              <article class="item">
+                <div class="meta">
+                  <span class="tag ${tagClass}">${tagLabel}</span>
+                  <span>${escapeHtml(meta)}</span>
+                </div>
+                <p class="title">
+                  <a href="${escapeHtml(item.url || "#")}" target="_blank" rel="noopener">${escapeHtml(item.title)}</a>
+                </p>
+              </article>
+            `;
+          }).join("")
+        : `<div class="hint">Nenhuma noticia encontrada.</div>`;
+    }
+
+    function setNotice(message) {
+      const notice = document.getElementById("notice");
+      notice.textContent = message || "";
+      notice.style.display = message ? "block" : "none";
+    }
+
+    async function refresh() {
+      const button = document.getElementById("refresh");
+      button.disabled = true;
+      setNotice("");
+      try {
+        await loadNews();
+      } catch (error) {
+        state.items = [];
+        state.total = 0;
+        setNotice(error.message);
+      } finally {
+        renderStats();
+        renderSources();
+        renderNews();
+        button.disabled = false;
+      }
+    }
+
+    document.getElementById("refresh").addEventListener("click", refresh);
+    refresh();
+  </script>
 </body>
 </html>
