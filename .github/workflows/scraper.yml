@@ -1,6 +1,9 @@
 name: Road News Scraper
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     # Runs every hour in UTC.
     - cron: "0 * * * *"
