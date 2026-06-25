@@ -2,18 +2,12 @@ name: Road News Scraper
 
 on:
   schedule:
-    # Executa de 1 em 1 hora (horário UTC). O cron do GitHub roda em UTC:
-    # "0 * * * *" = no minuto 0 de toda hora, todos os dias.
+    # Runs every hour in UTC.
     - cron: "0 * * * *"
-
-  # Permite disparar manualmente pelo painel do GitHub
   workflow_dispatch:
 
-# Permissões do token usado nas execuções (GITHUB_TOKEN). "actions: write"
-# permite disparar outros workflows via API quando necessário.
 permissions:
   contents: read
-  actions: write
 
 jobs:
   scrape:
@@ -21,23 +15,32 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Checkout do repositório
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configurar Python 3.11
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
-      - name: Instalar dependências
+      - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Executar scraper
+      - name: Validate Supabase secret
         env:
-          # Secret configurado em: Settings → Secrets → Actions
-          # O secret se chama SUPABASE e contém a connection string do
-          # "Session pooler" do Supabase (IPv4); aqui mapeamos para a variável
-          # DATABASE_URL que o main.py lê.
-          DATABASE_URL: ${{ secrets.SUPABASE }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL || secrets.SUPABASE }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Configure a repository secret named DATABASE_URL or SUPABASE with the Supabase Postgres connection string."
+            exit 1
+          fi
+          if ! echo "$DATABASE_URL" | grep -q '^postgresql://'; then
+            echo "The database secret must start with postgresql://"
+            exit 1
+          fi
+
+      - name: Run scraper
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || secrets.SUPABASE }}
         run: python main.py

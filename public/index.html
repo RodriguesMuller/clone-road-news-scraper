@@ -145,8 +145,21 @@
     }
 
     function withinHours(item, hours) {
-      const created = item.created_at ? new Date(item.created_at).getTime() : 0;
-      return created >= Date.now() - hours * 60 * 60 * 1000;
+      const value = displayDateValue(item);
+      return value >= Date.now() - hours * 60 * 60 * 1000;
+    }
+
+    function displayDateValue(item) {
+      const preferred = item.type === "INMET" ? item.published_at || item.created_at : item.created_at || item.published_at;
+      const value = preferred ? new Date(preferred).getTime() : 0;
+      return Number.isNaN(value) ? 0 : value;
+    }
+
+    function displayTime(item) {
+      if (item.type === "INMET" && item.published_at) {
+        return `Data do alerta: ${formatDate(item.published_at)}`;
+      }
+      return age(item.created_at || item.published_at);
     }
 
     function tagFor(item) {
@@ -179,18 +192,29 @@
 
       const columns = "title,url,source,category,published_at,created_at,type,summary";
       const newsResponse = await supabaseFetch(`${TABLE}?select=${columns}&order=created_at.desc&limit=50`);
+      const inmetResponse = await supabaseFetch(`${TABLE}?select=${columns}&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=20`);
       const countResponse = await supabaseFetch(`${TABLE}?select=id`, { method: "HEAD" });
+      const latestNews = await newsResponse.json();
+      const latestInmet = await inmetResponse.json();
 
-      state.items = await newsResponse.json();
+      const merged = new Map();
+      for (const item of [...latestNews, ...latestInmet]) {
+        const key = item.url || `${item.title}|${item.published_at}|${item.source}`;
+        merged.set(key, item);
+      }
+      state.items = [...merged.values()].sort((a, b) => displayDateValue(b) - displayDateValue(a));
       state.total = Number(countResponse.headers.get("content-range")?.split("/")?.[1] || state.items.length);
     }
 
     function renderStats() {
       const lastHour = state.items.filter((item) => withinHours(item, 1)).length;
       const lastDay = state.items.filter((item) => withinHours(item, 24)).length;
-      const last = state.items[0]?.created_at;
+      const lastCreated = state.items
+        .map((item) => item.created_at ? new Date(item.created_at).getTime() : 0)
+        .filter(Boolean)
+        .sort((a, b) => b - a)[0];
       const cards = [
-        ["Ultima coleta", age(last), "registro mais recente"],
+        ["Ultima coleta", age(lastCreated), "registro mais recente"],
         ["Ultima hora", lastHour, "registros recentes"],
         ["Ultimas 24h", lastDay, "na amostra carregada"],
         ["Total", state.total, "registros no Supabase"],
@@ -222,7 +246,7 @@
       document.getElementById("news").innerHTML = state.items.length
         ? state.items.map((item, index) => {
             const [tagClass, tagLabel] = tagFor(item);
-            const meta = [item.source, item.category, age(item.created_at)].filter(Boolean).join(" · ");
+            const meta = [item.source, item.category, displayTime(item)].filter(Boolean).join(" · ");
             return `
               <article class="item">
                 <div class="meta">

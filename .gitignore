@@ -2,6 +2,7 @@
 .venv/
 venv/
 env/
+.pip-cache/
 
 # Variáveis de ambiente locais — nunca commitar
 .env

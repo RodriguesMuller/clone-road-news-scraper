@@ -21,7 +21,7 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
-load_dotenv()
+load_dotenv(encoding="utf-8-sig")
 
 
 def load_config(path: str = "config/sources.yaml") -> dict:
