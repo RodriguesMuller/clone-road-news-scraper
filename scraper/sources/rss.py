@@ -3,7 +3,7 @@ import requests
 from datetime import datetime
 
 from scraper.sources import HEADERS
-from scraper.utils.filters import matches_keywords, clean_text
+from scraper.utils.filters import build_summary, matches_keywords, clean_text
 
 
 def scrape_rss(source: dict, keywords: list) -> list:
@@ -61,7 +61,7 @@ def scrape_rss(source: dict, keywords: list) -> list:
                     "source": source["name"],
                     "category": source.get("category", ""),
                     "published_at": pub_dt,
-                    "summary": summary[:500],
+                    "summary": build_summary(title, summary),
                     "scraped_at": datetime.now().isoformat(),
                     "type": "RSS",
                 }

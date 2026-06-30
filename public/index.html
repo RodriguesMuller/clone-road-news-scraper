@@ -312,8 +312,14 @@
       return `${clean.slice(0, maxLength).trim()}...`;
     }
 
+    function decodeHtmlText(value) {
+      const textarea = document.createElement("textarea");
+      textarea.innerHTML = String(value || "").replace(/&nbsp;?/gi, " ");
+      return textarea.value.replace(/&[a-zA-Z]+;?/g, " ");
+    }
+
     function smartSummary(item) {
-      let text = String(item.summary || "").replace(/<[^>]+>/g, " ");
+      let text = decodeHtmlText(item.summary).replace(/<[^>]+>/g, " ");
       text = text
         .replace(/\s+/g, " ")
         .replace(/\bINMET publica aviso iniciando em:\s*[^.]+\.?\s*/i, "")

@@ -22,7 +22,7 @@ from datetime import datetime
 import requests
 
 from scraper.sources import HEADERS
-from scraper.utils.filters import clean_text
+from scraper.utils.filters import build_summary, clean_text
 
 
 def scrape_arteris(source: dict, keywords=None) -> list:
@@ -55,6 +55,7 @@ def scrape_arteris(source: dict, keywords=None) -> list:
                     trecho_str = f" (km {km_i}–{km_f})"
 
                 title = f"{tipo}{trecho_str}: {desc}"[:300]
+                summary_source = f"{rod_nome}: {desc}" if rod_nome else desc
                 # Sem ID/URL por ocorrência: chave estável a partir do conteúdo.
                 raw = f"{rod_nome}|{km_i}|{km_f}|{tipo}|{desc}"
                 key = hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
@@ -66,7 +67,7 @@ def scrape_arteris(source: dict, keywords=None) -> list:
                         "source": source["name"],
                         "category": source.get("category", "rodovia"),
                         "published_at": now,
-                        "summary": desc[:500],
+                        "summary": build_summary(title, summary_source),
                         "scraped_at": now,
                         "type": "ARTERIS",
                     }

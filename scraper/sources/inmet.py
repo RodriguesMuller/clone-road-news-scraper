@@ -12,6 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from scraper.sources import HEADERS
+from scraper.utils.filters import build_summary
 
 SEVERITY_ORDER = ["Perigo Potencial", "Perigo", "Grande Perigo"]
 DEFAULT_SEVERITIES = ["Perigo", "Grande Perigo"]
@@ -73,7 +74,7 @@ def scrape_inmet(source: dict, keywords: list | None = None) -> list:
             fields = _parse_summary(entry.get("summary", ""))
             evento = fields.get("Evento", "")
             severidade = fields.get("Severidade", "")
-            inicio = fields.get("Início", "")
+            inicio = fields.get("In\u00edcio", "")
 
             data_inicio = _parse_start(inicio)
             if data_inicio is not None:
@@ -86,18 +87,20 @@ def scrape_inmet(source: dict, keywords: list | None = None) -> list:
             if eventos and evento not in eventos:
                 continue
 
-            descricao = fields.get("Descrição", "")
-            area = fields.get("Área", "")
-            summary = f"{descricao} {area}".strip()
+            title = f"{evento} - {severidade}"
+            descricao = fields.get("Descri\u00e7\u00e3o", "")
+            area = fields.get("\u00c1rea", "")
+            # A area vem primeiro para nao ser cortada em resumos longos.
+            summary = f"{area}. {descricao}" if area else descricao
 
             alerts.append(
                 {
-                    "title": f"{evento} - {severidade}",
+                    "title": title,
                     "url": entry.get("link", ""),
                     "source": source["name"],
                     "category": source.get("category", "clima"),
                     "published_at": inicio or entry.get("published", ""),
-                    "summary": summary[:500],
+                    "summary": build_summary(title, summary),
                     "scraped_at": datetime.now().isoformat(),
                     "type": "INMET",
                 }
