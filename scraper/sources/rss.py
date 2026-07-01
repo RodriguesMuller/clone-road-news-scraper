@@ -54,7 +54,6 @@ def scrape_rss(source: dict, keywords: list) -> list:
             except Exception:
                 pub_dt = entry.get("published", "")
 
-            region = extract_region(title, summary, source["name"], entry.get("link", ""))
             news.append(
                 {
                     "title": title,
@@ -62,8 +61,8 @@ def scrape_rss(source: dict, keywords: list) -> list:
                     "source": source["name"],
                     "category": source.get("category", ""),
                     "published_at": pub_dt,
-                    "summary": build_summary(title, summary, source["name"], region=region),
-                    "region": region,
+                    "summary": build_summary(title, summary),
+                    "region": extract_region(title, summary, source["name"], entry.get("link", "")),
                     "scraped_at": datetime.now().isoformat(),
                     "type": "RSS",
                 }

@@ -92,7 +92,6 @@ def scrape_inmet(source: dict, keywords: list | None = None) -> list:
             area = fields.get("\u00c1rea", "")
             # A area vem primeiro para nao ser cortada em resumos longos.
             summary = f"{area}. {descricao}" if area else descricao
-            region = extract_region(title, summary, source["name"], entry.get("link", ""))
 
             alerts.append(
                 {
@@ -101,8 +100,8 @@ def scrape_inmet(source: dict, keywords: list | None = None) -> list:
                     "source": source["name"],
                     "category": source.get("category", "clima"),
                     "published_at": inicio or entry.get("published", ""),
-                    "summary": build_summary(title, summary, source["name"], region=region),
-                    "region": region,
+                    "summary": build_summary(title, summary),
+                    "region": extract_region(title, summary, source["name"], entry.get("link", "")),
                     "scraped_at": datetime.now().isoformat(),
                     "type": "INMET",
                 }
