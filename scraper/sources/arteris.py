@@ -22,7 +22,7 @@ from datetime import datetime
 import requests
 
 from scraper.sources import HEADERS
-from scraper.utils.filters import build_summary, clean_text
+from scraper.utils.filters import build_summary, extract_region, clean_text
 
 
 def scrape_arteris(source: dict, keywords=None) -> list:
@@ -68,6 +68,7 @@ def scrape_arteris(source: dict, keywords=None) -> list:
                         "category": source.get("category", "rodovia"),
                         "published_at": now,
                         "summary": build_summary(title, summary_source),
+                        "region": extract_region(title, summary_source, rod_nome, page_url),
                         "scraped_at": now,
                         "type": "ARTERIS",
                     }

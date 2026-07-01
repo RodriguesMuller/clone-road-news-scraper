@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 from scraper.sources import HEADERS
 from scraper.sources.arteris import scrape_arteris
-from scraper.utils.filters import build_summary, matches_keywords, clean_text
+from scraper.utils.filters import build_summary, extract_region, matches_keywords, clean_text
 
 
 def _get_soup(url: str, timeout: int = 15) -> BeautifulSoup | None:
@@ -31,6 +31,7 @@ def _build_item(title: str, url: str, summary: str, source: dict,
         "category": source.get("category", ""),
         "published_at": published_at or now,
         "summary": build_summary(title, summary),
+        "region": extract_region(title, summary, source["name"], url),
         "scraped_at": now,
         "type": "HTML",
     }
