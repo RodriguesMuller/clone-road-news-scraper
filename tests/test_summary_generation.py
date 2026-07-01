@@ -13,14 +13,14 @@ class SummaryGenerationTest(unittest.TestCase):
         )
 
         self.assertTrue(summary.startswith("Na região do Pará,"))
-        self.assertIn("chuva entre 20 e 30 mm/h", summary)
+        self.assertIn("chuvas intensas de 20 a 30 mm/h", summary)
         self.assertNotEqual(summary, "Na região do Pará")
 
     def test_summary_uses_title_when_original_summary_is_empty(self):
         summary = build_summary("Acidente interdita trecho da BR-364 em Cuiabá", "")
 
         self.assertTrue(summary.startswith("Na região da BR-364,"))
-        self.assertIn("acidente interdita trecho da BR-364", summary)
+        self.assertIn("trecho interditado em Cuiabá", summary)
 
     def test_summary_removes_html_entities(self):
         summary = build_summary(
@@ -40,7 +40,7 @@ class SummaryGenerationTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            "Na região da BR-163, registra lentidão e operação pare-e-siga em Mato Grosso.",
+            "Na região da BR-163, registra lentidão e operação pare-e-siga em Mato Grosso",
             summary,
         )
 
@@ -51,7 +51,29 @@ class SummaryGenerationTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            "Na região do Pará, chuva intensa e raios isolados.",
+            "Na região do Pará, chuva intensa e raios isolados",
+            summary,
+        )
+
+    def test_summary_keeps_mm_per_h_for_inmet(self):
+        summary = build_summary(
+            "Tempestade - Perigo",
+            "INMET publica aviso iniciando em: 01/07/2026 09:00. Chuva entre 40 e 50 mm/h, ventos fortes de 100 km/h. Áreas afetadas: São Paulo.",
+        )
+
+        self.assertEqual(
+            "Na região de São Paulo, chuvas intensas de 40 a 50 mm/h, ventos fortes de 100 km/h",
+            summary,
+        )
+
+    def test_summary_keeps_km_per_h_for_inmet(self):
+        summary = build_summary(
+            "Tempestade - Perigo",
+            "INMET publica aviso iniciando em: 01/07/2026 09:00. Ventos fortes de 100 km/h atingem a cidade de São Paulo. Áreas afetadas: São Paulo.",
+        )
+
+        self.assertEqual(
+            "Na região de São Paulo, ventos fortes de 100 km/h atingem a cidade",
             summary,
         )
 

@@ -175,6 +175,28 @@ def _strip_bare_region_prefix(text: str) -> str:
     ).strip()
 
 
+def _strip_source_suffix(text: str) -> str:
+    if not text:
+        return ""
+    return re.sub(
+        r"(?:\s*[-–—]\s*|\s+)(?:G1|CNN Brasil|CNN|Globo|UOL|R7|Terra|Folha|Estad[ãa]o|Gazeta|Extra|O Globo|O Estado de S\.P\.aulo|Band)\s*$",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    ).strip()
+
+
+def _strip_summary_label(text: str) -> str:
+    if not text:
+        return ""
+    return re.sub(
+        r"^(?:Resumo(?: da not[ií]cia)?|Not[ií]cia|Reportagem|Fonte):?\s*",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    ).strip()
+
+
 def _strip_redundant_location_prefix(text: str, location: str) -> str:
     """Remove prefixos redundantes de localidade do resumo antes de adicionar o prefixo final."""
     if not text or not location:
@@ -194,6 +216,84 @@ def _strip_redundant_location_prefix(text: str, location: str) -> str:
     return text
 
 
+def _strip_redundant_location_mention(text: str, location: str) -> str:
+    if not text or not location:
+        return text
+
+    escaped = re.escape(location)
+    patterns = [
+        rf"\b(?:na|em|no|nos|nas|da|do|de|dos|das|por|entre|perto de|pr[oó]ximo a) {escaped}\b[.,;:]*\s*",
+        rf"\b(?:cidade|região|regiao|estado|município|municipio|área|area|zona|bairro|per[íi]metro)\s+(?:de|do|da) {escaped}\b[.,;:]*\s*",
+        rf"\b{escaped}\b[.,;:]*\s*",
+    ]
+
+    for pattern in patterns:
+        text = re.sub(pattern, " ", text, flags=re.IGNORECASE)
+
+    text = re.sub(r"\s+", " ", text).strip()
+    text = re.sub(r"\bÁreas afetadas\b[:;]?\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bquanto a\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\batigem a cidade\b", "atingem", text, flags=re.IGNORECASE)
+    text = re.sub(r"\batigem a\b", "atingem", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s*([,;:.])\s*", r"\1 ", text).strip()
+    text = re.sub(r"^[,;:.\s]+|[,;:.\s]+$", "", text).strip()
+    return text
+
+
+def _strip_location_phrase(text: str, location: str) -> str:
+    if not text or not location:
+        return text
+
+    escaped = re.escape(location)
+    patterns = [
+        rf"\b(?:na|em|no|nos|nas|da|do|de|dos|das|por|entre|perto de|pr[oó]ximo a) {escaped}\b",
+        rf"\b{escaped}\b",
+    ]
+    for pattern in patterns:
+        text = re.sub(pattern, " ", text, flags=re.IGNORECASE)
+
+    text = re.sub(r"\s+", " ", text).strip()
+    text = re.sub(r"^[,;:.\s]+|[,;:.\s]+$", "", text).strip()
+    return text
+
+
+def _normalize_road_phrases(text: str) -> str:
+    if not text:
+        return text
+
+    text = re.sub(r"\bacidente\s+interdita\s+trecho\b", "trecho interditado", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bacidente\s+trecho\b", "acidente no trecho", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bobras\s+trecho\b", "obras no trecho", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bobra\s+trecho\b", "obra no trecho", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bcongestionamento\s+trecho\b", "congestionamento no trecho", text, flags=re.IGNORECASE)
+    return text
+
+
+def _normalize_weather_phrases(text: str) -> str:
+    if not text:
+        return text
+
+    text = re.sub(
+        r"\bchuv(?:a|as) entre (\d+(?:[.,]\d+)?)\s*e\s*(\d+(?:[.,]\d+)?)\s*mm/h\b",
+        r"chuvas intensas de \1 a \2 mm/h",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\bchuva intensa(?:s)? de (\d+(?:[.,]\d+)?)\s*mm/h\b",
+        r"chuvas intensas de \1 mm/h",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\bventos fortes de (\d+(?:[.,]\d+)?)\s*km/h\b",
+        r"ventos fortes de \1 km/h",
+        text,
+        flags=re.IGNORECASE,
+    )
+    return text
+
+
 def _fallback_summary(title: str) -> str:
     clean_title = clean_text(title)
     weather = re.match(r"^([A-Za-z\u00c0-\u017F ]+)\s*-\s*([A-Za-z\u00c0-\u017F ]+)$", clean_title)
@@ -210,13 +310,27 @@ def _after_prefix(text: str) -> str:
     return text
 
 
+def _is_source_only_text(text: str) -> bool:
+    if not text:
+        return False
+    return bool(re.fullmatch(
+        r"(?i)(?:G1|CNN Brasil|CNN|Globo|UOL|R7|Terra|Folha|Estad[ãa]o|Gazeta|Extra|O Globo|O Estado de S\.P\.aulo)",
+        text,
+    ))
+
+
 def build_summary(title: str, summary: str, limit: int = 500) -> str:
     """Monta resumo limpo: regiao entra como prefixo, nunca como substituto."""
-    clean_title = clean_text(title)
-    clean_summary = _strip_bare_region_prefix(clean_text(summary))
+    clean_title = _strip_summary_label(_strip_source_suffix(clean_text(title)))
+    clean_summary = _strip_summary_label(_strip_source_suffix(clean_text(summary)))
+    clean_summary = _strip_bare_region_prefix(clean_summary)
 
     if clean_summary.lower().startswith(clean_title.lower()):
-        clean_summary = clean_summary[len(clean_title):].strip(" -\u2013\u2014:.")
+        remainder = clean_summary[len(clean_title):].strip(" -\u2013\u2014:.")
+        if not remainder or _is_source_only_text(remainder):
+            clean_summary = ""
+        else:
+            clean_summary = remainder
 
     clean_summary = re.sub(
         r"\bINMET publica aviso iniciando em:\s*[^.]+\.?\s*",
@@ -228,14 +342,24 @@ def build_summary(title: str, summary: str, limit: int = 500) -> str:
     clean_summary = clean_summary.strip()
 
     if not clean_summary:
-        clean_summary = _fallback_summary(clean_title)
+        location = _location_from_text(clean_title)
+        if location:
+            clean_summary = _strip_location_phrase(clean_title, location)
+        else:
+            clean_summary = _fallback_summary(clean_title)
 
     location = _location_from_text(f"{clean_title} {clean_summary}")
     if location:
         clean_summary = _strip_redundant_location_prefix(clean_summary, location)
+        clean_summary = _strip_redundant_location_mention(clean_summary, location)
+        clean_summary = _normalize_weather_phrases(clean_summary)
+        clean_summary = _normalize_road_phrases(clean_summary)
+        clean_summary = clean_summary.strip()
+        if not clean_summary:
+            clean_summary = _fallback_summary(clean_title)
+
         prefix = _location_prefix(location)
         if not clean_summary.lower().startswith(prefix.lower()):
-            # A localidade contextualiza o resumo, mas o conteudo segue depois da virgula.
             clean_summary = f"{prefix}, {_after_prefix(clean_summary)}"
 
     return clean_summary[:limit].rstrip(" ,")
