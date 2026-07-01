@@ -318,6 +318,99 @@
       return textarea.value.replace(/&[a-zA-Z]+;?/g, " ");
     }
 
+    function cleanDisplayText(value) {
+      return decodeHtmlText(value)
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function firstMatch(text, patterns) {
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) return (match[1] || match[0]).trim();
+      }
+      return "";
+    }
+
+    function findRoad(text) {
+      return firstMatch(text, [/\b((?:BR|SP|MG|RJ|RS|SC|PR|BA|GO|MT|MS|PA|PE|CE|ES|RO|TO|MA|PI|RN|PB|AL|SE|AM|AC|RR|AP|DF)[-\s]?\d{2,4})\b/i])
+        .replace(/\s+/g, "-")
+        .toUpperCase();
+    }
+
+    function findKm(text) {
+      return firstMatch(text, [/\b(km\s*\d+(?:[,.]\d+)?)\b/i]).replace(/\s+/g, " ");
+    }
+
+    function findPlace(text) {
+      const city = firstMatch(text, [
+        /\bem\s+([A-ZÀ-ÿ][\wÀ-ÿ' -]{2,60}(?:\/[A-Z]{2}|,\s*[A-Z]{2})?)/,
+        /\bentre\s+([A-ZÀ-ÿ][\wÀ-ÿ' -]{2,60})\s+e\s+[A-ZÀ-ÿ]/,
+      ]);
+      if (city) return city.replace(/\s+/g, " ").replace(/\s+(após|com|por|tem|registra|fica|está|foi)\b.*$/i, "").trim();
+
+      return firstMatch(text, [
+        /\b(Mato Grosso do Sul|Mato Grosso|Minas Gerais|Rio Grande do Sul|Rio Grande do Norte|Rio de Janeiro|Santa Catarina|São Paulo|Espírito Santo|Distrito Federal|Pará|Paraná|Ceará|Maranhão|Amazonas|Bahia|Goiás|Pernambuco|Rondônia|Tocantins)\b/i,
+      ]);
+    }
+
+    function titleAction(title, summary) {
+      const action = firstMatch(`${title} ${summary}`, [
+        /\b(acidente|interdição|bloqueio|lentidão|congestionamento|obra|queda de barreira|manifestação|alagamento|incêndio|tombamento|colisão|chuvas intensas|tempestade)\b/i,
+      ]);
+      if (!action) return "";
+      return action.charAt(0).toUpperCase() + action.slice(1).toLowerCase();
+    }
+
+    function placeForTitle(place) {
+      const articles = {
+        "Pará": "no",
+        "Paraná": "no",
+        "Ceará": "no",
+        "Maranhão": "no",
+        "Amazonas": "no",
+        "Tocantins": "no",
+        "Rio de Janeiro": "no",
+        "Rio Grande do Sul": "no",
+        "Rio Grande do Norte": "no",
+        "Bahia": "na",
+      };
+      return `${articles[place] || "em"} ${place}`;
+    }
+
+    function buildImageTitle(item) {
+      const originalTitle = cleanDisplayText(item.title);
+      const summary = cleanDisplayText(item.summary);
+      const text = `${originalTitle} ${summary}`;
+      const road = findRoad(text);
+      const km = findKm(text);
+      const place = findPlace(text);
+
+      if (item.type === "INMET") {
+        const weather = originalTitle.match(/^([A-Za-zÀ-ÿ ]+)\s*-\s*([A-Za-zÀ-ÿ ]+)$/);
+        if (weather) {
+          const event = weather[1].trim();
+          const severity = weather[2].trim();
+          return place ? `${event}: ${severity} ${placeForTitle(place)}` : `${event}: ${severity}`;
+        }
+      }
+
+      const action = titleAction(originalTitle, summary);
+      if (action && road) {
+        const parts = [`${action} na ${road}`];
+        if (km) parts.push(km);
+        if (place && !parts.join(" ").toLowerCase().includes(place.toLowerCase())) parts.push(placeForTitle(place));
+        return parts.join(" ");
+      }
+
+      if (road && !originalTitle.toLowerCase().includes(road.toLowerCase())) {
+        return `${originalTitle} na ${road}`;
+      }
+
+      return originalTitle || "Resumo da noticia";
+    }
+
     function summaryFallback(item) {
       const title = decodeHtmlText(item.title || "").trim();
       const weather = title.match(/^([A-Za-zÀ-ÿ ]+)\s*-\s*([A-Za-zÀ-ÿ ]+)$/);
@@ -347,8 +440,16 @@
       if (item.type === "INMET" && /chuvas intensas/i.test(item.title || "")) {
         text = text
           .replace(/^Chuva entre/i, "Chuva intensa com acumulados entre")
+          .replace(/,\s*chuva entre/i, ", chuva intensa com acumulados entre")
           .replace(/ventos intensos/i, "ventos fortes");
       }
+
+      text = text
+        .replace(/^(Na região da ((?:BR|SP|MG|RJ|RS|SC|PR|BA|GO|MT|MS|PA|PE|CE|ES|RO|TO|MA|PI|RN|PB|AL|SE|AM|AC|RR|AP|DF)-?\d{2,4}),)\s+\2\s+/i, "$1 ")
+        .replace(/\s+,/g, ",")
+        .replace(/\s+\./g, ".")
+        .replace(/\s+/g, " ")
+        .trim();
 
       return truncateClean(text, 285);
     }
@@ -376,6 +477,7 @@
       const w = canvas.width;
       const h = canvas.height;
       const summary = smartSummary(item);
+      const imageTitle = buildImageTitle(item);
       const source = [item.source, item.category].filter(Boolean).join(" · ");
       const published = formatDate(item.published_at || item.created_at);
 
@@ -415,7 +517,7 @@
 
       ctx.fillStyle = "#f5fbf8";
       ctx.font = "900 44px Segoe UI, Arial, sans-serif";
-      let nextY = wrapCanvasText(ctx, item.title, 136, 326, 808, 55, 3);
+      let nextY = wrapCanvasText(ctx, imageTitle, 136, 326, 808, 55, 3);
       nextY += 16;
 
       ctx.fillStyle = "rgba(255,255,255,.09)";
@@ -451,7 +553,7 @@
       const item = state.items[index];
       if (!item) return;
       drawShareImage(item);
-      document.getElementById("imageTitle").textContent = item.title || "Imagem da noticia";
+      document.getElementById("imageTitle").textContent = buildImageTitle(item) || "Imagem da noticia";
       document.getElementById("imageModal").classList.add("open");
     }
 
