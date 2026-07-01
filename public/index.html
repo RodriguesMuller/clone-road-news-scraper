@@ -318,18 +318,30 @@
       return textarea.value.replace(/&[a-zA-Z]+;?/g, " ");
     }
 
+    function summaryFallback(item) {
+      const title = decodeHtmlText(item.title || "").trim();
+      const weather = title.match(/^([A-Za-zÀ-ÿ ]+)\s*-\s*([A-Za-zÀ-ÿ ]+)$/);
+      if (item.type === "INMET" && weather) {
+        return `há alerta de ${weather[1].trim().toLowerCase()} com ${weather[2].trim().toLowerCase()}, conforme aviso meteorológico publicado pelo INMET.`;
+      }
+      return title || "Resumo indisponivel no banco. Abra a noticia para ver os detalhes completos.";
+    }
+
     function smartSummary(item) {
       let text = decodeHtmlText(item.summary).replace(/<[^>]+>/g, " ");
       text = text
         .replace(/\s+/g, " ")
         .replace(/\bINMET publica aviso iniciando em:\s*[^.]+\.?\s*/i, "")
-        .replace(/\bAviso para as [ÁA]reas?:\s*.*$/i, "")
-        .replace(/\b[ÁA]reas?:\s*.*$/i, "")
+        .replace(/\bAviso para as [ÁA]reas?:\s*/i, "Áreas afetadas: ")
         .replace(/\bBaixo risco de\b/gi, "Risco de")
         .trim();
 
+      if (/^Na regi(?:ã|a)o (?:de|do|da) [^,]{2,80},?$/i.test(text)) {
+        text = "";
+      }
+
       if (!text) {
-        text = item.title || "Resumo indisponivel no banco. Abra a noticia para ver os detalhes completos.";
+        text = summaryFallback(item);
       }
 
       if (item.type === "INMET" && /chuvas intensas/i.test(item.title || "")) {

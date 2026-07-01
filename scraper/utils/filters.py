@@ -1,11 +1,78 @@
 import html
 import re
+import unicodedata
+
+STATE_ARTICLES = {
+    "Acre": "do",
+    "Amapa": "do",
+    "Amap\u00e1": "do",
+    "Amazonas": "do",
+    "Ceara": "do",
+    "Cear\u00e1": "do",
+    "Maranhao": "do",
+    "Maranh\u00e3o": "do",
+    "Para": "do",
+    "Par\u00e1": "do",
+    "Parana": "do",
+    "Paran\u00e1": "do",
+    "Piaui": "do",
+    "Piau\u00ed": "do",
+    "Rio de Janeiro": "do",
+    "Rio Grande do Norte": "do",
+    "Rio Grande do Sul": "do",
+    "Tocantins": "do",
+    "Bahia": "da",
+    "Paraiba": "da",
+    "Para\u00edba": "da",
+    "Rondonia": "de",
+    "Rond\u00f4nia": "de",
+    "Santa Catarina": "de",
+    "Sao Paulo": "de",
+    "S\u00e3o Paulo": "de",
+}
+
+STATE_NAMES = {
+    "acre": "Acre",
+    "alagoas": "Alagoas",
+    "amapa": "Amap\u00e1",
+    "amazonas": "Amazonas",
+    "bahia": "Bahia",
+    "ceara": "Cear\u00e1",
+    "distrito federal": "Distrito Federal",
+    "espirito santo": "Esp\u00edrito Santo",
+    "goias": "Goi\u00e1s",
+    "maranhao": "Maranh\u00e3o",
+    "mato grosso": "Mato Grosso",
+    "mato grosso do sul": "Mato Grosso do Sul",
+    "minas gerais": "Minas Gerais",
+    "para": "Par\u00e1",
+    "paraiba": "Para\u00edba",
+    "parana": "Paran\u00e1",
+    "pernambuco": "Pernambuco",
+    "piaui": "Piau\u00ed",
+    "rio de janeiro": "Rio de Janeiro",
+    "rio grande do norte": "Rio Grande do Norte",
+    "rio grande do sul": "Rio Grande do Sul",
+    "rondonia": "Rond\u00f4nia",
+    "roraima": "Roraima",
+    "santa catarina": "Santa Catarina",
+    "sao paulo": "S\u00e3o Paulo",
+    "sergipe": "Sergipe",
+    "tocantins": "Tocantins",
+}
 
 # Conectivos ignorados ao casar keywords de varias palavras.
 _STOPWORDS = {
     "de", "da", "do", "das", "dos", "e", "em", "a", "o", "as", "os",
-    "na", "no", "nas", "nos", "com", "para", "por", "ao", "à", "um", "uma",
+    "na", "no", "nas", "nos", "com", "para", "por", "ao", "\u00e0", "um", "uma",
 }
+
+
+def _normalize(value: str) -> str:
+    value = clean_text(value).lower()
+    value = unicodedata.normalize("NFD", value)
+    value = "".join(ch for ch in value if unicodedata.category(ch) != "Mn")
+    return re.sub(r"\s+", " ", value).strip()
 
 
 def matches_keywords(text: str, keywords: list) -> bool:
@@ -48,6 +115,20 @@ def clean_text(text: str) -> str:
     return text
 
 
+def _state_from_text(text: str) -> str:
+    raw_text = clean_text(text)
+    if re.search(r"\bPar\u00e1\b", raw_text, flags=re.IGNORECASE):
+        return "Par\u00e1"
+
+    normalized = _normalize(text)
+    for key, label in sorted(STATE_NAMES.items(), key=lambda item: len(item[0]), reverse=True):
+        if key == "para":
+            continue
+        if re.search(rf"\b{re.escape(key)}\b", normalized):
+            return label
+    return ""
+
+
 def _location_from_text(text: str) -> str:
     route = re.search(
         r"\b(?:BR|SP|MG|RJ|RS|SC|PR|BA|GO|MT|MS|PA|PE|CE|ES|RO|TO|MA|PI|RN|PB|AL|SE|AM|AC|RR|AP|DF)[-\s]?\d{2,4}\b",
@@ -61,8 +142,12 @@ def _location_from_text(text: str) -> str:
     if km:
         return km.group(0)
 
+    state = _state_from_text(text)
+    if state:
+        return state
+
     city_state = re.search(
-        r"\b(?:em|na|no|entre|próximo a|perto de)\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ][\wÁÉÍÓÚÂÊÔÃÕÇáéíóúâêôãõç' -]{2,80}(?:,\s*[A-Z]{2})?)",
+        r"\b(?:em|na|no|entre|proximo a|pr\u00f3ximo a|perto de)\s+([A-Z\u00c0-\u017F][\w\u00c0-\u017F' -]{2,80}(?:,\s*[A-Z]{2})?)",
         text,
     )
     if city_state:
@@ -73,25 +158,64 @@ def _location_from_text(text: str) -> str:
 
 def _location_prefix(location: str) -> str:
     if re.match(r"^(?:BR|SP|MG|RJ|RS|SC|PR|BA|GO|MT|MS|PA|PE|CE|ES|RO|TO|MA|PI|RN|PB|AL|SE|AM|AC|RR|AP|DF)-?\d", location, re.IGNORECASE):
-        return f"Na região da {location}"
+        return f"Na regi\u00e3o da {location}"
     if re.match(r"^km\b", location, re.IGNORECASE):
         return f"No trecho do {location}"
-    return f"Na região de {location}"
+    article = STATE_ARTICLES.get(location, "de")
+    return f"Na regi\u00e3o {article} {location}"
+
+
+def _strip_bare_region_prefix(text: str) -> str:
+    """Evita salvar resumo que seja apenas 'Na regiao de X,'."""
+    return re.sub(
+        r"^Na regi(?:\u00e3|a)o (?:de|do|da) [^,]{2,80},?\s*$",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    ).strip()
+
+
+def _fallback_summary(title: str) -> str:
+    clean_title = clean_text(title)
+    weather = re.match(r"^([A-Za-z\u00c0-\u017F ]+)\s*-\s*([A-Za-z\u00c0-\u017F ]+)$", clean_title)
+    if weather:
+        event = weather.group(1).strip().lower()
+        severity = weather.group(2).strip().lower()
+        return f"h\u00e1 alerta de {event} com {severity}, conforme aviso meteorol\u00f3gico publicado pelo INMET."
+    return clean_title[:1].lower() + clean_title[1:] if clean_title else ""
+
+
+def _after_prefix(text: str) -> str:
+    if len(text) > 1 and text[0].isupper() and not text[1].isupper():
+        return text[:1].lower() + text[1:]
+    return text
 
 
 def build_summary(title: str, summary: str, limit: int = 500) -> str:
-    """Monta resumo limpo e preserva local/rodovia quando aparecer."""
+    """Monta resumo limpo: regiao entra como prefixo, nunca como substituto."""
     clean_title = clean_text(title)
-    clean_summary = clean_text(summary)
+    clean_summary = _strip_bare_region_prefix(clean_text(summary))
 
     if clean_summary.lower().startswith(clean_title.lower()):
-        clean_summary = clean_summary[len(clean_title):].strip(" -–—:.")
+        clean_summary = clean_summary[len(clean_title):].strip(" -\u2013\u2014:.")
+
+    clean_summary = re.sub(
+        r"\bINMET publica aviso iniciando em:\s*[^.]+\.?\s*",
+        "",
+        clean_summary,
+        flags=re.IGNORECASE,
+    )
+    clean_summary = re.sub(r"\bBaixo risco de\b", "Risco de", clean_summary, flags=re.IGNORECASE)
+    clean_summary = clean_summary.strip()
 
     if not clean_summary:
-        clean_summary = clean_title
+        clean_summary = _fallback_summary(clean_title)
 
     location = _location_from_text(f"{clean_title} {clean_summary}")
-    if location and location.lower() not in clean_summary.lower():
-        clean_summary = f"{_location_prefix(location)}, {clean_summary[:1].lower()}{clean_summary[1:]}"
+    if location:
+        prefix = _location_prefix(location)
+        if not clean_summary.lower().startswith(prefix.lower()):
+            # A localidade contextualiza o resumo, mas o conteudo segue depois da virgula.
+            clean_summary = f"{prefix}, {_after_prefix(clean_summary)}"
 
-    return clean_summary[:limit].rstrip()
+    return clean_summary[:limit].rstrip(" ,")

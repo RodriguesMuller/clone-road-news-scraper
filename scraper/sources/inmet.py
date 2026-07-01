@@ -90,8 +90,9 @@ def scrape_inmet(source: dict, keywords: list | None = None) -> list:
             title = f"{evento} - {severidade}"
             descricao = fields.get("Descri\u00e7\u00e3o", "")
             area = fields.get("\u00c1rea", "")
-            # A area vem primeiro para nao ser cortada em resumos longos.
-            summary = f"{area}. {descricao}" if area else descricao
+            area = area.replace("Aviso para as \u00c1reas:", "Áreas afetadas:").strip()
+            # A descricao vem primeiro para a regiao nao substituir o conteudo.
+            summary = f"{descricao} {area}".strip()
 
             alerts.append(
                 {
