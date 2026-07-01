@@ -24,14 +24,15 @@ def _build_item(title: str, url: str, summary: str, source: dict,
                 published_at: str | None = None) -> dict:
     """Cria um dicionário padronizado de notícia."""
     now = datetime.now().isoformat()
+    region = extract_region(title, summary, source["name"], url)
     return {
         "title": title,
         "url": url,
         "source": source["name"],
         "category": source.get("category", ""),
         "published_at": published_at or now,
-        "summary": build_summary(title, summary),
-        "region": extract_region(title, summary, source["name"], url),
+        "summary": build_summary(title, summary, source["name"], region=region),
+        "region": region,
         "scraped_at": now,
         "type": "HTML",
     }

@@ -60,6 +60,7 @@ def scrape_arteris(source: dict, keywords=None) -> list:
                 raw = f"{rod_nome}|{km_i}|{km_f}|{tipo}|{desc}"
                 key = hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
 
+                region = extract_region(title, summary_source, rod_nome, page_url)
                 items.append(
                     {
                         "title": title,
@@ -67,8 +68,8 @@ def scrape_arteris(source: dict, keywords=None) -> list:
                         "source": source["name"],
                         "category": source.get("category", "rodovia"),
                         "published_at": now,
-                        "summary": build_summary(title, summary_source),
-                        "region": extract_region(title, summary_source, rod_nome, page_url),
+                        "summary": build_summary(title, summary_source, rod_nome, region=region),
+                        "region": region,
                         "scraped_at": now,
                         "type": "ARTERIS",
                     }

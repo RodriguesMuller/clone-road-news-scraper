@@ -64,6 +64,26 @@ STATE_LABELS = {
     "TO": "Tocantins",
 }
 
+STATE_ARTICLES = {
+    "Acre": "do",
+    "Amap\u00e1": "do",
+    "Amazonas": "do",
+    "Cear\u00e1": "do",
+    "Maranh\u00e3o": "do",
+    "Par\u00e1": "do",
+    "Paran\u00e1": "do",
+    "Piau\u00ed": "do",
+    "Rio de Janeiro": "do",
+    "Rio Grande do Norte": "do",
+    "Rio Grande do Sul": "do",
+    "Tocantins": "do",
+    "Bahia": "da",
+    "Para\u00edba": "da",
+    "Rond\u00f4nia": "de",
+    "Santa Catarina": "de",
+    "S\u00e3o Paulo": "de",
+}
+
 KNOWN_CITIES = {
     "campinas": ("Campinas", "SP"),
     "cariacica": ("Cariacica", "ES"),
@@ -261,22 +281,60 @@ def _location_prefix(location: str) -> str:
         return f"No trecho do {location}"
     if "/" in location:
         return f"Na regi\u00e3o de {location}"
-    return f"Na regi\u00e3o de {location}"
+    article = STATE_ARTICLES.get(location, "de")
+    return f"Na regi\u00e3o {article} {location}"
 
 
-def build_summary(title: str, summary: str, limit: int = 500) -> str:
-    """Monta resumo limpo e preserva local/rodovia quando aparecer."""
+def _strip_bare_region_prefix(text: str) -> str:
+    return re.sub(
+        r"^Na regi(?:\u00e3|a)o (?:de|do|da) [^,]{2,80},\s*$",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    ).strip()
+
+
+def _fallback_summary(title: str, region: str) -> str:
     clean_title = clean_text(title)
-    clean_summary = clean_text(summary)
+    if not clean_title:
+        return ""
+
+    match = re.match(r"^([A-Za-z\u00c0-\u017F ]+)\s*-\s*([A-Za-z\u00c0-\u017F ]+)$", clean_title)
+    if match:
+        event = match.group(1).strip().lower()
+        severity = match.group(2).strip().lower()
+        return f"h\u00e1 alerta de {event} com {severity}, conforme aviso meteorol\u00f3gico publicado pelo INMET."
+
+    return _summary_sentence(clean_title)
+
+
+def _summary_sentence(text: str) -> str:
+    if re.match(r"^(?:BR|SP|MG|RJ|RS|SC|PR|BA|GO|MT|MS|PA|PE|CE|ES|RO|TO|MA|PI|RN|PB|AL|SE|AM|AC|RR|AP|DF)-?\d", text):
+        return text
+    return text[:1].lower() + text[1:]
+
+
+def build_summary(title: str, summary: str = "", *extra_parts: str, region: str = "", limit: int = 500) -> str:
+    """Monta resumo limpo, com regiao como prefixo sem apagar o conteudo."""
+    clean_title = clean_text(title)
+    candidates = [summary, *extra_parts]
+    clean_summary = ""
+    for candidate in candidates:
+        clean_candidate = _strip_bare_region_prefix(clean_text(candidate))
+        if clean_candidate:
+            clean_summary = clean_candidate
+            break
 
     if clean_summary.lower().startswith(clean_title.lower()):
         clean_summary = clean_summary[len(clean_title):].strip(" -\u2013\u2014:.")
 
     if not clean_summary:
-        clean_summary = clean_title
+        clean_summary = _fallback_summary(clean_title, region)
 
-    location = extract_region(clean_title, clean_summary)
-    if location != UNKNOWN_REGION and location.lower() not in clean_summary.lower():
-        clean_summary = f"{_location_prefix(location)}, {clean_summary[:1].lower()}{clean_summary[1:]}"
+    location = region or extract_region(clean_title, clean_summary, *extra_parts)
+    if location != UNKNOWN_REGION and clean_summary:
+        prefix = _location_prefix(location)
+        if prefix and not clean_summary.lower().startswith(prefix.lower()):
+            clean_summary = f"{prefix}, {_summary_sentence(clean_summary)}"
 
     return clean_summary[:limit].rstrip()

@@ -347,6 +347,21 @@
       return textarea.value.replace(/&[a-zA-Z]+;?/g, " ");
     }
 
+    function regionPrefix(region) {
+      const value = String(region || "").trim();
+      const article = /^(Pará|Paraná|Maranhão|Ceará|Amazonas)$/i.test(value) ? "do" : "de";
+      return value ? `Na região ${article} ${value}` : "";
+    }
+
+    function summaryFallback(item) {
+      const title = String(item.title || "").trim();
+      const weather = title.match(/^([A-Za-zÀ-ÿ ]+)\s+-\s+([A-Za-zÀ-ÿ ]+)$/);
+      if (weather) {
+        return `há alerta de ${weather[1].trim().toLowerCase()} com ${weather[2].trim().toLowerCase()}, conforme aviso meteorológico publicado pelo INMET.`;
+      }
+      return title ? title.charAt(0).toLowerCase() + title.slice(1) : "Resumo indisponivel no banco. Abra a noticia para ver os detalhes completos.";
+    }
+
     function smartSummary(item) {
       let text = decodeHtmlText(item.summary).replace(/<[^>]+>/g, " ");
       text = text
@@ -357,8 +372,14 @@
         .replace(/\bBaixo risco de\b/gi, "Risco de")
         .trim();
 
+      if (/^Na região (?:de|do|da) [^,]{2,80},?$/i.test(text)) {
+        text = "";
+      }
       if (!text) {
-        text = item.title || "Resumo indisponivel no banco. Abra a noticia para ver os detalhes completos.";
+        text = summaryFallback(item);
+      }
+      if (item.region && !text.toLowerCase().includes(String(item.region).toLowerCase())) {
+        text = `${regionPrefix(item.region)}, ${text}`;
       }
 
       if (item.type === "INMET" && /chuvas intensas/i.test(item.title || "")) {

@@ -1,6 +1,6 @@
 import unittest
 
-from scraper.utils.filters import clean_text, extract_region
+from scraper.utils.filters import build_summary, clean_text, extract_region
 
 
 class RegionExtractionTest(unittest.TestCase):
@@ -21,6 +21,26 @@ class RegionExtractionTest(unittest.TestCase):
         self.assertEqual(
             clean_text("BR-364&nbsp&nbsp &amp; <b>teste</b> &quot;x&quot;"),
             'BR-364 & teste "x"',
+        )
+
+    def test_summary_keeps_content_after_region(self):
+        self.assertEqual(
+            build_summary("Tempestade - Perigo", "", region="Par\u00e1"),
+            "Na regi\u00e3o do Par\u00e1, h\u00e1 alerta de tempestade com perigo, conforme aviso meteorol\u00f3gico publicado pelo INMET.",
+        )
+        self.assertEqual(
+            build_summary("Acidente interdita trecho da BR-364 em Cuiab\u00e1", "", region="Cuiab\u00e1/MT"),
+            "Na regi\u00e3o de Cuiab\u00e1/MT, acidente interdita trecho da BR-364 em Cuiab\u00e1",
+        )
+        self.assertEqual(
+            build_summary("BR-163 registra lentid\u00e3o em Mato Grosso", "", region="Mato Grosso"),
+            "Na regi\u00e3o de Mato Grosso, BR-163 registra lentid\u00e3o em Mato Grosso",
+        )
+
+    def test_bare_region_summary_uses_fallback(self):
+        self.assertEqual(
+            build_summary("Tempestade - Perigo", "Na regi\u00e3o de Par\u00e1,", region="Par\u00e1"),
+            "Na regi\u00e3o do Par\u00e1, h\u00e1 alerta de tempestade com perigo, conforme aviso meteorol\u00f3gico publicado pelo INMET.",
         )
 
 
