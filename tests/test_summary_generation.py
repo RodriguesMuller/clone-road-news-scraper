@@ -33,6 +33,28 @@ class SummaryGenerationTest(unittest.TestCase):
         self.assertNotIn("  ", summary)
         self.assertIn("Mato Grosso", summary)
 
+    def test_summary_strips_redundant_route_prefix(self):
+        summary = build_summary(
+            "Trânsito na BR-163",
+            "BR-163 registra lentidão e operação pare-e-siga em Mato Grosso.",
+        )
+
+        self.assertEqual(
+            "Na região da BR-163, registra lentidão e operação pare-e-siga em Mato Grosso.",
+            summary,
+        )
+
+    def test_summary_strips_redundant_state_prefix(self):
+        summary = build_summary(
+            "Chuvas em Pará",
+            "Áreas afetadas: Pará, chuva intensa e raios isolados.",
+        )
+
+        self.assertEqual(
+            "Na região do Pará, chuva intensa e raios isolados.",
+            summary,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

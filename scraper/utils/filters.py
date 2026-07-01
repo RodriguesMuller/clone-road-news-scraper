@@ -175,6 +175,25 @@ def _strip_bare_region_prefix(text: str) -> str:
     ).strip()
 
 
+def _strip_redundant_location_prefix(text: str, location: str) -> str:
+    """Remove prefixos redundantes de localidade do resumo antes de adicionar o prefixo final."""
+    if not text or not location:
+        return text
+
+    patterns = [
+        rf"^Na regi(?:ão|ao) (?:da|do|de) {re.escape(location)}\s*,?\s*",
+        rf"^No trecho do {re.escape(location)}\s*,?\s*",
+        rf"^(?:Áreas afetadas?:\s*)?{re.escape(location)}\s*(?:[:\-–—]\s*|\s*,\s*|\s+)?",
+    ]
+
+    for pattern in patterns:
+        new_text = re.sub(pattern, "", text, flags=re.IGNORECASE)
+        if new_text != text:
+            return new_text.strip()
+
+    return text
+
+
 def _fallback_summary(title: str) -> str:
     clean_title = clean_text(title)
     weather = re.match(r"^([A-Za-z\u00c0-\u017F ]+)\s*-\s*([A-Za-z\u00c0-\u017F ]+)$", clean_title)
@@ -213,6 +232,7 @@ def build_summary(title: str, summary: str, limit: int = 500) -> str:
 
     location = _location_from_text(f"{clean_title} {clean_summary}")
     if location:
+        clean_summary = _strip_redundant_location_prefix(clean_summary, location)
         prefix = _location_prefix(location)
         if not clean_summary.lower().startswith(prefix.lower()):
             # A localidade contextualiza o resumo, mas o conteudo segue depois da virgula.
