@@ -53,6 +53,10 @@
     .source { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 8px; color: var(--muted); font-size: 13px; }
     .source:last-child { border-bottom: 0; padding-bottom: 0; }
     .source b { color: var(--ink); }
+    .source .badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(18, 217, 129, .12); color: var(--accent-dark); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    .source.trusted { color: var(--ink); font-weight: 700; }
+    .source.trusted b { color: var(--accent-dark); }
+    .tag.trusted { background: #d9f5ff; color: #0b5a72; }
     .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(8, 15, 12, .78); padding: 18px; z-index: 10; }
     .modal.open { display: flex; }
     .modal-card { width: min(100%, 980px); max-height: 94vh; overflow: auto; background: var(--paper); border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 18px 70px rgba(0,0,0,.35); }
@@ -112,6 +116,7 @@
     const SUPABASE_ANON_KEY = "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
     const TABLE = "news";
 
+    const TRUSTED_SOURCES = new Set(["G1 - Brasil", "CNN Brasil", "Band - Notícias", "INMET - Avisos Meteorológicos"]);
     const state = { items: [], total: 0 };
 
     function escapeHtml(value) {
@@ -236,9 +241,18 @@
         counts.set(source, (counts.get(source) || 0) + 1);
       });
 
-      const rows = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
+      const rows = [...counts.entries()].sort((a, b) => {
+        const aTrusted = TRUSTED_SOURCES.has(a[0]) ? 1 : 0;
+        const bTrusted = TRUSTED_SOURCES.has(b[0]) ? 1 : 0;
+        if (aTrusted !== bTrusted) return bTrusted - aTrusted;
+        return b[1] - a[1];
+      }).slice(0, 12);
+
       document.getElementById("sources").innerHTML = rows.length
-        ? rows.map(([source, count]) => `<div class="source"><span>${escapeHtml(source)}</span><b>${count}</b></div>`).join("")
+        ? rows.map(([source, count]) => {
+            const trusted = TRUSTED_SOURCES.has(source);
+            return `<div class="source${trusted ? " trusted" : ""}"><span>${escapeHtml(source)}${trusted ? "<span class=\"badge\">Fonte confiável</span>" : ""}</span><b>${count}</b></div>`;
+          }).join("")
         : `<div class="hint">Sem registros nas ultimas 24h.</div>`;
     }
 
