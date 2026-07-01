@@ -39,6 +39,10 @@ def scrape_rss(source: dict, keywords: list) -> list:
         for entry in feed.entries:
             title = clean_text(entry.get("title", ""))
             summary = clean_text(entry.get("summary", entry.get("description", "")))
+            link = entry.get("link", "")
+
+            if is_blocked_url(link):
+                continue
 
             # Filtrar apenas pelo título (não pelo resumo) conforme solicitado
             if not matches_keywords(title, keywords):

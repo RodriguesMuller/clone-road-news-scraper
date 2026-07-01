@@ -1,6 +1,7 @@
 import html
 import re
 import unicodedata
+from urllib.parse import urlparse
 
 STATE_ARTICLES = {
     "Acre": "do",
@@ -66,6 +67,14 @@ _STOPWORDS = {
     "de", "da", "do", "das", "dos", "e", "em", "a", "o", "as", "os",
     "na", "no", "nas", "nos", "com", "para", "por", "ao", "\u00e0", "um", "uma",
 }
+
+
+def is_blocked_url(url: str) -> bool:
+    if not url:
+        return False
+    parsed = urlparse(url.strip())
+    host = parsed.netloc.lower()
+    return bool(re.search(r"(^|\.)facebook\.com$|(^|\.)fb\.me$", host))
 
 
 def _normalize(value: str) -> str:
