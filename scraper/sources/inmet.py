@@ -12,7 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from scraper.sources import HEADERS
-from scraper.utils.filters import build_summary, extract_region
+from scraper.utils.filters import build_summary
 
 SEVERITY_ORDER = ["Perigo Potencial", "Perigo", "Grande Perigo"]
 DEFAULT_SEVERITIES = ["Perigo", "Grande Perigo"]
@@ -101,7 +101,6 @@ def scrape_inmet(source: dict, keywords: list | None = None) -> list:
                     "category": source.get("category", "clima"),
                     "published_at": inicio or entry.get("published", ""),
                     "summary": build_summary(title, summary),
-                    "region": extract_region(title, summary, source["name"], entry.get("link", "")),
                     "scraped_at": datetime.now().isoformat(),
                     "type": "INMET",
                 }

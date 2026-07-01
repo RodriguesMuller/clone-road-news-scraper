@@ -38,9 +38,6 @@
     .hint { margin-top: 8px; color: var(--muted); font-size: 13px; }
     .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
     .panel { padding: 16px; }
-    .filter-bar { margin: 0 0 14px; display: flex; gap: 10px; }
-    .filter-bar input { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 11px 12px; font: inherit; background: #fbfdfc; color: var(--ink); }
-    .filter-bar input:focus { outline: 2px solid rgba(18,217,129,.35); border-color: var(--accent); }
     .list, .sources { display: grid; gap: 10px; }
     .item { padding: 14px 15px; }
     .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
@@ -82,9 +79,6 @@
     <section class="layout">
       <div class="panel">
         <h2>Noticias recentes</h2>
-        <div class="filter-bar">
-          <input id="regionFilter" type="search" placeholder="Filtrar por regiao, cidade, estado ou rodovia">
-        </div>
         <div id="news" class="list"></div>
       </div>
       <aside class="panel">
@@ -118,7 +112,7 @@
     const SUPABASE_ANON_KEY = "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
     const TABLE = "news";
 
-    const state = { items: [], total: 0, query: "" };
+    const state = { items: [], total: 0 };
 
     function escapeHtml(value) {
       const div = document.createElement("div");
@@ -196,17 +190,9 @@
         throw new Error("Configure SUPABASE_ANON_KEY no arquivo public/index.html antes do deploy.");
       }
 
-      let columns = "title,url,source,category,published_at,created_at,type,summary,region";
-      let newsResponse;
-      let inmetResponse;
-      try {
-        newsResponse = await supabaseFetch(`${TABLE}?select=${columns}&order=created_at.desc&limit=50`);
-        inmetResponse = await supabaseFetch(`${TABLE}?select=${columns}&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=20`);
-      } catch (error) {
-        columns = "title,url,source,category,published_at,created_at,type,summary";
-        newsResponse = await supabaseFetch(`${TABLE}?select=${columns}&order=created_at.desc&limit=50`);
-        inmetResponse = await supabaseFetch(`${TABLE}?select=${columns}&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=20`);
-      }
+      const columns = "title,url,source,category,published_at,created_at,type,summary";
+      const newsResponse = await supabaseFetch(`${TABLE}?select=${columns}&order=created_at.desc&limit=50`);
+      const inmetResponse = await supabaseFetch(`${TABLE}?select=${columns}&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=20`);
       const countResponse = await supabaseFetch(`${TABLE}?select=id`, { method: "HEAD" });
       const latestNews = await newsResponse.json();
       const latestInmet = await inmetResponse.json();
@@ -218,19 +204,6 @@
       }
       state.items = [...merged.values()].sort((a, b) => displayDateValue(b) - displayDateValue(a));
       state.total = Number(countResponse.headers.get("content-range")?.split("/")?.[1] || state.items.length);
-    }
-
-    function filteredItems() {
-      const query = state.query.trim().toLowerCase();
-      if (!query) return state.items;
-      return state.items.filter((item) => [
-        item.region,
-        item.title,
-        item.summary,
-        item.source,
-        item.category,
-        item.type,
-      ].filter(Boolean).join(" ").toLowerCase().includes(query));
     }
 
     function renderStats() {
@@ -270,12 +243,10 @@
     }
 
     function renderNews() {
-      const items = filteredItems();
-      document.getElementById("news").innerHTML = items.length
-        ? items.map((item) => {
-            const index = state.items.indexOf(item);
+      document.getElementById("news").innerHTML = state.items.length
+        ? state.items.map((item, index) => {
             const [tagClass, tagLabel] = tagFor(item);
-            const meta = [item.source, item.category, item.region, displayTime(item)].filter(Boolean).join(" · ");
+            const meta = [item.source, item.category, displayTime(item)].filter(Boolean).join(" · ");
             return `
               <article class="item">
                 <div class="meta">
@@ -291,7 +262,7 @@
               </article>
             `;
           }).join("")
-        : `<div class="hint">Nenhuma noticia encontrada para esse filtro.</div>`;
+        : `<div class="hint">Nenhuma noticia encontrada.</div>`;
     }
 
     function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
@@ -509,10 +480,6 @@
     }
 
     document.getElementById("refresh").addEventListener("click", refresh);
-    document.getElementById("regionFilter").addEventListener("input", (event) => {
-      state.query = event.target.value || "";
-      renderNews();
-    });
     document.getElementById("news").addEventListener("click", (event) => {
       const button = event.target.closest(".make-image");
       if (button) openImageModal(Number(button.dataset.index));

@@ -19,7 +19,6 @@ COLUMNS = [
     "category",
     "published_at",
     "summary",
-    "region",
     "scraped_at",
     "type",
 ]
@@ -33,29 +32,16 @@ CREATE TABLE IF NOT EXISTS news (
     category     TEXT,
     published_at TEXT,
     summary      TEXT,
-    region       TEXT,
     scraped_at   TEXT,
     type         TEXT,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 """
 
-ALTER_TABLE = """
-ALTER TABLE news
-ADD COLUMN IF NOT EXISTS region TEXT;
-"""
-
 INSERT = """
-INSERT INTO news (title, url, source, category, published_at, summary, region, scraped_at, type)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-ON CONFLICT (url) DO UPDATE SET
-    summary = EXCLUDED.summary,
-    region = CASE
-        WHEN EXCLUDED.region IS NULL OR EXCLUDED.region = '' OR EXCLUDED.region = 'Não identificado'
-            THEN COALESCE(news.region, EXCLUDED.region)
-        ELSE EXCLUDED.region
-    END,
-    scraped_at = EXCLUDED.scraped_at;
+INSERT INTO news (title, url, source, category, published_at, summary, scraped_at, type)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+ON CONFLICT (url) DO NOTHING;
 """
 
 
@@ -88,7 +74,6 @@ def save_to_postgres(news_items: list, database_url: str) -> int:
     with psycopg.connect(database_url, prepare_threshold=None) as conn:
         with conn.cursor() as cur:
             cur.execute(CREATE_TABLE)
-            cur.execute(ALTER_TABLE)
             new_count = 0
             for row in rows:
                 cur.execute(INSERT, row)

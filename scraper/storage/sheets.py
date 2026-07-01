@@ -14,7 +14,6 @@ SHEET_HEADERS = [
     "category",
     "published_at",
     "summary",
-    "region",
     "scraped_at",
     "type",
 ]
@@ -71,7 +70,6 @@ def save_to_sheets(news_items: list, spreadsheet_id: str) -> int:
                 item.get("category", ""),
                 item.get("published_at", ""),
                 item.get("summary", ""),
-                item.get("region", ""),
                 item.get("scraped_at", ""),
                 item.get("type", ""),
             ]
