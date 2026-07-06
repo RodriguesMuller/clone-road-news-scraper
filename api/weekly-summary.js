@@ -141,7 +141,11 @@ async function fetchWeeklyItems() {
     },
   });
   if (!response.ok) {
-    throw new Error(await response.text());
+    const detail = await response.text();
+    if (response.status === 401 || /invalid_api_key|incorrect api key/i.test(detail)) {
+      throw new Error("OPENAI_API_KEY invalida ou ainda nao atualizada no deploy da Vercel. Revogue a chave exposta, crie uma nova, atualize a variavel e faca redeploy sem cache.");
+    }
+    throw new Error("Nao foi possivel gerar o resumo com IA agora. Verifique os logs da Vercel para detalhes da OpenAI.");
   }
   return response.json();
 }
