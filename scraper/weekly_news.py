@@ -285,7 +285,7 @@ def fallback_summary(context: dict) -> dict:
 
 
 def generate_ai_summary(context: dict, api_key: str | None = None, model: str | None = None) -> dict:
-    api_key = api_key or os.environ.get("OPENAI_API_KEY")
+    api_key = (api_key or os.environ.get("OPENAI_API_KEY") or "").strip()
     if not api_key:
         return fallback_summary(context)
 

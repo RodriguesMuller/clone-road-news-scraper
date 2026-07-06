@@ -229,8 +229,20 @@ function extractText(data) {
   return text.trim();
 }
 
+function openAiApiKey() {
+  const value = String(process.env.OPENAI_API_KEY || "").trim();
+  if (!value) return "";
+  if (/[^\x20-\x7E]/.test(value) || value.includes("...") || value.includes("…")) {
+    throw new Error("OPENAI_API_KEY invalida na Vercel. Cole a chave completa da OpenAI, sem reticencias, sem 'Bearer', sem aspas e sem quebra de linha.");
+  }
+  if (!value.startsWith("sk-")) {
+    throw new Error("OPENAI_API_KEY invalida na Vercel. A chave deve comecar com sk- e deve ser colada completa.");
+  }
+  return value;
+}
+
 async function generateAiSummary(context) {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = openAiApiKey();
   if (!apiKey) return fallbackSummary(context);
 
   const response = await fetch(OPENAI_URL, {

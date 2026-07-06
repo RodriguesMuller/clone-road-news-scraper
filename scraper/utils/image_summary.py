@@ -127,7 +127,7 @@ def _extract_text(data: dict) -> str:
 
 def generate_image_summary(item: dict, api_key: str | None = None, model: str | None = None) -> dict:
     fallback = build_image_summary_fallback(item)
-    api_key = api_key or os.environ.get("OPENAI_API_KEY")
+    api_key = (api_key or os.environ.get("OPENAI_API_KEY") or "").strip()
     if not api_key:
         return fallback
 
