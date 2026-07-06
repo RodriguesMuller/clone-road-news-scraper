@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Road News</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
   <style>
     :root {
       --color-bg: #061b14;
@@ -188,6 +191,183 @@
     .source .badge { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(32, 242, 155, .14); color: #8dffc9; border: 1px solid rgba(32, 242, 155, .25); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
     .source.trusted { color: var(--color-muted-strong); font-weight: 800; }
     .source.trusted b { color: var(--color-primary); }
+    .view-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 0 0 18px;
+      padding: 6px;
+      border: 1px solid rgba(32, 242, 155, .22);
+      border-radius: 8px;
+      background: rgba(3, 18, 13, .70);
+      box-shadow: var(--shadow-soft);
+    }
+    .view-tab {
+      min-height: 40px;
+      border: 1px solid transparent;
+      background: rgba(255,255,255,.055);
+      color: var(--color-muted-strong);
+      box-shadow: none;
+      gap: 8px;
+      padding: 9px 13px;
+    }
+    .view-tab.active {
+      background: #f3f7f5;
+      color: #03120d;
+      border-color: rgba(32, 242, 155, .55);
+      box-shadow: inset 0 -3px 0 var(--color-primary);
+    }
+    .view-tab:disabled {
+      cursor: not-allowed;
+      opacity: .58;
+      transform: none;
+    }
+    .view-tab .count {
+      min-width: 24px;
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: rgba(255, 100, 100, .92);
+      color: #fff;
+      font-size: 11px;
+      line-height: 1.25;
+    }
+    .view-panel[hidden] { display: none !important; }
+    .map-shell {
+      border: 1px solid rgba(32, 242, 155, .24);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.04));
+      box-shadow: var(--shadow-panel);
+      overflow: hidden;
+    }
+    .map-toolbar {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--color-border-soft);
+      background: rgba(3, 18, 13, .72);
+    }
+    .map-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .map-title-row h2 { margin: 0; color: var(--color-text); }
+    .map-subtitle { margin: 6px 0 0; color: var(--color-muted); font-size: 13px; }
+    .map-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .map-select {
+      min-height: 38px;
+      border: 1px solid var(--color-border-soft);
+      border-radius: 6px;
+      background: rgba(255,255,255,.075);
+      color: var(--color-text);
+      padding: 8px 10px;
+      font-weight: 900;
+    }
+    .map-select option { background: #071b14; color: var(--color-text); }
+    .map-filter-grid { display: grid; gap: 10px; }
+    .map-filter-row { display: grid; gap: 7px; }
+    .map-filter-label { color: var(--color-muted); font-size: 10px; font-weight: 900; letter-spacing: .11em; text-transform: uppercase; }
+    .map-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .map-chip {
+      min-height: 30px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      background: rgba(255,255,255,.055);
+      color: var(--color-muted-strong);
+      box-shadow: none;
+      padding: 6px 10px;
+      font-size: 11px;
+      gap: 7px;
+    }
+    .map-chip.active {
+      border-color: rgba(32, 242, 155, .48);
+      background: rgba(32, 242, 155, .14);
+      color: #b6ffdd;
+    }
+    .risk-dot {
+      width: 10px;
+      height: 10px;
+      display: inline-block;
+      border-radius: 999px;
+      box-shadow: 0 0 0 3px rgba(255,255,255,.05);
+    }
+    .risk-dot.risk-critical { background: #9f2d25; }
+    .risk-dot.risk-high { background: #ff4f4f; }
+    .risk-dot.risk-medium { background: #ff972f; }
+    .risk-dot.risk-low { background: #20a957; }
+    .map-stage { position: relative; min-height: 560px; background: #03120d; }
+    #roadMap { width: 100%; height: min(68vh, 640px); min-height: 520px; background: #03120d; }
+    .map-empty {
+      position: absolute;
+      inset: 16px;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      border: 1px dashed rgba(32, 242, 155, .28);
+      border-radius: 8px;
+      background: rgba(3, 18, 13, .84);
+      color: var(--color-muted-strong);
+      text-align: center;
+      z-index: 450;
+    }
+    .map-empty.show { display: grid; }
+    .map-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px 16px;
+      border-top: 1px solid var(--color-border-soft);
+      color: var(--color-muted);
+      background: rgba(3, 18, 13, .78);
+      font-size: 12px;
+    }
+    .map-footer strong { color: var(--color-primary); }
+    .road-marker { background: transparent; border: 0; }
+    .marker-dot {
+      width: 18px;
+      height: 18px;
+      display: block;
+      border: 2px solid rgba(255,255,255,.78);
+      border-radius: 999px;
+      box-shadow: 0 0 0 4px rgba(255,255,255,.07), 0 10px 18px rgba(0,0,0,.34);
+    }
+    .leaflet-container {
+      background: #03120d;
+      color: var(--color-text);
+      font-family: inherit;
+    }
+    .leaflet-control-zoom a {
+      background: rgba(243, 247, 245, .95);
+      color: #03120d;
+      border-color: rgba(0,0,0,.12);
+    }
+    .leaflet-control-attribution {
+      background: rgba(3, 18, 13, .78) !important;
+      color: var(--color-muted) !important;
+    }
+    .leaflet-control-attribution a { color: var(--color-primary) !important; }
+    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+      background: #10251f;
+      color: var(--color-text);
+      border: 1px solid rgba(32, 242, 155, .24);
+      box-shadow: 0 20px 44px rgba(0,0,0,.38);
+    }
+    .leaflet-popup-content { margin: 0; min-width: 260px; }
+    .map-popup { padding: 14px; display: grid; gap: 8px; }
+    .map-popup-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--color-muted); font-size: 11px; font-weight: 800; }
+    .map-popup h3 { margin: 0; color: var(--color-text); font-size: 14px; line-height: 1.35; }
+    .map-popup p { margin: 0; color: var(--color-muted-strong); font-size: 12px; line-height: 1.42; }
+    .map-popup .button-link { width: fit-content; padding: 7px 10px; font-size: 11px; box-shadow: none; }
+    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background: rgba(32, 242, 155, .18); }
+    .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
+      background: #20f29b;
+      color: #03120d;
+      font-weight: 950;
+    }
     .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(1, 8, 6, .82); padding: 18px; z-index: 10; backdrop-filter: blur(8px); }
     .modal.open { display: flex; }
     .modal-card { width: min(100%, 980px); max-height: 94vh; overflow: auto; background: #071b14; border-radius: 8px; border: 1px solid rgba(32, 242, 155, .24); box-shadow: 0 24px 80px rgba(0,0,0,.48); }
@@ -236,7 +416,14 @@
     .weekly-loading { padding: 26px; color: var(--color-muted); }
     @media (max-width: 920px) { .weekly-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 820px) { .stats, .alert-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout { grid-template-columns: 1fr; } }
-    @media (max-width: 720px) { .weekly-kpis, .weekly-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 720px) {
+      .weekly-kpis, .weekly-grid { grid-template-columns: 1fr; }
+      .view-tabs { overflow-x: auto; flex-wrap: nowrap; }
+      .view-tab { flex: 0 0 auto; }
+      .map-title-row { align-items: flex-start; }
+      .map-controls, .map-select, .map-controls button { width: 100%; }
+      #roadMap { min-height: 460px; height: 62vh; }
+    }
     @media (max-width: 640px) {
       .bar { align-items: flex-start; }
       .header-actions { width: 100%; }
@@ -369,28 +556,80 @@
 
   <main>
     <div id="notice" class="notice"></div>
-    <section class="stats" id="stats"></section>
-    <section class="panel alerts-panel">
-      <div class="panel-head">
-        <h2>Alertas recentes</h2>
-        <div id="alertWindows" class="segmented" aria-label="Janela de alertas recentes">
-          <button type="button" data-hours="2">2h</button>
-          <button type="button" data-hours="6" class="active">6h</button>
-          <button type="button" data-hours="12">12h</button>
-          <button type="button" data-hours="24">24h</button>
+    <nav id="mainTabs" class="view-tabs" aria-label="Visualizações do Road News">
+      <button class="view-tab active" type="button" data-view="occurrences">Ocorrências</button>
+      <button class="view-tab" type="button" data-view="map">Mapa <span id="mapTabCount" class="count">0</span></button>
+      <button class="view-tab" type="button" disabled>Paralisações</button>
+      <button class="view-tab" type="button" disabled>Combustível</button>
+      <button class="view-tab" type="button" disabled>Por Estado</button>
+    </nav>
+
+    <section id="occurrencesView" class="view-panel">
+      <section class="stats" id="stats"></section>
+      <section class="panel alerts-panel">
+        <div class="panel-head">
+          <h2>Alertas recentes</h2>
+          <div id="alertWindows" class="segmented" aria-label="Janela de alertas recentes">
+            <button type="button" data-hours="2">2h</button>
+            <button type="button" data-hours="6" class="active">6h</button>
+            <button type="button" data-hours="12">12h</button>
+            <button type="button" data-hours="24">24h</button>
+          </div>
         </div>
-      </div>
-      <div id="recentAlerts" class="alert-list"></div>
+        <div id="recentAlerts" class="alert-list"></div>
+      </section>
+      <section class="layout">
+        <div class="panel">
+          <h2>Notícias recentes</h2>
+          <div id="news" class="list"></div>
+        </div>
+        <aside class="panel">
+          <h2>Fontes nas últimas 24h</h2>
+          <div id="sources" class="sources"></div>
+        </aside>
+      </section>
     </section>
-    <section class="layout">
-      <div class="panel">
-        <h2>Notícias recentes</h2>
-        <div id="news" class="list"></div>
-      </div>
-      <aside class="panel">
-        <h2>Fontes nas últimas 24h</h2>
-        <div id="sources" class="sources"></div>
-      </aside>
+
+    <section id="mapView" class="view-panel" hidden>
+      <section class="map-shell" aria-label="Mapa de ocorrências geolocalizadas">
+        <div class="map-toolbar">
+          <div class="map-title-row">
+            <div>
+              <h2>Ocorrências geolocalizadas · Brasil</h2>
+              <p id="mapSummary" class="map-subtitle">Carregando pontos geográficos...</p>
+            </div>
+            <div class="map-controls">
+              <select id="mapPeriod" class="map-select" aria-label="Período do mapa">
+                <option value="24">24h</option>
+                <option value="168">7d</option>
+                <option value="720">30d</option>
+              </select>
+              <select id="mapStateFilter" class="map-select" aria-label="Filtrar por estado">
+                <option value="">Todos os estados</option>
+              </select>
+              <button id="clearMapFilters" type="button" class="mini-button">Limpar filtros</button>
+            </div>
+          </div>
+          <div class="map-filter-grid">
+            <div class="map-filter-row">
+              <span class="map-filter-label">Risco</span>
+              <div id="mapRiskFilters" class="map-chip-row" aria-label="Filtros de risco"></div>
+            </div>
+            <div class="map-filter-row">
+              <span class="map-filter-label">Categoria</span>
+              <div id="mapCategoryFilters" class="map-chip-row" aria-label="Filtros de categoria"></div>
+            </div>
+          </div>
+        </div>
+        <div class="map-stage">
+          <div id="roadMap"></div>
+          <div id="mapEmpty" class="map-empty">Nenhuma ocorrência geolocalizada disponível para os filtros selecionados.</div>
+        </div>
+        <div class="map-footer">
+          <span>Clique nos marcadores para detalhes · <strong id="mapPreciseCount">0</strong> GPS preciso · <strong id="mapApproxCount">0</strong> localização aproximada</span>
+          <span id="mapFooterCount">0 pontos no mapa</span>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -431,6 +670,8 @@
     </div>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script>
     const SUPABASE_URL = "https://vdyilgbqxnrwqgoairat.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
@@ -438,7 +679,108 @@
     const BRASILIA_TIME_ZONE = "America/Sao_Paulo";
 
     const TRUSTED_SOURCES = new Set(["G1 - Brasil", "CNN Brasil", "Band - Notícias", "INMET - Avisos Meteorológicos", "Arteris Fluminense (tempo real)"]);
-    const state = { items: [], recentItems: [], total: 0, alertHours: 6 };
+    const MAP_RISKS = [
+      ["critical", "Crítica"],
+      ["high", "Alta"],
+      ["medium", "Média"],
+      ["low", "Baixa"],
+    ];
+    const MAP_CATEGORIES = ["Acidente", "Interdição", "Obra", "Paralisação", "Trânsito", "Clima", "Roubo de carga", "Manifestação", "Outros"];
+    const MAP_RISK_COLORS = { critical: "#9f2d25", high: "#ff4f4f", medium: "#ff972f", low: "#20a957" };
+    const STATE_COORDS = {
+      AC: { name: "Acre", lat: -8.77, lng: -70.55 },
+      AL: { name: "Alagoas", lat: -9.57, lng: -36.78 },
+      AP: { name: "Amapá", lat: 1.41, lng: -51.77 },
+      AM: { name: "Amazonas", lat: -3.47, lng: -65.10 },
+      BA: { name: "Bahia", lat: -12.96, lng: -38.51 },
+      CE: { name: "Ceará", lat: -5.20, lng: -39.53 },
+      DF: { name: "Distrito Federal", lat: -15.78, lng: -47.93 },
+      ES: { name: "Espírito Santo", lat: -19.19, lng: -40.34 },
+      GO: { name: "Goiás", lat: -15.98, lng: -49.86 },
+      MA: { name: "Maranhão", lat: -5.42, lng: -45.44 },
+      MT: { name: "Mato Grosso", lat: -12.64, lng: -55.42 },
+      MS: { name: "Mato Grosso do Sul", lat: -20.51, lng: -54.54 },
+      MG: { name: "Minas Gerais", lat: -18.10, lng: -44.38 },
+      PA: { name: "Pará", lat: -3.79, lng: -52.48 },
+      PB: { name: "Paraíba", lat: -7.28, lng: -36.72 },
+      PR: { name: "Paraná", lat: -24.89, lng: -51.55 },
+      PE: { name: "Pernambuco", lat: -8.38, lng: -37.86 },
+      PI: { name: "Piauí", lat: -6.60, lng: -42.28 },
+      RJ: { name: "Rio de Janeiro", lat: -22.25, lng: -42.66 },
+      RN: { name: "Rio Grande do Norte", lat: -5.81, lng: -36.59 },
+      RS: { name: "Rio Grande do Sul", lat: -30.17, lng: -53.50 },
+      RO: { name: "Rondônia", lat: -10.83, lng: -63.34 },
+      RR: { name: "Roraima", lat: 1.99, lng: -61.33 },
+      SC: { name: "Santa Catarina", lat: -27.33, lng: -49.44 },
+      SP: { name: "São Paulo", lat: -22.19, lng: -48.79 },
+      SE: { name: "Sergipe", lat: -10.57, lng: -37.45 },
+      TO: { name: "Tocantins", lat: -10.25, lng: -48.25 },
+    };
+    const CITY_COORDS = {
+      "sao paulo/sp": { city: "São Paulo", uf: "SP", lat: -23.55, lng: -46.63 },
+      "campinas/sp": { city: "Campinas", uf: "SP", lat: -22.91, lng: -47.06 },
+      "bariri/sp": { city: "Bariri", uf: "SP", lat: -22.07, lng: -48.74 },
+      "jau/sp": { city: "Jaú", uf: "SP", lat: -22.29, lng: -48.56 },
+      "dois corregos/sp": { city: "Dois Córregos", uf: "SP", lat: -22.37, lng: -48.38 },
+      "piracicaba/sp": { city: "Piracicaba", uf: "SP", lat: -22.73, lng: -47.65 },
+      "americana/sp": { city: "Americana", uf: "SP", lat: -22.74, lng: -47.33 },
+      "ribeirao preto/sp": { city: "Ribeirão Preto", uf: "SP", lat: -21.17, lng: -47.81 },
+      "bauru/sp": { city: "Bauru", uf: "SP", lat: -22.31, lng: -49.06 },
+      "sorocaba/sp": { city: "Sorocaba", uf: "SP", lat: -23.50, lng: -47.46 },
+      "sao jose dos campos/sp": { city: "São José dos Campos", uf: "SP", lat: -23.18, lng: -45.89 },
+      "rio de janeiro/rj": { city: "Rio de Janeiro", uf: "RJ", lat: -22.91, lng: -43.17 },
+      "belo horizonte/mg": { city: "Belo Horizonte", uf: "MG", lat: -19.92, lng: -43.94 },
+      "uberlandia/mg": { city: "Uberlândia", uf: "MG", lat: -18.91, lng: -48.28 },
+      "juiz de fora/mg": { city: "Juiz de Fora", uf: "MG", lat: -21.76, lng: -43.35 },
+      "curitiba/pr": { city: "Curitiba", uf: "PR", lat: -25.43, lng: -49.27 },
+      "cascavel/pr": { city: "Cascavel", uf: "PR", lat: -24.96, lng: -53.46 },
+      "londrina/pr": { city: "Londrina", uf: "PR", lat: -23.31, lng: -51.16 },
+      "maringa/pr": { city: "Maringá", uf: "PR", lat: -23.42, lng: -51.93 },
+      "porto alegre/rs": { city: "Porto Alegre", uf: "RS", lat: -30.03, lng: -51.23 },
+      "florianopolis/sc": { city: "Florianópolis", uf: "SC", lat: -27.59, lng: -48.55 },
+      "joinville/sc": { city: "Joinville", uf: "SC", lat: -26.30, lng: -48.85 },
+      "itajai/sc": { city: "Itajaí", uf: "SC", lat: -26.91, lng: -48.67 },
+      "salvador/ba": { city: "Salvador", uf: "BA", lat: -12.98, lng: -38.50 },
+      "feira de santana/ba": { city: "Feira de Santana", uf: "BA", lat: -12.27, lng: -38.96 },
+      "recife/pe": { city: "Recife", uf: "PE", lat: -8.05, lng: -34.88 },
+      "fortaleza/ce": { city: "Fortaleza", uf: "CE", lat: -3.73, lng: -38.52 },
+      "belem/pa": { city: "Belém", uf: "PA", lat: -1.45, lng: -48.49 },
+      "manaus/am": { city: "Manaus", uf: "AM", lat: -3.12, lng: -60.02 },
+      "cuiaba/mt": { city: "Cuiabá", uf: "MT", lat: -15.60, lng: -56.10 },
+      "rondonopolis/mt": { city: "Rondonópolis", uf: "MT", lat: -16.47, lng: -54.64 },
+      "campo grande/ms": { city: "Campo Grande", uf: "MS", lat: -20.47, lng: -54.62 },
+      "dourados/ms": { city: "Dourados", uf: "MS", lat: -22.22, lng: -54.81 },
+      "goiania/go": { city: "Goiânia", uf: "GO", lat: -16.68, lng: -49.25 },
+      "brasilia/df": { city: "Brasília", uf: "DF", lat: -15.78, lng: -47.93 },
+      "vitoria/es": { city: "Vitória", uf: "ES", lat: -20.32, lng: -40.34 },
+      "sao luis/ma": { city: "São Luís", uf: "MA", lat: -2.53, lng: -44.30 },
+      "teresina/pi": { city: "Teresina", uf: "PI", lat: -5.09, lng: -42.80 },
+      "natal/rn": { city: "Natal", uf: "RN", lat: -5.79, lng: -35.21 },
+      "joao pessoa/pb": { city: "João Pessoa", uf: "PB", lat: -7.12, lng: -34.86 },
+      "maceio/al": { city: "Maceió", uf: "AL", lat: -9.65, lng: -35.71 },
+      "aracaju/se": { city: "Aracaju", uf: "SE", lat: -10.91, lng: -37.07 },
+      "palmas/to": { city: "Palmas", uf: "TO", lat: -10.18, lng: -48.33 },
+      "porto velho/ro": { city: "Porto Velho", uf: "RO", lat: -8.76, lng: -63.90 },
+      "rio branco/ac": { city: "Rio Branco", uf: "AC", lat: -9.97, lng: -67.81 },
+      "boa vista/rr": { city: "Boa Vista", uf: "RR", lat: 2.82, lng: -60.67 },
+      "macapa/ap": { city: "Macapá", uf: "AP", lat: 0.03, lng: -51.07 },
+    };
+    const state = {
+      items: [],
+      recentItems: [],
+      mapItems: [],
+      total: 0,
+      alertHours: 6,
+      activeView: "occurrences",
+      map: {
+        instance: null,
+        cluster: null,
+        periodHours: 24,
+        riskFilters: new Set(MAP_RISKS.map(([key]) => key)),
+        categoryFilters: new Set(MAP_CATEGORIES),
+        ufFilter: "",
+      },
+    };
 
     function escapeHtml(value) {
       const div = document.createElement("div");
@@ -579,16 +921,24 @@
     }
 
     async function fetchRowsWithOptionalAi(columns, suffix) {
-      const aiColumns = "image_summary,ai_summary,operational_relevance,operational_impact,risk_level,region,country,state,city,highway";
-      const enhancedColumns = `${columns},${aiColumns}`;
-      try {
-        return await (await supabaseFetch(`${TABLE}?select=${enhancedColumns}${suffix}`)).json();
-      } catch (error) {
-        if (/image_summary|ai_summary|operational_relevance|risk_level|column|schema|PGRST/i.test(error.message || "")) {
-          return (await supabaseFetch(`${TABLE}?select=${columns}${suffix}`)).json();
+      const optionalSets = [
+        "image_summary,ai_summary,operational_relevance,operational_impact,risk_level,region,country,state,city,highway,latitude,longitude,geo_precision",
+        "image_summary,ai_summary,operational_relevance,operational_impact,risk_level,region,country,state,city,highway",
+        "",
+      ];
+      let lastError = null;
+      for (const optionalColumns of optionalSets) {
+        const selectedColumns = optionalColumns ? `${columns},${optionalColumns}` : columns;
+        try {
+          return await (await supabaseFetch(`${TABLE}?select=${selectedColumns}${suffix}`)).json();
+        } catch (error) {
+          lastError = error;
+          if (!/image_summary|ai_summary|operational_relevance|risk_level|latitude|longitude|geo_precision|column|schema|PGRST/i.test(error.message || "")) {
+            throw error;
+          }
         }
-        throw error;
       }
+      throw lastError;
     }
 
     async function loadNews() {
@@ -599,11 +949,14 @@
       const columns = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
       const recentColumns = columns;
       const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+      const since30d = encodeURIComponent(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
       const latestNews = await fetchRowsWithOptionalAi(columns, "&order=created_at.desc&limit=50");
       const latestInmet = await fetchRowsWithOptionalAi(columns, "&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=20");
       const recentRows = await fetchRowsWithOptionalAi(recentColumns, `&created_at=gte.${since24h}&order=created_at.desc&limit=300`);
+      const mapRows = await fetchRowsWithOptionalAi(columns, `&created_at=gte.${since30d}&order=created_at.desc&limit=700`);
       const countResponse = await supabaseFetch(`${TABLE}?select=id`, { method: "HEAD" });
       state.recentItems = recentRows;
+      state.mapItems = mapRows;
 
       const merged = new Map();
       for (const item of [...latestNews, ...latestInmet]) {
@@ -747,6 +1100,330 @@
             `;
           }).join("")
         : `<div class="hint">Nenhuma notícia encontrada.</div>`;
+    }
+
+    function mapRiskKey(item) {
+      const [riskClassName] = operationalRisk(item);
+      return riskClassName || "low";
+    }
+
+    function mapRiskLabel(key) {
+      return MAP_RISKS.find(([riskKey]) => riskKey === key)?.[1] || "Baixa";
+    }
+
+    function mapCategory(item) {
+      const text = textForItem(item);
+      if (/roubo de carga|saque|assalto/.test(text)) return "Roubo de carga";
+      if (/manifestacao|protesto/.test(text)) return "Manifestação";
+      if (/paralisacao|greve/.test(text)) return "Paralisação";
+      if (/acidente|colisao|batida|tombamento|capotamento/.test(text)) return "Acidente";
+      if (/bloqueio|interdicao|interdita|pare-e-siga/.test(text)) return "Interdição";
+      if (/obra|servico|manutencao|recuperacao/.test(text)) return "Obra";
+      if (/lentidao|congestionamento|fila|trafego lento|transito/.test(text)) return "Trânsito";
+      if (/tempestade|chuva|vento|granizo|inmet|alagamento|barreira|perigo/.test(text)) return "Clima";
+      return "Outros";
+    }
+
+    function stateNameToUf(value) {
+      const normalized = normalizeText(value);
+      for (const [uf, data] of Object.entries(STATE_COORDS)) {
+        if (normalizeText(data.name) === normalized) return uf;
+      }
+      const aliases = {
+        acre: "AC", alagoas: "AL", amapa: "AP", amazonas: "AM", bahia: "BA", ceara: "CE",
+        "distrito federal": "DF", "espirito santo": "ES", goias: "GO", maranhao: "MA",
+        "mato grosso": "MT", "mato grosso do sul": "MS", "minas gerais": "MG", para: "PA",
+        paraiba: "PB", parana: "PR", pernambuco: "PE", piaui: "PI", "rio de janeiro": "RJ",
+        "rio grande do norte": "RN", "rio grande do sul": "RS", rondonia: "RO", roraima: "RR",
+        "santa catarina": "SC", "sao paulo": "SP", sergipe: "SE", tocantins: "TO",
+      };
+      const explicitUf = /^[A-Z]{2}$/i.test(String(value || "")) ? String(value).toUpperCase() : "";
+      return aliases[normalized] || (STATE_COORDS[explicitUf] ? explicitUf : "");
+    }
+
+    function inferUfFromText(text) {
+      const raw = cleanDisplayText(text);
+      const explicit = raw.match(/(?:^|[\s,/-])([A-Z]{2})(?:$|[\s,./-])/);
+      if (explicit && STATE_COORDS[explicit[1]]) return explicit[1];
+      for (const [uf, data] of Object.entries(STATE_COORDS)) {
+        if (normalizeText(raw).includes(normalizeText(data.name))) return uf;
+      }
+      const road = roadFromText(raw);
+      const prefix = road.split("-")[0];
+      return prefix && prefix !== "BR" && STATE_COORDS[prefix] ? prefix : "";
+    }
+
+    function normalizedCityKey(city, uf) {
+      return `${normalizeText(city).replace(/\s+/g, " ")}/${String(uf || "").toLowerCase()}`;
+    }
+
+    function inferCityCoord(item, uf) {
+      const raw = cleanDisplayText(`${item.city || ""} ${item.region || ""} ${item.title || ""} ${item.summary || ""}`);
+      const cityUf = raw.match(/\b([A-ZÀ-ÿ][\wÀ-ÿ.'-]+(?:\s+[A-ZÀ-ÿ][\wÀ-ÿ.'-]+){0,3})\/([A-Z]{2})\b/);
+      if (cityUf) {
+        const direct = CITY_COORDS[normalizedCityKey(cityUf[1], cityUf[2])];
+        if (direct) return direct;
+      }
+      const explicitCity = cleanDisplayText(item.city);
+      if (explicitCity && uf) {
+        const direct = CITY_COORDS[normalizedCityKey(explicitCity, uf)];
+        if (direct) return direct;
+      }
+      const normalizedText = normalizeText(raw);
+      for (const coord of Object.values(CITY_COORDS)) {
+        if (uf && coord.uf !== uf) continue;
+        if (normalizedText.includes(normalizeText(coord.city))) return coord;
+      }
+      return null;
+    }
+
+    function parseCoordinate(value) {
+      if (value === null || value === undefined || value === "") return null;
+      const number = Number(String(value).replace(",", "."));
+      return Number.isFinite(number) ? number : null;
+    }
+
+    function locationOffset(seed, scale) {
+      let hash = 0;
+      for (let index = 0; index < seed.length; index += 1) {
+        hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+      }
+      const latOffset = (((hash % 1000) / 1000) - .5) * scale;
+      const lngOffset = ((((hash >> 10) % 1000) / 1000) - .5) * scale;
+      return [latOffset, lngOffset];
+    }
+
+    function geolocateItem(item) {
+      const lat = parseCoordinate(item.latitude);
+      const lng = parseCoordinate(item.longitude);
+      const seed = `${item.title || ""}|${item.published_at || ""}|${item.source || ""}`;
+      if (lat !== null && lng !== null) {
+        return { lat, lng, precision: "precise", precisionLabel: "GPS preciso" };
+      }
+
+      const locationText = `${item.city || ""} ${item.state || ""} ${item.region || ""} ${item.title || ""} ${item.summary || ""} ${item.highway || ""}`;
+      const uf = stateNameToUf(item.state) || inferUfFromText(locationText);
+      const cityCoord = inferCityCoord(item, uf);
+      if (cityCoord) {
+        const [latOffset, lngOffset] = locationOffset(seed, .12);
+        return {
+          lat: cityCoord.lat + latOffset,
+          lng: cityCoord.lng + lngOffset,
+          uf: cityCoord.uf,
+          city: cityCoord.city,
+          precision: "approximate_city",
+          precisionLabel: "Aprox. por cidade",
+        };
+      }
+
+      if (uf && STATE_COORDS[uf]) {
+        const [latOffset, lngOffset] = locationOffset(seed, .85);
+        return {
+          lat: STATE_COORDS[uf].lat + latOffset,
+          lng: STATE_COORDS[uf].lng + lngOffset,
+          uf,
+          precision: "approximate_state",
+          precisionLabel: "Aprox. por estado",
+        };
+      }
+      return null;
+    }
+
+    function uniqueMapItems() {
+      const merged = new Map();
+      for (const item of [...state.mapItems, ...state.recentItems, ...state.items]) {
+        const key = item.url || `${item.title}|${item.published_at}|${item.source}`;
+        if (!merged.has(key)) merged.set(key, item);
+      }
+      return [...merged.values()];
+    }
+
+    function buildMapPoint(item, index) {
+      const geo = geolocateItem(item);
+      if (!geo) return null;
+      const riskKey = mapRiskKey(item);
+      const category = mapCategory(item);
+      const road = cleanDisplayText(item.highway) || roadFromText(`${item.title || ""} ${item.summary || ""}`);
+      const uf = geo.uf || stateNameToUf(item.state) || inferUfFromText(`${item.region || ""} ${item.title || ""} ${item.summary || ""} ${road}`);
+      return {
+        item,
+        index,
+        lat: geo.lat,
+        lng: geo.lng,
+        uf,
+        city: geo.city || cleanDisplayText(item.city),
+        precision: geo.precision,
+        precisionLabel: geo.precisionLabel,
+        riskKey,
+        riskLabel: mapRiskLabel(riskKey),
+        category,
+        road,
+        title: cleanDisplayText(item.title || "Ocorrência monitorada"),
+        summary: shortText(smartSummary(item) || item.title, 160),
+        date: formatDate(item.published_at || item.scraped_at || item.created_at),
+        url: externalNewsUrl(item),
+      };
+    }
+
+    function mapBasePoints() {
+      const since = Date.now() - state.map.periodHours * 60 * 60 * 1000;
+      return uniqueMapItems()
+        .filter((item) => displayDateValue(item) >= since)
+        .map(buildMapPoint)
+        .filter(Boolean);
+    }
+
+    function filteredMapPoints() {
+      return mapBasePoints()
+        .filter((point) => state.map.riskFilters.has(point.riskKey))
+        .filter((point) => state.map.categoryFilters.has(point.category))
+        .filter((point) => !state.map.ufFilter || point.uf === state.map.ufFilter);
+    }
+
+    function renderMapFilterButtons() {
+      const riskContainer = document.getElementById("mapRiskFilters");
+      const categoryContainer = document.getElementById("mapCategoryFilters");
+      riskContainer.innerHTML = MAP_RISKS.map(([key, label]) => `
+        <button type="button" class="map-chip ${state.map.riskFilters.has(key) ? "active" : ""}" data-risk="${key}">
+          <span class="risk-dot risk-${key}"></span>${escapeHtml(label)}
+        </button>
+      `).join("");
+      categoryContainer.innerHTML = MAP_CATEGORIES.map((category) => `
+        <button type="button" class="map-chip ${state.map.categoryFilters.has(category) ? "active" : ""}" data-category="${escapeHtml(category)}">${escapeHtml(category)}</button>
+      `).join("");
+    }
+
+    function updateMapStateOptions(points) {
+      const select = document.getElementById("mapStateFilter");
+      const current = state.map.ufFilter;
+      const ufs = [...new Set(points.map((point) => point.uf).filter((uf) => uf && STATE_COORDS[uf]))]
+        .sort((a, b) => STATE_COORDS[a].name.localeCompare(STATE_COORDS[b].name, "pt-BR"));
+      select.innerHTML = `<option value="">Todos os estados</option>${ufs.map((uf) => `
+        <option value="${uf}" ${current === uf ? "selected" : ""}>${escapeHtml(STATE_COORDS[uf].name)} (${uf})</option>
+      `).join("")}`;
+      if (current && !ufs.includes(current)) {
+        state.map.ufFilter = "";
+        select.value = "";
+      }
+    }
+
+    function ensureMap() {
+      if (!window.L) {
+        document.getElementById("mapEmpty").textContent = "Não foi possível carregar o mapa agora. Verifique a conexão com a biblioteca Leaflet.";
+        document.getElementById("mapEmpty").classList.add("show");
+        return false;
+      }
+      if (state.map.instance) return true;
+      state.map.instance = L.map("roadMap", {
+        zoomControl: true,
+        preferCanvas: true,
+      }).setView([-14.24, -51.93], 4);
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap &copy; CARTO",
+      }).addTo(state.map.instance);
+      state.map.cluster = window.L.markerClusterGroup
+        ? L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 44 })
+        : L.layerGroup();
+      state.map.instance.addLayer(state.map.cluster);
+      return true;
+    }
+
+    function mapMarkerIcon(point) {
+      const color = MAP_RISK_COLORS[point.riskKey] || MAP_RISK_COLORS.low;
+      return L.divIcon({
+        className: "road-marker",
+        html: `<span class="marker-dot" style="background:${color}"></span>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+        popupAnchor: [0, -10],
+      });
+    }
+
+    function mapPopup(point) {
+      const riskClass = point.riskKey === "critical" ? "critical" : point.riskKey === "high" ? "high" : point.riskKey === "medium" ? "medium" : "";
+      return `
+        <div class="map-popup">
+          <div class="map-popup-meta">
+            <span class="alert-badge ${riskClass}">${escapeHtml(point.riskLabel)}</span>
+            <span>${escapeHtml(point.category)}</span>
+            ${point.uf ? `<span>${escapeHtml(point.uf)}</span>` : ""}
+          </div>
+          <h3>${escapeHtml(point.title)}</h3>
+          <div class="map-popup-meta">
+            ${point.road ? `<span>${escapeHtml(point.road)}</span>` : ""}
+            <span>${escapeHtml(point.date)}</span>
+            <span>${escapeHtml(point.precisionLabel)}</span>
+          </div>
+          <p>${escapeHtml(point.summary)}</p>
+          ${point.url ? `<a class="button-link" href="${escapeHtml(point.url)}" target="_blank" rel="noopener">Abrir notícia</a>` : ""}
+        </div>
+      `;
+    }
+
+    function renderMap() {
+      renderMapFilterButtons();
+      const basePoints = mapBasePoints();
+      updateMapStateOptions(basePoints);
+      const points = filteredMapPoints();
+      const precise = points.filter((point) => point.precision === "precise").length;
+      const approx = points.length - precise;
+      document.getElementById("mapTabCount").textContent = String(points.length);
+      document.getElementById("mapSummary").textContent = `${points.length} ponto(s) encontrados no período selecionado.`;
+      document.getElementById("mapPreciseCount").textContent = String(precise);
+      document.getElementById("mapApproxCount").textContent = String(approx);
+      document.getElementById("mapFooterCount").textContent = `${points.length} ponto(s) no mapa`;
+      document.getElementById("mapEmpty").classList.toggle("show", points.length === 0);
+
+      if (state.activeView !== "map") return;
+      if (!ensureMap()) return;
+
+      state.map.cluster.clearLayers();
+      points.forEach((point) => {
+        const marker = L.marker([point.lat, point.lng], { icon: mapMarkerIcon(point), title: point.title });
+        marker.bindPopup(mapPopup(point), { closeButton: true, maxWidth: 340 });
+        state.map.cluster.addLayer(marker);
+      });
+
+      setTimeout(() => state.map.instance.invalidateSize(), 80);
+      if (points.length) {
+        const bounds = L.latLngBounds(points.map((point) => [point.lat, point.lng]));
+        state.map.instance.fitBounds(bounds.pad(.18), { maxZoom: points.length === 1 ? 7 : 8 });
+      } else {
+        state.map.instance.setView([-14.24, -51.93], 4);
+      }
+    }
+
+    function setActiveView(view) {
+      state.activeView = view;
+      document.querySelectorAll(".view-tab[data-view]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.view === view);
+      });
+      document.getElementById("occurrencesView").hidden = view !== "occurrences";
+      document.getElementById("mapView").hidden = view !== "map";
+      if (view === "map") {
+        setTimeout(renderMap, 60);
+      }
+    }
+
+    function toggleMapSetFilter(setName, value) {
+      const filter = state.map[setName];
+      if (filter.has(value) && filter.size > 1) {
+        filter.delete(value);
+      } else {
+        filter.add(value);
+      }
+      renderMap();
+    }
+
+    function resetMapFilters() {
+      state.map.periodHours = 24;
+      state.map.riskFilters = new Set(MAP_RISKS.map(([key]) => key));
+      state.map.categoryFilters = new Set(MAP_CATEGORIES);
+      state.map.ufFilter = "";
+      document.getElementById("mapPeriod").value = "24";
+      document.getElementById("mapStateFilter").value = "";
+      renderMap();
     }
 
     function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
@@ -1428,6 +2105,7 @@
 
     function jumpToNews() {
       closeWeeklySummary();
+      setActiveView("occurrences");
       document.querySelector(".layout")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
@@ -1446,6 +2124,7 @@
       } catch (error) {
         state.items = [];
         state.recentItems = [];
+        state.mapItems = [];
         state.total = 0;
         setNotice(error.message);
       } finally {
@@ -1453,11 +2132,18 @@
         renderRecentAlerts();
         renderSources();
         renderNews();
+        renderMap();
         button.disabled = false;
       }
     }
 
+    renderMapFilterButtons();
     document.getElementById("refresh").addEventListener("click", refresh);
+    document.getElementById("mainTabs").addEventListener("click", (event) => {
+      const button = event.target.closest(".view-tab[data-view]");
+      if (!button) return;
+      setActiveView(button.dataset.view);
+    });
     document.getElementById("alertWindows").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-hours]");
       if (!button) return;
@@ -1465,6 +2151,23 @@
       document.querySelectorAll("#alertWindows button").forEach((item) => item.classList.toggle("active", item === button));
       renderRecentAlerts();
     });
+    document.getElementById("mapPeriod").addEventListener("change", (event) => {
+      state.map.periodHours = Number(event.target.value);
+      renderMap();
+    });
+    document.getElementById("mapStateFilter").addEventListener("change", (event) => {
+      state.map.ufFilter = event.target.value;
+      renderMap();
+    });
+    document.getElementById("mapRiskFilters").addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-risk]");
+      if (button) toggleMapSetFilter("riskFilters", button.dataset.risk);
+    });
+    document.getElementById("mapCategoryFilters").addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-category]");
+      if (button) toggleMapSetFilter("categoryFilters", button.dataset.category);
+    });
+    document.getElementById("clearMapFilters").addEventListener("click", resetMapFilters);
     document.getElementById("news").addEventListener("click", (event) => {
       const button = event.target.closest(".make-image");
       if (button) generateNewsSummary(Number(button.dataset.index), button);
