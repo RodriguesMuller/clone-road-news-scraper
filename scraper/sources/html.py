@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from scraper.sources import HEADERS
 from scraper.sources.arteris import scrape_arteris
 from scraper.utils.filters import build_summary, matches_keywords, clean_text
+from scraper.utils.timezone import brasilia_iso_from_datetime, brasilia_now_iso
 
 
 def _get_soup(url: str, timeout: int = 15) -> BeautifulSoup | None:
@@ -23,7 +24,7 @@ def _get_soup(url: str, timeout: int = 15) -> BeautifulSoup | None:
 def _build_item(title: str, url: str, summary: str, source: dict,
                 published_at: str | None = None) -> dict:
     """Cria um dicionário padronizado de notícia."""
-    now = datetime.now().isoformat()
+    now = brasilia_now_iso()
     return {
         "title": title,
         "url": url,
@@ -131,7 +132,8 @@ def scrape_band(source: dict, keywords: list) -> list:
             published_at = datetime(
                 int(ts[0:4]), int(ts[4:6]), int(ts[6:8]),
                 int(ts[8:10]), int(ts[10:12]),
-            ).isoformat()
+            )
+            published_at = brasilia_iso_from_datetime(published_at)
         except ValueError:
             published_at = ""
 

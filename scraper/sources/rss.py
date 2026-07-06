@@ -1,9 +1,10 @@
 import feedparser
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 
 from scraper.sources import HEADERS
 from scraper.utils.filters import build_summary, matches_keywords, clean_text
+from scraper.utils.timezone import brasilia_iso_from_datetime, brasilia_now_iso
 
 
 def scrape_rss(source: dict, keywords: list) -> list:
@@ -51,7 +52,7 @@ def scrape_rss(source: dict, keywords: list) -> list:
             # Normaliza a data de publicação
             try:
                 pub_dt = (
-                    datetime(*entry.published_parsed[:6]).isoformat()
+                    brasilia_iso_from_datetime(datetime(*entry.published_parsed[:6], tzinfo=timezone.utc))
                     if hasattr(entry, "published_parsed") and entry.published_parsed
                     else entry.get("published", "")
                 )
@@ -66,7 +67,7 @@ def scrape_rss(source: dict, keywords: list) -> list:
                     "category": source.get("category", ""),
                     "published_at": pub_dt,
                     "summary": build_summary(title, summary),
-                    "scraped_at": datetime.now().isoformat(),
+                    "scraped_at": brasilia_now_iso(),
                     "type": "RSS",
                 }
             )

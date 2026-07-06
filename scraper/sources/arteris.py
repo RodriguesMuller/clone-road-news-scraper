@@ -17,12 +17,11 @@ Config esperada no sources.yaml (em html_sources, type: arteris):
     page_url: página pública (usada como Referer e como link da ocorrência)
 """
 import hashlib
-from datetime import datetime
-
 import requests
 
 from scraper.sources import HEADERS
 from scraper.utils.filters import build_summary, clean_text
+from scraper.utils.timezone import brasilia_now_iso
 
 
 def scrape_arteris(source: dict, keywords=None) -> list:
@@ -40,7 +39,7 @@ def scrape_arteris(source: dict, keywords=None) -> list:
         print(f"    ✗ Erro ao processar '{source['name']}': {e}")
         return items
 
-    now = datetime.now().isoformat()
+    now = brasilia_now_iso()
     for rod in data.get("rodovias", []):
         rod_nome = rod.get("nome", "") or data.get("nome", "")
         for trecho in rod.get("trechos_homogeneos_trafego", []):

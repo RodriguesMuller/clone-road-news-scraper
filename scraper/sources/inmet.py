@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 
 from scraper.sources import HEADERS
 from scraper.utils.filters import build_summary
+from scraper.utils.timezone import as_brasilia, brasilia_now, brasilia_now_iso
 
 SEVERITY_ORDER = ["Perigo Potencial", "Perigo", "Grande Perigo"]
 DEFAULT_SEVERITIES = ["Perigo", "Grande Perigo"]
@@ -55,7 +56,7 @@ def _parse_start(value: str) -> datetime | None:
         lambda raw: datetime.strptime(raw, "%d/%m/%Y %H:%M"),
     ):
         try:
-            return parser(value)
+            return as_brasilia(parser(value))
         except ValueError:
             continue
     return None
@@ -78,7 +79,7 @@ def scrape_inmet(source: dict, keywords: list | None = None) -> list:
 
             data_inicio = _parse_start(inicio)
             if data_inicio is not None:
-                limite = datetime.now() - timedelta(days=3)
+                limite = brasilia_now() - timedelta(days=3)
                 if data_inicio < limite:
                     continue
 
@@ -100,9 +101,9 @@ def scrape_inmet(source: dict, keywords: list | None = None) -> list:
                     "url": entry.get("link", ""),
                     "source": source["name"],
                     "category": source.get("category", "clima"),
-                    "published_at": inicio or entry.get("published", ""),
+                    "published_at": data_inicio.isoformat() if data_inicio else inicio or entry.get("published", ""),
                     "summary": build_summary(title, summary),
-                    "scraped_at": datetime.now().isoformat(),
+                    "scraped_at": brasilia_now_iso(),
                     "type": "INMET",
                 }
             )

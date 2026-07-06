@@ -117,6 +117,7 @@
     const SUPABASE_URL = "https://vdyilgbqxnrwqgoairat.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
     const TABLE = "news";
+    const BRASILIA_TIME_ZONE = "America/Sao_Paulo";
 
     const TRUSTED_SOURCES = new Set(["G1 - Brasil", "CNN Brasil", "Band - Notícias", "INMET - Avisos Meteorológicos", "Arteris Fluminense (tempo real)"]);
     const state = { items: [], total: 0 };
@@ -127,9 +128,25 @@
       return div.innerHTML;
     }
 
+    function parseBrasiliaDate(value) {
+      if (!value) return null;
+      let text = String(value).trim();
+      const br = text.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
+      if (br) {
+        text = `${br[3]}-${br[2]}-${br[1]}T${br[4]}:${br[5]}:00-03:00`;
+      } else if (/^\d{4}-\d{2}-\d{2}T/.test(text) && !/(Z|[+-]\d{2}:?\d{2})$/i.test(text)) {
+        text = `${text}-03:00`;
+      }
+
+      const date = new Date(text);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
     function age(iso) {
       if (!iso) return "-";
-      const diff = Math.max(0, Date.now() - new Date(iso).getTime());
+      const date = parseBrasiliaDate(iso);
+      if (!date) return "-";
+      const diff = Math.max(0, Date.now() - date.getTime());
       const minutes = Math.round(diff / 60000);
       if (minutes < 2) return "agora";
       if (minutes < 60) return `${minutes} min`;
@@ -140,9 +157,10 @@
 
     function formatDate(iso) {
       if (!iso) return "Data nao informada";
-      const date = new Date(iso);
-      if (Number.isNaN(date.getTime())) return "Data nao informada";
+      const date = parseBrasiliaDate(iso);
+      if (!date) return "Data nao informada";
       return new Intl.DateTimeFormat("pt-BR", {
+        timeZone: BRASILIA_TIME_ZONE,
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -157,16 +175,18 @@
     }
 
     function displayDateValue(item) {
-      const preferred = item.type === "INMET" ? item.published_at || item.created_at : item.created_at || item.published_at;
-      const value = preferred ? new Date(preferred).getTime() : 0;
-      return Number.isNaN(value) ? 0 : value;
+      const preferred = item.type === "INMET"
+        ? item.published_at || item.scraped_at || item.created_at
+        : item.scraped_at || item.created_at || item.published_at;
+      const date = parseBrasiliaDate(preferred);
+      return date ? date.getTime() : 0;
     }
 
     function displayTime(item) {
       if (item.type === "INMET" && item.published_at) {
         return `Data do alerta: ${formatDate(item.published_at)}`;
       }
-      return age(item.created_at || item.published_at);
+      return age(item.scraped_at || item.created_at || item.published_at);
     }
 
     function tagFor(item) {
@@ -197,7 +217,7 @@
         throw new Error("Configure SUPABASE_ANON_KEY no arquivo public/index.html antes do deploy.");
       }
 
-      const columns = "title,url,source,category,published_at,created_at,type,summary";
+      const columns = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
       const newsResponse = await supabaseFetch(`${TABLE}?select=${columns}&order=created_at.desc&limit=50`);
       const inmetResponse = await supabaseFetch(`${TABLE}?select=${columns}&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=20`);
       const countResponse = await supabaseFetch(`${TABLE}?select=id`, { method: "HEAD" });
@@ -498,7 +518,7 @@
       const summary = smartSummary(item);
       const imageTitle = buildImageTitle(item);
       const source = [item.source, item.category].filter(Boolean).join(" · ");
-      const published = formatDate(item.published_at || item.created_at);
+      const published = formatDate(item.published_at || item.scraped_at || item.created_at);
 
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = "#0d1712";
