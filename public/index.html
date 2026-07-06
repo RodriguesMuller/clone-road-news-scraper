@@ -130,6 +130,11 @@
 
     function parseBrasiliaDate(value) {
       if (!value) return null;
+      if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+      if (typeof value === "number") {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
       let text = String(value).trim();
       const br = text.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
       if (br) {
@@ -172,6 +177,16 @@
     function withinHours(item, hours) {
       const value = displayDateValue(item);
       return value >= Date.now() - hours * 60 * 60 * 1000;
+    }
+
+    function withinCollectionHours(item, hours) {
+      const value = collectionDateValue(item);
+      return value >= Date.now() - hours * 60 * 60 * 1000;
+    }
+
+    function collectionDateValue(item) {
+      const date = parseBrasiliaDate(item.scraped_at || item.created_at || item.published_at);
+      return date ? date.getTime() : 0;
     }
 
     function displayDateValue(item) {
@@ -234,10 +249,10 @@
     }
 
     function renderStats() {
-      const lastHour = state.items.filter((item) => withinHours(item, 1)).length;
-      const lastDay = state.items.filter((item) => withinHours(item, 24)).length;
+      const lastHour = state.items.filter((item) => withinCollectionHours(item, 1)).length;
+      const lastDay = state.items.filter((item) => withinCollectionHours(item, 24)).length;
       const lastCreated = state.items
-        .map((item) => item.created_at ? new Date(item.created_at).getTime() : 0)
+        .map(collectionDateValue)
         .filter(Boolean)
         .sort((a, b) => b - a)[0];
       const cards = [
@@ -258,7 +273,7 @@
 
     function renderSources() {
       const counts = new Map();
-      state.items.filter((item) => withinHours(item, 24)).forEach((item) => {
+      state.items.filter((item) => withinCollectionHours(item, 24)).forEach((item) => {
         const source = item.source || "Sem fonte";
         counts.set(source, (counts.get(source) || 0) + 1);
       });
