@@ -972,6 +972,51 @@
       }
     }
 
+    function compactRiskValue(value) {
+      const text = cleanDisplayText(value);
+      const normalized = normalizeText(text);
+      if (/critico|critica/.test(normalized)) return "Crítico";
+      if (/alto|alta/.test(normalized)) return "Alto";
+      if (/medio|media/.test(normalized)) return "Médio";
+      if (/baixo|baixa/.test(normalized)) return "Baixo";
+      return shortText(text, 18);
+    }
+
+    function compactRelevanceValue(value) {
+      const text = cleanDisplayText(value);
+      const normalized = normalizeText(text);
+      if (/alto|alta/.test(normalized)) return "Alta";
+      if (/medio|media/.test(normalized)) return "Média";
+      if (/baixo|baixa/.test(normalized)) return "Baixa";
+      return shortText(text, 18);
+    }
+
+    function fitCanvasText(ctx, text, maxWidth) {
+      let clean = cleanDisplayText(text);
+      if (ctx.measureText(clean).width <= maxWidth) return clean;
+      while (clean.length > 4 && ctx.measureText(`${clean}...`).width > maxWidth) {
+        clean = clean.slice(0, -1).trim();
+      }
+      return `${clean}...`;
+    }
+
+    function drawCanvasBadges(ctx, badges, x, y, maxWidth) {
+      ctx.font = "800 20px Segoe UI, Arial, sans-serif";
+      let badgeX = x;
+      for (const rawBadge of badges.slice(0, 2)) {
+        const label = fitCanvasText(ctx, rawBadge, Math.min(310, maxWidth - 28));
+        const badgeW = Math.min(ctx.measureText(label).width + 28, maxWidth);
+        if (badgeX + badgeW > x + maxWidth) break;
+        ctx.fillStyle = "rgba(32,242,155,.16)";
+        ctx.fillRect(badgeX, y, badgeW, 36);
+        ctx.strokeStyle = "rgba(32,242,155,.42)";
+        ctx.strokeRect(badgeX, y, badgeW, 36);
+        ctx.fillStyle = "#20f29b";
+        ctx.fillText(label, badgeX + 14, y + 25);
+        badgeX += badgeW + 10;
+      }
+    }
+
     function drawShareImage(item) {
       const canvas = document.getElementById("shareCanvas");
       const ctx = canvas.getContext("2d");
@@ -981,7 +1026,10 @@
       const imageTitle = buildImageTitle(item);
       const source = [item.source, item.category].filter(Boolean).join(" · ");
       const published = formatDate(item.published_at || item.scraped_at || item.created_at);
-      const badges = [item.risk_level && `Risco ${item.risk_level}`, item.operational_relevance && `Relevância ${item.operational_relevance}`].filter(Boolean);
+      const badges = [
+        item.risk_level && `Risco ${compactRiskValue(item.risk_level)}`,
+        item.operational_relevance && `Relevância ${compactRelevanceValue(item.operational_relevance)}`,
+      ].filter(Boolean);
 
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = "#061b14";
@@ -1032,19 +1080,7 @@
       wrapCanvasText(ctx, summary, 168, nextY + 76, 744, 38, 7);
 
       if (badges.length) {
-        ctx.font = "800 20px Segoe UI, Arial, sans-serif";
-        let badgeX = 168;
-        const badgeY = nextY + 300;
-        for (const badge of badges.slice(0, 2)) {
-          const badgeW = ctx.measureText(badge).width + 28;
-          ctx.fillStyle = "rgba(32,242,155,.16)";
-          ctx.fillRect(badgeX, badgeY, badgeW, 36);
-          ctx.strokeStyle = "rgba(32,242,155,.42)";
-          ctx.strokeRect(badgeX, badgeY, badgeW, 36);
-          ctx.fillStyle = "#20f29b";
-          ctx.fillText(badge, badgeX + 14, badgeY + 25);
-          badgeX += badgeW + 10;
-        }
+        drawCanvasBadges(ctx, badges, 168, nextY + 300, 744);
       }
 
       ctx.fillStyle = "#20f29b";
