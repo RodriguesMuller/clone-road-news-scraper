@@ -55,6 +55,10 @@ No Vercel:
 - Root Directory: `./`
 - Build Command: deixe vazio
 - Output Directory: `public`
+- Install Command: deixe vazio
+
+Nao use o preset Python na Vercel. O Python roda somente no GitHub Actions; a
+Vercel deve publicar apenas o frontend estatico e a rota JavaScript em `api/`.
 
 Nao configure `DATABASE_URL` na Vercel. Esse segredo fica apenas no GitHub
 Actions.

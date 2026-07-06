@@ -8,8 +8,12 @@ __pycache__
 .git
 .github
 .python-version
+.pip-cache
 config
 main.py
 requirements.txt
 scraper
+scripts
+tests
+README.md
 VERCEL_DEPLOY.md
