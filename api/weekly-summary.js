@@ -4,12 +4,77 @@ const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
 
 function clean(value) {
-  return String(value || "").replace(/\s+/g, " ").trim();
+  return String(value || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;?/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function roadFromText(text) {
   const match = clean(text).match(/\b((?:BR|SP|MG|RJ|RS|SC|PR|BA|GO|MT|MS|PA|PE|CE|ES|RO|TO|MA|PI|RN|PB|AL|SE|AM|AC|RR|AP|DF)[-\s]?\d{2,4})\b/i);
   return match ? match[1].replace(/\s+/g, "-").toUpperCase() : "";
+}
+
+const STATES = [
+  ["Acre", "AC"], ["Alagoas", "AL"], ["Amapa", "AP"], ["Amazonas", "AM"], ["Bahia", "BA"], ["Ceara", "CE"],
+  ["Distrito Federal", "DF"], ["Espirito Santo", "ES"], ["Goias", "GO"], ["Maranhao", "MA"], ["Mato Grosso", "MT"],
+  ["Mato Grosso do Sul", "MS"], ["Minas Gerais", "MG"], ["Para", "PA"], ["Paraiba", "PB"], ["Parana", "PR"],
+  ["Pernambuco", "PE"], ["Piaui", "PI"], ["Rio de Janeiro", "RJ"], ["Rio Grande do Norte", "RN"],
+  ["Rio Grande do Sul", "RS"], ["Rondonia", "RO"], ["Roraima", "RR"], ["Santa Catarina", "SC"],
+  ["Sao Paulo", "SP"], ["Sergipe", "SE"], ["Tocantins", "TO"],
+];
+
+function normalizeForMatch(value) {
+  return clean(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function regionFromText(text) {
+  const raw = clean(text);
+  const normalized = normalizeForMatch(raw);
+  const cityUf = raw.match(/\b([A-ZÁÂÃÉÊÍÓÔÕÚÇ][\wÁÂÃÉÊÍÓÔÕÚÇáâãéêíóôõúç.'-]+(?:\s+[A-ZÁÂÃÉÊÍÓÔÕÚÇ][\wÁÂÃÉÊÍÓÔÕÚÇáâãéêíóôõúç.'-]+){0,3})\/([A-Z]{2})\b/);
+  if (cityUf) return `${cityUf[1]}/${cityUf[2]}`;
+  for (const [name, uf] of STATES) {
+    if (normalized.includes(normalizeForMatch(name))) return name;
+    if (new RegExp(`\\b${uf}\\b`, "i").test(raw)) return uf;
+  }
+  return "";
+}
+
+function categoryFromText(item) {
+  const explicit = clean(item.category);
+  if (explicit && !/^noticia$/i.test(explicit)) return explicit;
+  const text = normalizeForMatch(`${item.title} ${item.summary}`);
+  if (/roubo|saque|assalto|carga/.test(text)) return "Roubo de carga";
+  if (/manifestacao|protesto|bloqueio por manifestantes/.test(text)) return "Manifestacao";
+  if (/acidente|colisao|batida|tombamento|capotamento/.test(text)) return "Acidente";
+  if (/bloqueio|interdicao|interdita|pista bloqueada|pare-e-siga/.test(text)) return "Interdicao";
+  if (/lentidao|congestionamento|fila|trafego lento/.test(text)) return "Lentidao";
+  if (/tempestade|chuva|vento|granizo|inmet|alagamento|barreira/.test(text)) return "Clima";
+  if (/obra|servico|manutencao|recuperacao/.test(text)) return "Obra";
+  if (/fiscalizacao|operacao policial|prf/.test(text)) return "Fiscalizacao";
+  return "Monitoramento";
+}
+
+function riskFromText(item) {
+  const text = normalizeForMatch(`${item.title} ${item.summary} ${item.category} ${item.type}`);
+  if (/roubo de carga|saque|bloqueio total|interdicao total|manifestacao/.test(text)) return "Critico";
+  if (/acidente|bloqueio|interdicao|tempestade|perigo|queda de barreira|tombamento/.test(text)) return "Alto";
+  if (/lentidao|chuva forte|obra|interdicao parcial|congestionamento|pare-e-siga/.test(text)) return "Medio";
+  return "Baixo";
+}
+
+function riskRank(value) {
+  return { Critico: 4, Alto: 3, Medio: 2, Baixo: 1 }[value] || 0;
+}
+
+function shorten(value, limit = 160) {
+  const text = clean(value);
+  if (text.length <= limit) return text;
+  return `${text.slice(0, limit - 1).replace(/\s+\S*$/, "")}...`;
 }
 
 function countBy(items, getter) {
@@ -31,6 +96,11 @@ function fallbackSummary(context) {
     headline: "Resumo semanal rodoviario",
     executive_summary: `Foram analisados ${context.total} registros dos ultimos ${context.period_days} dias. As rodovias mais citadas foram ${roads}. As fontes com maior volume foram ${sources}.`,
     risk_level: context.total ? "Atencao" : "Normal",
+    indicators: context.indicators,
+    weekly_points: context.weekly_points,
+    top_occurrences: context.top_occurrences,
+    featured_regions: context.regions.slice(0, 6).map(([region, count]) => `${region} (${count})`),
+    featured_roads: context.roads.slice(0, 6).map(([road, count]) => `${road} (${count})`),
     operational_points: operational.slice(0, 6).map((item) => item.title).filter(Boolean),
     critical_roads: context.roads.slice(0, 5).map(([road, count]) => ({
       road,
@@ -76,21 +146,73 @@ async function fetchWeeklyItems() {
 }
 
 function buildContext(items) {
-  const compact = items.slice(0, 120).map((item) => ({
-    title: clean(item.title),
-    source: clean(item.source),
-    type: clean(item.type),
-    published_at: clean(item.published_at || item.created_at),
-    summary: clean(item.summary).slice(0, 700),
-    url: clean(item.url),
-  }));
+  // Enrich locally so the report stays useful even when the AI fallback is used.
+  const compact = items.slice(0, 120).map((item) => {
+    const title = clean(item.title);
+    const summary = clean(item.summary).slice(0, 700);
+    const merged = `${title} ${summary}`;
+    return {
+      title,
+      source: clean(item.source),
+      type: clean(item.type),
+      category: categoryFromText(item),
+      risk_level: riskFromText(item),
+      region: regionFromText(merged),
+      road: roadFromText(merged),
+      published_at: clean(item.published_at || item.created_at),
+      scraped_at: clean(item.scraped_at),
+      summary,
+      short_summary: shorten(summary || title),
+      url: clean(item.url),
+    };
+  });
+  const roads = countBy(compact, (item) => item.road).slice(0, 10);
+  const regions = countBy(compact, (item) => item.region).slice(0, 10);
+  const riskCounts = countBy(compact, (item) => item.risk_level);
+  const categoryCounts = countBy(compact, (item) => item.category);
+  const topOccurrences = [...compact]
+    .filter((item) => item.title)
+    .sort((a, b) => (riskRank(b.risk_level) - riskRank(a.risk_level)) || Number(Boolean(b.road || b.region)) - Number(Boolean(a.road || a.region)))
+    .slice(0, 5)
+    .map((item) => ({
+      title: item.title,
+      region: item.region,
+      road: item.road,
+      category: item.category,
+      risk: item.risk_level,
+      source: item.source,
+      date: item.published_at || item.scraped_at,
+      url: item.url,
+      short_summary: item.short_summary,
+    }));
+  const highCritical = compact.filter((item) => riskRank(item.risk_level) >= 3).length;
+  const topSource = countBy(items, (item) => clean(item.source) || "Sem fonte")[0]?.[0] || "Sem fonte";
+  const indicators = {
+    total_news: items.length,
+    high_critical_alerts: highCritical,
+    impacted_regions: regions.length,
+    cited_roads: roads.length,
+    top_source: topSource,
+    updated_at: new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+  };
+  const weeklyPoints = [
+    `Foram analisados ${items.length} registros nos ultimos 7 dias, com ${highCritical} alerta(s) de risco alto ou critico.`,
+    roads.length ? `Rodovias mais citadas: ${roads.slice(0, 3).map(([road]) => road).join(", ")}.` : "Nao houve rodovia dominante identificada nos registros.",
+    regions.length ? `Regioes com maior recorrencia: ${regions.slice(0, 3).map(([region]) => region).join(", ")}.` : `Fonte mais recorrente no periodo: ${topSource}.`,
+  ];
   return {
     period_days: 7,
     generated_at: new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }),
     total: items.length,
     sources: countBy(items, (item) => clean(item.source) || "Sem fonte").slice(0, 12),
     types: countBy(items, (item) => clean(item.type) || "Noticia").slice(0, 8),
-    roads: countBy(items, (item) => roadFromText(`${item.title} ${item.summary}`)).slice(0, 10),
+    roads,
+    regions,
+    risk_counts: riskCounts,
+    category_counts: categoryCounts,
+    indicators,
+    weekly_points: weeklyPoints,
+    top_occurrences: topOccurrences,
     items: compact,
   };
 }
@@ -125,7 +247,7 @@ async function generateAiSummary(context) {
           content: [
             {
               type: "input_text",
-              text: "Voce e um analista operacional de risco rodoviario da Overhaul. Responda somente com JSON valido contendo: headline, executive_summary, risk_level, operational_points, critical_roads, inmet_regions, blockages_or_works, detours, weather_notes, recommendations. critical_roads deve ser array de objetos com road, why_critical, blockage_status, works_status, evidence. inmet_regions deve ser array de objetos com region, danger_reason, rainfall_or_wind, attention_required, evidence. operational_points deve conter apenas impactos reais para transporte: rodovia travada, bloqueio, obra, lentidao relevante, acidente, clima severo ou necessidade de monitorar/desviar rota. Use portugues do Brasil, tom executivo e nao invente fatos fora dos dados.",
+              text: "Voce e um analista operacional de risco rodoviario da Overhaul. Responda somente com JSON valido contendo: headline, executive_summary, risk_level, indicators, weekly_points, top_occurrences, featured_regions, featured_roads, operational_points, critical_roads, inmet_regions, blockages_or_works, detours, weather_notes, recommendations. top_occurrences deve ter no maximo 5 objetos com title, region, road, category, risk, source, date, url, short_summary. weekly_points deve ter no maximo 3 bullets. critical_roads deve ser array de objetos com road, why_critical, blockage_status, works_status, evidence. inmet_regions deve ser array de objetos com region, danger_reason, rainfall_or_wind, attention_required, evidence. Use portugues do Brasil, tom executivo, frases objetivas e nao invente fatos fora dos dados.",
             },
           ],
         },
@@ -134,7 +256,7 @@ async function generateAiSummary(context) {
           content: [
             {
               type: "input_text",
-              text: `Gere um resumo semanal focado em impacto operacional com base nestes registros. Para INMET, informe regioes em perigo, por que estao em perigo, quantidade de chuva/vento quando existir, e quais regioes exigem atencao. Para rodovias criticas, explique por que sao criticas, se ha bloqueio, interdicao, lentidao, obra ou pare-e-siga, e cite a evidencia. Informe desvios apenas se houver dado explicito; se nao houver, diga que nao ha desvio confirmado. Traga somente o que impacta transporte rodoviario.\n${JSON.stringify(context)}`,
+              text: `Gere um resumo semanal compacto para clientes de transporte rodoviario. Mostre o que aconteceu, onde aconteceu, riscos para a operacao, rodovias/regioes que exigem atencao e top 5 ocorrencias realmente relevantes. Para INMET, informe regioes em perigo, por que estao em perigo, quantidade de chuva/vento quando existir, e quais regioes exigem atencao. Para rodovias criticas, explique por que sao criticas, se ha bloqueio, interdicao, lentidao, obra ou pare-e-siga, e cite a evidencia. Informe desvios apenas se houver dado explicito; se nao houver, diga que nao ha desvio confirmado. Nao transforme volume de noticia em risco se nao houver indicio operacional.\n${JSON.stringify(context)}`,
             },
           ],
         },

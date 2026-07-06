@@ -42,7 +42,8 @@ def _date_text(value) -> str:
 
 
 def _plain(value) -> str:
-    return re.sub(r"\s+", " ", html.unescape(str(value or ""))).strip()
+    text = re.sub(r"<[^>]+>", " ", html.unescape(str(value or "").replace("&nbsp&nbsp", " ")))
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def _road_from_text(text: str) -> str:
@@ -54,28 +55,152 @@ def _road_from_text(text: str) -> str:
     return match.group(1).replace(" ", "-").upper() if match else ""
 
 
+STATES = [
+    ("Acre", "AC"), ("Alagoas", "AL"), ("Amapa", "AP"), ("Amazonas", "AM"), ("Bahia", "BA"),
+    ("Ceara", "CE"), ("Distrito Federal", "DF"), ("Espirito Santo", "ES"), ("Goias", "GO"),
+    ("Maranhao", "MA"), ("Mato Grosso", "MT"), ("Mato Grosso do Sul", "MS"), ("Minas Gerais", "MG"),
+    ("Para", "PA"), ("Paraiba", "PB"), ("Parana", "PR"), ("Pernambuco", "PE"), ("Piaui", "PI"),
+    ("Rio de Janeiro", "RJ"), ("Rio Grande do Norte", "RN"), ("Rio Grande do Sul", "RS"),
+    ("Rondonia", "RO"), ("Roraima", "RR"), ("Santa Catarina", "SC"), ("Sao Paulo", "SP"),
+    ("Sergipe", "SE"), ("Tocantins", "TO"),
+]
+
+
+def _match_text(value: str) -> str:
+    normalized = _plain(value).lower()
+    return (
+        normalized.replace("á", "a").replace("à", "a").replace("ã", "a").replace("â", "a")
+        .replace("é", "e").replace("ê", "e").replace("í", "i").replace("ó", "o")
+        .replace("ô", "o").replace("õ", "o").replace("ú", "u").replace("ç", "c")
+    )
+
+
+def _region_from_text(text: str) -> str:
+    raw = _plain(text)
+    city_uf = re.search(r"\b([A-ZÁÂÃÉÊÍÓÔÕÚÇ][\wÁÂÃÉÊÍÓÔÕÚÇáâãéêíóôõúç.'-]+(?:\s+[A-ZÁÂÃÉÊÍÓÔÕÚÇ][\wÁÂÃÉÊÍÓÔÕÚÇáâãéêíóôõúç.'-]+){0,3})/([A-Z]{2})\b", raw)
+    if city_uf:
+        return f"{city_uf.group(1)}/{city_uf.group(2)}"
+    normalized = _match_text(raw)
+    for name, uf in STATES:
+        if _match_text(name) in normalized:
+            return name
+        if re.search(rf"\b{uf}\b", raw):
+            return uf
+    return ""
+
+
+def _category_from_item(item: dict) -> str:
+    explicit = _plain(item.get("category"))
+    if explicit and explicit.lower() != "noticia":
+        return explicit
+    text = _match_text(f"{item.get('title', '')} {item.get('summary', '')}")
+    if re.search(r"roubo|saque|assalto|carga", text):
+        return "Roubo de carga"
+    if re.search(r"manifestacao|protesto|bloqueio por manifestantes", text):
+        return "Manifestacao"
+    if re.search(r"acidente|colisao|batida|tombamento|capotamento", text):
+        return "Acidente"
+    if re.search(r"bloqueio|interdicao|interdita|pista bloqueada|pare-e-siga", text):
+        return "Interdicao"
+    if re.search(r"lentidao|congestionamento|fila|trafego lento", text):
+        return "Lentidao"
+    if re.search(r"tempestade|chuva|vento|granizo|inmet|alagamento|barreira", text):
+        return "Clima"
+    if re.search(r"obra|servico|manutencao|recuperacao", text):
+        return "Obra"
+    if re.search(r"fiscalizacao|operacao policial|prf", text):
+        return "Fiscalizacao"
+    return "Monitoramento"
+
+
+def _risk_from_item(item: dict) -> str:
+    text = _match_text(f"{item.get('title', '')} {item.get('summary', '')} {item.get('category', '')} {item.get('type', '')}")
+    if re.search(r"roubo de carga|saque|bloqueio total|interdicao total|manifestacao", text):
+        return "Critico"
+    if re.search(r"acidente|bloqueio|interdicao|tempestade|perigo|queda de barreira|tombamento", text):
+        return "Alto"
+    if re.search(r"lentidao|chuva forte|obra|interdicao parcial|congestionamento|pare-e-siga", text):
+        return "Medio"
+    return "Baixo"
+
+
+def _risk_rank(value: str) -> int:
+    return {"Critico": 4, "Alto": 3, "Medio": 2, "Baixo": 1}.get(value, 0)
+
+
+def _short(value: str, limit: int = 160) -> str:
+    text = _plain(value)
+    if len(text) <= limit:
+        return text
+    return re.sub(r"\s+\S*$", "", text[: limit - 1]) + "..."
+
+
 def build_weekly_context(items: list[dict], days: int = 7) -> dict:
     source_counts = Counter(_plain(item.get("source")) or "Sem fonte" for item in items)
     type_counts = Counter(_plain(item.get("type")) or "Noticia" for item in items)
-    road_counts = Counter(
-        road
-        for item in items
-        for road in [_road_from_text(f"{item.get('title', '')} {item.get('summary', '')}")]
-        if road
-    )
 
+    # Enrich locally so the email has useful KPIs and priorities even without AI.
     compact_items = []
     for item in items[:120]:
+        title = _plain(item.get("title"))
+        summary = _plain(item.get("summary"))[:700]
+        merged = f"{title} {summary}"
         compact_items.append(
             {
-                "title": _plain(item.get("title")),
+                "title": title,
                 "source": _plain(item.get("source")),
                 "type": _plain(item.get("type")),
+                "category": _category_from_item(item),
+                "risk_level": _risk_from_item(item),
+                "region": _region_from_text(merged),
+                "road": _road_from_text(merged),
                 "published_at": _date_text(item.get("published_at")),
-                "summary": _plain(item.get("summary"))[:700],
+                "scraped_at": _date_text(item.get("scraped_at")),
+                "summary": summary,
+                "short_summary": _short(summary or title),
                 "url": _plain(item.get("url")),
             }
         )
+
+    road_counts = Counter(item["road"] for item in compact_items if item.get("road"))
+    region_counts = Counter(item["region"] for item in compact_items if item.get("region"))
+    risk_counts = Counter(item["risk_level"] for item in compact_items if item.get("risk_level"))
+    category_counts = Counter(item["category"] for item in compact_items if item.get("category"))
+    top_occurrences = sorted(
+        compact_items,
+        key=lambda item: (_risk_rank(item.get("risk_level", "")), bool(item.get("road") or item.get("region"))),
+        reverse=True,
+    )[:5]
+    top_occurrences = [
+        {
+            "title": item.get("title"),
+            "region": item.get("region"),
+            "road": item.get("road"),
+            "category": item.get("category"),
+            "risk": item.get("risk_level"),
+            "source": item.get("source"),
+            "date": item.get("published_at") or item.get("scraped_at"),
+            "url": item.get("url"),
+            "short_summary": item.get("short_summary"),
+        }
+        for item in top_occurrences
+        if item.get("title")
+    ]
+    high_critical = sum(1 for item in compact_items if _risk_rank(item.get("risk_level", "")) >= 3)
+    top_source = source_counts.most_common(1)[0][0] if source_counts else "Sem fonte"
+    indicators = {
+        "total_news": len(items),
+        "high_critical_alerts": high_critical,
+        "impacted_regions": len(region_counts),
+        "cited_roads": len(road_counts),
+        "top_source": top_source,
+        "updated_at": brasilia_now().strftime("%d/%m/%Y %H:%M"),
+    }
+    weekly_points = [
+        f"Foram analisados {len(items)} registros nos ultimos {days} dias, com {high_critical} alerta(s) de risco alto ou critico.",
+        "Rodovias mais citadas: " + ", ".join(road for road, _ in road_counts.most_common(3)) + "." if road_counts else "Nao houve rodovia dominante identificada nos registros.",
+        "Regioes com maior recorrencia: " + ", ".join(region for region, _ in region_counts.most_common(3)) + "." if region_counts else f"Fonte mais recorrente no periodo: {top_source}.",
+    ]
 
     return {
         "period_days": days,
@@ -84,6 +209,12 @@ def build_weekly_context(items: list[dict], days: int = 7) -> dict:
         "sources": source_counts.most_common(12),
         "types": type_counts.most_common(8),
         "roads": road_counts.most_common(10),
+        "regions": region_counts.most_common(10),
+        "risk_counts": risk_counts.most_common(),
+        "category_counts": category_counts.most_common(),
+        "indicators": indicators,
+        "weekly_points": weekly_points,
+        "top_occurrences": top_occurrences,
         "items": compact_items,
     }
 
@@ -109,6 +240,11 @@ def fallback_summary(context: dict) -> dict:
             f"As fontes com maior volume foram {top_sources}. As rodovias mais citadas foram {top_roads}."
         ),
         "risk_level": "Atencao" if context["total"] else "Normal",
+        "indicators": context.get("indicators", {}),
+        "weekly_points": context.get("weekly_points", []),
+        "top_occurrences": context.get("top_occurrences", []),
+        "featured_regions": [f"{region} ({count})" for region, count in context.get("regions", [])[:6]],
+        "featured_roads": [f"{road} ({count})" for road, count in context.get("roads", [])[:6]],
         "operational_points": operational[:6],
         "critical_roads": [
             {
@@ -159,7 +295,9 @@ def generate_ai_summary(context: dict, api_key: str | None = None, model: str | 
                 "type": "input_text",
                 "text": (
                     "Analise os registros rodoviarios abaixo e gere um resumo semanal em JSON valido. "
-                    "Traga somente o que impacta operacao de transporte rodoviario. "
+                    "Traga somente o que impacta operacao de transporte rodoviario, em formato compacto e executivo. "
+                    "Mostre o que aconteceu, onde aconteceu, riscos para a operacao, rodovias/regioes que exigem atencao "
+                    "e top 5 ocorrencias realmente relevantes. "
                     "Para INMET, informe regioes em perigo, por que estao em perigo, quantidade de chuva/vento quando existir, "
                     "e quais regioes exigem atencao. Para rodovias criticas, explique por que sao criticas, se ha bloqueio, "
                     "interdicao, lentidao, obra ou pare-e-siga, e cite a evidencia. Informe desvios apenas se houver dado explicito; "
@@ -177,7 +315,10 @@ def generate_ai_summary(context: dict, api_key: str | None = None, model: str | 
                 "text": (
                     "Voce e um analista operacional de risco rodoviario da Overhaul. "
                     "Responda somente com JSON valido contendo: headline, executive_summary, risk_level, "
+                    "indicators, weekly_points, top_occurrences, featured_regions, featured_roads, "
                     "operational_points, critical_roads, inmet_regions, blockages_or_works, detours, weather_notes, recommendations. "
+                    "top_occurrences deve ter no maximo 5 objetos com title, region, road, category, risk, source, date, url, short_summary. "
+                    "weekly_points deve ter no maximo 3 bullets. "
                     "critical_roads deve ser array de objetos com road, why_critical, blockage_status, works_status, evidence. "
                     "inmet_regions deve ser array de objetos com region, danger_reason, rainfall_or_wind, attention_required, evidence. "
                     "operational_points deve conter apenas impactos reais para transporte: rodovia travada, bloqueio, obra, lentidao relevante, "
@@ -238,7 +379,37 @@ def render_weekly_email(summary: dict, context: dict) -> str:
         values = items if isinstance(items, list) and items else [empty]
         return "".join(f"<li>{esc(item_text(item))}</li>" for item in values[:8])
 
-    points = list_html(summary.get("operational_points", []), "Sem ponto operacional relevante confirmado.")
+    def kpi_html():
+        indicators = summary.get("indicators") or context.get("indicators", {})
+        cards = [
+            ("Noticias na semana", indicators.get("total_news", context.get("total", 0))),
+            ("Alertas criticos/alto risco", indicators.get("high_critical_alerts", 0)),
+            ("Regioes impactadas", indicators.get("impacted_regions", 0)),
+            ("Rodovias citadas", indicators.get("cited_roads", len(context.get("roads", [])))),
+            ("Fonte recorrente", indicators.get("top_source", "-")),
+            ("Ultima atualizacao", indicators.get("updated_at", context.get("generated_at", "-"))),
+        ]
+        return "".join(f"<div class='kpi'><span>{esc(label)}</span><strong>{esc(value)}</strong></div>" for label, value in cards)
+
+    def occurrences_html():
+        items = summary.get("top_occurrences") or context.get("top_occurrences") or []
+        if not items:
+            return "<p>Nenhuma ocorrencia operacional relevante confirmada no periodo.</p>"
+        rows = []
+        for item in items[:5]:
+            region_road = " - ".join(part for part in [item.get("road"), item.get("region")] if part)
+            rows.append(
+                "<div class='occurrence'>"
+                f"<div class='meta'>{esc(item.get('risk', 'Baixo'))} | {esc(item.get('category', 'Monitoramento'))}"
+                f"{' | ' + esc(region_road) if region_road else ''}{' | ' + esc(item.get('date')) if item.get('date') else ''}</div>"
+                f"<h3>{esc(item.get('title', 'Ocorrencia monitorada'))}</h3>"
+                f"<p>{esc(item.get('short_summary', ''))}</p>"
+                f"<div class='meta'>Fonte: {esc(item.get('source', 'Nao informada'))}</div>"
+                "</div>"
+            )
+        return "".join(rows)
+
+    points = list_html(summary.get("weekly_points") or summary.get("operational_points", []), "Sem ponto operacional relevante confirmado.")
     roads = list_html(summary.get("critical_roads", []), "Sem rodovia critica confirmada.")
     inmet_regions = list_html(summary.get("inmet_regions", []), "Sem regiao INMET relevante no periodo.")
     blockages = list_html(summary.get("blockages_or_works", []), "Sem bloqueio, obra ou pare-e-siga confirmado.")
@@ -261,6 +432,13 @@ def render_weekly_email(summary: dict, context: dict) -> str:
     .brand:before {{ content:""; display:inline-block; border-left:18px solid transparent; border-right:18px solid transparent; border-top:28px solid #12d981; margin-right:12px; transform:translateY(6px); }}
     .sub {{ color:#12d981; font-weight:800; letter-spacing:.13em; font-size:13px; margin-top:6px; }}
     .card {{ background:#ffffff; border:1px solid #d7e4de; padding:22px; margin-top:16px; }}
+    .kpis {{ display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:16px; }}
+    .kpi {{ background:#ffffff; border:1px solid #d7e4de; padding:14px; }}
+    .kpi span {{ display:block; color:#5c6a63; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }}
+    .kpi strong {{ display:block; margin-top:8px; font-size:22px; }}
+    .occurrence {{ border:1px solid #d7e4de; background:#fbfdfc; padding:14px; margin-bottom:10px; }}
+    .occurrence h3 {{ margin:8px 0 6px; font-size:16px; }}
+    .meta {{ color:#5c6a63; font-size:12px; font-weight:700; }}
     h1 {{ font-size:28px; margin:22px 0 8px; }}
     h2 {{ font-size:16px; letter-spacing:.08em; text-transform:uppercase; margin:0 0 14px; }}
     p, li, td {{ font-size:15px; line-height:1.55; }}
@@ -280,17 +458,22 @@ def render_weekly_email(summary: dict, context: dict) -> str:
       <p>{esc(summary.get("executive_summary"))}</p>
       <div class="risk">Risco: {esc(summary.get("risk_level"))}</div>
     </div>
+    <div class="kpis">{kpi_html()}</div>
     <div class="card">
-      <h2>Pontos Operacionais</h2>
+      <h2>Principais pontos da semana</h2>
       <ul>{points}</ul>
     </div>
     <div class="card">
-      <h2>Rodovias Criticas</h2>
-      <ul>{roads}</ul>
+      <h2>Top ocorrencias relevantes</h2>
+      {occurrences_html()}
     </div>
     <div class="card">
       <h2>INMET: Regioes em Perigo</h2>
       <ul>{inmet_regions}</ul>
+    </div>
+    <div class="card">
+      <h2>Rodovias Criticas</h2>
+      <ul>{roads}</ul>
     </div>
     <div class="card">
       <h2>Bloqueios, Obras e Desvios</h2>
