@@ -106,11 +106,19 @@
     @media (max-width: 640px) { .weekly-fab { left: 18px; right: 18px; } .modal-head { align-items: flex-start; } }
     @media (max-width: 480px) { .stats { grid-template-columns: 1fr; } .value { font-size: 28px; } }
     @media print {
+      @page { size: A4; margin: 12mm; }
+      html, body { width: 210mm; min-height: 297mm; background: #fff !important; }
       body * { visibility: hidden !important; }
       #weekly-summary-report, #weekly-summary-report * { visibility: visible !important; }
-      #weekly-summary-report { position: absolute; left: 0; top: 0; width: 100%; padding: 12mm; background: #fff; color: #101614; }
-      .weekly-fab, .modal-head, .weekly-actions { display: none !important; }
+      #weekly-summary-report { position: absolute; left: 0; top: 0; width: 100%; padding: 0; background: #fff; color: #101614; gap: 10px; }
+      header, main, footer, .weekly-fab, .modal-head, #imageModal, .modal-actions, button { display: none !important; }
+      .modal, .modal.open, .modal-card, .weekly-body { position: static !important; inset: auto !important; display: block !important; padding: 0 !important; margin: 0 !important; max-height: none !important; overflow: visible !important; background: transparent !important; border: 0 !important; box-shadow: none !important; }
       .weekly-hero, .weekly-section, .weekly-kpi, .weekly-occurrence { break-inside: avoid; box-shadow: none; }
+      .weekly-hero { padding: 14px; }
+      .weekly-kpi { min-height: 64px; }
+      .weekly-kpi strong { font-size: 18px; }
+      .weekly-occurrence h5 { font-size: 13px; }
+      .weekly-occurrence p, .weekly-section li { font-size: 12px; line-height: 1.35; }
     }
   </style>
 </head>
@@ -127,24 +135,24 @@
     <section class="stats" id="stats"></section>
     <section class="layout">
       <div class="panel">
-        <h2>Noticias recentes</h2>
+        <h2>Notícias recentes</h2>
         <div id="news" class="list"></div>
       </div>
       <aside class="panel">
-        <h2>Fontes nas ultimas 24h</h2>
+        <h2>Fontes nas últimas 24h</h2>
         <div id="sources" class="sources"></div>
       </aside>
     </section>
   </main>
 
   <footer>
-    O scraper roda no GitHub Actions e grava no Supabase. Esta pagina apenas le dados publicos da tabela news.
+    O scraper roda no GitHub Actions e grava no Supabase. Esta página apenas lê dados públicos da tabela news.
   </footer>
 
   <div id="imageModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="imageTitle">
     <div class="modal-card">
       <div class="modal-head">
-        <strong id="imageTitle">Imagem da noticia</strong>
+        <strong id="imageTitle">Imagem da notícia</strong>
         <div class="modal-actions">
           <button id="downloadImage" type="button">Baixar PNG</button>
           <button id="closeImage" type="button" class="mini-button">Fechar</button>
@@ -163,8 +171,8 @@
       <div class="modal-head">
         <strong id="weeklyTitle">Resumo semanal</strong>
         <div class="modal-actions">
-          <button id="printWeekly" type="button">Gerar PDF do resumo</button>
-          <button id="jumpNews" type="button" class="mini-button">Ver noticias completas</button>
+          <button id="printWeekly" type="button">Exportar resumo em PDF</button>
+          <button id="jumpNews" type="button" class="mini-button">Ver notícias completas</button>
           <button id="closeWeekly" type="button" class="mini-button">Fechar</button>
         </div>
       </div>
@@ -222,9 +230,9 @@
     }
 
     function formatDate(iso) {
-      if (!iso) return "Data nao informada";
+      if (!iso) return "Data não informada";
       const date = parseBrasiliaDate(iso);
-      if (!date) return "Data nao informada";
+      if (!date) return "Data não informada";
       return new Intl.DateTimeFormat("pt-BR", {
         timeZone: BRASILIA_TIME_ZONE,
         day: "2-digit",
@@ -357,7 +365,7 @@
             const trusted = TRUSTED_SOURCES.has(source);
             return `<div class="source${trusted ? " trusted" : ""}"><span>${escapeHtml(source)}${trusted ? "<span class=\"badge\">Fonte confiável</span>" : ""}</span><b>${count}</b></div>`;
           }).join("")
-        : `<div class="hint">Sem registros nas ultimas 24h.</div>`;
+        : `<div class="hint">Sem registros nas últimas 24h.</div>`;
     }
 
     function renderNews() {
@@ -383,7 +391,7 @@
               </article>
             `;
           }).join("")
-        : `<div class="hint">Nenhuma noticia encontrada.</div>`;
+        : `<div class="hint">Nenhuma notícia encontrada.</div>`;
     }
 
     function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
@@ -529,7 +537,7 @@
         return `${originalTitle} na ${road}`;
       }
 
-      return originalTitle || "Resumo da noticia";
+      return originalTitle || "Resumo da notícia";
     }
 
     function summaryFallback(item) {
@@ -538,7 +546,7 @@
       if (item.type === "INMET" && weather) {
         return `há alerta de ${weather[1].trim().toLowerCase()} com ${weather[2].trim().toLowerCase()}, conforme aviso meteorológico publicado pelo INMET.`;
       }
-      return title || "Resumo indisponivel no banco. Abra a noticia para ver os detalhes completos.";
+      return title || "Resumo indisponível no banco. Abra a notícia para ver os detalhes completos.";
     }
 
     function smartSummary(item) {
@@ -634,7 +642,7 @@
 
       ctx.fillStyle = "#12d981";
       ctx.font = "800 30px Segoe UI, Arial, sans-serif";
-      ctx.fillText("Resumo da noticia", 136, 258);
+      ctx.fillText("Resumo da notícia", 136, 258);
 
       ctx.fillStyle = "#f5fbf8";
       ctx.font = "900 44px Segoe UI, Arial, sans-serif";
@@ -674,7 +682,7 @@
       const item = state.items[index];
       if (!item) return;
       drawShareImage(item);
-      document.getElementById("imageTitle").textContent = buildImageTitle(item) || "Imagem da noticia";
+      document.getElementById("imageTitle").textContent = buildImageTitle(item) || "Imagem da notícia";
       document.getElementById("imageModal").classList.add("open");
     }
 
@@ -693,19 +701,19 @@
     function weeklyFieldLabel(key) {
       return {
         road: "Rodovia",
-        why_critical: "Por que e critica",
+        why_critical: "Por que é crítica",
         blockage_status: "Bloqueio",
         works_status: "Obras",
         evidence: "Evidencia",
-        region: "Regiao",
+        region: "Região",
         danger_reason: "Motivo do perigo",
         rainfall_or_wind: "Chuva/vento",
-        attention_required: "Atencao necessaria",
+        attention_required: "Atenção necessária",
       }[key] || key.replace(/_/g, " ");
     }
 
     function renderList(items) {
-      const values = Array.isArray(items) && items.length ? items : ["Sem pontos relevantes no periodo."];
+      const values = Array.isArray(items) && items.length ? items : ["Sem pontos relevantes no período."];
       return `<ul>${values.map((item) => {
         if (item && typeof item === "object") {
           return `<li>${Object.entries(item)
@@ -733,12 +741,12 @@
     function renderKpis(summary, context) {
       const indicators = summary.indicators || context.indicators || {};
       const kpis = [
-        ["Noticias na semana", indicators.total_news ?? context.total ?? 0],
-        ["Alertas criticos/alto risco", indicators.high_critical_alerts ?? 0],
-        ["Estados/regioes impactados", indicators.impacted_regions ?? 0],
+        ["Notícias na semana", indicators.total_news ?? context.total ?? 0],
+        ["Alertas críticos/alto risco", indicators.high_critical_alerts ?? 0],
+        ["Estados/regiões impactados", indicators.impacted_regions ?? 0],
         ["Rodovias citadas", indicators.cited_roads ?? (context.roads || []).length],
         ["Fonte recorrente", indicators.top_source || (context.sources && context.sources[0] && context.sources[0][0]) || "-"],
-        ["Ultima atualizacao", indicators.updated_at || context.generated_at || "-"],
+        ["Última atualização", indicators.updated_at || context.generated_at || "-"],
       ];
       return `<section class="weekly-kpis">${kpis.map(([label, value]) => `
         <div class="weekly-kpi"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>
@@ -756,9 +764,9 @@
 
     function renderTopOccurrences(summary, context) {
       const items = asArray(summary.top_occurrences).length ? asArray(summary.top_occurrences) : asArray(context.top_occurrences);
-      if (!items.length) return `<div class="weekly-occurrence"><p>Nenhuma ocorrencia operacional relevante confirmada no periodo.</p></div>`;
+      if (!items.length) return `<div class="weekly-occurrence"><p>Nenhuma ocorrência operacional relevante confirmada no período.</p></div>`;
       return `<div class="weekly-occurrences">${items.slice(0, 5).map((item) => {
-        const title = item.title || "Ocorrencia monitorada";
+        const title = item.title || "Ocorrência monitorada";
         const risk = item.risk || item.risk_level || "Baixo";
         const regionRoad = [item.road, item.region].filter(Boolean).join(" - ");
         const link = item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Abrir fonte</a>` : "";
@@ -772,7 +780,7 @@
             </div>
             <h5>${escapeHtml(title)}</h5>
             <p>${escapeHtml(shortText(item.short_summary || item.summary || ""))}</p>
-            <div class="hint">${escapeHtml(item.source || "Fonte nao informada")} ${link}</div>
+            <div class="hint">${escapeHtml(item.source || "Fonte não informada")} ${link}</div>
           </article>`;
       }).join("")}</div>`;
     }
@@ -781,16 +789,16 @@
       const summary = data.summary || {};
       const context = data.context || {};
       const roads = Array.isArray(summary.critical_roads) && summary.critical_roads.length
-        ? summary.critical_roads.map((road) => `<span>${escapeHtml(typeof road === "object" ? road.road || road.why_critical || "Rodovia critica" : road)}</span>`).join("")
-        : `<span>Sem rodovia critica isolada</span>`;
+        ? summary.critical_roads.map((road) => `<span>${escapeHtml(typeof road === "object" ? road.road || road.why_critical || "Rodovia crítica" : road)}</span>`).join("")
+        : `<span>Sem rodovia crítica isolada</span>`;
 
       document.getElementById("weeklyContent").innerHTML = `
         <section class="weekly-hero">
           <div class="weekly-logo">OVERHAUL</div>
           <div class="weekly-sub">Road News · Resumo semanal IA</div>
-          <h3>${escapeHtml(summary.headline || "Resumo semanal rodoviario")}</h3>
-          <p>${escapeHtml(summary.executive_summary || "Nao foi possivel montar o resumo executivo.")}</p>
-          <div class="risk-pill">Risco: ${escapeHtml(summary.risk_level || "Atencao")}</div>
+          <h3>${escapeHtml(summary.headline || "Resumo semanal rodoviário")}</h3>
+          <p>${escapeHtml(summary.executive_summary || "Não foi possível montar o resumo executivo.")}</p>
+          <div class="risk-pill">Risco: ${escapeHtml(summary.risk_level || "Atenção")}</div>
         </section>
         <section class="weekly-grid">
           <div class="weekly-section">
@@ -798,12 +806,12 @@
             ${renderList(summary.operational_points)}
           </div>
           <div class="weekly-section">
-            <h4>Rodovias criticas</h4>
+            <h4>Rodovias críticas</h4>
             <div class="weekly-roads">${roads}</div>
             ${renderList(summary.critical_roads)}
           </div>
           <div class="weekly-section">
-            <h4>INMET: regioes em perigo</h4>
+            <h4>INMET: regiões em perigo</h4>
             ${renderList(summary.inmet_regions || summary.weather_notes)}
           </div>
           <div class="weekly-section">
@@ -811,11 +819,11 @@
             ${renderList([...(summary.blockages_or_works || []), ...(summary.detours || [])])}
           </div>
           <div class="weekly-section">
-            <h4>Recomendacoes</h4>
+            <h4>Recomendações</h4>
             ${renderList(summary.recommendations)}
           </div>
         </section>
-        <div class="hint">Analisados ${Number(context.total || 0)} registros dos ultimos ${Number(context.period_days || 7)} dias.</div>
+        <div class="hint">Analisados ${Number(context.total || 0)} registros dos últimos ${Number(context.period_days || 7)} dias.</div>
       `;
     }
 
@@ -828,10 +836,10 @@
           <section class="weekly-hero">
             <div class="weekly-logo">OVERHAUL</div>
             <div class="weekly-sub">Road News - Resumo semanal IA</div>
-            <h3>${escapeHtml(summary.headline || "Resumo semanal rodoviario")}</h3>
-            <p>${escapeHtml(summary.executive_summary || "Nao foi possivel montar o resumo executivo.")}</p>
-            <div class="risk-pill">Risco: ${escapeHtml(summary.risk_level || "Atencao")}</div>
-            <div class="weekly-period">Periodo: ultimos ${Number(context.period_days || 7)} dias - Gerado em ${escapeHtml(context.generated_at || "-")}</div>
+            <h3>${escapeHtml(summary.headline || "Resumo semanal rodoviário")}</h3>
+            <p>${escapeHtml(summary.executive_summary || "Não foi possível montar o resumo executivo.")}</p>
+            <div class="risk-pill">Risco: ${escapeHtml(summary.risk_level || "Atenção")}</div>
+            <div class="weekly-period">Período: últimos ${Number(context.period_days || 7)} dias - Gerado em ${escapeHtml(context.generated_at || "-")}</div>
           </section>
           ${renderKpis(summary, context)}
           <section class="weekly-grid">
@@ -840,27 +848,27 @@
               ${renderList(asArray(summary.weekly_points || summary.operational_points).slice(0, 3))}
             </div>
             <div class="weekly-section">
-              <h4>Rodovias e regioes em destaque</h4>
-              ${renderPills(summary.featured_roads || context.roads, "Sem rodovia critica isolada")}
+              <h4>Rodovias e regiões em destaque</h4>
+              ${renderPills(summary.featured_roads || context.roads, "Sem rodovia crítica isolada")}
               <div style="height:8px"></div>
-              ${renderPills(summary.featured_regions || context.regions, "Sem regiao dominante")}
+              ${renderPills(summary.featured_regions || context.regions, "Sem região dominante")}
             </div>
           </section>
           <section class="weekly-section">
-            <h4>Top ocorrencias relevantes</h4>
+            <h4>Top ocorrências relevantes</h4>
             ${renderTopOccurrences(summary, context)}
           </section>
           <section class="weekly-grid">
             <div class="weekly-section">
-              <h4>INMET: regioes em perigo</h4>
+              <h4>INMET: regiões em perigo</h4>
               ${renderList(asArray(summary.inmet_regions || summary.weather_notes).slice(0, 5))}
             </div>
             <div class="weekly-section">
-              <h4>Recomendacoes operacionais</h4>
+              <h4>Recomendações operacionais</h4>
               ${renderList(asArray(summary.recommendations).slice(0, 5))}
             </div>
           </section>
-          <div class="weekly-footer">Relatorio gerado automaticamente pelo Road News. Base analisada: ${Number(context.total || 0)} registros.</div>
+          <div class="weekly-footer">Relatório gerado automaticamente pelo Road News. Base analisada: ${Number(context.total || 0)} registros.</div>
         </div>
       `;
     }
