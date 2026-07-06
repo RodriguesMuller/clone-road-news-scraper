@@ -233,6 +233,48 @@ function extractText(data) {
   return text.trim();
 }
 
+function parseAiJson(text) {
+  const raw = clean(text).replace(/^```(?:json)?|```$/gim, "").trim();
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      return JSON.parse(raw.slice(start, end + 1));
+    }
+    throw new Error("AI_JSON_PARSE_FAILED");
+  }
+}
+
+function buildAiContext(context) {
+  const trimItem = (item) => ({
+    title: shorten(item.title, 120),
+    source: shorten(item.source, 60),
+    type: item.type,
+    category: item.category,
+    risk_level: item.risk_level,
+    region: item.region,
+    road: item.road,
+    date: item.published_at || item.scraped_at,
+    summary: shorten(item.summary || item.short_summary, 240),
+  });
+  return {
+    period_days: context.period_days,
+    generated_at: context.generated_at,
+    total: context.total,
+    indicators: context.indicators,
+    weekly_points: context.weekly_points,
+    roads: context.roads.slice(0, 8),
+    regions: context.regions.slice(0, 8),
+    risk_counts: context.risk_counts,
+    category_counts: context.category_counts,
+    sources: context.sources.slice(0, 8),
+    top_occurrences: context.top_occurrences.map(trimItem),
+    items: context.items.slice(0, 70).map(trimItem),
+  };
+}
+
 function openAiApiKey() {
   const value = String(process.env.OPENAI_API_KEY || "").trim();
   if (!value) return "";
@@ -248,6 +290,7 @@ function openAiApiKey() {
 async function generateAiSummary(context) {
   const apiKey = openAiApiKey();
   if (!apiKey) return fallbackSummary(context);
+  const aiContext = buildAiContext(context);
 
   const response = await fetch(OPENAI_URL, {
     method: "POST",
@@ -257,14 +300,14 @@ async function generateAiSummary(context) {
     },
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
-      max_output_tokens: 2400,
+      max_output_tokens: 4200,
       input: [
         {
           role: "developer",
           content: [
             {
               type: "input_text",
-              text: "Voce e um analista operacional de risco rodoviario do Road News. O resumo semanal e estrategico, para tendencia e planejamento, nao operacao em tempo real. Responda somente com JSON valido contendo: headline, executive_summary, risk_level, indicators, weekly_points, top_occurrences, featured_regions, featured_roads, featured_categories, operational_points, critical_roads, inmet_regions, blockages_or_works, detours, weather_notes, recommendations. top_occurrences deve ter no maximo 5 objetos com title, region, road, category, risk, source, date, url, short_summary. weekly_points e recommendations devem ter no maximo 3 bullets cada. critical_roads deve ser array de objetos com road, why_critical, blockage_status, works_status, evidence. inmet_regions deve ser array de objetos com region, danger_reason, rainfall_or_wind, attention_required, evidence. Analise concentracao de acidentes, interdições, clima severo, roubo de carga e manifestacoes. Use portugues do Brasil, tom executivo, frases objetivas e nao invente fatos fora dos dados.",
+              text: "Voce e um analista operacional de risco rodoviario do Road News. O resumo semanal e estrategico, para tendencia e planejamento, nao operacao em tempo real. Responda somente com JSON valido, sem markdown e sem texto fora do JSON. Use portugues do Brasil, tom executivo e frases objetivas. Nao invente fatos fora dos dados. Campos obrigatorios: headline string curta, executive_summary string com ate 420 caracteres, risk_level string, indicators objeto, weekly_points array maximo 3 strings, top_occurrences array maximo 5 objetos com title, region, road, category, risk, source, date, short_summary, featured_regions array, featured_roads array, featured_categories array, operational_points array maximo 3 strings, critical_roads array maximo 4 objetos com road, why_critical, blockage_status, works_status, evidence, inmet_regions array maximo 4 objetos com region, danger_reason, rainfall_or_wind, attention_required, evidence, blockages_or_works array maximo 4 strings, detours array maximo 3 strings, weather_notes array maximo 3 strings, recommendations array maximo 3 strings.",
             },
           ],
         },
@@ -273,7 +316,7 @@ async function generateAiSummary(context) {
           content: [
             {
               type: "input_text",
-              text: `Gere um relatório executivo semanal compacto para clientes de transporte rodoviario de cargas. Nao liste todas as noticias. Responda: principais riscos da semana, estados/regioes com mais ocorrencias, rodovias mais citadas, categorias mais frequentes, concentracao de acidentes/interdicoes/clima severo/roubo de carga/manifestacoes e atencao operacional para os proximos dias. Use top ocorrencias apenas como exemplos relevantes, priorizando risco critico/alto, rodovia, regiao e impacto operacional. Para INMET, informe regioes em perigo, motivo do perigo e chuva/vento quando existir. Informe desvios apenas se houver dado explicito. Nao transforme volume de noticia em risco se nao houver indicio operacional.\n${JSON.stringify(context)}`,
+              text: `Gere um relatório executivo semanal compacto para clientes de transporte rodoviario de cargas. Nao liste todas as noticias. Responda: principais riscos da semana, estados/regioes com mais ocorrencias, rodovias mais citadas, categorias mais frequentes, concentracao de acidentes/interdicoes/clima severo/roubo de carga/manifestacoes e atencao operacional para os proximos dias. Use top ocorrencias apenas como exemplos relevantes, priorizando risco critico/alto, rodovia, regiao e impacto operacional. Para INMET, informe regioes em perigo, motivo do perigo e chuva/vento quando existir. Informe desvios apenas se houver dado explicito. Nao transforme volume de noticia em risco se nao houver indicio operacional.\n${JSON.stringify(aiContext)}`,
             },
           ],
         },
@@ -281,13 +324,23 @@ async function generateAiSummary(context) {
     }),
   });
   if (!response.ok) {
-    throw new Error(await response.text());
+    const detail = await response.text();
+    if (response.status === 401 || /invalid_api_key|incorrect api key/i.test(detail)) {
+      throw new Error("OPENAI_API_KEY invalida ou ainda nao atualizada no deploy da Vercel. Revogue a chave exposta, crie uma nova, atualize a variavel e faca redeploy sem cache.");
+    }
+    if (response.status === 429 || /insufficient_quota|quota/i.test(detail)) {
+      throw new Error("A OpenAI recusou a chamada por limite de cota ou billing. Verifique credito, limite e billing na conta OpenAI.");
+    }
+    throw new Error("Nao foi possivel gerar o resumo com IA agora. Verifique os logs da Vercel para detalhes da OpenAI.");
   }
-  const raw = extractText(await response.json()).replace(/^```(?:json)?|```$/gim, "").trim();
+  const raw = extractText(await response.json());
   try {
-    return { ...fallbackSummary(context), ...JSON.parse(raw) };
+    return { ...fallbackSummary(context), ...parseAiJson(raw) };
   } catch {
-    return { ...fallbackSummary(context), executive_summary: raw };
+    return {
+      ...fallbackSummary(context),
+      executive_summary: "A IA respondeu fora do formato esperado. O Road News exibiu o resumo operacional automatico para evitar informacao quebrada no relatorio.",
+    };
   }
 }
 
