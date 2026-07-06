@@ -663,16 +663,38 @@
       link.click();
     }
 
+    function weeklyFieldLabel(key) {
+      return {
+        road: "Rodovia",
+        why_critical: "Por que e critica",
+        blockage_status: "Bloqueio",
+        works_status: "Obras",
+        evidence: "Evidencia",
+        region: "Regiao",
+        danger_reason: "Motivo do perigo",
+        rainfall_or_wind: "Chuva/vento",
+        attention_required: "Atencao necessaria",
+      }[key] || key.replace(/_/g, " ");
+    }
+
     function renderList(items) {
       const values = Array.isArray(items) && items.length ? items : ["Sem pontos relevantes no periodo."];
-      return `<ul>${values.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+      return `<ul>${values.map((item) => {
+        if (item && typeof item === "object") {
+          return `<li>${Object.entries(item)
+            .filter(([, value]) => value)
+            .map(([key, value]) => `<strong>${escapeHtml(weeklyFieldLabel(key))}:</strong> ${escapeHtml(value)}`)
+            .join("<br>")}</li>`;
+        }
+        return `<li>${escapeHtml(item)}</li>`;
+      }).join("")}</ul>`;
     }
 
     function renderWeeklySummary(data) {
       const summary = data.summary || {};
       const context = data.context || {};
       const roads = Array.isArray(summary.critical_roads) && summary.critical_roads.length
-        ? summary.critical_roads.map((road) => `<span>${escapeHtml(road)}</span>`).join("")
+        ? summary.critical_roads.map((road) => `<span>${escapeHtml(typeof road === "object" ? road.road || road.why_critical || "Rodovia critica" : road)}</span>`).join("")
         : `<span>Sem rodovia critica isolada</span>`;
 
       document.getElementById("weeklyContent").innerHTML = `
@@ -691,10 +713,15 @@
           <div class="weekly-section">
             <h4>Rodovias criticas</h4>
             <div class="weekly-roads">${roads}</div>
+            ${renderList(summary.critical_roads)}
           </div>
           <div class="weekly-section">
-            <h4>Clima e INMET</h4>
-            ${renderList(summary.weather_notes)}
+            <h4>INMET: regioes em perigo</h4>
+            ${renderList(summary.inmet_regions || summary.weather_notes)}
+          </div>
+          <div class="weekly-section">
+            <h4>Bloqueios, obras e desvios</h4>
+            ${renderList([...(summary.blockages_or_works || []), ...(summary.detours || [])])}
           </div>
           <div class="weekly-section">
             <h4>Recomendacoes</h4>

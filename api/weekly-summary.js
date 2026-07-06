@@ -25,13 +25,33 @@ function countBy(items, getter) {
 function fallbackSummary(context) {
   const roads = context.roads.slice(0, 5).map(([road, count]) => `${road} (${count})`).join(", ") || "sem rodovias identificadas";
   const sources = context.sources.slice(0, 4).map(([source, count]) => `${source} (${count})`).join(", ") || "sem fontes recentes";
+  const operational = context.items.filter((item) => /acidente|bloqueio|interdi|obra|lentid|congestion|desvio|pare-e-siga|alagamento|queda|tombamento/i.test(`${item.title} ${item.summary}`));
+  const inmet = context.items.filter((item) => item.type === "INMET");
   return {
     headline: "Resumo semanal rodoviario",
     executive_summary: `Foram analisados ${context.total} registros dos ultimos ${context.period_days} dias. As rodovias mais citadas foram ${roads}. As fontes com maior volume foram ${sources}.`,
     risk_level: context.total ? "Atencao" : "Normal",
-    operational_points: context.items.slice(0, 5).map((item) => item.title).filter(Boolean),
-    critical_roads: context.roads.slice(0, 5).map(([road]) => road),
-    weather_notes: context.items.filter((item) => item.type === "INMET").slice(0, 4).map((item) => item.title),
+    operational_points: operational.slice(0, 6).map((item) => item.title).filter(Boolean),
+    critical_roads: context.roads.slice(0, 5).map(([road, count]) => ({
+      road,
+      why_critical: `Rodovia citada em ${count} registro(s) no periodo.`,
+      blockage_status: "Nao confirmado nos dados analisados.",
+      works_status: "Nao confirmado nos dados analisados.",
+      evidence: "Volume de mencoes no periodo.",
+    })),
+    inmet_regions: inmet.slice(0, 5).map((item) => ({
+      region: "Regioes citadas no aviso INMET",
+      danger_reason: item.title || "Alerta meteorologico",
+      rainfall_or_wind: (item.summary || "").slice(0, 220),
+      attention_required: "Avaliar impacto em rotas que cruzam a area do alerta.",
+      evidence: item.source || "INMET",
+    })),
+    blockages_or_works: context.items
+      .filter((item) => /bloqueio|interdi|obra|pare-e-siga/i.test(`${item.title} ${item.summary}`))
+      .slice(0, 6)
+      .map((item) => item.title),
+    detours: ["Nao ha desvio alternativo confirmado nos dados analisados."],
+    weather_notes: inmet.slice(0, 5).map((item) => `${item.title}: ${(item.summary || "").slice(0, 220)}`),
     recommendations: [
       "Monitorar as rodovias mais citadas antes do planejamento operacional.",
       "Priorizar ocorrencias com acidente, bloqueio, interdicao e alerta meteorologico.",
@@ -98,14 +118,14 @@ async function generateAiSummary(context) {
     },
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
-      max_output_tokens: 1600,
+      max_output_tokens: 2400,
       input: [
         {
           role: "developer",
           content: [
             {
               type: "input_text",
-              text: "Voce e um analista operacional de risco rodoviario da Overhaul. Responda somente com JSON valido contendo: headline, executive_summary, risk_level, operational_points, critical_roads, weather_notes, recommendations. Use portugues do Brasil, tom executivo e nao invente fatos fora dos dados.",
+              text: "Voce e um analista operacional de risco rodoviario da Overhaul. Responda somente com JSON valido contendo: headline, executive_summary, risk_level, operational_points, critical_roads, inmet_regions, blockages_or_works, detours, weather_notes, recommendations. critical_roads deve ser array de objetos com road, why_critical, blockage_status, works_status, evidence. inmet_regions deve ser array de objetos com region, danger_reason, rainfall_or_wind, attention_required, evidence. operational_points deve conter apenas impactos reais para transporte: rodovia travada, bloqueio, obra, lentidao relevante, acidente, clima severo ou necessidade de monitorar/desviar rota. Use portugues do Brasil, tom executivo e nao invente fatos fora dos dados.",
             },
           ],
         },
@@ -114,7 +134,7 @@ async function generateAiSummary(context) {
           content: [
             {
               type: "input_text",
-              text: `Gere um resumo semanal focado em impacto operacional com base nestes registros:\n${JSON.stringify(context)}`,
+              text: `Gere um resumo semanal focado em impacto operacional com base nestes registros. Para INMET, informe regioes em perigo, por que estao em perigo, quantidade de chuva/vento quando existir, e quais regioes exigem atencao. Para rodovias criticas, explique por que sao criticas, se ha bloqueio, interdicao, lentidao, obra ou pare-e-siga, e cite a evidencia. Informe desvios apenas se houver dado explicito; se nao houver, diga que nao ha desvio confirmado. Traga somente o que impacta transporte rodoviario.\n${JSON.stringify(context)}`,
             },
           ],
         },

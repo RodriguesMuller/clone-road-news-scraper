@@ -91,11 +91,17 @@ def build_weekly_context(items: list[dict], days: int = 7) -> dict:
 def fallback_summary(context: dict) -> dict:
     top_sources = ", ".join(f"{name} ({count})" for name, count in context["sources"][:4]) or "sem fontes recentes"
     top_roads = ", ".join(f"{road} ({count})" for road, count in context["roads"][:5]) or "sem rodovias identificadas"
-    highlights = [
+    operational = [
         item["title"]
-        for item in context["items"][:5]
+        for item in context["items"]
         if item.get("title")
+        and re.search(
+            r"acidente|bloqueio|interdi|obra|lentid|congestion|desvio|pare-e-siga|alagamento|queda|tombamento",
+            f"{item.get('title', '')} {item.get('summary', '')}",
+            flags=re.IGNORECASE,
+        )
     ]
+    inmet = [item for item in context["items"] if item.get("type") == "INMET"]
     return {
         "headline": "Resumo semanal rodoviario",
         "executive_summary": (
@@ -103,13 +109,37 @@ def fallback_summary(context: dict) -> dict:
             f"As fontes com maior volume foram {top_sources}. As rodovias mais citadas foram {top_roads}."
         ),
         "risk_level": "Atencao" if context["total"] else "Normal",
-        "operational_points": highlights[:5],
-        "critical_roads": [road for road, _count in context["roads"][:5]],
-        "weather_notes": [
+        "operational_points": operational[:6],
+        "critical_roads": [
+            {
+                "road": road,
+                "why_critical": f"Rodovia citada em {count} registro(s) no periodo.",
+                "blockage_status": "Nao confirmado nos dados analisados.",
+                "works_status": "Nao confirmado nos dados analisados.",
+                "evidence": "Volume de mencoes no periodo.",
+            }
+            for road, count in context["roads"][:5]
+        ],
+        "inmet_regions": [
+            {
+                "region": "Regioes citadas no aviso INMET",
+                "danger_reason": item.get("title", "Alerta meteorologico"),
+                "rainfall_or_wind": item.get("summary", "")[:220],
+                "attention_required": "Avaliar impacto em rotas que cruzam a area do alerta.",
+                "evidence": item.get("source", "INMET"),
+            }
+            for item in inmet[:5]
+        ],
+        "blockages_or_works": [
             item["title"]
             for item in context["items"]
-            if item.get("type") == "INMET"
-        ][:4],
+            if re.search(r"bloqueio|interdi|obra|pare-e-siga", f"{item.get('title', '')} {item.get('summary', '')}", flags=re.IGNORECASE)
+        ][:6],
+        "detours": ["Nao ha desvio alternativo confirmado nos dados analisados."],
+        "weather_notes": [
+            f"{item.get('title', '')}: {item.get('summary', '')[:220]}"
+            for item in inmet
+        ][:5],
         "recommendations": [
             "Monitorar as rodovias mais citadas antes do planejamento operacional.",
             "Priorizar ocorrencias com acidente, bloqueio, interdicao e alerta meteorologico.",
@@ -129,8 +159,11 @@ def generate_ai_summary(context: dict, api_key: str | None = None, model: str | 
                 "type": "input_text",
                 "text": (
                     "Analise os registros rodoviarios abaixo e gere um resumo semanal em JSON valido. "
-                    "Foque em impacto operacional: rodovias criticas, acidentes, bloqueios, lentidao, clima, "
-                    "estados/cidades citados e recomendacoes praticas. Nao invente fatos fora do contexto.\n\n"
+                    "Traga somente o que impacta operacao de transporte rodoviario. "
+                    "Para INMET, informe regioes em perigo, por que estao em perigo, quantidade de chuva/vento quando existir, "
+                    "e quais regioes exigem atencao. Para rodovias criticas, explique por que sao criticas, se ha bloqueio, "
+                    "interdicao, lentidao, obra ou pare-e-siga, e cite a evidencia. Informe desvios apenas se houver dado explicito; "
+                    "se nao houver, diga que nao ha desvio confirmado. Nao invente fatos fora do contexto.\n\n"
                     f"{json.dumps(context, ensure_ascii=False, default=str)}"
                 ),
             }
@@ -143,9 +176,12 @@ def generate_ai_summary(context: dict, api_key: str | None = None, model: str | 
                 "type": "input_text",
                 "text": (
                     "Voce e um analista operacional de risco rodoviario da Overhaul. "
-                    "Responda somente com JSON contendo: headline, executive_summary, risk_level, "
-                    "operational_points, critical_roads, weather_notes, recommendations. "
-                    "Use portugues do Brasil, tom executivo e frases objetivas."
+                    "Responda somente com JSON valido contendo: headline, executive_summary, risk_level, "
+                    "operational_points, critical_roads, inmet_regions, blockages_or_works, detours, weather_notes, recommendations. "
+                    "critical_roads deve ser array de objetos com road, why_critical, blockage_status, works_status, evidence. "
+                    "inmet_regions deve ser array de objetos com region, danger_reason, rainfall_or_wind, attention_required, evidence. "
+                    "operational_points deve conter apenas impactos reais para transporte: rodovia travada, bloqueio, obra, lentidao relevante, "
+                    "acidente, clima severo ou necessidade de monitorar/desviar rota. Use portugues do Brasil, tom executivo e frases objetivas."
                 ),
             }
         ],
@@ -156,7 +192,7 @@ def generate_ai_summary(context: dict, api_key: str | None = None, model: str | 
         json={
             "model": model or os.environ.get("OPENAI_MODEL", DEFAULT_MODEL),
             "input": [developer, prompt],
-            "max_output_tokens": 1600,
+            "max_output_tokens": 2400,
         },
         timeout=60,
     )
@@ -182,10 +218,32 @@ def render_weekly_email(summary: dict, context: dict) -> str:
     def esc(value):
         return html.escape(str(value or ""))
 
-    points = "".join(f"<li>{esc(point)}</li>" for point in summary.get("operational_points", [])[:8])
-    roads = "".join(f"<span class='pill'>{esc(road)}</span>" for road in summary.get("critical_roads", [])[:8])
-    weather = "".join(f"<li>{esc(note)}</li>" for note in summary.get("weather_notes", [])[:6])
-    recommendations = "".join(f"<li>{esc(item)}</li>" for item in summary.get("recommendations", [])[:6])
+    def item_text(item):
+        if isinstance(item, dict):
+            labels = {
+                "road": "Rodovia",
+                "why_critical": "Por que e critica",
+                "blockage_status": "Bloqueio",
+                "works_status": "Obras",
+                "evidence": "Evidencia",
+                "region": "Regiao",
+                "danger_reason": "Motivo do perigo",
+                "rainfall_or_wind": "Chuva/vento",
+                "attention_required": "Atencao necessaria",
+            }
+            return " | ".join(f"{labels.get(key, key)}: {value}" for key, value in item.items() if value)
+        return str(item)
+
+    def list_html(items, empty):
+        values = items if isinstance(items, list) and items else [empty]
+        return "".join(f"<li>{esc(item_text(item))}</li>" for item in values[:8])
+
+    points = list_html(summary.get("operational_points", []), "Sem ponto operacional relevante confirmado.")
+    roads = list_html(summary.get("critical_roads", []), "Sem rodovia critica confirmada.")
+    inmet_regions = list_html(summary.get("inmet_regions", []), "Sem regiao INMET relevante no periodo.")
+    blockages = list_html(summary.get("blockages_or_works", []), "Sem bloqueio, obra ou pare-e-siga confirmado.")
+    detours = list_html(summary.get("detours", []), "Sem desvio alternativo confirmado.")
+    recommendations = list_html(summary.get("recommendations", []), "Manter monitoramento das fontes rodoviarias.")
     source_rows = "".join(
         f"<tr><td>{esc(name)}</td><td align='right'><strong>{count}</strong></td></tr>"
         for name, count in context.get("sources", [])[:10]
@@ -228,11 +286,16 @@ def render_weekly_email(summary: dict, context: dict) -> str:
     </div>
     <div class="card">
       <h2>Rodovias Criticas</h2>
-      <p>{roads or "Sem rodovias criticas identificadas no periodo."}</p>
+      <ul>{roads}</ul>
     </div>
     <div class="card">
-      <h2>Clima e INMET</h2>
-      <ul>{weather or "<li>Sem alertas meteorologicos relevantes no periodo analisado.</li>"}</ul>
+      <h2>INMET: Regioes em Perigo</h2>
+      <ul>{inmet_regions}</ul>
+    </div>
+    <div class="card">
+      <h2>Bloqueios, Obras e Desvios</h2>
+      <ul>{blockages}</ul>
+      <ul>{detours}</ul>
     </div>
     <div class="card">
       <h2>Recomendacoes</h2>
