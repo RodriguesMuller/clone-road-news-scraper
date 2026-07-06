@@ -474,6 +474,14 @@
       return ["", "Noticia"];
     }
 
+    function isInmetItem(item) {
+      return item.type === "INMET" || /INMET/i.test(item.source || "");
+    }
+
+    function externalNewsUrl(item) {
+      return isInmetItem(item) ? "" : cleanDisplayText(item.url);
+    }
+
     async function supabaseFetch(path, options = {}) {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
         ...options,
@@ -605,13 +613,15 @@
             const road = roadFromText(`${item.title || ""} ${item.summary || ""}`);
             const meta = [item.source, road, age(item.scraped_at || item.created_at || item.published_at)].filter(Boolean).join(" · ");
             const summary = String(item.summary || "").replace(/\s+/g, " ").trim();
+            const url = externalNewsUrl(item);
+            const title = escapeHtml(item.title || "Alerta operacional");
             return `
               <article class="alert-card">
                 <div class="alert-meta">
                   <span class="alert-badge ${riskClassName}">${riskLabel}</span>
                   <span>${escapeHtml(meta || "Fonte não informada")}</span>
                 </div>
-                <h3><a href="${escapeHtml(item.url || "#")}" target="_blank" rel="noopener">${escapeHtml(item.title || "Alerta operacional")}</a></h3>
+                <h3>${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${title}</a>` : title}</h3>
                 <p>${escapeHtml(shortText(summary, 135) || "Ocorrência recente com possível impacto operacional.")}</p>
               </article>
             `;
@@ -626,6 +636,7 @@
             const [riskClassName, riskLabel] = operationalRisk(item);
             const trusted = TRUSTED_SOURCES.has(item.source);
             const meta = [item.source, item.category, displayTime(item)].filter(Boolean).join(" · ");
+            const url = externalNewsUrl(item);
             const road = roadFromText(`${item.title || ""} ${item.summary || ""} ${item.highway || ""}`);
             const region = cleanDisplayText(item.region || item.city || item.state || findPlace(`${item.title || ""} ${item.summary || ""}`));
             const summary = shortText(smartSummary(item), 230);
@@ -645,13 +656,13 @@
                   <span>${escapeHtml(meta)}</span>
                 </div>
                 <p class="title">
-                  <a href="${escapeHtml(item.url || "#")}" target="_blank" rel="noopener">${escapeHtml(item.title)}</a>
+                  ${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(item.title)}</a>` : escapeHtml(item.title)}
                 </p>
                 <p class="summary">${escapeHtml(summary)}</p>
                 <div class="badge-row">${badges}</div>
                 <div class="actions">
                   <button class="mini-button make-image" type="button" data-index="${index}">Gerar imagem</button>
-                  ${item.url ? `<a class="button-link secondary" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">Abrir notícia</a>` : ""}
+                  ${url ? `<a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir notícia</a>` : ""}
                 </div>
               </article>
             `;
