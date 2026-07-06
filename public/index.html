@@ -401,7 +401,7 @@
   <div id="imageModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="imageTitle">
     <div class="modal-card">
       <div class="modal-head">
-        <strong id="imageTitle">Imagem da notícia</strong>
+        <strong id="imageTitle">Resumo da notícia</strong>
         <div class="modal-actions">
           <button id="downloadImage" type="button">Baixar PNG</button>
           <button id="closeImage" type="button" class="mini-button">Fechar</button>
@@ -740,7 +740,7 @@
                 <p class="summary">${escapeHtml(summary)}</p>
                 <div class="badge-row">${badges}</div>
                 <div class="actions">
-                  <button class="mini-button make-image" type="button" data-index="${index}">Gerar imagem</button>
+                  <button class="mini-button make-image" type="button" data-index="${index}">Gerar resumo</button>
                   ${url ? `<a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir notícia</a>` : ""}
                 </div>
               </article>
@@ -1071,8 +1071,49 @@
       const item = state.items[index];
       if (!item) return;
       drawShareImage(item);
-      document.getElementById("imageTitle").textContent = buildImageTitle(item) || "Imagem da notícia";
+      document.getElementById("imageTitle").textContent = buildImageTitle(item) || "Resumo da notícia";
       document.getElementById("imageModal").classList.add("open");
+    }
+
+    async function generateNewsSummary(index, button) {
+      const item = state.items[index];
+      if (!item) return;
+
+      if (item._runtimeAiSummaryReady) {
+        openImageModal(index);
+        return;
+      }
+
+      const originalLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = "Gerando resumo...";
+      setNotice("");
+
+      try {
+        const response = await fetch("/api/news-summary", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ item }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Não foi possível gerar resumo com IA");
+
+        state.items[index] = {
+          ...item,
+          ...data,
+          image_summary: data.image_summary || data.ai_summary || item.image_summary,
+          ai_summary: data.ai_summary || data.image_summary || item.ai_summary,
+          _runtimeAiSummaryReady: true,
+        };
+      } catch (error) {
+        state.items[index] = { ...item, _runtimeAiSummaryReady: true };
+        setNotice(`${error.message}. Abri o resumo local como alternativa.`);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalLabel;
+      }
+
+      openImageModal(index);
     }
 
     function closeImageModal() {
@@ -1390,7 +1431,7 @@
     });
     document.getElementById("news").addEventListener("click", (event) => {
       const button = event.target.closest(".make-image");
-      if (button) openImageModal(Number(button.dataset.index));
+      if (button) generateNewsSummary(Number(button.dataset.index), button);
     });
     document.getElementById("closeImage").addEventListener("click", closeImageModal);
     document.getElementById("downloadImage").addEventListener("click", downloadCurrentImage);
