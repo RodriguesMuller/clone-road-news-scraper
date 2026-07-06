@@ -120,7 +120,7 @@
     const BRASILIA_TIME_ZONE = "America/Sao_Paulo";
 
     const TRUSTED_SOURCES = new Set(["G1 - Brasil", "CNN Brasil", "Band - Notícias", "INMET - Avisos Meteorológicos", "Arteris Fluminense (tempo real)"]);
-    const state = { items: [], total: 0 };
+    const state = { items: [], recentItems: [], total: 0 };
 
     function escapeHtml(value) {
       const div = document.createElement("div");
@@ -233,11 +233,15 @@
       }
 
       const columns = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
+      const recentColumns = "source,published_at,scraped_at,created_at,type";
+      const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
       const newsResponse = await supabaseFetch(`${TABLE}?select=${columns}&order=created_at.desc&limit=50`);
       const inmetResponse = await supabaseFetch(`${TABLE}?select=${columns}&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=20`);
+      const recentResponse = await supabaseFetch(`${TABLE}?select=${recentColumns}&created_at=gte.${since24h}&order=created_at.desc&limit=1000`);
       const countResponse = await supabaseFetch(`${TABLE}?select=id`, { method: "HEAD" });
       const latestNews = await newsResponse.json();
       const latestInmet = await inmetResponse.json();
+      state.recentItems = await recentResponse.json();
 
       const merged = new Map();
       for (const item of [...latestNews, ...latestInmet]) {
@@ -249,9 +253,10 @@
     }
 
     function renderStats() {
-      const lastHour = state.items.filter((item) => withinCollectionHours(item, 1)).length;
-      const lastDay = state.items.filter((item) => withinCollectionHours(item, 24)).length;
-      const lastCreated = state.items
+      const statsItems = state.recentItems.length ? state.recentItems : state.items;
+      const lastHour = statsItems.filter((item) => withinCollectionHours(item, 1)).length;
+      const lastDay = statsItems.filter((item) => withinCollectionHours(item, 24)).length;
+      const lastCreated = [...statsItems, ...state.items]
         .map(collectionDateValue)
         .filter(Boolean)
         .sort((a, b) => b - a)[0];
@@ -273,7 +278,8 @@
 
     function renderSources() {
       const counts = new Map();
-      state.items.filter((item) => withinCollectionHours(item, 24)).forEach((item) => {
+      const sourceItems = state.recentItems.length ? state.recentItems : state.items.filter((item) => withinCollectionHours(item, 24));
+      sourceItems.forEach((item) => {
         const source = item.source || "Sem fonte";
         counts.set(source, (counts.get(source) || 0) + 1);
       });
@@ -637,6 +643,7 @@
         await loadNews();
       } catch (error) {
         state.items = [];
+        state.recentItems = [];
         state.total = 0;
         setNotice(error.message);
       } finally {
