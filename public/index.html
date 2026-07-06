@@ -714,7 +714,10 @@
       button.disabled = true;
       try {
         const response = await fetch("/api/weekly-summary", { method: "POST" });
-        const data = await response.json();
+        const contentType = response.headers.get("content-type") || "";
+        const data = contentType.includes("application/json")
+          ? await response.json()
+          : { error: (await response.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() };
         if (!response.ok) throw new Error(data.error || "Erro ao gerar resumo semanal");
         renderWeeklySummary(data);
       } catch (error) {

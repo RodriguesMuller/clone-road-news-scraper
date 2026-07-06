@@ -8,7 +8,6 @@ __pycache__
 .git
 .github
 .python-version
-api
 config
 main.py
 requirements.txt
