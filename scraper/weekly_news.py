@@ -245,6 +245,7 @@ def fallback_summary(context: dict) -> dict:
         "top_occurrences": context.get("top_occurrences", []),
         "featured_regions": [f"{region} ({count})" for region, count in context.get("regions", [])[:6]],
         "featured_roads": [f"{road} ({count})" for road, count in context.get("roads", [])[:6]],
+        "featured_categories": [f"{category} ({count})" for category, count in context.get("category_counts", [])[:6]],
         "operational_points": operational[:6],
         "critical_roads": [
             {
@@ -294,10 +295,10 @@ def generate_ai_summary(context: dict, api_key: str | None = None, model: str | 
             {
                 "type": "input_text",
                 "text": (
-                    "Analise os registros rodoviarios abaixo e gere um resumo semanal em JSON valido. "
-                    "Traga somente o que impacta operacao de transporte rodoviario, em formato compacto e executivo. "
-                    "Mostre o que aconteceu, onde aconteceu, riscos para a operacao, rodovias/regioes que exigem atencao "
-                    "e top 5 ocorrencias realmente relevantes. "
+                    "Analise os registros rodoviarios abaixo e gere um relatorio executivo semanal em JSON valido. "
+                    "O resumo semanal e estrategico, para tendencia e planejamento, nao operacao em tempo real. "
+                    "Nao liste todas as noticias. Mostre principais riscos da semana, estados/regioes com mais ocorrencias, "
+                    "rodovias mais citadas, categorias frequentes e top 5 ocorrencias realmente relevantes. "
                     "Para INMET, informe regioes em perigo, por que estao em perigo, quantidade de chuva/vento quando existir, "
                     "e quais regioes exigem atencao. Para rodovias criticas, explique por que sao criticas, se ha bloqueio, "
                     "interdicao, lentidao, obra ou pare-e-siga, e cite a evidencia. Informe desvios apenas se houver dado explicito; "
@@ -315,10 +316,10 @@ def generate_ai_summary(context: dict, api_key: str | None = None, model: str | 
                 "text": (
                     "Voce e um analista operacional de risco rodoviario da Overhaul. "
                     "Responda somente com JSON valido contendo: headline, executive_summary, risk_level, "
-                    "indicators, weekly_points, top_occurrences, featured_regions, featured_roads, "
+                    "indicators, weekly_points, top_occurrences, featured_regions, featured_roads, featured_categories, "
                     "operational_points, critical_roads, inmet_regions, blockages_or_works, detours, weather_notes, recommendations. "
                     "top_occurrences deve ter no maximo 5 objetos com title, region, road, category, risk, source, date, url, short_summary. "
-                    "weekly_points deve ter no maximo 3 bullets. "
+                    "weekly_points e recommendations devem ter no maximo 3 bullets cada. "
                     "critical_roads deve ser array de objetos com road, why_critical, blockage_status, works_status, evidence. "
                     "inmet_regions deve ser array de objetos com region, danger_reason, rainfall_or_wind, attention_required, evidence. "
                     "operational_points deve conter apenas impactos reais para transporte: rodovia travada, bloqueio, obra, lentidao relevante, "

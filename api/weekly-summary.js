@@ -101,6 +101,7 @@ function fallbackSummary(context) {
     top_occurrences: context.top_occurrences,
     featured_regions: context.regions.slice(0, 6).map(([region, count]) => `${region} (${count})`),
     featured_roads: context.roads.slice(0, 6).map(([road, count]) => `${road} (${count})`),
+    featured_categories: context.category_counts.slice(0, 6).map(([category, count]) => `${category} (${count})`),
     operational_points: operational.slice(0, 6).map((item) => item.title).filter(Boolean),
     critical_roads: context.roads.slice(0, 5).map(([road, count]) => ({
       road,
@@ -247,7 +248,7 @@ async function generateAiSummary(context) {
           content: [
             {
               type: "input_text",
-              text: "Voce e um analista operacional de risco rodoviario da Overhaul. Responda somente com JSON valido contendo: headline, executive_summary, risk_level, indicators, weekly_points, top_occurrences, featured_regions, featured_roads, operational_points, critical_roads, inmet_regions, blockages_or_works, detours, weather_notes, recommendations. top_occurrences deve ter no maximo 5 objetos com title, region, road, category, risk, source, date, url, short_summary. weekly_points deve ter no maximo 3 bullets. critical_roads deve ser array de objetos com road, why_critical, blockage_status, works_status, evidence. inmet_regions deve ser array de objetos com region, danger_reason, rainfall_or_wind, attention_required, evidence. Use portugues do Brasil, tom executivo, frases objetivas e nao invente fatos fora dos dados.",
+              text: "Voce e um analista operacional de risco rodoviario da Overhaul. O resumo semanal e estrategico, para tendencia e planejamento, nao operacao em tempo real. Responda somente com JSON valido contendo: headline, executive_summary, risk_level, indicators, weekly_points, top_occurrences, featured_regions, featured_roads, featured_categories, operational_points, critical_roads, inmet_regions, blockages_or_works, detours, weather_notes, recommendations. top_occurrences deve ter no maximo 5 objetos com title, region, road, category, risk, source, date, url, short_summary. weekly_points e recommendations devem ter no maximo 3 bullets cada. critical_roads deve ser array de objetos com road, why_critical, blockage_status, works_status, evidence. inmet_regions deve ser array de objetos com region, danger_reason, rainfall_or_wind, attention_required, evidence. Analise concentracao de acidentes, interdições, clima severo, roubo de carga e manifestacoes. Use portugues do Brasil, tom executivo, frases objetivas e nao invente fatos fora dos dados.",
             },
           ],
         },
@@ -256,7 +257,7 @@ async function generateAiSummary(context) {
           content: [
             {
               type: "input_text",
-              text: `Gere um resumo semanal compacto para clientes de transporte rodoviario. Mostre o que aconteceu, onde aconteceu, riscos para a operacao, rodovias/regioes que exigem atencao e top 5 ocorrencias realmente relevantes. Para INMET, informe regioes em perigo, por que estao em perigo, quantidade de chuva/vento quando existir, e quais regioes exigem atencao. Para rodovias criticas, explique por que sao criticas, se ha bloqueio, interdicao, lentidao, obra ou pare-e-siga, e cite a evidencia. Informe desvios apenas se houver dado explicito; se nao houver, diga que nao ha desvio confirmado. Nao transforme volume de noticia em risco se nao houver indicio operacional.\n${JSON.stringify(context)}`,
+              text: `Gere um relatório executivo semanal compacto para clientes de transporte rodoviario de cargas. Nao liste todas as noticias. Responda: principais riscos da semana, estados/regioes com mais ocorrencias, rodovias mais citadas, categorias mais frequentes, concentracao de acidentes/interdicoes/clima severo/roubo de carga/manifestacoes e atencao operacional para os proximos dias. Use top ocorrencias apenas como exemplos relevantes, priorizando risco critico/alto, rodovia, regiao e impacto operacional. Para INMET, informe regioes em perigo, motivo do perigo e chuva/vento quando existir. Informe desvios apenas se houver dado explicito. Nao transforme volume de noticia em risco se nao houver indicio operacional.\n${JSON.stringify(context)}`,
             },
           ],
         },
