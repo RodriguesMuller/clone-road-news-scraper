@@ -349,6 +349,19 @@
       return response;
     }
 
+    async function fetchRowsWithOptionalAi(columns, suffix) {
+      const aiColumns = "image_summary,ai_summary,operational_relevance,operational_impact,risk_level,region,country,state,city,highway";
+      const enhancedColumns = `${columns},${aiColumns}`;
+      try {
+        return await (await supabaseFetch(`${TABLE}?select=${enhancedColumns}${suffix}`)).json();
+      } catch (error) {
+        if (/image_summary|ai_summary|operational_relevance|risk_level|column|schema|PGRST/i.test(error.message || "")) {
+          return (await supabaseFetch(`${TABLE}?select=${columns}${suffix}`)).json();
+        }
+        throw error;
+      }
+    }
+
     async function loadNews() {
       if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("COLE_AQUI")) {
         throw new Error("Configure SUPABASE_ANON_KEY no arquivo public/index.html antes do deploy.");
@@ -357,13 +370,11 @@
       const columns = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
       const recentColumns = columns;
       const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-      const newsResponse = await supabaseFetch(`${TABLE}?select=${columns}&order=created_at.desc&limit=50`);
-      const inmetResponse = await supabaseFetch(`${TABLE}?select=${columns}&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=20`);
-      const recentResponse = await supabaseFetch(`${TABLE}?select=${recentColumns}&created_at=gte.${since24h}&order=created_at.desc&limit=300`);
+      const latestNews = await fetchRowsWithOptionalAi(columns, "&order=created_at.desc&limit=50");
+      const latestInmet = await fetchRowsWithOptionalAi(columns, "&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=20");
+      const recentRows = await fetchRowsWithOptionalAi(recentColumns, `&created_at=gte.${since24h}&order=created_at.desc&limit=300`);
       const countResponse = await supabaseFetch(`${TABLE}?select=id`, { method: "HEAD" });
-      const latestNews = await newsResponse.json();
-      const latestInmet = await inmetResponse.json();
-      state.recentItems = await recentResponse.json();
+      state.recentItems = recentRows;
 
       const merged = new Map();
       for (const item of [...latestNews, ...latestInmet]) {
@@ -537,6 +548,23 @@
       return `${clean.slice(0, maxLength).trim()}...`;
     }
 
+    function completeCardSummary(text, maxLength = 285) {
+      let clean = decodeHtmlText(text || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      if (!clean) return "";
+      if (clean.length > maxLength) {
+        const slice = clean.slice(0, maxLength + 1);
+        const sentenceEnd = Math.max(slice.lastIndexOf(". "), slice.lastIndexOf("! "), slice.lastIndexOf("? "));
+        clean = sentenceEnd > 80 ? slice.slice(0, sentenceEnd + 1) : slice.slice(0, maxLength).replace(/\s+\S*$/, "");
+      }
+      clean = clean.replace(/\s+,/g, ",").replace(/\s+\./g, ".").replace(/\s+/g, " ").trim();
+      const forbidden = new Set(["de", "do", "da", "dos", "das", "em", "para", "com", "e"]);
+      while (clean.split(" ").length > 4 && forbidden.has(clean.split(" ").at(-1).toLowerCase().replace(/[.,;:]$/, ""))) {
+        clean = clean.split(" ").slice(0, -1).join(" ").trim();
+      }
+      clean = clean.replace(/[,:; ]+$/, "");
+      return /[.!?]$/.test(clean) ? clean : `${clean}.`;
+    }
+
     function decodeHtmlText(value) {
       const textarea = document.createElement("textarea");
       textarea.innerHTML = String(value || "").replace(/&nbsp;?/gi, " ");
@@ -646,7 +674,7 @@
     }
 
     function smartSummary(item) {
-      let text = decodeHtmlText(item.summary).replace(/<[^>]+>/g, " ");
+      let text = decodeHtmlText(item.image_summary || item.ai_summary || item.summary).replace(/<[^>]+>/g, " ");
       text = text
         .replace(/\s+/g, " ")
         .replace(/\bINMET publica aviso iniciando em:\s*[^.]+\.?\s*/i, "")
@@ -676,7 +704,7 @@
         .replace(/\s+/g, " ")
         .trim();
 
-      return truncateClean(text, 285);
+      return completeCardSummary(text, 285);
     }
 
     function drawGrid(ctx, width, height) {
@@ -705,6 +733,7 @@
       const imageTitle = buildImageTitle(item);
       const source = [item.source, item.category].filter(Boolean).join(" · ");
       const published = formatDate(item.published_at || item.scraped_at || item.created_at);
+      const badges = [item.risk_level && `Risco ${item.risk_level}`, item.operational_relevance && `Relevância ${item.operational_relevance}`].filter(Boolean);
 
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = "#0d1712";
@@ -753,6 +782,22 @@
       ctx.fillStyle = "#d7e4de";
       ctx.font = "600 27px Segoe UI, Arial, sans-serif";
       wrapCanvasText(ctx, summary, 168, nextY + 78, 744, 39, 6);
+
+      if (badges.length) {
+        ctx.font = "800 20px Segoe UI, Arial, sans-serif";
+        let badgeX = 168;
+        const badgeY = nextY + 280;
+        for (const badge of badges.slice(0, 2)) {
+          const badgeW = ctx.measureText(badge).width + 28;
+          ctx.fillStyle = "rgba(18,217,129,.16)";
+          ctx.fillRect(badgeX, badgeY, badgeW, 36);
+          ctx.strokeStyle = "rgba(18,217,129,.42)";
+          ctx.strokeRect(badgeX, badgeY, badgeW, 36);
+          ctx.fillStyle = "#12d981";
+          ctx.fillText(badge, badgeX + 14, badgeY + 25);
+          badgeX += badgeW + 10;
+        }
+      }
 
       ctx.fillStyle = "#12d981";
       ctx.font = "800 23px Segoe UI, Arial, sans-serif";

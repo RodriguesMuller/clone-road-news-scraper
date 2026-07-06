@@ -1,0 +1,12 @@
+alter table news add column if not exists image_summary text;
+alter table news add column if not exists ai_summary text;
+alter table news add column if not exists operational_relevance text;
+alter table news add column if not exists operational_impact text;
+alter table news add column if not exists ai_processed_at timestamp with time zone;
+alter table news add column if not exists ai_model text;
+alter table news add column if not exists region text;
+alter table news add column if not exists country text;
+alter table news add column if not exists state text;
+alter table news add column if not exists city text;
+alter table news add column if not exists highway text;
+alter table news add column if not exists risk_level text;

@@ -1,17 +1,13 @@
 """
-Persistência em PostgreSQL (Supabase).
+Persistencia em PostgreSQL (Supabase).
 
-A deduplicação é feita pelo próprio banco: a coluna `url` tem constraint
-UNIQUE e o INSERT usa `ON CONFLICT (url) DO NOTHING`, então registros já
-existentes são ignorados sem erro. `cur.rowcount` indica se a linha foi
-inserida (1) ou ignorada (0).
-
-Conexão via variável de ambiente DATABASE_URL — use a connection string do
-"Session pooler" do Supabase (compatível com IPv4, exigido pelo GitHub Actions).
+A deduplicacao e feita pelo banco pela coluna `url`. Campos de IA sao
+opcionais: o scraper so tenta usa-los quando a migration ja existe.
 """
 import psycopg
 
-# Mantém a mesma ordem/contrato de colunas usado pelos scrapers.
+from scraper.utils.image_summary import build_image_summary_fallback, generate_image_summary, should_use_ai_for_image_summary
+
 COLUMNS = [
     "title",
     "url",
@@ -21,6 +17,21 @@ COLUMNS = [
     "summary",
     "scraped_at",
     "type",
+]
+
+AI_COLUMNS = [
+    "image_summary",
+    "ai_summary",
+    "operational_relevance",
+    "operational_impact",
+    "ai_processed_at",
+    "ai_model",
+    "region",
+    "country",
+    "state",
+    "city",
+    "highway",
+    "risk_level",
 ]
 
 CREATE_TABLE = """
@@ -48,48 +59,80 @@ TO anon, authenticated
 USING (true);
 """
 
-INSERT = """
-INSERT INTO news (title, url, source, category, published_at, summary, scraped_at, type)
-VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-ON CONFLICT (url) DO NOTHING;
-"""
+
+def _table_columns(cur) -> set[str]:
+    cur.execute(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'news';
+        """
+    )
+    return {row[0] for row in cur.fetchall()}
+
+
+def _existing_urls(cur, urls: list[str]) -> set[str]:
+    if not urls:
+        return set()
+    cur.execute("SELECT url FROM news WHERE url = ANY(%s)", (urls,))
+    return {row[0] for row in cur.fetchall()}
+
+
+def _insert_sql(columns: list[str]) -> str:
+    names = ", ".join(columns)
+    placeholders = ", ".join(["%s"] * len(columns))
+    return f"INSERT INTO news ({names}) VALUES ({placeholders}) ON CONFLICT (url) DO NOTHING;"
+
+
+def _with_image_summary(item: dict, available_columns: set[str]) -> dict:
+    if "image_summary" not in available_columns or item.get("image_summary"):
+        return item
+
+    ai_data = generate_image_summary(item) if should_use_ai_for_image_summary(item) else build_image_summary_fallback(item)
+    if ai_data.get("image_summary"):
+        ai_data["ai_summary"] = ai_data["image_summary"]
+    enriched = {**item}
+    for key in AI_COLUMNS:
+        if key in available_columns and ai_data.get(key) is not None:
+            enriched[key] = ai_data[key]
+    if "category" in available_columns and ai_data.get("category"):
+        enriched["category"] = ai_data["category"]
+    return enriched
 
 
 def save_to_postgres(news_items: list, database_url: str) -> int:
     """
-    Salva notícias no PostgreSQL, evitando duplicatas por URL.
-
-    Args:
-        news_items: lista de dicionários com as notícias coletadas
-        database_url: connection string do Postgres (DATABASE_URL)
-
-    Returns:
-        Número de novos registros inseridos
+    Salva noticias no PostgreSQL, evitando duplicatas por URL.
     """
-    # Remove itens sem URL (não dá pra deduplicar) e dups dentro do mesmo lote.
     seen: set = set()
-    rows = []
+    unique_items = []
     for item in news_items:
         url = item.get("url", "")
         if not url or url in seen:
             continue
         seen.add(url)
-        rows.append(tuple(item.get(col, "") for col in COLUMNS))
+        unique_items.append(item)
 
-    if not rows:
+    if not unique_items:
         return 0
 
-    # prepare_threshold=None desativa prepared statements no servidor — evita
-    # incompatibilidade caso a connection string seja a do Transaction pooler.
     with psycopg.connect(database_url, prepare_threshold=None) as conn:
         with conn.cursor() as cur:
             cur.execute(CREATE_TABLE)
-            # O front usa a chave publica do Supabase; a tabela precisa liberar SELECT.
             cur.execute(PUBLIC_READ_POLICY)
+            available_columns = _table_columns(cur)
+            insert_columns = [column for column in COLUMNS + AI_COLUMNS if column in available_columns]
+            insert_sql = _insert_sql(insert_columns)
+            existing_urls = _existing_urls(cur, [item.get("url", "") for item in unique_items])
+
             new_count = 0
-            for row in rows:
-                cur.execute(INSERT, row)
-                new_count += cur.rowcount  # 1 se inseriu, 0 se já existia
+            for item in unique_items:
+                if item.get("url") in existing_urls:
+                    continue
+                enriched = _with_image_summary(item, available_columns)
+                row = tuple(enriched.get(col, "") for col in insert_columns)
+                cur.execute(insert_sql, row)
+                new_count += cur.rowcount
         conn.commit()
 
     return new_count
