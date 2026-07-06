@@ -217,11 +217,6 @@
       border-color: rgba(32, 242, 155, .55);
       box-shadow: inset 0 -3px 0 var(--color-primary);
     }
-    .view-tab:disabled {
-      cursor: not-allowed;
-      opacity: .58;
-      transform: none;
-    }
     .view-tab .count {
       min-width: 24px;
       border-radius: 999px;
@@ -559,9 +554,6 @@
     <nav id="mainTabs" class="view-tabs" aria-label="Visualizações do Road News">
       <button class="view-tab active" type="button" data-view="occurrences">Ocorrências</button>
       <button class="view-tab" type="button" data-view="map">Mapa <span id="mapTabCount" class="count">0</span></button>
-      <button class="view-tab" type="button" disabled>Paralisações</button>
-      <button class="view-tab" type="button" disabled>Combustível</button>
-      <button class="view-tab" type="button" disabled>Por Estado</button>
     </nav>
 
     <section id="occurrencesView" class="view-panel">
