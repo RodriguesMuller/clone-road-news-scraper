@@ -67,7 +67,7 @@ variables → Actions** — use a connection string do *Session pooler* do Supab
 
 O workflow [`.github/workflows/weekly-news.yml`](.github/workflows/weekly-news.yml)
 gera um resumo semanal toda segunda-feira, 08:00 no horario de Brasilia, com a
-identidade visual Overhaul/Road News. Ele usa:
+identidade visual Road News inspirada no padrão corporativo da Overhaul. Ele usa:
 
 - `OPENAI_API_KEY` para montar o resumo operacional com IA.
 - `RESEND_API_KEY` para enviar e-mail pelo Resend.

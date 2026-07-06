@@ -314,7 +314,7 @@ def generate_ai_summary(context: dict, api_key: str | None = None, model: str | 
             {
                 "type": "input_text",
                 "text": (
-                    "Voce e um analista operacional de risco rodoviario da Overhaul. "
+                    "Voce e um analista operacional de risco rodoviario do Road News. "
                     "Responda somente com JSON valido contendo: headline, executive_summary, risk_level, "
                     "indicators, weekly_points, top_occurrences, featured_regions, featured_roads, featured_categories, "
                     "operational_points, critical_roads, inmet_regions, blockages_or_works, detours, weather_notes, recommendations. "
@@ -426,35 +426,35 @@ def render_weekly_email(summary: dict, context: dict) -> str:
 <head>
   <meta charset="utf-8">
   <style>
-    body {{ margin:0; background:#eef3f0; color:#102019; font-family:Arial, Helvetica, sans-serif; }}
+    body {{ margin:0; background:#061b14; color:#f3f7f5; font-family:Arial, Helvetica, sans-serif; }}
     .wrap {{ max-width:760px; margin:0 auto; padding:28px 18px; }}
-    .hero {{ background:#0d1712; color:#f5fbf8; border-top:4px solid #12d981; padding:28px; }}
+    .hero {{ background:#0b2a20; color:#f5fbf8; border:1px solid rgba(32,242,155,.28); border-top:4px solid #20f29b; padding:28px; }}
     .brand {{ font-weight:900; font-size:30px; letter-spacing:.04em; }}
-    .brand:before {{ content:""; display:inline-block; border-left:18px solid transparent; border-right:18px solid transparent; border-top:28px solid #12d981; margin-right:12px; transform:translateY(6px); }}
-    .sub {{ color:#12d981; font-weight:800; letter-spacing:.13em; font-size:13px; margin-top:6px; }}
-    .card {{ background:#ffffff; border:1px solid #d7e4de; padding:22px; margin-top:16px; }}
+    .brand:before {{ content:""; display:inline-block; border-left:18px solid transparent; border-right:18px solid transparent; border-top:28px solid #20f29b; margin-right:12px; transform:translateY(6px); }}
+    .sub {{ color:#20f29b; font-weight:800; letter-spacing:.13em; font-size:13px; margin-top:6px; }}
+    .card {{ background:#0b2a20; border:1px solid rgba(32,242,155,.22); padding:22px; margin-top:16px; }}
     .kpis {{ display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:16px; }}
-    .kpi {{ background:#ffffff; border:1px solid #d7e4de; padding:14px; }}
-    .kpi span {{ display:block; color:#5c6a63; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }}
+    .kpi {{ background:#0b2a20; border:1px solid rgba(32,242,155,.22); padding:14px; }}
+    .kpi span {{ display:block; color:#a7b8b1; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }}
     .kpi strong {{ display:block; margin-top:8px; font-size:22px; }}
-    .occurrence {{ border:1px solid #d7e4de; background:#fbfdfc; padding:14px; margin-bottom:10px; }}
+    .occurrence {{ border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); padding:14px; margin-bottom:10px; }}
     .occurrence h3 {{ margin:8px 0 6px; font-size:16px; }}
-    .meta {{ color:#5c6a63; font-size:12px; font-weight:700; }}
+    .meta {{ color:#a7b8b1; font-size:12px; font-weight:700; }}
     h1 {{ font-size:28px; margin:22px 0 8px; }}
     h2 {{ font-size:16px; letter-spacing:.08em; text-transform:uppercase; margin:0 0 14px; }}
     p, li, td {{ font-size:15px; line-height:1.55; }}
-    .risk {{ display:inline-block; background:#12d981; color:#0d1712; padding:7px 12px; font-weight:900; border-radius:999px; margin-top:12px; }}
-    .pill {{ display:inline-block; border:1px solid #12d981; color:#0d1712; padding:7px 10px; margin:0 8px 8px 0; border-radius:999px; font-weight:700; }}
+    .risk {{ display:inline-block; background:#20f29b; color:#03120d; padding:7px 12px; font-weight:900; border-radius:999px; margin-top:12px; }}
+    .pill {{ display:inline-block; border:1px solid #20f29b; color:#f3f7f5; padding:7px 10px; margin:0 8px 8px 0; border-radius:999px; font-weight:700; }}
     table {{ width:100%; border-collapse:collapse; }}
-    td {{ border-bottom:1px solid #e6eee9; padding:8px 0; }}
-    .foot {{ color:#5c6a63; font-size:12px; margin-top:18px; }}
+    td {{ border-bottom:1px solid rgba(255,255,255,.12); padding:8px 0; }}
+    .foot {{ color:#a7b8b1; font-size:12px; margin-top:18px; }}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="hero">
-      <div class="brand">OVERHAUL</div>
-      <div class="sub">ROAD NEWS · WEEKLY REPORT</div>
+      <div class="brand">ROAD NEWS</div>
+      <div class="sub">RESUMO EXECUTIVO DE INTELIGENCIA RODOVIARIA</div>
       <h1>{esc(summary.get("headline"))}</h1>
       <p>{esc(summary.get("executive_summary"))}</p>
       <div class="risk">Risco: {esc(summary.get("risk_level"))}</div>
@@ -526,6 +526,6 @@ def build_and_send_weekly_news(days: int = 7) -> dict:
     context = build_weekly_context(items, days=days)
     summary = generate_ai_summary(context)
     html_body = render_weekly_email(summary, context)
-    subject = f"Overhaul Road News - resumo semanal ({context['generated_at']})"
+    subject = f"Road News - resumo semanal ({context['generated_at']})"
     delivery = send_resend_email(html_body, subject)
     return {"summary": summary, "context": context, "delivery": delivery}
