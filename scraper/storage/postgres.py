@@ -38,6 +38,16 @@ CREATE TABLE IF NOT EXISTS news (
 );
 """
 
+PUBLIC_READ_POLICY = """
+ALTER TABLE news ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read news" ON news;
+CREATE POLICY "Allow public read news"
+ON news
+FOR SELECT
+TO anon, authenticated
+USING (true);
+"""
+
 INSERT = """
 INSERT INTO news (title, url, source, category, published_at, summary, scraped_at, type)
 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -74,6 +84,8 @@ def save_to_postgres(news_items: list, database_url: str) -> int:
     with psycopg.connect(database_url, prepare_threshold=None) as conn:
         with conn.cursor() as cur:
             cur.execute(CREATE_TABLE)
+            # O front usa a chave publica do Supabase; a tabela precisa liberar SELECT.
+            cur.execute(PUBLIC_READ_POLICY)
             new_count = 0
             for row in rows:
                 cur.execute(INSERT, row)

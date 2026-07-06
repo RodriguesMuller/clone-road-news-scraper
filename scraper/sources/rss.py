@@ -3,7 +3,7 @@ import requests
 from datetime import datetime, timezone
 
 from scraper.sources import HEADERS
-from scraper.utils.filters import build_summary, matches_keywords, clean_text
+from scraper.utils.filters import build_summary, matches_keywords, clean_text, is_blocked_url
 from scraper.utils.timezone import brasilia_iso_from_datetime, brasilia_now_iso
 
 
