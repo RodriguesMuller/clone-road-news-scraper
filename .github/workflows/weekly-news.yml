@@ -1,0 +1,38 @@
+name: Weekly Road News
+
+on:
+  schedule:
+    # Segunda-feira, 08:00 em Brasilia (11:00 UTC).
+    - cron: "0 11 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  weekly-news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Send weekly news
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || secrets.SUPABASE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4.1-mini' }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          WEEKLY_EMAIL_FROM: ${{ vars.WEEKLY_EMAIL_FROM }}
+          WEEKLY_EMAIL_TO: ${{ secrets.WEEKLY_EMAIL_TO }}
+        run: python scripts/send_weekly_news.py

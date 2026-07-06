@@ -63,6 +63,23 @@ a cada 2h. Configure o secret `DATABASE_URL` em **Settings → Secrets and
 variables → Actions** — use a connection string do *Session pooler* do Supabase
 (compatível com IPv4, exigido pelos runners do GitHub).
 
+## Weekly news com IA e e-mail
+
+O workflow [`.github/workflows/weekly-news.yml`](.github/workflows/weekly-news.yml)
+gera um resumo semanal toda segunda-feira, 08:00 no horario de Brasilia, com a
+identidade visual Overhaul/Road News. Ele usa:
+
+- `OPENAI_API_KEY` para montar o resumo operacional com IA.
+- `RESEND_API_KEY` para enviar e-mail pelo Resend.
+- `WEEKLY_EMAIL_TO` com os destinatarios separados por virgula.
+- `WEEKLY_EMAIL_FROM` como remetente. Para producao, configure um dominio no
+  Resend; para teste, o remetente padrao `onboarding@resend.dev` pode servir.
+- `OPENAI_MODEL`, opcional, com padrao `gpt-4.1-mini`.
+
+O front tambem tem o botao **Gerar resumo semanal**, que chama
+`/api/weekly-summary` no Vercel. Configure `OPENAI_API_KEY` e, se quiser,
+`OPENAI_MODEL` nas variaveis de ambiente do projeto Vercel.
+
 ## Banco de dados
 
 A tabela `news` é criada automaticamente na primeira execução, com constraint
