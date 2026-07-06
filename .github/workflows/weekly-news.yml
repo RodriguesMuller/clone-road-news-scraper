@@ -5,6 +5,11 @@ on:
     # Segunda-feira, 08:00 em Brasilia (11:00 UTC).
     - cron: "0 11 * * 1"
   workflow_dispatch:
+    inputs:
+      test_email:
+        description: "E-mail para envio manual de teste"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -34,5 +39,5 @@ jobs:
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4.1-mini' }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           WEEKLY_EMAIL_FROM: ${{ vars.WEEKLY_EMAIL_FROM }}
-          WEEKLY_EMAIL_TO: ${{ secrets.WEEKLY_EMAIL_TO }}
+          WEEKLY_EMAIL_TO: ${{ inputs.test_email || secrets.WEEKLY_EMAIL_TO }}
         run: python scripts/send_weekly_news.py
