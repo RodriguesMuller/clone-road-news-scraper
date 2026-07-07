@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Road News - Privacidade</title>
+  <style>
+    :root { color-scheme: dark; --bg: #061b14; --panel: #0b2a20; --line: rgba(32, 242, 155, .26); --text: #f3f7f5; --muted: #a7b8b1; --green: #20f29b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: Arial, sans-serif; line-height: 1.55; }
+    main { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 64px; }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+    .mark { width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 24px solid var(--green); }
+    h1 { margin: 0; font-size: clamp(30px, 5vw, 52px); line-height: 1; }
+    h2 { color: var(--green); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; margin-top: 30px; }
+    p, li { color: #d7e4de; }
+    .card { background: linear-gradient(135deg, rgba(11, 42, 32, .92), rgba(6, 27, 20, .96)); border: 1px solid var(--line); border-top: 4px solid var(--green); border-radius: 8px; padding: 26px; }
+    a { color: var(--green); font-weight: 800; text-decoration: none; }
+    .muted { color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand"><span class="mark"></span><strong>ROAD NEWS</strong></div>
+    <section class="card">
+      <h1>Privacidade</h1>
+      <p class="muted">Ultima atualizacao: 06/07/2026</p>
+      <p>O Road News monitora noticias e alertas publicos relevantes para operacoes rodoviarias. Quando o login esta ativo, usamos dados de cadastro e uso apenas para controle de acesso, seguranca, auditoria e limites de pacote.</p>
+      <h2>Dados tratados</h2>
+      <ul>
+        <li>Nome, e-mail, empresa, perfil de acesso e status do usuario.</li>
+        <li>Registros de uso de recursos como resumo com IA, PDF, mapa e visualizacao do painel.</li>
+        <li>Logs administrativos para auditoria de convites, pacotes e alteracoes de acesso.</li>
+      </ul>
+      <h2>Finalidade</h2>
+      <p>Os dados sao usados para autenticar usuarios, aplicar limites contratados, melhorar a seguranca da conta e manter rastreabilidade operacional.</p>
+      <h2>Seguranca</h2>
+      <p>As chaves sensiveis ficam somente nas funcoes de servidor. O front-end usa apenas chave publica do Supabase e token de sessao do usuario autenticado.</p>
+      <h2>Direitos LGPD</h2>
+      <p>Usuarios podem solicitar acesso, correcao, bloqueio ou exclusao de dados pessoais pelo canal de atendimento da empresa responsavel pelo Road News.</p>
+      <p><a href="/">Voltar ao painel</a></p>
+    </section>
+  </main>
+</body>
+</html>

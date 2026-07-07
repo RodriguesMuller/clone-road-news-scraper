@@ -2,6 +2,7 @@ const SUPABASE_URL = "https://vdyilgbqxnrwqgoairat.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
+const { assertCanUse, json, recordUsage } = require("./_auth");
 
 function clean(value) {
   return String(value || "")
@@ -291,6 +292,7 @@ async function generateAiSummary(context) {
   const apiKey = openAiApiKey();
   if (!apiKey) return fallbackSummary(context);
   const aiContext = buildAiContext(context);
+  const model = process.env.OPENAI_MODEL || DEFAULT_MODEL;
 
   const response = await fetch(OPENAI_URL, {
     method: "POST",
@@ -299,7 +301,7 @@ async function generateAiSummary(context) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
+      model,
       max_output_tokens: 4200,
       input: [
         {
@@ -333,13 +335,17 @@ async function generateAiSummary(context) {
     }
     throw new Error("Nao foi possivel gerar o resumo com IA agora. Verifique os logs da Vercel para detalhes da OpenAI.");
   }
-  const raw = extractText(await response.json());
+  const responseData = await response.json();
+  const raw = extractText(responseData);
   try {
-    return { ...fallbackSummary(context), ...parseAiJson(raw) };
+    return { ...fallbackSummary(context), ...parseAiJson(raw), _usage: responseData.usage || null, _model: model, _ai_used: true };
   } catch {
     return {
       ...fallbackSummary(context),
       executive_summary: "A IA respondeu fora do formato esperado. O Road News exibiu o resumo operacional automatico para evitar informacao quebrada no relatorio.",
+      _usage: responseData.usage || null,
+      _model: model,
+      _ai_used: true,
     };
   }
 }
@@ -352,14 +358,22 @@ module.exports = async function handler(req, res) {
     return;
   }
   try {
+    const account = await assertCanUse(req, "weekly_summary");
     const items = await fetchWeeklyItems();
     const context = buildContext(items);
     const summary = await generateAiSummary(context);
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ summary, context }));
+    if (summary._ai_used) {
+      await recordUsage(account, "weekly_summary", {
+        tokens_input: summary._usage?.input_tokens ?? null,
+        tokens_output: summary._usage?.output_tokens ?? null,
+        model: summary._model,
+        metadata: { source: "weekly-summary", total: context.total },
+      });
+    }
+    const { _usage, _model, _ai_used, ...publicSummary } = summary;
+    json(res, 200, { summary: publicSummary, context });
   } catch (error) {
-    res.statusCode = 500;
+    res.statusCode = /limite|pacote|login|sessao|acesso|recurso/i.test(error.message || "") ? 403 : 500;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ error: error.message || "Erro ao gerar resumo semanal" }));
   }

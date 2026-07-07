@@ -191,6 +191,67 @@
     .source .badge { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(32, 242, 155, .14); color: #8dffc9; border: 1px solid rgba(32, 242, 155, .25); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
     .source.trusted { color: var(--color-muted-strong); font-weight: 800; }
     .source.trusted b { color: var(--color-primary); }
+    .auth-view {
+      min-height: 68vh;
+      display: grid;
+      place-items: center;
+      padding: 28px 0;
+    }
+    .auth-card {
+      width: min(100%, 440px);
+      border: 1px solid rgba(32, 242, 155, .28);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.045));
+      box-shadow: var(--shadow-panel);
+      padding: 22px;
+    }
+    .auth-card h1 { margin: 12px 0 8px; color: var(--color-text); font-size: 28px; line-height: 1.1; }
+    .auth-card p { margin: 0 0 18px; color: var(--color-muted); line-height: 1.45; }
+    .form-grid { display: grid; gap: 12px; }
+    .field { display: grid; gap: 6px; }
+    .field label { color: var(--color-muted); font-size: 11px; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid var(--color-border-soft);
+      border-radius: 6px;
+      background: rgba(255,255,255,.07);
+      color: var(--color-text);
+      padding: 9px 11px;
+      font: inherit;
+    }
+    .field textarea { min-height: 78px; resize: vertical; }
+    .field input:focus, .field select:focus, .field textarea:focus { outline: 3px solid rgba(32, 242, 155, .24); border-color: rgba(32, 242, 155, .46); }
+    .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .link-button {
+      border: 0;
+      background: transparent;
+      color: var(--color-primary);
+      box-shadow: none;
+      padding: 0;
+      justify-content: flex-start;
+      font-size: 13px;
+    }
+    .link-button:hover { transform: none; box-shadow: none; text-decoration: underline; }
+    .auth-error { display: none; border: 1px solid rgba(255,100,100,.34); background: rgba(255,100,100,.12); color: #ffcccc; border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+    .auth-error.show { display: block; }
+    .app-shell[hidden], .auth-view[hidden], .blocked-view[hidden] { display: none !important; }
+    .blocked-view { display: grid; place-items: center; min-height: 54vh; }
+    .admin-grid { display: grid; gap: 16px; }
+    .admin-section { display: grid; gap: 12px; }
+    .admin-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .admin-table-wrap { overflow-x: auto; }
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      color: var(--color-muted-strong);
+      font-size: 13px;
+    }
+    .admin-table th, .admin-table td { border-bottom: 1px solid var(--color-border-soft); padding: 10px 8px; text-align: left; vertical-align: top; }
+    .admin-table th { color: var(--color-muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+    .admin-table b { color: var(--color-text); }
+    .admin-note { color: var(--color-muted); font-size: 12px; line-height: 1.45; }
     .view-tabs {
       display: flex;
       gap: 6px;
@@ -544,19 +605,53 @@
       </div>
       <div class="header-actions">
         <span id="headerStatus" class="status-pill">Última coleta: -</span>
+        <span id="authStatus" class="status-pill" hidden>Modo demo</span>
         <button id="refresh" type="button">Atualizar</button>
+        <button id="logoutButton" type="button" class="mini-button" hidden>Sair</button>
       </div>
     </div>
   </header>
 
   <main>
-    <div id="notice" class="notice"></div>
-    <nav id="mainTabs" class="view-tabs" aria-label="Visualizações do Road News">
-      <button class="view-tab active" type="button" data-view="occurrences">Ocorrências</button>
-      <button class="view-tab" type="button" data-view="map">Mapa <span id="mapTabCount" class="count">0</span></button>
-    </nav>
+    <section id="authView" class="auth-view" hidden>
+      <form id="loginForm" class="auth-card">
+        <div class="weekly-logo">ROAD NEWS</div>
+        <h1>Acesso seguro</h1>
+        <p>Entre com seu e-mail e senha para acessar o monitoramento rodoviário.</p>
+        <div id="authError" class="auth-error"></div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="loginEmail">E-mail</label>
+            <input id="loginEmail" type="email" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="loginPassword">Senha</label>
+            <input id="loginPassword" type="password" autocomplete="current-password" required>
+          </div>
+          <button id="loginButton" type="submit">Entrar</button>
+          <button id="resetPasswordButton" class="link-button" type="button">Recuperar senha</button>
+        </div>
+      </form>
+    </section>
 
-    <section id="occurrencesView" class="view-panel">
+    <section id="blockedView" class="blocked-view" hidden>
+      <div class="auth-card">
+        <div class="weekly-logo">ROAD NEWS</div>
+        <h1>Acesso indisponível</h1>
+        <p id="blockedMessage">Seu usuário está inativo. Contate o administrador.</p>
+        <button id="blockedLogoutButton" type="button" class="mini-button">Sair</button>
+      </div>
+    </section>
+
+    <div id="appShell" class="app-shell">
+      <div id="notice" class="notice"></div>
+      <nav id="mainTabs" class="view-tabs" aria-label="Visualizações do Road News">
+        <button class="view-tab active" type="button" data-view="occurrences">Ocorrências</button>
+        <button class="view-tab" type="button" data-view="map">Mapa <span id="mapTabCount" class="count">0</span></button>
+        <button id="adminTab" class="view-tab" type="button" data-view="admin" hidden>Admin</button>
+      </nav>
+
+      <section id="occurrencesView" class="view-panel">
       <section class="stats" id="stats"></section>
       <section class="panel alerts-panel">
         <div class="panel-head">
@@ -580,9 +675,9 @@
           <div id="sources" class="sources"></div>
         </aside>
       </section>
-    </section>
+      </section>
 
-    <section id="mapView" class="view-panel" hidden>
+      <section id="mapView" class="view-panel" hidden>
       <section class="map-shell" aria-label="Mapa de ocorrências geolocalizadas">
         <div class="map-toolbar">
           <div class="map-title-row">
@@ -622,11 +717,86 @@
           <span id="mapFooterCount">0 pontos no mapa</span>
         </div>
       </section>
-    </section>
+      </section>
+
+      <section id="adminView" class="view-panel" hidden>
+        <div class="admin-grid">
+          <section class="panel admin-section">
+            <div class="panel-head">
+              <h2>Administração</h2>
+              <button id="reloadAdmin" type="button" class="mini-button">Atualizar admin</button>
+            </div>
+            <div id="adminSummary" class="stats"></div>
+            <p class="admin-note">A criação de login usa Supabase Auth. Pacotes, perfis e consumo são protegidos por RLS.</p>
+          </section>
+
+          <section class="panel admin-section">
+            <h2>Convidar usuário</h2>
+            <form id="inviteUserForm" class="form-grid">
+              <div class="form-row">
+                <div class="field"><label for="inviteName">Nome</label><input id="inviteName" required></div>
+                <div class="field"><label for="inviteEmail">E-mail</label><input id="inviteEmail" type="email" required></div>
+              </div>
+              <div class="form-row">
+                <div class="field"><label for="inviteCompany">Empresa</label><input id="inviteCompany"></div>
+                <div class="field"><label for="inviteRole">Papel</label><select id="inviteRole"><option value="client">Client</option><option value="admin">Admin</option></select></div>
+              </div>
+              <button type="submit">Enviar convite</button>
+            </form>
+          </section>
+
+          <section class="panel admin-section">
+            <h2>Pacotes</h2>
+            <form id="packageForm" class="form-grid">
+              <input id="packageId" type="hidden">
+              <div class="form-row">
+                <div class="field"><label for="packageName">Nome</label><input id="packageName" required></div>
+                <div class="field"><label for="packageActive">Status</label><select id="packageActive"><option value="true">Ativo</option><option value="false">Inativo</option></select></div>
+              </div>
+              <div class="field"><label for="packageDescription">Descrição</label><textarea id="packageDescription"></textarea></div>
+              <div class="form-row">
+                <div class="field"><label for="packageNewsLimit">Consultas/mês</label><input id="packageNewsLimit" type="number" min="0" value="200"></div>
+                <div class="field"><label for="packageAiLimit">IA/mês</label><input id="packageAiLimit" type="number" min="0" value="50"></div>
+              </div>
+              <div class="form-row">
+                <div class="field"><label for="packagePdfLimit">PDF/mês</label><input id="packagePdfLimit" type="number" min="0" value="20"></div>
+                <div class="field"><label for="packageMap">Mapa</label><select id="packageMap"><option value="true">Habilitado</option><option value="false">Bloqueado</option></select></div>
+              </div>
+              <div class="form-row">
+                <div class="field"><label for="packageImage">Resumo individual</label><select id="packageImage"><option value="true">Habilitado</option><option value="false">Bloqueado</option></select></div>
+                <div class="field"><label for="packageWeekly">Resumo semanal</label><select id="packageWeekly"><option value="true">Habilitado</option><option value="false">Bloqueado</option></select></div>
+              </div>
+              <div class="admin-actions">
+                <button type="submit">Salvar pacote</button>
+                <button id="clearPackageForm" type="button" class="mini-button">Limpar</button>
+              </div>
+            </form>
+            <div id="packagesAdminList" class="admin-table-wrap"></div>
+          </section>
+
+          <section class="panel admin-section">
+            <h2>Usuários</h2>
+            <div id="usersAdminList" class="admin-table-wrap"></div>
+          </section>
+
+          <section class="panel admin-section">
+            <h2>Consumo do mês</h2>
+            <div id="usageAdminList" class="admin-table-wrap"></div>
+          </section>
+
+          <section class="panel admin-section">
+            <h2>Logs de auditoria</h2>
+            <div id="auditAdminList" class="admin-table-wrap"></div>
+          </section>
+        </div>
+      </section>
+    </div>
   </main>
 
   <footer>
-    O scraper roda no GitHub Actions e grava no Supabase. Esta página apenas lê dados públicos da tabela news.
+    O scraper roda no GitHub Actions e grava no Supabase. Com login ativo, o painel lê os dados pelas APIs seguras do Road News.
+    <a href="/privacidade" target="_blank" rel="noopener">Privacidade</a> ·
+    <a href="/termos" target="_blank" rel="noopener">Termos</a>
   </footer>
 
   <div id="imageModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="imageTitle">
@@ -664,6 +834,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = "https://vdyilgbqxnrwqgoairat.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
@@ -764,6 +935,12 @@
       total: 0,
       alertHours: 6,
       activeView: "occurrences",
+      authEnabled: false,
+      authClient: null,
+      session: null,
+      profile: null,
+      access: null,
+      admin: { users: [], packages: [], usage: [], logs: [] },
       map: {
         instance: null,
         cluster: null,
@@ -778,6 +955,136 @@
       const div = document.createElement("div");
       div.textContent = value == null ? "" : String(value);
       return div.innerHTML;
+    }
+
+    function authClient() {
+      if (!window.supabase) throw new Error("Supabase Auth não carregou. Recarregue a página.");
+      if (!state.authClient) {
+        state.authClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+      return state.authClient;
+    }
+
+    async function loadAuthConfig() {
+      try {
+        const response = await fetch("/api/auth-config");
+        const data = await response.json();
+        state.authEnabled = Boolean(data.authEnabled);
+      } catch {
+        state.authEnabled = false;
+      }
+    }
+
+    function setAuthError(message) {
+      const box = document.getElementById("authError");
+      box.textContent = message || "";
+      box.classList.toggle("show", Boolean(message));
+    }
+
+    function authHeaders(headers = {}) {
+      const token = state.session?.access_token;
+      return token ? { ...headers, Authorization: `Bearer ${token}` } : headers;
+    }
+
+    function showAuthView() {
+      document.getElementById("authView").hidden = false;
+      document.getElementById("blockedView").hidden = true;
+      document.getElementById("appShell").hidden = true;
+      document.getElementById("logoutButton").hidden = true;
+      document.getElementById("authStatus").hidden = true;
+    }
+
+    function showBlockedView(message) {
+      document.getElementById("blockedMessage").textContent = message || "Seu usuário está inativo. Contate o administrador.";
+      document.getElementById("authView").hidden = true;
+      document.getElementById("blockedView").hidden = false;
+      document.getElementById("appShell").hidden = true;
+      document.getElementById("logoutButton").hidden = false;
+    }
+
+    function showAppView() {
+      document.getElementById("authView").hidden = true;
+      document.getElementById("blockedView").hidden = true;
+      document.getElementById("appShell").hidden = false;
+      const authStatus = document.getElementById("authStatus");
+      const logout = document.getElementById("logoutButton");
+      authStatus.hidden = false;
+      logout.hidden = !state.authEnabled;
+      authStatus.textContent = state.authEnabled
+        ? `${state.profile?.role === "admin" ? "Admin" : "Cliente"} · ${state.profile?.email || state.session?.user?.email || ""}`
+        : "Modo demo";
+      document.getElementById("adminTab").hidden = !(state.authEnabled && state.profile?.role === "admin");
+    }
+
+    async function loadMyAccess() {
+      const client = authClient();
+      const { data, error } = await client.rpc("get_my_access");
+      if (error) throw error;
+      const access = Array.isArray(data) ? data[0] : data;
+      if (!access) throw new Error("Perfil não encontrado. Contate o administrador.");
+      state.access = access;
+      state.profile = {
+        role: access.role,
+        status: access.status,
+        email: state.session?.user?.email || "",
+      };
+      if (access.status !== "active") throw new Error("Seu usuário está inativo. Contate o administrador.");
+    }
+
+    async function initAuth() {
+      await loadAuthConfig();
+      if (!state.authEnabled) {
+        state.session = null;
+        state.profile = { role: "demo", status: "active" };
+        state.access = { can_access_map: true, can_generate_image: true, can_generate_weekly_summary: true };
+        showAppView();
+        return true;
+      }
+
+      const client = authClient();
+      const { data } = await client.auth.getSession();
+      state.session = data.session;
+      if (!state.session) {
+        showAuthView();
+        return false;
+      }
+
+      try {
+        await loadMyAccess();
+      } catch (error) {
+        showBlockedView(error.message);
+        return false;
+      }
+      showAppView();
+      return true;
+    }
+
+    function canUseFeature(feature, silent = false) {
+      if (!state.authEnabled) return true;
+      if (state.profile?.role === "admin") return true;
+      const allowed = {
+        map: Boolean(state.access?.can_access_map),
+        image_generation: Boolean(state.access?.can_generate_image),
+        weekly_summary: Boolean(state.access?.can_generate_weekly_summary),
+        pdf_generation: Boolean(state.access?.can_generate_weekly_summary),
+      }[feature];
+      if (!allowed && !silent) setNotice("Recurso não disponível no pacote atual.");
+      return allowed;
+    }
+
+    async function consumeUsage(eventType, metadata = {}) {
+      if (!state.authEnabled || state.profile?.role === "admin") return true;
+      const response = await fetch("/api/usage-event", {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ event_type: eventType, metadata }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setNotice(data.error || "Limite mensal atingido.");
+        return false;
+      }
+      return true;
     }
 
     function parseBrasiliaDate(value) {
@@ -936,6 +1243,24 @@
     async function loadNews() {
       if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("COLE_AQUI")) {
         throw new Error("Configure SUPABASE_ANON_KEY no arquivo public/index.html antes do deploy.");
+      }
+
+      if (state.authEnabled) {
+        const response = await fetch("/api/news-feed", { headers: authHeaders() });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "Nao foi possivel carregar noticias.");
+
+        state.recentItems = payload.recentRows || [];
+        state.mapItems = payload.mapRows || [];
+
+        const merged = new Map();
+        for (const item of [...(payload.latestNews || []), ...(payload.latestInmet || [])]) {
+          const key = item.url || `${item.title}|${item.published_at}|${item.source}`;
+          merged.set(key, item);
+        }
+        state.items = [...merged.values()].sort((a, b) => displayDateValue(b) - displayDateValue(a));
+        state.total = Number(payload.total || state.items.length);
+        return;
       }
 
       const columns = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
@@ -1387,14 +1712,23 @@
     }
 
     function setActiveView(view) {
+      if (view === "map" && !canUseFeature("map")) return;
+      if (view === "admin" && !(state.authEnabled && state.profile?.role === "admin")) {
+        setNotice("Acesso negado.");
+        return;
+      }
       state.activeView = view;
       document.querySelectorAll(".view-tab[data-view]").forEach((button) => {
         button.classList.toggle("active", button.dataset.view === view);
       });
       document.getElementById("occurrencesView").hidden = view !== "occurrences";
       document.getElementById("mapView").hidden = view !== "map";
+      document.getElementById("adminView").hidden = view !== "admin";
       if (view === "map") {
         setTimeout(renderMap, 60);
+      }
+      if (view === "admin") {
+        loadAdminData();
       }
     }
 
@@ -1416,6 +1750,209 @@
       document.getElementById("mapPeriod").value = "24";
       document.getElementById("mapStateFilter").value = "";
       renderMap();
+    }
+
+    async function adminQuery(table, query = "*") {
+      const { data, error } = await authClient().from(table).select(query);
+      if (error) throw error;
+      return data || [];
+    }
+
+    async function audit(action, targetType, targetId, metadata = {}) {
+      if (!state.authEnabled || state.profile?.role !== "admin") return;
+      await authClient().from("audit_logs").insert({
+        actor_user_id: state.session.user.id,
+        action,
+        target_type: targetType,
+        target_id: targetId ? String(targetId) : null,
+        metadata,
+      });
+    }
+
+    function packageOptions(selectedId = "") {
+      return `<option value="">Sem pacote</option>${state.admin.packages.map((pkg) => `
+        <option value="${escapeHtml(pkg.id)}" ${pkg.id === selectedId ? "selected" : ""}>${escapeHtml(pkg.name)}</option>
+      `).join("")}`;
+    }
+
+    function currentPackageForUser(userId) {
+      return state.admin.userPackages?.find((item) => item.user_id === userId && item.is_active);
+    }
+
+    function usageCount(userId, eventTypes) {
+      const types = Array.isArray(eventTypes) ? eventTypes : [eventTypes];
+      return state.admin.usage.filter((event) => event.user_id === userId && types.includes(event.event_type)).length;
+    }
+
+    function renderAdmin() {
+      const users = state.admin.users || [];
+      const packages = state.admin.packages || [];
+      const usage = state.admin.usage || [];
+      const logs = state.admin.logs || [];
+      const activeUsers = users.filter((user) => user.status === "active").length;
+      document.getElementById("adminSummary").innerHTML = [
+        ["Usuários", users.length, `${activeUsers} ativos`],
+        ["Pacotes", packages.length, `${packages.filter((pkg) => pkg.is_active).length} ativos`],
+        ["Uso IA", usage.filter((event) => ["ai_summary", "image_generation", "weekly_summary"].includes(event.event_type)).length, "eventos no mês"],
+        ["Logs", logs.length, "últimos registros"],
+      ].map(([label, value, hint]) => `
+        <article class="stat"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div><div class="hint">${escapeHtml(hint)}</div></article>
+      `).join("");
+
+      document.getElementById("packagesAdminList").innerHTML = packages.length ? `
+        <table class="admin-table">
+          <thead><tr><th>Pacote</th><th>Limites</th><th>Recursos</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody>${packages.map((pkg) => `
+            <tr>
+              <td><b>${escapeHtml(pkg.name)}</b><br>${escapeHtml(pkg.description || "")}</td>
+              <td>${Number(pkg.monthly_news_limit || 0)} consultas<br>${Number(pkg.monthly_ai_summary_limit || 0)} IA<br>${Number(pkg.monthly_pdf_limit || 0)} PDFs</td>
+              <td>Mapa: ${pkg.can_access_map ? "sim" : "não"}<br>Resumo: ${pkg.can_generate_image ? "sim" : "não"}<br>Semanal: ${pkg.can_generate_weekly_summary ? "sim" : "não"}</td>
+              <td>${pkg.is_active ? "Ativo" : "Inativo"}</td>
+              <td><button class="mini-button edit-package" type="button" data-id="${escapeHtml(pkg.id)}">Editar</button></td>
+            </tr>
+          `).join("")}</tbody>
+        </table>
+      ` : `<div class="hint">Nenhum pacote cadastrado.</div>`;
+
+      document.getElementById("usersAdminList").innerHTML = users.length ? `
+        <table class="admin-table">
+          <thead><tr><th>Usuário</th><th>Perfil</th><th>Pacote</th><th>Consumo mensal</th><th>Ações</th></tr></thead>
+          <tbody>${users.map((user) => {
+            const current = currentPackageForUser(user.id);
+            return `
+              <tr>
+                <td><b>${escapeHtml(user.full_name || user.email || "-")}</b><br>${escapeHtml(user.email || "")}<br>${escapeHtml(user.company_name || "")}</td>
+                <td>${escapeHtml(user.role)}<br>${escapeHtml(user.status)}</td>
+                <td><select class="map-select assign-package" data-user-id="${escapeHtml(user.id)}">${packageOptions(current?.package_id || "")}</select></td>
+                <td>${usageCount(user.id, "news_view")} consultas<br>${usageCount(user.id, ["ai_summary", "image_generation", "weekly_summary"])} IA<br>${usageCount(user.id, "pdf_generation")} PDFs</td>
+                <td class="admin-actions">
+                  <button class="mini-button toggle-user-status" type="button" data-user-id="${escapeHtml(user.id)}" data-status="${user.status === "active" ? "blocked" : "active"}">${user.status === "active" ? "Bloquear" : "Ativar"}</button>
+                </td>
+              </tr>
+            `;
+          }).join("")}</tbody>
+        </table>
+      ` : `<div class="hint">Nenhum usuário encontrado.</div>`;
+
+      document.getElementById("usageAdminList").innerHTML = usage.length ? `
+        <table class="admin-table">
+          <thead><tr><th>Data</th><th>Usuário</th><th>Evento</th><th>Modelo</th></tr></thead>
+          <tbody>${usage.slice(0, 80).map((event) => `
+            <tr><td>${escapeHtml(formatDate(event.created_at))}</td><td>${escapeHtml(users.find((user) => user.id === event.user_id)?.email || event.user_id)}</td><td>${escapeHtml(event.event_type)}</td><td>${escapeHtml(event.model || "-")}</td></tr>
+          `).join("")}</tbody>
+        </table>
+      ` : `<div class="hint">Sem consumo registrado neste mês.</div>`;
+
+      document.getElementById("auditAdminList").innerHTML = logs.length ? `
+        <table class="admin-table">
+          <thead><tr><th>Data</th><th>Ação</th><th>Alvo</th></tr></thead>
+          <tbody>${logs.map((log) => `
+            <tr><td>${escapeHtml(formatDate(log.created_at))}</td><td>${escapeHtml(log.action)}</td><td>${escapeHtml(log.target_type)} ${escapeHtml(log.target_id || "")}</td></tr>
+          `).join("")}</tbody>
+        </table>
+      ` : `<div class="hint">Sem logs de auditoria.</div>`;
+    }
+
+    async function loadAdminData() {
+      if (!(state.authEnabled && state.profile?.role === "admin")) return;
+      try {
+        const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+        const [users, packages, userPackages, usage, logs] = await Promise.all([
+          adminQuery("profiles", "*"),
+          adminQuery("packages", "*"),
+          adminQuery("user_packages", "*"),
+          authClient().from("usage_events").select("*").gte("created_at", monthStart).order("created_at", { ascending: false }).then(({ data, error }) => { if (error) throw error; return data || []; }),
+          authClient().from("audit_logs").select("*").order("created_at", { ascending: false }).limit(80).then(({ data, error }) => { if (error) throw error; return data || []; }),
+        ]);
+        state.admin = { users, packages, userPackages, usage, logs };
+        renderAdmin();
+      } catch (error) {
+        setNotice(`Erro ao carregar Admin: ${error.message}`);
+      }
+    }
+
+    function fillPackageForm(pkg) {
+      document.getElementById("packageId").value = pkg?.id || "";
+      document.getElementById("packageName").value = pkg?.name || "";
+      document.getElementById("packageDescription").value = pkg?.description || "";
+      document.getElementById("packageNewsLimit").value = pkg?.monthly_news_limit ?? 200;
+      document.getElementById("packageAiLimit").value = pkg?.monthly_ai_summary_limit ?? 50;
+      document.getElementById("packagePdfLimit").value = pkg?.monthly_pdf_limit ?? 20;
+      document.getElementById("packageMap").value = String(pkg?.can_access_map ?? true);
+      document.getElementById("packageImage").value = String(pkg?.can_generate_image ?? true);
+      document.getElementById("packageWeekly").value = String(pkg?.can_generate_weekly_summary ?? true);
+      document.getElementById("packageActive").value = String(pkg?.is_active ?? true);
+    }
+
+    async function savePackage(event) {
+      event.preventDefault();
+      const id = document.getElementById("packageId").value;
+      const payload = {
+        name: document.getElementById("packageName").value.trim(),
+        description: document.getElementById("packageDescription").value.trim(),
+        monthly_news_limit: Number(document.getElementById("packageNewsLimit").value || 0),
+        monthly_ai_summary_limit: Number(document.getElementById("packageAiLimit").value || 0),
+        monthly_pdf_limit: Number(document.getElementById("packagePdfLimit").value || 0),
+        can_access_map: document.getElementById("packageMap").value === "true",
+        can_generate_image: document.getElementById("packageImage").value === "true",
+        can_generate_weekly_summary: document.getElementById("packageWeekly").value === "true",
+        is_active: document.getElementById("packageActive").value === "true",
+      };
+      const request = id ? authClient().from("packages").update(payload).eq("id", id) : authClient().from("packages").insert(payload);
+      const { error } = await request;
+      if (error) {
+        setNotice(error.message);
+        return;
+      }
+      await audit(id ? "update_package" : "create_package", "package", id || payload.name, payload);
+      fillPackageForm(null);
+      await loadAdminData();
+    }
+
+    async function assignPackage(userId, packageId) {
+      const activeForUser = state.admin.userPackages.filter((item) => item.user_id === userId && item.is_active);
+      for (const item of activeForUser) {
+        await authClient().from("user_packages").update({ is_active: false, ends_at: new Date().toISOString() }).eq("id", item.id);
+      }
+      if (packageId) {
+        const { error } = await authClient().from("user_packages").insert({ user_id: userId, package_id: packageId, is_active: true });
+        if (error) throw error;
+      }
+      await audit("assign_package", "profile", userId, { package_id: packageId || null });
+      await loadAdminData();
+    }
+
+    async function toggleUserStatus(userId, status) {
+      const { error } = await authClient().from("profiles").update({ status }).eq("id", userId);
+      if (error) {
+        setNotice(error.message);
+        return;
+      }
+      await audit("update_user_status", "profile", userId, { status });
+      await loadAdminData();
+    }
+
+    async function inviteUser(event) {
+      event.preventDefault();
+      const payload = {
+        full_name: document.getElementById("inviteName").value.trim(),
+        email: document.getElementById("inviteEmail").value.trim(),
+        company_name: document.getElementById("inviteCompany").value.trim(),
+        role: document.getElementById("inviteRole").value,
+      };
+      const response = await fetch("/api/admin-users", {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setNotice(data.error || "Não foi possível convidar usuário.");
+        return;
+      }
+      event.target.reset();
+      setNotice("Convite enviado e perfil preparado.");
+      await loadAdminData();
     }
 
     function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
@@ -1783,6 +2320,7 @@
     async function generateNewsSummary(index, button) {
       const item = state.items[index];
       if (!item) return;
+      if (!canUseFeature("image_generation")) return;
 
       if (item._runtimeAiSummaryReady) {
         openImageModal(index);
@@ -1797,7 +2335,7 @@
       try {
         const response = await fetch("/api/news-summary", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ item }),
         });
         const data = await response.json().catch(() => ({}));
@@ -2020,6 +2558,7 @@
     }
 
     async function openWeeklySummary() {
+      if (!canUseFeature("weekly_summary")) return;
       const modal = document.getElementById("weeklyModal");
       const content = document.getElementById("weeklyContent");
       const button = document.getElementById("weeklySummaryButton");
@@ -2027,7 +2566,7 @@
       content.innerHTML = `<div class="weekly-loading">Preparando resumo semanal...</div>`;
       button.disabled = true;
       try {
-        const response = await fetch("/api/weekly-summary", { method: "POST" });
+        const response = await fetch("/api/weekly-summary", { method: "POST", headers: authHeaders() });
         const contentType = response.headers.get("content-type") || "";
         const data = contentType.includes("application/json")
           ? await response.json()
@@ -2045,7 +2584,10 @@
       document.getElementById("weeklyModal").classList.remove("open");
     }
 
-    function printWeeklySummary() {
+    async function printWeeklySummary() {
+      if (!canUseFeature("pdf_generation")) return;
+      const consumed = await consumeUsage("pdf_generation", { source: "weekly-summary" });
+      if (!consumed) return;
       const report = document.getElementById("weekly-summary-report");
       if (!report) return;
       const printWindow = window.open("", "_blank", "width=920,height=1200");
@@ -2129,7 +2671,63 @@
       }
     }
 
+    async function bootstrap() {
+      const allowed = await initAuth();
+      renderMapFilterButtons();
+      if (!allowed) return;
+      await refresh();
+    }
+
+    async function submitLogin(event) {
+      event.preventDefault();
+      setAuthError("");
+      const button = document.getElementById("loginButton");
+      button.disabled = true;
+      button.textContent = "Entrando...";
+      try {
+        const { data, error } = await authClient().auth.signInWithPassword({
+          email: document.getElementById("loginEmail").value.trim(),
+          password: document.getElementById("loginPassword").value,
+        });
+        if (error) throw error;
+        state.session = data.session;
+        const allowed = await initAuth();
+        if (allowed) await refresh();
+      } catch (error) {
+        setAuthError(error.message || "Não foi possível entrar.");
+      } finally {
+        button.disabled = false;
+        button.textContent = "Entrar";
+      }
+    }
+
+    async function resetPassword() {
+      const email = document.getElementById("loginEmail").value.trim();
+      if (!email) {
+        setAuthError("Informe o e-mail para recuperar a senha.");
+        return;
+      }
+      const { error } = await authClient().auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+      setAuthError(error ? error.message : "Enviamos as instruções de recuperação para o e-mail informado.");
+    }
+
+    async function logout() {
+      if (state.authClient) await authClient().auth.signOut();
+      state.session = null;
+      state.profile = null;
+      state.access = null;
+      if (state.authEnabled) {
+        showAuthView();
+      } else {
+        showAppView();
+      }
+    }
+
     renderMapFilterButtons();
+    document.getElementById("loginForm").addEventListener("submit", submitLogin);
+    document.getElementById("resetPasswordButton").addEventListener("click", resetPassword);
+    document.getElementById("logoutButton").addEventListener("click", logout);
+    document.getElementById("blockedLogoutButton").addEventListener("click", logout);
     document.getElementById("refresh").addEventListener("click", refresh);
     document.getElementById("mainTabs").addEventListener("click", (event) => {
       const button = event.target.closest(".view-tab[data-view]");
@@ -2176,7 +2774,24 @@
     document.getElementById("weeklyModal").addEventListener("click", (event) => {
       if (event.target.id === "weeklyModal") closeWeeklySummary();
     });
-    refresh();
+    document.getElementById("reloadAdmin").addEventListener("click", loadAdminData);
+    document.getElementById("packageForm").addEventListener("submit", savePackage);
+    document.getElementById("clearPackageForm").addEventListener("click", () => fillPackageForm(null));
+    document.getElementById("inviteUserForm").addEventListener("submit", inviteUser);
+    document.getElementById("packagesAdminList").addEventListener("click", (event) => {
+      const button = event.target.closest(".edit-package");
+      if (!button) return;
+      fillPackageForm(state.admin.packages.find((pkg) => pkg.id === button.dataset.id));
+    });
+    document.getElementById("usersAdminList").addEventListener("change", (event) => {
+      const select = event.target.closest(".assign-package");
+      if (select) assignPackage(select.dataset.userId, select.value).catch((error) => setNotice(error.message));
+    });
+    document.getElementById("usersAdminList").addEventListener("click", (event) => {
+      const button = event.target.closest(".toggle-user-status");
+      if (button) toggleUserStatus(button.dataset.userId, button.dataset.status);
+    });
+    bootstrap();
   </script>
 </body>
 </html>

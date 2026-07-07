@@ -1,5 +1,6 @@
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
+const { assertCanUse, json, recordUsage } = require("./_auth");
 
 function clean(value) {
   return String(value || "")
@@ -178,6 +179,7 @@ async function generateAiSummary(item) {
   const fallback = fallbackSummary(item);
   const apiKey = openAiApiKey();
   if (!apiKey) return { ...fallback, ai_used: false };
+  const model = process.env.OPENAI_IMAGE_MODEL || process.env.OPENAI_MODEL || DEFAULT_MODEL;
 
   const payload = {
     title: clean(item.title),
@@ -199,7 +201,7 @@ async function generateAiSummary(item) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_IMAGE_MODEL || process.env.OPENAI_MODEL || DEFAULT_MODEL,
+      model,
       max_output_tokens: 900,
       input: [
         {
@@ -228,11 +230,14 @@ async function generateAiSummary(item) {
     throw new Error("Não foi possível gerar o resumo com IA agora.");
   }
 
-  const parsed = parseAiJson(extractText(await response.json()));
+  const responseData = await response.json();
+  const parsed = parseAiJson(extractText(responseData));
   const result = { ...fallback, ...parsed };
   result.image_summary = completeSentence(result.image_summary || result.ai_summary || fallback.image_summary);
   result.ai_summary = completeSentence(result.ai_summary || result.image_summary);
   result.ai_used = true;
+  result._usage = responseData.usage || null;
+  result._model = model;
   return result;
 }
 
@@ -245,6 +250,7 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    const account = await assertCanUse(req, "image_generation");
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
     const body = chunks.length
@@ -259,11 +265,18 @@ module.exports = async function handler(req, res) {
     }
 
     const summary = await generateAiSummary(item);
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify(summary));
+    if (summary.ai_used) {
+      await recordUsage(account, "ai_summary", {
+        tokens_input: summary._usage?.input_tokens ?? null,
+        tokens_output: summary._usage?.output_tokens ?? null,
+        model: summary._model,
+        metadata: { source: "news-summary", title: item.title || "" },
+      });
+    }
+    const { _usage, _model, ...publicSummary } = summary;
+    json(res, 200, publicSummary);
   } catch (error) {
-    res.statusCode = 500;
+    res.statusCode = /limite|pacote|login|sessao|acesso|recurso/i.test(error.message || "") ? 403 : 500;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ error: error.message || "Erro ao gerar resumo da notícia" }));
   }
