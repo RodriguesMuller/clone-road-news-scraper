@@ -1203,16 +1203,15 @@
     }
 
     async function loadMyAccess() {
-      const client = authClient();
-      const { data, error } = await client.rpc("get_my_access");
-      if (error) throw error;
-      const access = Array.isArray(data) ? data[0] : data;
+      const response = await fetch("/api/my-access", { headers: authHeaders() });
+      const access = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(access.error || "Nao foi possivel carregar seu acesso.");
       if (!access) throw new Error("Perfil não encontrado. Contate o administrador.");
       state.access = access;
       state.profile = {
         role: access.role,
         status: access.status,
-        email: state.session?.user?.email || "",
+        email: access.email || state.session?.user?.email || "",
       };
       if (access.status !== "active") throw new Error("Seu usuário está inativo. Contate o administrador.");
     }
