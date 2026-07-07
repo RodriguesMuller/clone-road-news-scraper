@@ -2,8 +2,14 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://vdyilgbqxnrwqgoairat.s
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
+function authSettingValue() {
+  return process.env.AUTH_ENABLED ?? process.env.NEXT_PUBLIC_AUTH_ENABLED ?? "";
+}
+
 function isAuthEnabled() {
-  return /^(true|1|yes)$/i.test(String(process.env.NEXT_PUBLIC_AUTH_ENABLED || process.env.AUTH_ENABLED || ""));
+  const value = String(authSettingValue()).trim();
+  if (!value) return true;
+  return !/^(false|0|no)$/i.test(value);
 }
 
 function json(res, statusCode, payload) {
@@ -88,9 +94,9 @@ async function requireAccount(req) {
     return {
       authEnabled: false,
       user: null,
-      profile: { role: "admin", status: "active" },
+      profile: { role: "demo", status: "active" },
       activePackage: null,
-      isAdmin: true,
+      isAdmin: false,
     };
   }
   const { user, token } = await getAuthUser(req);
@@ -163,6 +169,7 @@ module.exports = {
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   SERVICE_ROLE_KEY,
+  authSettingValue,
   isAuthEnabled,
   json,
   supabaseFetch,

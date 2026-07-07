@@ -252,6 +252,51 @@
     .admin-table th { color: var(--color-muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
     .admin-table b { color: var(--color-text); }
     .admin-note { color: var(--color-muted); font-size: 12px; line-height: 1.45; }
+    .shell-toolbar { display: none; margin-bottom: 14px; }
+    .app-layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .content-shell { min-width: 0; }
+    .sidebar {
+      position: sticky;
+      top: 18px;
+      min-height: calc(100vh - 36px);
+      border: 1px solid rgba(32, 242, 155, .22);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(3, 18, 13, .94), rgba(11, 42, 32, .88));
+      box-shadow: var(--shadow-soft);
+      padding: 14px;
+      z-index: 7;
+    }
+    .sidebar-head { display: flex; align-items: center; gap: 10px; padding: 4px 4px 14px; border-bottom: 1px solid var(--color-border-soft); }
+    .sidebar-title { display: grid; gap: 3px; }
+    .sidebar-title strong { color: var(--color-text); font-size: 16px; line-height: 1; }
+    .sidebar-title span { color: var(--color-muted); font-size: 10px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    .nav-group { display: grid; gap: 6px; padding: 14px 0 0; }
+    .nav-label { color: var(--color-muted); font-size: 10px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; padding: 0 6px 3px; }
+    .nav-item {
+      width: 100%;
+      justify-content: flex-start;
+      gap: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--color-muted-strong);
+      box-shadow: none;
+      padding: 10px 11px;
+      text-align: left;
+    }
+    .nav-item:hover { background: rgba(32, 242, 155, .10); border-color: rgba(32, 242, 155, .20); box-shadow: none; transform: none; }
+    .nav-item.active { background: #f3f7f5; color: #03120d; border-color: rgba(32, 242, 155, .55); }
+    .nav-icon { width: 20px; text-align: center; font-size: 14px; line-height: 1; }
+    .nav-item small { margin-left: auto; color: inherit; opacity: .68; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .sidebar-admin[hidden] { display: none !important; }
+    .sidebar-footer { display: grid; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--color-border-soft); }
+    .sidebar-user { color: var(--color-muted); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+    .sidebar-user strong { display: block; color: var(--color-text); font-size: 13px; }
+    .sidebar-backdrop { display: none; }
     .view-tabs {
       display: flex;
       gap: 6px;
@@ -476,6 +521,27 @@
       .weekly-kpis, .weekly-grid { grid-template-columns: 1fr; }
       .view-tabs { overflow-x: auto; flex-wrap: nowrap; }
       .view-tab { flex: 0 0 auto; }
+      .shell-toolbar { display: flex; justify-content: flex-start; }
+      .app-layout { display: block; }
+      .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: min(86vw, 320px);
+        min-height: 100vh;
+        border-radius: 0;
+        transform: translateX(-102%);
+        transition: transform .18s ease;
+        overflow-y: auto;
+      }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        display: block;
+        background: rgba(1, 8, 6, .62);
+        z-index: 6;
+      }
+      .sidebar-backdrop[hidden] { display: none !important; }
       .map-title-row { align-items: flex-start; }
       .map-controls, .map-select, .map-controls button { width: 100%; }
       #roadMap { min-height: 460px; height: 62vh; }
@@ -644,8 +710,48 @@
     </section>
 
     <div id="appShell" class="app-shell">
+      <div class="shell-toolbar">
+        <button id="sidebarToggle" class="mini-button" type="button" aria-controls="sidebar" aria-expanded="false">Menu</button>
+      </div>
+      <div class="app-layout">
+        <aside id="sidebar" class="sidebar" aria-label="Navegação principal">
+          <div class="sidebar-head">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span class="sidebar-title">
+              <strong>Road News</strong>
+              <span>Operação rodoviária</span>
+            </span>
+          </div>
+          <nav class="nav-group" aria-label="Painel">
+            <span class="nav-label">Painel</span>
+            <button class="nav-item active" type="button" data-route="/dashboard" data-view="occurrences" data-scroll="top"><span class="nav-icon">▦</span>Dashboard</button>
+            <button class="nav-item" type="button" data-route="/alertas" data-view="occurrences" data-scroll="recentAlerts"><span class="nav-icon">!</span>Alertas recentes</button>
+            <button class="nav-item" type="button" data-route="/noticias" data-view="occurrences" data-scroll="news"><span class="nav-icon">≡</span>Notícias</button>
+            <button class="nav-item" type="button" data-route="/mapa" data-view="map"><span class="nav-icon">◎</span>Mapa <small id="mapSidebarCount">0</small></button>
+          </nav>
+          <nav class="nav-group" aria-label="Relatórios e IA">
+            <span class="nav-label">Inteligência</span>
+            <button class="nav-item" type="button" data-action="weekly-summary"><span class="nav-icon">▣</span>Resumo semanal</button>
+            <button class="nav-item" type="button" data-route="/noticias" data-view="occurrences" data-scroll="news"><span class="nav-icon">✦</span>Gerar imagem</button>
+            <button class="nav-item" type="button" data-action="weekly-pdf"><span class="nav-icon">PDF</span>Exportar PDF</button>
+          </nav>
+          <nav id="adminNavGroup" class="nav-group sidebar-admin" aria-label="Administração" hidden>
+            <span class="nav-label">Admin</span>
+            <button class="nav-item" type="button" data-route="/admin" data-view="admin" data-scroll="adminOverviewSection"><span class="nav-icon">⚙</span>Admin</button>
+            <button class="nav-item" type="button" data-route="/admin" data-view="admin" data-scroll="usersAdminSection"><span class="nav-icon">U</span>Usuários</button>
+            <button class="nav-item" type="button" data-route="/admin" data-view="admin" data-scroll="packagesAdminSection"><span class="nav-icon">P</span>Pacotes</button>
+            <button class="nav-item" type="button" data-route="/admin" data-view="admin" data-scroll="usageAdminSection"><span class="nav-icon">%</span>Consumo</button>
+            <button class="nav-item" type="button" data-route="/admin" data-view="admin" data-scroll="logsAdminSection"><span class="nav-icon">L</span>Logs</button>
+          </nav>
+          <div class="sidebar-footer">
+            <div id="sidebarUser" class="sidebar-user"></div>
+            <button id="sidebarLogoutButton" class="mini-button" type="button">Sair</button>
+          </div>
+        </aside>
+        <div id="sidebarBackdrop" class="sidebar-backdrop" hidden></div>
+        <div class="content-shell">
       <div id="notice" class="notice"></div>
-      <nav id="mainTabs" class="view-tabs" aria-label="Visualizações do Road News">
+      <nav id="mainTabs" class="view-tabs" aria-label="Visualizações do Road News" hidden>
         <button class="view-tab active" type="button" data-view="occurrences">Ocorrências</button>
         <button class="view-tab" type="button" data-view="map">Mapa <span id="mapTabCount" class="count">0</span></button>
         <button id="adminTab" class="view-tab" type="button" data-view="admin" hidden>Admin</button>
@@ -721,7 +827,7 @@
 
       <section id="adminView" class="view-panel" hidden>
         <div class="admin-grid">
-          <section class="panel admin-section">
+          <section id="adminOverviewSection" class="panel admin-section">
             <div class="panel-head">
               <h2>Administração</h2>
               <button id="reloadAdmin" type="button" class="mini-button">Atualizar admin</button>
@@ -730,7 +836,7 @@
             <p class="admin-note">A criação de login usa Supabase Auth. Pacotes, perfis e consumo são protegidos por RLS.</p>
           </section>
 
-          <section class="panel admin-section">
+          <section id="inviteAdminSection" class="panel admin-section">
             <h2>Convidar usuário</h2>
             <form id="inviteUserForm" class="form-grid">
               <div class="form-row">
@@ -745,7 +851,7 @@
             </form>
           </section>
 
-          <section class="panel admin-section">
+          <section id="packagesAdminSection" class="panel admin-section">
             <h2>Pacotes</h2>
             <form id="packageForm" class="form-grid">
               <input id="packageId" type="hidden">
@@ -774,22 +880,24 @@
             <div id="packagesAdminList" class="admin-table-wrap"></div>
           </section>
 
-          <section class="panel admin-section">
+          <section id="usersAdminSection" class="panel admin-section">
             <h2>Usuários</h2>
             <div id="usersAdminList" class="admin-table-wrap"></div>
           </section>
 
-          <section class="panel admin-section">
+          <section id="usageAdminSection" class="panel admin-section">
             <h2>Consumo do mês</h2>
             <div id="usageAdminList" class="admin-table-wrap"></div>
           </section>
 
-          <section class="panel admin-section">
+          <section id="logsAdminSection" class="panel admin-section">
             <h2>Logs de auditoria</h2>
             <div id="auditAdminList" class="admin-table-wrap"></div>
           </section>
         </div>
       </section>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -935,6 +1043,10 @@
       total: 0,
       alertHours: 6,
       activeView: "occurrences",
+      activeRoute: "/dashboard",
+      activeScrollTarget: "top",
+      pendingPath: "/dashboard",
+      authConfigError: false,
       authEnabled: false,
       authClient: null,
       session: null,
@@ -968,10 +1080,14 @@
     async function loadAuthConfig() {
       try {
         const response = await fetch("/api/auth-config");
+        if (!response.ok) throw new Error("auth-config indisponÃ­vel");
         const data = await response.json();
         state.authEnabled = Boolean(data.authEnabled);
+        state.authConfigError = false;
       } catch {
-        state.authEnabled = false;
+        // Falha fechada: se a config nao carregar, nao abrimos o dashboard em modo demo por acidente.
+        state.authEnabled = true;
+        state.authConfigError = true;
       }
     }
 
@@ -986,15 +1102,85 @@
       return token ? { ...headers, Authorization: `Bearer ${token}` } : headers;
     }
 
+    function normalizeRoute(pathname = window.location.pathname) {
+      const path = String(pathname || "/").replace(/\/+$/, "") || "/";
+      return path === "/" ? "/dashboard" : path;
+    }
+
+    function isAdminProfile() {
+      return state.authEnabled && state.profile?.role === "admin" && state.profile?.status === "active";
+    }
+
+    function setBrowserPath(path, replace = false) {
+      const route = normalizeRoute(path);
+      if (normalizeRoute(window.location.pathname) === route) return;
+      const method = replace ? "replaceState" : "pushState";
+      window.history[method]({}, "", route);
+    }
+
+    function closeSidebar() {
+      document.getElementById("sidebar")?.classList.remove("open");
+      document.getElementById("sidebarBackdrop").hidden = true;
+      document.getElementById("sidebarToggle")?.setAttribute("aria-expanded", "false");
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      const isOpen = !sidebar.classList.contains("open");
+      sidebar.classList.toggle("open", isOpen);
+      document.getElementById("sidebarBackdrop").hidden = !isOpen;
+      document.getElementById("sidebarToggle").setAttribute("aria-expanded", String(isOpen));
+    }
+
+    function scrollToTarget(target) {
+      setTimeout(() => {
+        if (!target || target === "top") {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+        document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
+
+    function syncNavigationState() {
+      const isAdmin = isAdminProfile();
+      document.getElementById("adminNavGroup").hidden = !isAdmin;
+      document.getElementById("adminTab").hidden = !isAdmin;
+      document.getElementById("sidebarLogoutButton").hidden = !state.authEnabled;
+      document.querySelectorAll(".nav-item[data-route]").forEach((button) => {
+        const sameRoute = button.dataset.route === state.activeRoute;
+        const sameScroll = !state.activeScrollTarget || button.dataset.scroll === state.activeScrollTarget;
+        button.classList.toggle("active", sameRoute && sameScroll);
+      });
+      document.querySelectorAll(".nav-item[data-action]").forEach((button) => {
+        button.classList.toggle("active", state.activeRoute === "/resumo-semanal" && button.dataset.action === "weekly-summary");
+      });
+      document.querySelectorAll(".view-tab[data-view]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.view === state.activeView);
+      });
+      const sidebarUser = document.getElementById("sidebarUser");
+      const label = state.authEnabled
+        ? `${state.profile?.role === "admin" ? "Admin" : "Cliente"}`
+        : "Modo demo";
+      const email = state.profile?.email || state.session?.user?.email || "Preview sem login";
+      sidebarUser.innerHTML = `<strong>${escapeHtml(label)}</strong>${escapeHtml(email)}`;
+    }
+
     function showAuthView() {
+      if (state.authEnabled) setBrowserPath("/login", true);
+      closeSidebar();
       document.getElementById("authView").hidden = false;
       document.getElementById("blockedView").hidden = true;
       document.getElementById("appShell").hidden = true;
       document.getElementById("logoutButton").hidden = true;
       document.getElementById("authStatus").hidden = true;
+      if (state.authConfigError) {
+        setAuthError("Nao foi possivel confirmar a configuracao de acesso. Por seguranca, entre novamente.");
+      }
     }
 
     function showBlockedView(message) {
+      closeSidebar();
       document.getElementById("blockedMessage").textContent = message || "Seu usuário está inativo. Contate o administrador.";
       document.getElementById("authView").hidden = true;
       document.getElementById("blockedView").hidden = false;
@@ -1013,7 +1199,7 @@
       authStatus.textContent = state.authEnabled
         ? `${state.profile?.role === "admin" ? "Admin" : "Cliente"} · ${state.profile?.email || state.session?.user?.email || ""}`
         : "Modo demo";
-      document.getElementById("adminTab").hidden = !(state.authEnabled && state.profile?.role === "admin");
+      syncNavigationState();
     }
 
     async function loadMyAccess() {
@@ -1037,6 +1223,7 @@
         state.session = null;
         state.profile = { role: "demo", status: "active" };
         state.access = { can_access_map: true, can_generate_image: true, can_generate_weekly_summary: true };
+        if (normalizeRoute(window.location.pathname) === "/admin") setBrowserPath("/dashboard", true);
         showAppView();
         return true;
       }
@@ -1044,7 +1231,10 @@
       const client = authClient();
       const { data } = await client.auth.getSession();
       state.session = data.session;
-      if (!state.session) {
+      if (!state.session?.user) {
+        state.profile = null;
+        state.access = null;
+        state.pendingPath = normalizeRoute(window.location.pathname) === "/login" ? "/dashboard" : normalizeRoute(window.location.pathname);
         showAuthView();
         return false;
       }
@@ -1686,6 +1876,7 @@
       const precise = points.filter((point) => point.precision === "precise").length;
       const approx = points.length - precise;
       document.getElementById("mapTabCount").textContent = String(points.length);
+      document.getElementById("mapSidebarCount").textContent = String(points.length);
       document.getElementById("mapSummary").textContent = `${points.length} ponto(s) encontrados no período selecionado.`;
       document.getElementById("mapPreciseCount").textContent = String(precise);
       document.getElementById("mapApproxCount").textContent = String(approx);
@@ -1711,16 +1902,33 @@
       }
     }
 
-    function setActiveView(view) {
+    function routeTarget(path) {
+      const route = normalizeRoute(path);
+      const routes = {
+        "/dashboard": { view: "occurrences", scroll: "top" },
+        "/alertas": { view: "occurrences", scroll: "recentAlerts" },
+        "/noticias": { view: "occurrences", scroll: "news" },
+        "/mapa": { view: "map", scroll: "top" },
+        "/resumo-semanal": { view: "occurrences", scroll: "top", action: "weekly-summary" },
+        "/admin": { view: "admin", scroll: "adminOverviewSection" },
+      };
+      return routes[route] || routes["/dashboard"];
+    }
+
+    function setActiveView(view, options = {}) {
       if (view === "map" && !canUseFeature("map")) return;
-      if (view === "admin" && !(state.authEnabled && state.profile?.role === "admin")) {
+      if (view === "admin" && !isAdminProfile()) {
         setNotice("Acesso negado.");
+        setBrowserPath("/dashboard", true);
         return;
       }
       state.activeView = view;
-      document.querySelectorAll(".view-tab[data-view]").forEach((button) => {
-        button.classList.toggle("active", button.dataset.view === view);
-      });
+      if (!options.skipRoute) {
+        state.activeRoute = view === "map" ? "/mapa" : view === "admin" ? "/admin" : "/dashboard";
+        state.activeScrollTarget = options.scroll || "top";
+        setBrowserPath(state.activeRoute);
+      }
+      syncNavigationState();
       document.getElementById("occurrencesView").hidden = view !== "occurrences";
       document.getElementById("mapView").hidden = view !== "map";
       document.getElementById("adminView").hidden = view !== "admin";
@@ -1730,6 +1938,46 @@
       if (view === "admin") {
         loadAdminData();
       }
+      if (options.scroll) scrollToTarget(options.scroll);
+    }
+
+    async function applyRoute(path = window.location.pathname, options = {}) {
+      const route = normalizeRoute(path);
+      if (state.authEnabled && !state.session && route !== "/login") {
+        state.pendingPath = route;
+        showAuthView();
+        return;
+      }
+      if (route === "/login") {
+        if (!state.authEnabled) {
+          state.activeRoute = "/dashboard";
+          state.activeScrollTarget = "top";
+          setBrowserPath("/dashboard", true);
+          setActiveView("occurrences", { skipRoute: true, scroll: "top" });
+        } else if (state.session && state.profile?.status === "active") {
+          await applyRoute(state.pendingPath || "/dashboard", { replace: true });
+        } else {
+          showAuthView();
+        }
+        return;
+      }
+
+      const knownRoutes = new Set(["/dashboard", "/alertas", "/noticias", "/mapa", "/resumo-semanal", "/admin"]);
+      const target = routeTarget(route);
+      if (target.view === "admin" && !isAdminProfile()) {
+        setNotice("Acesso negado. Apenas administradores podem acessar esta area.");
+        state.activeRoute = "/dashboard";
+        state.activeScrollTarget = "top";
+        setBrowserPath("/dashboard", true);
+        setActiveView("occurrences", { skipRoute: true, scroll: "top" });
+        return;
+      }
+
+      state.activeRoute = knownRoutes.has(route) ? route : "/dashboard";
+      state.activeScrollTarget = options.scroll || target.scroll || "top";
+      setBrowserPath(state.activeRoute, Boolean(options.replace));
+      setActiveView(target.view, { skipRoute: true, scroll: state.activeScrollTarget });
+      if (target.action === "weekly-summary") openWeeklySummary();
     }
 
     function toggleMapSetFilter(setName, value) {
@@ -2672,10 +2920,11 @@
     }
 
     async function bootstrap() {
-      const allowed = await initAuth();
       renderMapFilterButtons();
+      const allowed = await initAuth();
       if (!allowed) return;
       await refresh();
+      await applyRoute(window.location.pathname, { replace: true });
     }
 
     async function submitLogin(event) {
@@ -2692,7 +2941,10 @@
         if (error) throw error;
         state.session = data.session;
         const allowed = await initAuth();
-        if (allowed) await refresh();
+        if (allowed) {
+          await refresh();
+          await applyRoute(state.pendingPath || "/dashboard", { replace: true });
+        }
       } catch (error) {
         setAuthError(error.message || "Não foi possível entrar.");
       } finally {
@@ -2712,14 +2964,58 @@
     }
 
     async function logout() {
-      if (state.authClient) await authClient().auth.signOut();
-      state.session = null;
-      state.profile = null;
-      state.access = null;
-      if (state.authEnabled) {
-        showAuthView();
-      } else {
-        showAppView();
+      const buttons = [document.getElementById("logoutButton"), document.getElementById("sidebarLogoutButton"), document.getElementById("blockedLogoutButton")].filter(Boolean);
+      const labels = buttons.map((button) => button.textContent);
+      buttons.forEach((button) => {
+        button.disabled = true;
+        button.textContent = "Saindo...";
+      });
+      setNotice("");
+      setAuthError("");
+      try {
+        if (state.authClient) {
+          const { error } = await authClient().auth.signOut();
+          if (error) throw error;
+        }
+      } catch (error) {
+        setAuthError("Nao foi possivel encerrar a sessao automaticamente. Recarregue a pagina se ainda aparecer logado.");
+        setNotice("Nao foi possivel encerrar a sessao automaticamente. Recarregue a pagina se ainda aparecer logado.");
+      } finally {
+        state.session = null;
+        state.profile = null;
+        state.access = null;
+        state.activeRoute = "/dashboard";
+        state.activeScrollTarget = "top";
+        state.pendingPath = "/dashboard";
+        buttons.forEach((button, index) => {
+          button.disabled = false;
+          button.textContent = labels[index] || "Sair";
+        });
+        if (state.authEnabled) {
+          showAuthView();
+          setBrowserPath("/login", true);
+        } else {
+          showAppView();
+        }
+      }
+    }
+
+    async function handleSidebarClick(event) {
+      const button = event.target.closest(".nav-item");
+      if (!button) return;
+      closeSidebar();
+      setNotice("");
+      if (button.dataset.action === "weekly-summary") {
+        await applyRoute("/resumo-semanal");
+        return;
+      }
+      if (button.dataset.action === "weekly-pdf") {
+        await applyRoute("/resumo-semanal");
+        setNotice("Resumo semanal aberto. Use o botao Exportar resumo em PDF no topo do modal.");
+        return;
+      }
+      if (button.dataset.route) {
+        await applyRoute(button.dataset.route, { scroll: button.dataset.scroll });
       }
     }
 
@@ -2727,7 +3023,12 @@
     document.getElementById("loginForm").addEventListener("submit", submitLogin);
     document.getElementById("resetPasswordButton").addEventListener("click", resetPassword);
     document.getElementById("logoutButton").addEventListener("click", logout);
+    document.getElementById("sidebarLogoutButton").addEventListener("click", logout);
     document.getElementById("blockedLogoutButton").addEventListener("click", logout);
+    document.getElementById("sidebarToggle").addEventListener("click", toggleSidebar);
+    document.getElementById("sidebarBackdrop").addEventListener("click", closeSidebar);
+    document.getElementById("sidebar").addEventListener("click", handleSidebarClick);
+    window.addEventListener("popstate", () => applyRoute(window.location.pathname, { replace: true }));
     document.getElementById("refresh").addEventListener("click", refresh);
     document.getElementById("mainTabs").addEventListener("click", (event) => {
       const button = event.target.closest(".view-tab[data-view]");

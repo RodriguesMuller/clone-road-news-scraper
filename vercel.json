@@ -1,4 +1,13 @@
 {
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/login", "destination": "/" },
+    { "source": "/dashboard", "destination": "/" },
+    { "source": "/alertas", "destination": "/" },
+    { "source": "/noticias", "destination": "/" },
+    { "source": "/mapa", "destination": "/" },
+    { "source": "/resumo-semanal", "destination": "/" },
+    { "source": "/admin", "destination": "/" }
+  ]
 }
