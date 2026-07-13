@@ -32,10 +32,10 @@ jobs:
 
       - name: Validate Supabase secret
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || secrets.SUPABASE }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           if [ -z "$DATABASE_URL" ]; then
-            echo "Configure a repository secret named DATABASE_URL or SUPABASE with the Supabase Postgres connection string."
+            echo "Configure a repository secret named DATABASE_URL with the Supabase Postgres connection string."
             exit 1
           fi
           if ! echo "$DATABASE_URL" | grep -q '^postgresql://'; then
@@ -45,5 +45,5 @@ jobs:
 
       - name: Run scraper
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || secrets.SUPABASE }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python main.py
