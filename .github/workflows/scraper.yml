@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Validate Supabase secret
+      - name: Validate DATABASE_URL secret
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
@@ -38,10 +38,28 @@ jobs:
             echo "Configure a repository secret named DATABASE_URL with the Supabase Postgres connection string."
             exit 1
           fi
+
           if ! echo "$DATABASE_URL" | grep -q '^postgresql://'; then
-            echo "The database secret must start with postgresql://"
+            echo "DATABASE_URL must start with postgresql://"
             exit 1
           fi
+
+      - name: Debug database target
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python - <<'PY'
+          import os
+          from urllib.parse import urlparse
+
+          url = os.environ["DATABASE_URL"]
+          parsed = urlparse(url)
+
+          print("Database host:", parsed.hostname)
+          print("Database port:", parsed.port)
+          print("Database user:", parsed.username)
+          print("Uses pooler:", "pooler.supabase.com" in (parsed.hostname or ""))
+          PY
 
       - name: Run scraper
         env:
