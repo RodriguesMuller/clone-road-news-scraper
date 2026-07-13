@@ -238,9 +238,42 @@
     .app-shell[hidden], .auth-view[hidden], .blocked-view[hidden] { display: none !important; }
     .blocked-view { display: grid; place-items: center; min-height: 54vh; }
     .admin-grid { display: grid; gap: 16px; }
+    .admin-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 6px;
+      border: 1px solid rgba(32, 242, 155, .20);
+      border-radius: 8px;
+      background: rgba(3, 18, 13, .62);
+    }
+    .admin-tab {
+      min-height: 36px;
+      border: 1px solid transparent;
+      background: rgba(255,255,255,.055);
+      color: var(--color-muted-strong);
+      box-shadow: none;
+      padding: 8px 11px;
+      font-size: 12px;
+    }
+    .admin-tab.active { background: var(--color-primary); color: #03120d; border-color: rgba(32, 242, 155, .62); }
     .admin-section { display: grid; gap: 12px; }
+    .admin-section[hidden] { display: none !important; }
+    .admin-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .admin-section-head h2 { margin-bottom: 3px; }
     .admin-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .admin-table-wrap { overflow-x: auto; }
+    .admin-filterbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .admin-filterbar input, .admin-filterbar select {
+      min-height: 36px;
+      border: 1px solid var(--color-border-soft);
+      border-radius: 8px;
+      background: rgba(255,255,255,.06);
+      color: var(--color-text);
+      padding: 8px 10px;
+      font: inherit;
+      font-size: 12px;
+    }
+    .admin-table-wrap { overflow-x: auto; border: 1px solid rgba(32, 242, 155, .12); border-radius: 8px; }
     .admin-table {
       width: 100%;
       border-collapse: collapse;
@@ -249,6 +282,7 @@
       font-size: 13px;
     }
     .admin-table th, .admin-table td { border-bottom: 1px solid var(--color-border-soft); padding: 10px 8px; text-align: left; vertical-align: top; }
+    .admin-table tr:last-child td { border-bottom: 0; }
     .admin-table th { color: var(--color-muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
     .admin-table b { color: var(--color-text); }
     .admin-note { color: var(--color-muted); font-size: 12px; line-height: 1.45; }
@@ -258,6 +292,51 @@
       justify-content: flex-start;
       margin-bottom: 14px;
     }
+    .admin-empty, .admin-error {
+      border: 1px dashed rgba(32, 242, 155, .24);
+      border-radius: 8px;
+      color: var(--color-muted-strong);
+      padding: 14px;
+      background: rgba(255,255,255,.035);
+    }
+    .admin-error { border-color: rgba(255, 209, 102, .42); color: #ffe9a8; }
+    .admin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-height: 22px;
+      border: 1px solid rgba(32, 242, 155, .28);
+      border-radius: 999px;
+      padding: 3px 8px;
+      color: var(--color-primary);
+      background: rgba(32, 242, 155, .10);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+    .admin-badge.warn { color: #ffd166; border-color: rgba(255, 209, 102, .36); background: rgba(255, 209, 102, .10); }
+    .admin-badge.danger { color: #ff9090; border-color: rgba(255, 100, 100, .34); background: rgba(255, 100, 100, .12); }
+    .admin-badge.neutral { color: var(--color-muted-strong); border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.06); }
+    .admin-progress {
+      width: 130px;
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.10);
+      margin: 5px 0;
+    }
+    .admin-progress span {
+      display: block;
+      height: 100%;
+      width: var(--progress, 0%);
+      background: var(--progress-color, var(--color-primary));
+    }
+    .admin-mini-list { display: grid; gap: 8px; }
+    .admin-mini-item { display: flex; justify-content: space-between; gap: 10px; color: var(--color-muted-strong); font-size: 13px; }
+    .admin-mini-item strong { color: var(--color-text); }
     .app-layout {
       display: grid;
       grid-template-columns: minmax(72px, 260px) minmax(0, 1fr);
@@ -876,16 +955,24 @@
 
       <section id="adminView" class="view-panel" hidden>
         <div class="admin-grid">
-          <section id="adminOverviewSection" class="panel admin-section">
+          <nav id="adminTabs" class="admin-tabs" aria-label="Administracao">
+            <button class="admin-tab active" type="button" data-admin-tab="overview">Visao geral</button>
+            <button class="admin-tab" type="button" data-admin-tab="users">Usuarios</button>
+            <button class="admin-tab" type="button" data-admin-tab="packages">Pacotes</button>
+            <button class="admin-tab" type="button" data-admin-tab="usage">Consumo</button>
+            <button class="admin-tab" type="button" data-admin-tab="logs">Logs</button>
+          </nav>
+          <section id="adminOverviewSection" class="panel admin-section" data-admin-panel="overview">
             <div class="panel-head">
               <h2>Administração</h2>
               <button id="reloadAdmin" type="button" class="mini-button">Atualizar admin</button>
             </div>
             <div id="adminSummary" class="stats"></div>
+            <div id="adminOverviewDetails" class="admin-mini-list"></div>
             <p class="admin-note">A criação de login usa Supabase Auth. Pacotes, perfis e consumo são protegidos por RLS.</p>
           </section>
 
-          <section id="inviteAdminSection" class="panel admin-section">
+          <section id="inviteAdminSection" class="panel admin-section" data-admin-panel="users" hidden>
             <h2>Convidar usuário</h2>
             <form id="inviteUserForm" class="form-grid">
               <div class="form-row">
@@ -896,11 +983,16 @@
                 <div class="field"><label for="inviteCompany">Empresa</label><input id="inviteCompany"></div>
                 <div class="field"><label for="inviteRole">Papel</label><select id="inviteRole"><option value="client">Client</option><option value="admin">Admin</option></select></div>
               </div>
+              <div class="form-row">
+                <div class="field"><label for="invitePackage">Pacote inicial</label><select id="invitePackage"><option value="">Sem pacote</option></select></div>
+                <div class="field"><label for="inviteStatus">Status inicial</label><select id="inviteStatus"><option value="active">Ativo</option><option value="blocked">Bloqueado</option><option value="inactive">Inativo</option></select></div>
+              </div>
+              <div id="invitePackageWarning" class="admin-error" hidden>Crie pelo menos um pacote ativo antes de convidar clientes com pacote inicial.</div>
               <button type="submit">Enviar convite</button>
             </form>
           </section>
 
-          <section id="packagesAdminSection" class="panel admin-section">
+          <section id="packagesAdminSection" class="panel admin-section" data-admin-panel="packages" hidden>
             <h2>Pacotes</h2>
             <form id="packageForm" class="form-grid">
               <input id="packageId" type="hidden">
@@ -929,18 +1021,42 @@
             <div id="packagesAdminList" class="admin-table-wrap"></div>
           </section>
 
-          <section id="usersAdminSection" class="panel admin-section">
+          <section id="usersAdminSection" class="panel admin-section" data-admin-panel="users" hidden>
             <h2>Usuários</h2>
+            <div class="admin-filterbar">
+              <select id="userFilter">
+                <option value="all">Todos</option>
+                <option value="active">Ativos</option>
+                <option value="blocked">Bloqueados</option>
+                <option value="admin">Admins</option>
+                <option value="client">Clientes</option>
+                <option value="no_package">Sem pacote</option>
+              </select>
+              <input id="userSearch" type="search" placeholder="Buscar usuario, e-mail ou empresa">
+            </div>
             <div id="usersAdminList" class="admin-table-wrap"></div>
           </section>
 
-          <section id="usageAdminSection" class="panel admin-section">
+          <section id="usageAdminSection" class="panel admin-section" data-admin-panel="usage" hidden>
             <h2>Consumo do mês</h2>
+            <div class="admin-filterbar">
+              <select id="usageStatusFilter">
+                <option value="all">Todos</option>
+                <option value="over80">Acima de 80%</option>
+                <option value="limit">Limite atingido</option>
+                <option value="no_package">Sem pacote</option>
+                <option value="no_usage">Sem consumo</option>
+              </select>
+              <input id="usageSearch" type="search" placeholder="Buscar usuario, empresa ou pacote">
+            </div>
             <div id="usageAdminList" class="admin-table-wrap"></div>
           </section>
 
-          <section id="logsAdminSection" class="panel admin-section">
+          <section id="logsAdminSection" class="panel admin-section" data-admin-panel="logs" hidden>
             <h2>Logs de auditoria</h2>
+            <div class="admin-filterbar">
+              <input id="logSearch" type="search" placeholder="Buscar acao, alvo ou detalhe">
+            </div>
             <div id="auditAdminList" class="admin-table-wrap"></div>
           </section>
         </div>
@@ -2126,6 +2242,7 @@ function showAuthView() {
         setTimeout(renderMap, 60);
       }
       if (view === "admin") {
+        setAdminTab(adminTabForTarget(options.scroll || state.activeScrollTarget));
         loadAdminData();
       }
       if (options.scroll) scrollToTarget(options.scroll);
@@ -2188,6 +2305,24 @@ function showAuthView() {
       document.getElementById("mapPeriod").value = "24";
       document.getElementById("mapStateFilter").value = "";
       renderMap();
+    }
+
+    function adminTabForTarget(target = "") {
+      if (String(target).includes("users") || String(target).includes("invite")) return "users";
+      if (String(target).includes("packages") || String(target).includes("package")) return "packages";
+      if (String(target).includes("usage")) return "usage";
+      if (String(target).includes("logs")) return "logs";
+      return "overview";
+    }
+
+    function setAdminTab(tab = "overview") {
+      const activeTab = ["overview", "users", "packages", "usage", "logs"].includes(tab) ? tab : "overview";
+      document.querySelectorAll("#adminTabs .admin-tab").forEach((button) => {
+        button.classList.toggle("active", button.dataset.adminTab === activeTab);
+      });
+      document.querySelectorAll("[data-admin-panel]").forEach((panel) => {
+        panel.hidden = panel.dataset.adminPanel !== activeTab;
+      });
     }
 
     async function adminQuery(table, query = "*") {
@@ -2291,6 +2426,244 @@ function showAuthView() {
       ` : `<div class="hint">Sem logs de auditoria.</div>`;
     }
 
+    function adminInputValue(id, fallback = "") {
+      return document.getElementById(id)?.value || fallback;
+    }
+
+    function adminBadge(label, tone = "neutral") {
+      return `<span class="admin-badge ${escapeHtml(tone)}">${escapeHtml(label)}</span>`;
+    }
+
+    function packageOptions(selectedId = "") {
+      const packages = state.admin.packages || [];
+      return `<option value="">Sem pacote</option>${packages.map((pkg) => `
+        <option value="${escapeHtml(pkg.id)}" ${pkg.id === selectedId ? "selected" : ""}>${escapeHtml(pkg.name)}</option>
+      `).join("")}`;
+    }
+
+    function updateInvitePackageOptions() {
+      const select = document.getElementById("invitePackage");
+      if (!select) return;
+      const activePackages = (state.admin.packages || []).filter((pkg) => pkg.is_active);
+      const currentValue = select.value;
+      select.innerHTML = `<option value="">Sem pacote</option>${activePackages.map((pkg) => `<option value="${escapeHtml(pkg.id)}">${escapeHtml(pkg.name)}</option>`).join("")}`;
+      select.value = activePackages.some((pkg) => pkg.id === currentValue) ? currentValue : "";
+      const warning = document.getElementById("invitePackageWarning");
+      if (warning) warning.hidden = activePackages.length > 0;
+    }
+
+    function currentPackageForUser(userId) {
+      return (state.admin.userPackages || []).find((item) => item.user_id === userId && item.is_active);
+    }
+
+    function packageById(packageId) {
+      return (state.admin.packages || []).find((pkg) => pkg.id === packageId) || null;
+    }
+
+    function packageUsersCount(packageId) {
+      return (state.admin.userPackages || []).filter((item) => item.package_id === packageId && item.is_active).length;
+    }
+
+    function usageCount(userId, eventTypes) {
+      const types = Array.isArray(eventTypes) ? eventTypes : [eventTypes];
+      return (state.admin.usage || []).filter((event) => event.user_id === userId && types.includes(event.event_type)).length;
+    }
+
+    function usageForUser(user) {
+      const current = currentPackageForUser(user.id);
+      const pkg = packageById(current?.package_id);
+      const news = usageCount(user.id, "news_view");
+      const ai = usageCount(user.id, ["ai_summary", "image_generation", "weekly_summary"]);
+      const pdf = usageCount(user.id, "pdf_generation");
+      const images = usageCount(user.id, "image_generation");
+      const weekly = usageCount(user.id, "weekly_summary");
+      const limits = {
+        news: Number(pkg?.monthly_news_limit || 0),
+        ai: Number(pkg?.monthly_ai_summary_limit || 0),
+        pdf: Number(pkg?.monthly_pdf_limit || 0),
+      };
+      const percentages = [
+        limits.news ? news / limits.news : 0,
+        limits.ai ? ai / limits.ai : 0,
+        limits.pdf ? pdf / limits.pdf : 0,
+      ];
+      const percent = Math.min(100, Math.round(Math.max(...percentages, 0) * 100));
+      const total = news + ai + pdf;
+      const limitReached = (limits.news && news >= limits.news) || (limits.ai && ai >= limits.ai) || (limits.pdf && pdf >= limits.pdf);
+      return { current, pkg, news, ai, pdf, images, weekly, limits, percent, total, limitReached };
+    }
+
+    function progressBar(percent) {
+      const value = Math.max(0, Math.min(100, Number(percent || 0)));
+      const color = value >= 100 ? "#ff7070" : value >= 80 ? "#ffd166" : "var(--color-primary)";
+      return `<div class="admin-progress" title="${value}%"><span style="--progress:${value}%;--progress-color:${color}"></span></div>`;
+    }
+
+    function consumptionStatus(info) {
+      if (!info.pkg) return adminBadge("Sem pacote", "danger");
+      if (info.limitReached) return adminBadge("Limite atingido", "danger");
+      if (info.percent >= 80) return adminBadge("Acima de 80%", "warn");
+      if (!info.total) return adminBadge("Sem consumo", "neutral");
+      return adminBadge("Normal", "");
+    }
+
+    function userMatchesFilters(user) {
+      const filter = adminInputValue("userFilter", "all");
+      const text = `${user.full_name || ""} ${user.email || ""} ${user.company_name || ""}`.toLowerCase();
+      const search = adminInputValue("userSearch").toLowerCase().trim();
+      const current = currentPackageForUser(user.id);
+      if (search && !text.includes(search)) return false;
+      if (filter === "active") return user.status === "active";
+      if (filter === "blocked") return user.status === "blocked" || user.status === "inactive";
+      if (filter === "admin") return user.role === "admin";
+      if (filter === "client") return user.role === "client";
+      if (filter === "no_package") return !current;
+      return true;
+    }
+
+    function usageMatchesFilters(user, info) {
+      const filter = adminInputValue("usageStatusFilter", "all");
+      const search = adminInputValue("usageSearch").toLowerCase().trim();
+      const text = `${user.full_name || ""} ${user.email || ""} ${user.company_name || ""} ${info.pkg?.name || ""}`.toLowerCase();
+      if (search && !text.includes(search)) return false;
+      if (filter === "over80") return info.percent >= 80 && !info.limitReached;
+      if (filter === "limit") return info.limitReached;
+      if (filter === "no_package") return !info.pkg;
+      if (filter === "no_usage") return info.total === 0;
+      return true;
+    }
+
+    function renderAdmin() {
+      const users = state.admin.users || [];
+      const packages = state.admin.packages || [];
+      const usage = state.admin.usage || [];
+      const logs = state.admin.logs || [];
+      const activeUsers = users.filter((user) => user.status === "active").length;
+      const blockedUsers = users.filter((user) => user.status === "blocked" || user.status === "inactive").length;
+      const usersNearLimit = users.filter((user) => {
+        const info = usageForUser(user);
+        return info.pkg && info.percent >= 80;
+      });
+      const packagesWithoutUsers = packages.filter((pkg) => packageUsersCount(pkg.id) === 0);
+      const latestLog = logs[0];
+
+      updateInvitePackageOptions();
+      document.getElementById("adminSummary").innerHTML = [
+        ["Usuarios ativos", activeUsers, `${users.length} cadastrados`],
+        ["Pacotes ativos", packages.filter((pkg) => pkg.is_active).length, `${packages.length} cadastrados`],
+        ["Uso IA no mes", usage.filter((event) => ["ai_summary", "image_generation", "weekly_summary"].includes(event.event_type)).length, "eventos registrados"],
+        ["Logs recentes", logs.length, latestLog ? formatDate(latestLog.created_at) : "sem registros"],
+        ["Clientes perto do limite", usersNearLimit.length, "acima de 80%"],
+        ["Usuarios bloqueados", blockedUsers, "sem acesso ativo"],
+      ].map(([label, value, hint]) => `
+        <article class="stat"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div><div class="hint">${escapeHtml(hint)}</div></article>
+      `).join("");
+
+      document.getElementById("adminOverviewDetails").innerHTML = [
+        `<div class="admin-mini-item"><span>Pacotes sem usuarios</span><strong>${packagesWithoutUsers.length}</strong></div>`,
+        `<div class="admin-mini-item"><span>Ultima acao administrativa</span><strong>${escapeHtml(latestLog ? `${latestLog.action} · ${formatDate(latestLog.created_at)}` : "Sem logs")}</strong></div>`,
+      ].join("");
+
+      document.getElementById("packagesAdminList").innerHTML = packages.length ? `
+        <table class="admin-table">
+          <thead><tr><th>Pacote</th><th>Limites</th><th>Recursos</th><th>Usuarios</th><th>Criado em</th><th>Status</th><th>Acoes</th></tr></thead>
+          <tbody>${packages.map((pkg) => {
+            const userCount = packageUsersCount(pkg.id);
+            return `
+              <tr>
+                <td><b>${escapeHtml(pkg.name)}</b><br>${escapeHtml(pkg.description || "")}</td>
+                <td>${Number(pkg.monthly_news_limit || 0)} consultas<br>${Number(pkg.monthly_ai_summary_limit || 0)} IA<br>${Number(pkg.monthly_pdf_limit || 0)} PDFs</td>
+                <td>${pkg.can_access_map ? adminBadge("Mapa") : adminBadge("Mapa off", "neutral")} ${pkg.can_generate_image ? adminBadge("Resumo") : adminBadge("Resumo off", "neutral")} ${pkg.can_generate_weekly_summary ? adminBadge("Semanal") : adminBadge("Semanal off", "neutral")}</td>
+                <td>${userCount}</td>
+                <td>${escapeHtml(formatDate(pkg.created_at))}</td>
+                <td>${pkg.is_active ? adminBadge("Ativo") : adminBadge("Inativo", "warn")}</td>
+                <td class="admin-actions">
+                  <button class="mini-button edit-package" type="button" data-id="${escapeHtml(pkg.id)}">Editar</button>
+                  <button class="mini-button duplicate-package" type="button" data-id="${escapeHtml(pkg.id)}">Duplicar</button>
+                  <button class="mini-button toggle-package-status" type="button" data-id="${escapeHtml(pkg.id)}" data-active="${pkg.is_active ? "false" : "true"}">${pkg.is_active ? "Desativar" : "Ativar"}</button>
+                  <button class="mini-button delete-package" type="button" data-id="${escapeHtml(pkg.id)}" ${userCount ? "disabled" : ""}>Excluir</button>
+                </td>
+              </tr>
+            `;
+          }).join("")}</tbody>
+        </table>
+      ` : `<div class="admin-empty">Nenhum pacote cadastrado.</div>`;
+
+      const filteredUsers = users.filter(userMatchesFilters);
+      document.getElementById("usersAdminList").innerHTML = filteredUsers.length ? `
+        <table class="admin-table">
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Empresa</th><th>Papel</th><th>Status</th><th>Pacote atual</th><th>Consumo no mes</th><th>Criado em</th><th>Ultimo acesso</th><th>Acoes</th></tr></thead>
+          <tbody>${filteredUsers.map((user) => {
+            const info = usageForUser(user);
+            return `
+              <tr>
+                <td><b>${escapeHtml(user.full_name || "-")}</b></td>
+                <td>${escapeHtml(user.email || "-")}</td>
+                <td>${escapeHtml(user.company_name || "-")}</td>
+                <td>${user.role === "admin" ? adminBadge("Admin") : adminBadge("Client", "neutral")}</td>
+                <td>${user.status === "active" ? adminBadge("Ativo") : adminBadge(user.status || "Bloqueado", "danger")}</td>
+                <td><select class="map-select assign-package" data-user-id="${escapeHtml(user.id)}">${packageOptions(info.current?.package_id || "")}</select></td>
+                <td>${info.news}/${info.limits.news || 0} consultas<br>${info.ai}/${info.limits.ai || 0} IA<br>${info.pdf}/${info.limits.pdf || 0} PDFs ${progressBar(info.percent)}${consumptionStatus(info)}</td>
+                <td>${escapeHtml(formatDate(user.created_at))}</td>
+                <td>${escapeHtml(formatDate(user.last_sign_in_at || user.updated_at || user.created_at))}</td>
+                <td class="admin-actions">
+                  <button class="mini-button edit-user" type="button" data-user-id="${escapeHtml(user.id)}">Editar</button>
+                  <button class="mini-button toggle-user-status" type="button" data-user-id="${escapeHtml(user.id)}" data-status="${user.status === "active" ? "blocked" : "active"}">${user.status === "active" ? "Bloquear" : "Ativar"}</button>
+                  <button class="mini-button view-user-usage" type="button" data-user-id="${escapeHtml(user.id)}">Consumo</button>
+                  <button class="mini-button view-user-logs" type="button" data-user-id="${escapeHtml(user.id)}">Logs</button>
+                </td>
+              </tr>
+            `;
+          }).join("")}</tbody>
+        </table>
+      ` : `<div class="admin-empty">Nenhum usuario encontrado.</div>`;
+
+      const usageRows = users.map((user) => ({ user, info: usageForUser(user) })).filter(({ user, info }) => usageMatchesFilters(user, info));
+      document.getElementById("usageAdminList").innerHTML = usageRows.length ? `
+        <table class="admin-table">
+          <thead><tr><th>Usuario</th><th>Empresa</th><th>Pacote</th><th>Consultas</th><th>IA</th><th>PDFs</th><th>Imagens</th><th>Semanais</th><th>% consumo</th><th>Status</th></tr></thead>
+          <tbody>${usageRows.map(({ user, info }) => `
+            <tr>
+              <td><b>${escapeHtml(user.full_name || user.email || "-")}</b><br>${escapeHtml(user.email || "")}</td>
+              <td>${escapeHtml(user.company_name || "-")}</td>
+              <td>${escapeHtml(info.pkg?.name || "Sem pacote")}</td>
+              <td>${info.news}/${info.limits.news || 0}</td>
+              <td>${info.ai}/${info.limits.ai || 0}</td>
+              <td>${info.pdf}/${info.limits.pdf || 0}</td>
+              <td>${info.images}</td>
+              <td>${info.weekly}</td>
+              <td>${progressBar(info.percent)}${info.percent}%</td>
+              <td>${consumptionStatus(info)}</td>
+            </tr>
+          `).join("")}</tbody>
+        </table>
+      ` : `<div class="admin-empty">Sem consumo registrado neste mes.</div>`;
+
+      const logSearch = adminInputValue("logSearch").toLowerCase().trim();
+      const filteredLogs = logs.filter((log) => {
+        if (!logSearch) return true;
+        return `${log.action || ""} ${log.target_type || ""} ${log.target_id || ""} ${JSON.stringify(log.metadata || {})}`.toLowerCase().includes(logSearch);
+      });
+      document.getElementById("auditAdminList").innerHTML = filteredLogs.length ? `
+        <table class="admin-table">
+          <thead><tr><th>Data/hora</th><th>Responsavel</th><th>Acao</th><th>Tipo do alvo</th><th>Alvo</th><th>Detalhes</th></tr></thead>
+          <tbody>${filteredLogs.map((log) => {
+            const actor = users.find((user) => user.id === log.actor_user_id);
+            return `
+              <tr>
+                <td>${escapeHtml(formatDate(log.created_at))}</td>
+                <td>${escapeHtml(actor?.email || log.actor_user_id || "-")}</td>
+                <td>${escapeHtml(log.action)}</td>
+                <td>${escapeHtml(log.target_type)}</td>
+                <td>${escapeHtml(log.target_id || "-")}</td>
+                <td>${escapeHtml(JSON.stringify(log.metadata || {}))}</td>
+              </tr>
+            `;
+          }).join("")}</tbody>
+        </table>
+      ` : `<div class="admin-empty">Sem logs de auditoria.</div>`;
+    }
+
     async function loadAdminData() {
       if (!(state.authEnabled && state.profile?.role === "admin")) return;
       try {
@@ -2370,6 +2743,96 @@ function showAuthView() {
       await loadAdminData();
     }
 
+    async function togglePackageStatus(packageId, isActive) {
+      const { error } = await authClient().from("packages").update({ is_active: isActive }).eq("id", packageId);
+      if (error) {
+        setNotice(error.message);
+        return;
+      }
+      await audit(isActive ? "activate_package" : "deactivate_package", "package", packageId, { is_active: isActive });
+      await loadAdminData();
+    }
+
+    async function duplicatePackage(packageId) {
+      const source = (state.admin.packages || []).find((pkg) => pkg.id === packageId);
+      if (!source) return;
+      const payload = {
+        name: `${source.name} - copia`,
+        description: source.description || "",
+        monthly_news_limit: Number(source.monthly_news_limit || 0),
+        monthly_ai_summary_limit: Number(source.monthly_ai_summary_limit || 0),
+        monthly_pdf_limit: Number(source.monthly_pdf_limit || 0),
+        can_access_map: Boolean(source.can_access_map),
+        can_generate_image: Boolean(source.can_generate_image),
+        can_generate_weekly_summary: Boolean(source.can_generate_weekly_summary),
+        is_active: false,
+      };
+      const { data, error } = await authClient().from("packages").insert(payload).select("id").single();
+      if (error) {
+        setNotice(error.message);
+        return;
+      }
+      await audit("duplicate_package", "package", data?.id || payload.name, { source_package_id: packageId });
+      await loadAdminData();
+    }
+
+    async function deletePackage(packageId) {
+      if (packageUsersCount(packageId) > 0) {
+        setNotice("Pacote com usuarios vinculados nao pode ser excluido.");
+        return;
+      }
+      const { error } = await authClient().from("packages").delete().eq("id", packageId);
+      if (error) {
+        setNotice(error.message);
+        return;
+      }
+      await audit("delete_package", "package", packageId, {});
+      await loadAdminData();
+    }
+
+    function focusAdminUsage(userId) {
+      setAdminTab("usage");
+      const user = (state.admin.users || []).find((item) => item.id === userId);
+      const input = document.getElementById("usageSearch");
+      if (input) input.value = user?.email || user?.full_name || "";
+      renderAdmin();
+      scrollToTarget("usageAdminSection");
+    }
+
+    function focusAdminLogs(userId) {
+      setAdminTab("logs");
+      const input = document.getElementById("logSearch");
+      if (input) input.value = userId;
+      renderAdmin();
+      scrollToTarget("logsAdminSection");
+    }
+
+    async function editUserProfile(userId) {
+      const user = (state.admin.users || []).find((item) => item.id === userId);
+      if (!user) return;
+      const fullName = window.prompt("Nome do usuario", user.full_name || "");
+      if (fullName === null) return;
+      const companyName = window.prompt("Empresa", user.company_name || "");
+      if (companyName === null) return;
+      const role = window.prompt("Papel: admin ou client", user.role || "client");
+      if (role === null) return;
+      const status = window.prompt("Status: active, blocked ou inactive", user.status || "active");
+      if (status === null) return;
+      const payload = {
+        full_name: fullName.trim(),
+        company_name: companyName.trim(),
+        role: role === "admin" ? "admin" : "client",
+        status: ["active", "blocked", "inactive"].includes(status) ? status : "active",
+      };
+      const { error } = await authClient().from("profiles").update(payload).eq("id", userId);
+      if (error) {
+        setNotice(error.message);
+        return;
+      }
+      await audit("update_user", "profile", userId, payload);
+      await loadAdminData();
+    }
+
     async function inviteUser(event) {
       event.preventDefault();
       const payload = {
@@ -2377,6 +2840,8 @@ function showAuthView() {
         email: document.getElementById("inviteEmail").value.trim(),
         company_name: document.getElementById("inviteCompany").value.trim(),
         role: document.getElementById("inviteRole").value,
+        package_id: document.getElementById("invitePackage").value,
+        status: document.getElementById("inviteStatus").value,
       };
       const response = await fetch("/api/admin-users", {
         method: "POST",
@@ -3269,22 +3734,40 @@ function showAuthView() {
     document.getElementById("weeklyModal").addEventListener("click", (event) => {
       if (event.target.id === "weeklyModal") closeWeeklySummary();
     });
+    document.getElementById("adminTabs").addEventListener("click", (event) => {
+      const button = event.target.closest(".admin-tab");
+      if (button) setAdminTab(button.dataset.adminTab);
+    });
+    ["userFilter", "userSearch", "usageStatusFilter", "usageSearch", "logSearch"].forEach((id) => {
+      document.getElementById(id)?.addEventListener("input", renderAdmin);
+      document.getElementById(id)?.addEventListener("change", renderAdmin);
+    });
     document.getElementById("reloadAdmin").addEventListener("click", loadAdminData);
     document.getElementById("packageForm").addEventListener("submit", savePackage);
     document.getElementById("clearPackageForm").addEventListener("click", () => fillPackageForm(null));
     document.getElementById("inviteUserForm").addEventListener("submit", inviteUser);
     document.getElementById("packagesAdminList").addEventListener("click", (event) => {
-      const button = event.target.closest(".edit-package");
+      const button = event.target.closest("button[data-id]");
       if (!button) return;
-      fillPackageForm(state.admin.packages.find((pkg) => pkg.id === button.dataset.id));
+      if (button.classList.contains("edit-package")) {
+        fillPackageForm(state.admin.packages.find((pkg) => pkg.id === button.dataset.id));
+        scrollToTarget("packagesAdminSection");
+      }
+      if (button.classList.contains("duplicate-package")) duplicatePackage(button.dataset.id);
+      if (button.classList.contains("toggle-package-status")) togglePackageStatus(button.dataset.id, button.dataset.active === "true");
+      if (button.classList.contains("delete-package")) deletePackage(button.dataset.id);
     });
     document.getElementById("usersAdminList").addEventListener("change", (event) => {
       const select = event.target.closest(".assign-package");
       if (select) assignPackage(select.dataset.userId, select.value).catch((error) => setNotice(error.message));
     });
     document.getElementById("usersAdminList").addEventListener("click", (event) => {
-      const button = event.target.closest(".toggle-user-status");
-      if (button) toggleUserStatus(button.dataset.userId, button.dataset.status);
+      const button = event.target.closest("button[data-user-id]");
+      if (!button) return;
+      if (button.classList.contains("toggle-user-status")) toggleUserStatus(button.dataset.userId, button.dataset.status);
+      if (button.classList.contains("edit-user")) editUserProfile(button.dataset.userId);
+      if (button.classList.contains("view-user-usage")) focusAdminUsage(button.dataset.userId);
+      if (button.classList.contains("view-user-logs")) focusAdminLogs(button.dataset.userId);
     });
     bootstrap();
   </script>

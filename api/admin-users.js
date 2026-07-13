@@ -3,6 +3,8 @@ const { SERVICE_ROLE_KEY, SUPABASE_URL, json, requireAdmin, supabaseFetch } = re
 async function inviteUser(body) {
   const email = String(body.email || "").trim().toLowerCase();
   if (!email || !email.includes("@")) throw new Error("E-mail invalido.");
+  const role = body.role === "admin" ? "admin" : "client";
+  const status = ["active", "blocked", "inactive"].includes(body.status) ? body.status : "active";
   const response = await fetch(`${SUPABASE_URL}/auth/v1/invite`, {
     method: "POST",
     headers: {
@@ -15,7 +17,7 @@ async function inviteUser(body) {
       data: {
         full_name: body.full_name || "",
         company_name: body.company_name || "",
-        role: body.role || "client",
+        role,
       },
     }),
   });
@@ -23,7 +25,8 @@ async function inviteUser(body) {
     const detail = await response.text();
     throw new Error(detail || "Nao foi possivel convidar usuario.");
   }
-  return response.json();
+  const invited = await response.json();
+  return { invited, role, status };
 }
 
 module.exports = async function handler(req, res) {
@@ -36,7 +39,7 @@ module.exports = async function handler(req, res) {
     const chunks = [];
     for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
     const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {};
-    const invited = await inviteUser(body);
+    const { invited, role, status } = await inviteUser(body);
     const userId = invited?.id || invited?.user?.id;
     if (userId) {
       await supabaseFetch("/rest/v1/profiles", {
@@ -47,10 +50,25 @@ module.exports = async function handler(req, res) {
           email: String(body.email || "").trim().toLowerCase(),
           full_name: body.full_name || "",
           company_name: body.company_name || "",
-          role: body.role === "admin" ? "admin" : "client",
-          status: "active",
+          role,
+          status,
         }),
       });
+      const packageId = String(body.package_id || "").trim();
+      if (packageId) {
+        const activePackages = await supabaseFetch(`/rest/v1/packages?id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=id`);
+        const packageRows = await activePackages.json();
+        if (!packageRows.length) throw new Error("Pacote inicial nao encontrado ou inativo.");
+        await supabaseFetch("/rest/v1/user_packages", {
+          method: "POST",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify({
+            user_id: userId,
+            package_id: packageId,
+            is_active: true,
+          }),
+        });
+      }
       await supabaseFetch("/rest/v1/audit_logs", {
         method: "POST",
         headers: { Prefer: "return=minimal" },
@@ -59,7 +77,7 @@ module.exports = async function handler(req, res) {
           action: "invite_user",
           target_type: "profile",
           target_id: userId,
-          metadata: { email: body.email, role: body.role || "client" },
+          metadata: { email: body.email, role, status, package_id: body.package_id || null },
         }),
       });
     }
