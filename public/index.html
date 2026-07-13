@@ -669,7 +669,7 @@
           <span>Inteligência operacional para o modal rodoviário</span>
         </span>
       </div>
-      <div class="header-actions">
+      <div id="headerActions" class="header-actions" hidden>
         <span id="headerStatus" class="status-pill">Última coleta: -</span>
         <span id="authStatus" class="status-pill" hidden>Modo demo</span>
         <button id="refresh" type="button">Atualizar</button>
@@ -680,15 +680,15 @@
 
   <main>
     <section id="authView" class="auth-view" hidden>
-      <form id="loginForm" class="auth-card">
+      <form id="loginForm" class="auth-card" aria-describedby="authError">
         <div class="weekly-logo">ROAD NEWS</div>
-        <h1>Acesso seguro</h1>
-        <p>Entre com seu e-mail e senha para acessar o monitoramento rodoviário.</p>
+        <h1>Realizar Login</h1>
+        <p>Insira seu e-mail e senha para acessar o painel. Mantenha suas credenciais em segurança.</p>
         <div id="authError" class="auth-error"></div>
         <div class="form-grid">
           <div class="field">
             <label for="loginEmail">E-mail</label>
-            <input id="loginEmail" type="email" autocomplete="email" required>
+            <input id="loginEmail" type="email" autocomplete="username" required>
           </div>
           <div class="field">
             <label for="loginPassword">Senha</label>
@@ -709,7 +709,7 @@
       </div>
     </section>
 
-    <div id="appShell" class="app-shell">
+    <div id="appShell" class="app-shell" hidden>
       <div class="shell-toolbar">
         <button id="sidebarToggle" class="mini-button" type="button" aria-controls="sidebar" aria-expanded="false">Menu</button>
       </div>
@@ -731,9 +731,7 @@
           </nav>
           <nav class="nav-group" aria-label="Relatórios e IA">
             <span class="nav-label">Inteligência</span>
-            <button class="nav-item" type="button" data-action="weekly-summary"><span class="nav-icon">▣</span>Resumo semanal</button>
             <button class="nav-item" type="button" data-route="/noticias" data-view="occurrences" data-scroll="news"><span class="nav-icon">✦</span>Gerar imagem</button>
-            <button class="nav-item" type="button" data-action="weekly-pdf"><span class="nav-icon">PDF</span>Exportar PDF</button>
           </nav>
           <nav id="adminNavGroup" class="nav-group sidebar-admin" aria-label="Administração" hidden>
             <span class="nav-label">Admin</span>
@@ -922,7 +920,7 @@
     </div>
   </div>
 
-  <button id="weeklySummaryButton" class="weekly-fab" type="button">Gerar resumo semanal</button>
+  <button id="weeklySummaryButton" class="weekly-fab" type="button" hidden>Gerar resumo semanal</button>
 
   <div id="weeklyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="weeklyTitle">
     <div class="modal-card">
@@ -1169,6 +1167,9 @@
     function showAuthView() {
       if (state.authEnabled) setBrowserPath("/login", true);
       closeSidebar();
+      document.getElementById("headerActions").hidden = true;
+      const weeklyButton = document.getElementById("weeklySummaryButton");
+      if (weeklyButton) weeklyButton.hidden = true;
       document.getElementById("authView").hidden = false;
       document.getElementById("blockedView").hidden = true;
       document.getElementById("appShell").hidden = true;
@@ -1181,6 +1182,9 @@
 
     function showBlockedView(message) {
       closeSidebar();
+      document.getElementById("headerActions").hidden = true;
+      const weeklyButton = document.getElementById("weeklySummaryButton");
+      if (weeklyButton) weeklyButton.hidden = true;
       document.getElementById("blockedMessage").textContent = message || "Seu usuário está inativo. Contate o administrador.";
       document.getElementById("authView").hidden = true;
       document.getElementById("blockedView").hidden = false;
@@ -1192,6 +1196,9 @@
       document.getElementById("authView").hidden = true;
       document.getElementById("blockedView").hidden = true;
       document.getElementById("appShell").hidden = false;
+      document.getElementById("headerActions").hidden = false;
+      const weeklyButton = document.getElementById("weeklySummaryButton");
+      if (weeklyButton) weeklyButton.hidden = !canUseFeature("weekly_summary", true);
       const authStatus = document.getElementById("authStatus");
       const logout = document.getElementById("logoutButton");
       authStatus.hidden = false;
