@@ -1049,6 +1049,7 @@
       authClient: null,
       session: null,
       profile: null,
+      viewMode: null,
       access: null,
       admin: { users: [], packages: [], usage: [], logs: [] },
       map: {
@@ -1093,6 +1094,36 @@
       const box = document.getElementById("authError");
       box.textContent = message || "";
       box.classList.toggle("show", Boolean(message));
+    }
+
+    function getDisplayName() {
+      const full = state.profile?.full_name || "";
+      if (full && full.trim()) return full.trim();
+      const email = state.profile?.email || state.session?.user?.email || "";
+      if (email && email.includes("@")) return email.split("@")[0];
+      if (email) return email;
+      return "Usuário";
+    }
+
+    function setViewMode(mode) {
+      if (mode !== "admin" && mode !== "client") return;
+      // only allow admin mode if real role is admin
+      if (mode === "admin" && state.profile?.role !== "admin") return;
+      state.viewMode = mode;
+      try { localStorage.setItem("roadnews_viewmode", mode); } catch (e) { /* ignore */ }
+      syncNavigationState();
+      // if currently on admin view but switched to client, revert to dashboard
+      if (mode === "client" && state.activeRoute === "/admin") {
+        setNotice("Visão cliente ativa — acesso administrativo ocultado.");
+        setActiveView("occurrences", { skipRoute: false, scroll: "top" });
+      }
+    }
+
+    function toggleViewMode() {
+      const realAdmin = state.profile?.role === "admin";
+      if (!realAdmin) return;
+      const next = state.viewMode === "admin" ? "client" : "admin";
+      setViewMode(next);
     }
 
     function authHeaders(headers = {}) {
@@ -1141,9 +1172,10 @@
     }
 
     function syncNavigationState() {
-      const isAdmin = isAdminProfile();
-      document.getElementById("adminNavGroup").hidden = !isAdmin;
-      document.getElementById("adminTab").hidden = !isAdmin;
+      const isRealAdmin = isAdminProfile();
+      const isAdminView = isRealAdmin && state.viewMode === "admin";
+      document.getElementById("adminNavGroup").hidden = !isAdminView;
+      document.getElementById("adminTab").hidden = !isAdminView;
       document.getElementById("sidebarLogoutButton").hidden = !state.authEnabled;
       document.querySelectorAll(".nav-item[data-route]").forEach((button) => {
         const sameRoute = button.dataset.route === state.activeRoute;
@@ -1157,11 +1189,27 @@
         button.classList.toggle("active", button.dataset.view === state.activeView);
       });
       const sidebarUser = document.getElementById("sidebarUser");
-      const label = state.authEnabled
-        ? `${state.profile?.role === "admin" ? "Admin" : "Cliente"}`
-        : "Modo demo";
-      const email = state.profile?.email || state.session?.user?.email || "Preview sem login";
-      sidebarUser.innerHTML = `<strong>${escapeHtml(label)}</strong>${escapeHtml(email)}`;
+      const realRoleLabel = state.profile?.role === "admin" ? "Admin" : "Cliente";
+      const viewLabel = state.viewMode === "admin" ? "Admin" : "Cliente";
+      const displayName = getDisplayName();
+      sidebarUser.innerHTML = `<strong>${escapeHtml(displayName)}</strong><span style="display:block;color:var(--color-muted);font-size:12px;margin-top:4px;">${escapeHtml(viewLabel)}</span>`;
+
+      // render header authStatus area with name and clickable badge
+      const authStatus = document.getElementById("authStatus");
+      if (authStatus) {
+        const badge = `<button id="viewModeBadge" class="mini-button" style="margin-left:10px">${escapeHtml(viewLabel)}</button>`;
+        authStatus.innerHTML = `<strong style=\"margin-right:8px\">${escapeHtml(displayName)}</strong>${badge}`;
+        // badge click behavior
+        const badgeEl = authStatus.querySelector("#viewModeBadge");
+        if (badgeEl) {
+          badgeEl.onclick = (e) => {
+            e.preventDefault();
+            toggleViewMode();
+          };
+          // disable badge for real clients
+          if (!isRealAdmin) badgeEl.disabled = true;
+        }
+      }
     }
 
     function showAuthView() {
@@ -1198,9 +1246,8 @@
       const refresh = document.getElementById("refresh");
       if (refresh) refresh.hidden = true;
       const sidebarLogout = document.getElementById("sidebarLogoutButton");
-      if (sidebarLogout) sidebarLogout.hidden = true;
-      document.getElementById("blockedMessage").textContent = message || "Seu usuário está inativo. Contate o administrador.";
-      document.getElementById("authView").hidden = true;
+      // render name and badge via syncNavigationState
+      syncNavigationState();
       document.getElementById("blockedView").hidden = false;
       document.getElementById("appShell").hidden = true;
       document.getElementById("logoutButton").hidden = false;
@@ -1239,6 +1286,7 @@
         role: access.role,
         status: access.status,
         email: access.email || state.session?.user?.email || "",
+        full_name: access.full_name || "",
       };
       if (access.status !== "active") throw new Error("Seu usuário está inativo. Contate o administrador.");
     }
@@ -1270,6 +1318,13 @@
       } catch (error) {
         showBlockedView(error.message);
         return false;
+      }
+      // initialize viewMode from localStorage but validate against real role
+      const stored = localStorage.getItem("roadnews_viewmode");
+      if (state.profile?.role === "admin") {
+        state.viewMode = stored === "client" ? "client" : "admin";
+      } else {
+        state.viewMode = "client";
       }
       showAppView();
       return true;
@@ -1943,7 +1998,7 @@
 
     function setActiveView(view, options = {}) {
       if (view === "map" && !canUseFeature("map")) return;
-      if (view === "admin" && !isAdminProfile()) {
+      if (view === "admin" && (!isAdminProfile() || state.viewMode === "client")) {
         setNotice("Acesso negado.");
         setBrowserPath("/dashboard", true);
         return;
