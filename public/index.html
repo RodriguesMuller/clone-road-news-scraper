@@ -252,10 +252,15 @@
     .admin-table th { color: var(--color-muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
     .admin-table b { color: var(--color-text); }
     .admin-note { color: var(--color-muted); font-size: 12px; line-height: 1.45; }
-    .shell-toolbar { display: none; margin-bottom: 14px; }
+    .shell-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 14px;
+    }
     .app-layout {
       display: grid;
-      grid-template-columns: minmax(70px, 260px) minmax(0, 1fr);
+      grid-template-columns: minmax(72px, 260px) minmax(0, 1fr);
       gap: 18px;
       align-items: start;
     }
@@ -1192,6 +1197,10 @@
       return isAdminProfile() && state.viewMode === "admin";
     }
 
+    function shouldShowAdminNavigation() {
+      return canAccessAdminView();
+    }
+
     function setBrowserPath(path, replace = false) {
       const route = normalizeRoute(path);
       if (normalizeRoute(window.location.pathname) === route) return;
@@ -1226,7 +1235,8 @@
       if (!sidebar) return;
       const stored = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
       const isDesktop = window.matchMedia("(min-width: 921px)").matches;
-      sidebar.classList.toggle("collapsed", isDesktop && stored === "true");
+      const shouldCollapse = isDesktop ? (stored === null ? true : stored === "true") : false;
+      sidebar.classList.toggle("collapsed", shouldCollapse);
       sidebar.classList.remove("open");
       document.getElementById("sidebarBackdrop").hidden = true;
       setSidebarButtonState();
@@ -1267,9 +1277,11 @@
     }
 
         function syncNavigationState() {
-      const isAdminView = canAccessAdminView();
+      const isAdminView = shouldShowAdminNavigation();
       document.getElementById("adminNavGroup").hidden = !isAdminView;
       document.getElementById("adminTab").hidden = !isAdminView;
+      const mainTabs = document.getElementById("mainTabs");
+      if (mainTabs) mainTabs.hidden = !state.session || !state.profile;
       document.getElementById("sidebarLogoutButton").hidden = !state.authEnabled;
       const weeklySidebarItem = document.getElementById("weeklySidebarItem");
       if (weeklySidebarItem) weeklySidebarItem.hidden = !canUseFeature("weekly_summary", true);
@@ -1307,6 +1319,7 @@
 function showAuthView() {
       if (state.authEnabled) setBrowserPath("/login", true);
       closeSidebar();
+      document.getElementById("mainTabs").hidden = true;
       document.getElementById("headerActions").hidden = true;
       const weeklyButton = document.getElementById("weeklySummaryButton");
       if (weeklyButton) weeklyButton.hidden = true;
@@ -1330,6 +1343,7 @@ function showAuthView() {
 
     function showBlockedView(message) {
       closeSidebar();
+      document.getElementById("mainTabs").hidden = true;
       document.getElementById("headerActions").hidden = true;
       const weeklyButton = document.getElementById("weeklySummaryButton");
       if (weeklyButton) weeklyButton.hidden = true;
@@ -1347,6 +1361,7 @@ function showAuthView() {
 
     function showAppView() {
       document.getElementById("authView").hidden = true;
+      document.getElementById("mainTabs").hidden = false;
       document.getElementById("blockedView").hidden = true;
       document.getElementById("appShell").hidden = false;
       document.getElementById("headerActions").hidden = false;
@@ -3204,6 +3219,10 @@ function showAuthView() {
     document.getElementById("sidebarBackdrop").addEventListener("click", closeSidebar);
     document.getElementById("sidebar").addEventListener("click", handleSidebarClick);
     window.addEventListener("popstate", () => applyRoute(window.location.pathname, { replace: true }));
+    window.addEventListener("resize", () => {
+      loadSidebarPreference();
+      setSidebarButtonState();
+    });
     document.getElementById("refresh").addEventListener("click", refresh);
     document.getElementById("mainTabs").addEventListener("click", (event) => {
       const button = event.target.closest(".view-tab[data-view]");
