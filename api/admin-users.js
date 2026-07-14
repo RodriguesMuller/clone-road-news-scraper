@@ -1,9 +1,10 @@
-const { SERVICE_ROLE_KEY, SUPABASE_URL, json, requireAdmin, supabaseFetch } = require("./_auth");
+const { SERVICE_ROLE_KEY, SUPABASE_URL, json, requireManager, supabaseFetch } = require("./_auth");
 
 async function inviteUser(body) {
   const email = String(body.email || "").trim().toLowerCase();
   if (!email || !email.includes("@")) throw new Error("E-mail invalido.");
-  const role = body.role === "admin" ? "admin" : "client";
+  const requestedRole = String(body.role || "client").trim();
+  const role = ["admin", "manager"].includes(requestedRole) ? requestedRole : "client";
   const status = ["active", "blocked", "inactive"].includes(body.status) ? body.status : "active";
   const response = await fetch(`${SUPABASE_URL}/auth/v1/invite`, {
     method: "POST",
@@ -35,10 +36,13 @@ module.exports = async function handler(req, res) {
     return;
   }
   try {
-    const account = await requireAdmin(req);
+    const account = await requireManager(req);
     const chunks = [];
     for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
     const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {};
+    const requestedRole = String(body.role || "client").trim();
+    const normalizedRole = ["admin", "manager"].includes(requestedRole) ? requestedRole : "client";
+    if (!account.isAdmin && normalizedRole !== "client") throw new Error("Gestor so pode convidar usuarios client.");
     const { invited, role, status } = await inviteUser(body);
     const userId = invited?.id || invited?.user?.id;
     if (userId) {

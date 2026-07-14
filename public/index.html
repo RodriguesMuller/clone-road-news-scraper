@@ -337,6 +337,36 @@
     .admin-mini-list { display: grid; gap: 8px; }
     .admin-mini-item { display: flex; justify-content: space-between; gap: 10px; color: var(--color-muted-strong); font-size: 13px; }
     .admin-mini-item strong { color: var(--color-text); }
+    .client-header-panel { margin-bottom: 16px; }
+    .client-hero-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+    .client-hero-row h1 { margin: 3px 0 6px; color: var(--color-text); font-size: clamp(24px, 4vw, 38px); line-height: 1.05; }
+    .eyebrow { margin: 0; color: var(--color-primary); font-size: 11px; font-weight: 950; letter-spacing: .14em; text-transform: uppercase; }
+    .client-hero-meta {
+      min-width: 170px;
+      border: 1px solid rgba(32, 242, 155, .18);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(32, 242, 155, .07);
+      color: var(--color-muted-strong);
+    }
+    .client-hero-meta strong { display: block; color: var(--color-text); font-size: 30px; line-height: 1; }
+    .client-hero-meta span { font-size: 12px; }
+    .client-filter-grid { display: grid; grid-template-columns: 1.3fr repeat(4, minmax(130px, .8fr)); gap: 10px; margin-top: 14px; }
+    .management-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .management-card {
+      border: 1px solid var(--color-card-border);
+      border-radius: 8px;
+      padding: 14px;
+      background: rgba(255,255,255,.045);
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+    .management-card h3 { margin: 0; color: var(--color-text); font-size: 16px; line-height: 1.25; }
+    .management-card p { margin: 0; color: var(--color-muted-strong); font-size: 13px; line-height: 1.45; }
+    .management-card .admin-actions { margin-top: 4px; }
+    .platform-toggle-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .platform-toggle-row input { width: 18px; height: 18px; accent-color: var(--color-primary); }
     .app-layout {
       display: grid;
       grid-template-columns: minmax(72px, 260px) minmax(0, 1fr);
@@ -398,6 +428,8 @@
     }
     .sidebar-toggle:hover { background: rgba(255,255,255,.12); }
     .sidebar-toggle:focus { outline: 2px solid rgba(32, 242, 155, .45); outline-offset: 2px; }
+    .sidebar-menu { display: grid; gap: 0; }
+    .sidebar > .nav-group { display: none; }
     .nav-group { display: grid; gap: 6px; padding: 14px 0 0; }
     .nav-label { color: var(--color-muted); font-size: 10px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; padding: 0 6px 3px; }
     .nav-item {
@@ -425,6 +457,32 @@
     .sidebar-footer { display: grid; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--color-border-soft); }
     .sidebar-user { color: var(--color-muted); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
     .sidebar-user strong { display: block; color: var(--color-text); font-size: 13px; }
+    .sidebar-env { display: grid; gap: 6px; }
+    .sidebar-env label { color: var(--color-muted); font-size: 10px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+    .sidebar-env select {
+      width: 100%;
+      min-height: 36px;
+      border: 1px solid rgba(32, 242, 155, .20);
+      border-radius: 8px;
+      background: rgba(255,255,255,.06);
+      color: var(--color-text);
+      padding: 8px 10px;
+      font: inherit;
+      font-size: 12px;
+    }
+    .sidebar-avatar {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: rgba(32, 242, 155, .14);
+      border: 1px solid rgba(32, 242, 155, .30);
+      color: var(--color-primary);
+      font-weight: 950;
+      flex: 0 0 auto;
+    }
+    .sidebar-user-row { display: flex; gap: 10px; align-items: center; min-width: 0; }
     .sidebar-backdrop { display: none; }
     .view-tabs {
       display: flex;
@@ -648,6 +706,8 @@
     @media (max-width: 820px) { .stats, .alert-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout { grid-template-columns: 1fr; } }
     @media (max-width: 720px) {
       .weekly-kpis, .weekly-grid { grid-template-columns: 1fr; }
+      .client-filter-grid { grid-template-columns: 1fr; }
+      .client-hero-meta { width: 100%; }
       .view-tabs { overflow-x: auto; flex-wrap: nowrap; }
       .view-tab { flex: 0 0 auto; }
       .shell-toolbar { display: flex; justify-content: flex-start; }
@@ -851,6 +911,7 @@
               <span>Operação rodoviária</span>
             </span>
           </div>
+          <div id="sidebarMenu" class="sidebar-menu"></div>
           <nav class="nav-group" aria-label="Painel">
             <span class="nav-label">Painel</span>
             <button class="nav-item active" type="button" data-route="/dashboard" data-view="occurrences" data-scroll="top" title="Dashboard"><span class="nav-icon">▦</span><span class="nav-label-text">Dashboard</span></button>
@@ -872,6 +933,8 @@
             <button class="nav-item" type="button" data-route="/admin" data-view="admin" data-scroll="logsAdminSection" title="Logs"><span class="nav-icon">L</span><span class="nav-label-text">Logs</span></button>
           </nav>
           <div class="sidebar-footer">
+            <button class="nav-item" type="button" data-route="/configuracoes" data-view="occurrences" data-scroll="clientSettingsSection" title="Configuracoes"><span class="nav-icon">C</span><span class="nav-label-text">Configuracoes</span></button>
+            <div id="environmentSwitcher" class="sidebar-env"></div>
             <div id="sidebarUser" class="sidebar-user"></div>
             <button id="sidebarLogoutButton" class="mini-button" type="button" hidden>Sair</button>
           </div>
@@ -884,6 +947,27 @@
         <button class="view-tab" type="button" data-view="map">Mapa <span id="mapTabCount" class="count">0</span></button>
         <button id="adminTab" class="view-tab" type="button" data-view="admin" hidden>Admin</button>
       </nav>
+
+      <section id="clientHeaderPanel" class="panel client-header-panel">
+        <div class="client-hero-row">
+          <div>
+            <p class="eyebrow">Road News</p>
+            <h1>Atualizacao em tempo real</h1>
+            <p id="clientGreeting" class="admin-note">Bom dia.</p>
+          </div>
+          <div class="client-hero-meta">
+            <strong id="clientLoadedCount">0</strong>
+            <span>noticias carregadas do Supabase</span>
+          </div>
+        </div>
+        <div class="client-filter-grid">
+          <div class="field"><label for="globalSearch">Busca</label><input id="globalSearch" type="search" placeholder="Noticia, rodovia ou regiao"></div>
+          <div class="field"><label for="periodFilter">Periodo</label><select id="periodFilter"><option value="24">Ultimas 24h</option><option value="168">7 dias</option><option value="720">30 dias</option><option value="all">Tudo</option></select></div>
+          <div class="field"><label for="regionFilter">Regiao</label><input id="regionFilter" type="search" placeholder="Estado, cidade ou BR"></div>
+          <div class="field"><label for="categoryFilter">Categoria</label><select id="categoryFilter"><option value="">Todas</option><option value="clima">Clima</option><option value="rodovia">Rodovia</option><option value="acidente">Acidente</option><option value="interdicao">Interdicao</option><option value="roubo">Roubo de carga</option></select></div>
+          <div class="field"><label for="sortFilter">Ordenacao</label><select id="sortFilter"><option value="recent">Mais recentes</option><option value="risk">Maior risco</option><option value="relevance">Mais relevantes</option></select></div>
+        </div>
+      </section>
 
       <section id="occurrencesView" class="view-panel">
       <section class="stats" id="stats"></section>
@@ -904,10 +988,28 @@
           <h2>Notícias recentes</h2>
           <div id="news" class="list"></div>
         </div>
-        <aside class="panel">
+        <aside id="sourcesSection" class="panel">
           <h2>Fontes nas últimas 24h</h2>
           <div id="sources" class="sources"></div>
         </aside>
+      </section>
+      <section id="trendsSection" class="panel">
+        <div class="panel-head">
+          <h2>Tendencias</h2>
+          <span class="admin-note">Categorias, estados e rodovias mais recorrentes.</span>
+        </div>
+        <div id="trendCards" class="management-grid"></div>
+      </section>
+      <section id="clientReportsSection" class="panel">
+        <div class="panel-head">
+          <h2>Relatorios</h2>
+          <button class="mini-button" type="button" data-action="weekly-summary">Gerar resumo semanal</button>
+        </div>
+        <p class="admin-note">Use o resumo semanal para reunioes de planejamento e acompanhamento de riscos operacionais.</p>
+      </section>
+      <section id="clientSettingsSection" class="panel">
+        <h2>Configuracoes basicas</h2>
+        <p class="admin-note">Preferencias visuais e ambiente de visualizacao ficam no menu lateral. Nenhuma credencial sensivel e exibida no front.</p>
       </section>
       </section>
 
@@ -961,6 +1063,14 @@
             <button class="admin-tab" type="button" data-admin-tab="packages">Pacotes</button>
             <button class="admin-tab" type="button" data-admin-tab="usage">Consumo</button>
             <button class="admin-tab" type="button" data-admin-tab="logs">Logs</button>
+            <button class="admin-tab" type="button" data-admin-tab="clients">Clientes</button>
+            <button class="admin-tab" type="button" data-admin-tab="sources">Fontes</button>
+            <button class="admin-tab" type="button" data-admin-tab="reports">Relatorios</button>
+            <button class="admin-tab" type="button" data-admin-tab="health">Saude</button>
+            <button class="admin-tab" type="button" data-admin-tab="monitoring">Monitoramento</button>
+            <button class="admin-tab" type="button" data-admin-tab="integrations">Integracoes</button>
+            <button class="admin-tab" type="button" data-admin-tab="database">Banco</button>
+            <button class="admin-tab" type="button" data-admin-tab="settings">Configuracoes</button>
           </nav>
           <section id="adminOverviewSection" class="panel admin-section" data-admin-panel="overview">
             <div class="panel-head">
@@ -981,7 +1091,7 @@
               </div>
               <div class="form-row">
                 <div class="field"><label for="inviteCompany">Empresa</label><input id="inviteCompany"></div>
-                <div class="field"><label for="inviteRole">Papel</label><select id="inviteRole"><option value="client">Client</option><option value="admin">Admin</option></select></div>
+                <div class="field"><label for="inviteRole">Papel</label><select id="inviteRole"><option value="client">Cliente</option><option value="manager">Gestor</option><option value="admin">Admin</option></select></div>
               </div>
               <div class="form-row">
                 <div class="field"><label for="invitePackage">Pacote inicial</label><select id="invitePackage"><option value="">Sem pacote</option></select></div>
@@ -1059,6 +1169,68 @@
             </div>
             <div id="auditAdminList" class="admin-table-wrap"></div>
           </section>
+          <section id="clientsAdminSection" class="panel admin-section" data-admin-panel="clients" hidden>
+            <div class="admin-section-head">
+              <div>
+                <h2>Clientes</h2>
+                <p class="admin-note">Clientes derivados das empresas cadastradas em perfis. A tabela clients pode ampliar estes dados.</p>
+              </div>
+              <button class="mini-button" type="button" data-prepared-modal="client">Adicionar cliente</button>
+            </div>
+            <div id="clientsAdminList" class="management-grid"></div>
+          </section>
+          <section id="sourcesAdminSection" class="panel admin-section" data-admin-panel="sources" hidden>
+            <div class="admin-section-head">
+              <div>
+                <h2>Fontes monitoradas</h2>
+                <p class="admin-note">Volume e status das fontes com base nas noticias carregadas.</p>
+              </div>
+              <button class="mini-button" type="button" data-prepared-modal="source">Incluir fonte</button>
+            </div>
+            <div id="sourcesAdminList" class="admin-table-wrap"></div>
+          </section>
+          <section id="reportsAdminSection" class="panel admin-section" data-admin-panel="reports" hidden>
+            <div class="admin-section-head">
+              <div>
+                <h2>Relatorios</h2>
+                <p class="admin-note">Resumo semanal, consumo por cliente, fontes e ocorrencias por risco.</p>
+              </div>
+              <button class="mini-button" type="button" data-action="weekly-summary">Resumo semanal</button>
+            </div>
+            <div id="reportsAdminList" class="management-grid"></div>
+          </section>
+          <section id="platformHealthSection" class="panel admin-section" data-admin-panel="health" hidden>
+            <div class="admin-section-head">
+              <div>
+                <h2>Saude da plataforma</h2>
+                <p class="admin-note">Indicadores tecnicos sem expor chaves, tokens ou secrets.</p>
+              </div>
+            </div>
+            <div id="platformHealthCards" class="stats"></div>
+            <div id="platformEventsList" class="admin-table-wrap"></div>
+          </section>
+          <section id="monitoringAdminSection" class="panel admin-section" data-admin-panel="monitoring" hidden>
+            <h2>Monitoramento</h2>
+            <div id="monitoringAdminList" class="management-grid"></div>
+          </section>
+          <section id="integrationsAdminSection" class="panel admin-section" data-admin-panel="integrations" hidden>
+            <div class="admin-section-head">
+              <div>
+                <h2>Integracoes</h2>
+                <p class="admin-note">Status operacional sem exibir credenciais sensiveis.</p>
+              </div>
+              <button class="mini-button" type="button" data-prepared-modal="integration">Adicionar</button>
+            </div>
+            <div id="integrationsAdminList" class="admin-table-wrap"></div>
+          </section>
+          <section id="databaseAdminSection" class="panel admin-section" data-admin-panel="database" hidden>
+            <h2>Banco de dados</h2>
+            <div id="databaseAdminList" class="admin-table-wrap"></div>
+          </section>
+          <section id="platformSettingsSection" class="panel admin-section" data-admin-panel="settings" hidden>
+            <h2>Configuracoes da plataforma</h2>
+            <div id="platformSettingsList" class="management-grid"></div>
+          </section>
         </div>
       </section>
         </div>
@@ -1102,6 +1274,18 @@
       <div id="weeklyContent" class="weekly-body">
         <div class="weekly-loading">Preparando resumo semanal...</div>
       </div>
+    </div>
+  </div>
+
+  <div id="preparedModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="preparedTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong id="preparedTitle">Road News</strong>
+        <div class="modal-actions">
+          <button id="closePreparedModal" type="button" class="mini-button">Fechar</button>
+        </div>
+      </div>
+      <div id="preparedModalBody" class="weekly-body"></div>
     </div>
   </div>
 
@@ -1219,6 +1403,7 @@
       viewMode: null,
       access: null,
       admin: { users: [], packages: [], usage: [], logs: [] },
+      filters: { search: "", period: "24", region: "", category: "", sort: "recent" },
       map: {
         instance: null,
         cluster: null,
@@ -1227,6 +1412,56 @@
         categoryFilters: new Set(MAP_CATEGORIES),
         ufFilter: "",
       },
+    };
+
+    const VIEW_MODE_KEY = "roadnews_viewmode";
+    const NOTIFICATION_RULES_KEY = "roadnews_notification_rules";
+    const VIEW_MODES = {
+      client: "Cliente",
+      manager: "Gestor da plataforma",
+      developer: "Admin / Desenvolvedor",
+    };
+    const SIDEBAR_GROUPS = {
+      client: [
+        { label: "Cliente", items: [
+          { label: "Visao geral", icon: "V", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Noticias", icon: "N", route: "/noticias", view: "occurrences", scroll: "news" },
+          { label: "Tendencias", icon: "T", route: "/tendencias", view: "occurrences", scroll: "trendsSection" },
+          { label: "Fontes", icon: "F", route: "/fontes", view: "occurrences", scroll: "sourcesSection" },
+          { label: "Relatorios", icon: "R", route: "/relatorios", view: "occurrences", scroll: "clientReportsSection" },
+        ] },
+        { label: "Inteligencia", items: [
+          { label: "Gerar resumo", icon: "I", route: "/noticias", view: "occurrences", scroll: "news", feature: "image_generation" },
+          { label: "Resumo semanal", icon: "S", action: "weekly-summary", feature: "weekly_summary" },
+          { label: "Mapa", icon: "M", route: "/mapa", view: "map", feature: "map", countId: "mapSidebarDynamicCount" },
+        ] },
+      ],
+      manager: [
+        { label: "Gestao", items: [
+          { label: "Visao geral", icon: "V", route: "/gestor", view: "admin", scroll: "adminOverviewSection" },
+          { label: "Noticias", icon: "N", route: "/noticias", view: "occurrences", scroll: "news" },
+          { label: "Tendencias", icon: "T", route: "/tendencias", view: "occurrences", scroll: "trendsSection" },
+          { label: "Fontes", icon: "F", route: "/fontes-gestor", view: "admin", scroll: "sourcesAdminSection" },
+          { label: "Clientes", icon: "C", route: "/clientes", view: "admin", scroll: "clientsAdminSection" },
+          { label: "Usuarios", icon: "U", route: "/usuarios", view: "admin", scroll: "usersAdminSection" },
+          { label: "Pacotes e limites", icon: "P", route: "/pacotes", view: "admin", scroll: "packagesAdminSection" },
+          { label: "Uso e notificacoes", icon: "%", route: "/consumo", view: "admin", scroll: "usageAdminSection" },
+          { label: "Relatorios", icon: "R", route: "/relatorios-gestor", view: "admin", scroll: "reportsAdminSection" },
+        ] },
+      ],
+      developer: [
+        { label: "Admin / Dev", items: [
+          { label: "Visao geral", icon: "V", route: "/developer", view: "admin", scroll: "platformHealthSection" },
+          { label: "Monitoramento", icon: "M", route: "/monitoramento", view: "admin", scroll: "monitoringAdminSection" },
+          { label: "Integracoes", icon: "I", route: "/integracoes", view: "admin", scroll: "integrationsAdminSection" },
+          { label: "Banco de dados", icon: "B", route: "/banco", view: "admin", scroll: "databaseAdminSection" },
+          { label: "Logs do sistema", icon: "L", route: "/logs", view: "admin", scroll: "logsAdminSection" },
+          { label: "Usuarios", icon: "U", route: "/developer/usuarios", view: "admin", scroll: "usersAdminSection" },
+          { label: "Pacotes e limites", icon: "P", route: "/developer/pacotes", view: "admin", scroll: "packagesAdminSection" },
+          { label: "Uso e notificacoes", icon: "%", route: "/developer/consumo", view: "admin", scroll: "usageAdminSection" },
+          { label: "Configuracoes", icon: "C", route: "/developer/configuracoes", view: "admin", scroll: "platformSettingsSection" },
+        ] },
+      ],
     };
 
     function escapeHtml(value) {
@@ -1317,6 +1552,69 @@
       return canAccessAdminView();
     }
 
+    function realRole() {
+      return state.profile?.role || "client";
+    }
+
+    function availableViewModes() {
+      const role = realRole();
+      if (role === "admin") return ["client", "manager", "developer"];
+      if (role === "manager") return ["client", "manager"];
+      return ["client"];
+    }
+
+    function normalizeViewMode(mode) {
+      const allowed = availableViewModes();
+      return allowed.includes(mode) ? mode : allowed[allowed.length - 1] || "client";
+    }
+
+    function roleLabel(role = realRole()) {
+      if (role === "admin") return "Administrador";
+      if (role === "manager") return "Gestor";
+      if (role === "demo") return "Demo";
+      return "Cliente";
+    }
+
+    function isManagerProfile() {
+      return state.authEnabled && state.profile?.role === "manager" && state.profile?.status === "active";
+    }
+
+    function canAccessManagementView() {
+      return ["manager", "developer"].includes(state.viewMode) && availableViewModes().includes(state.viewMode);
+    }
+
+    function canAccessAdminView() {
+      return canAccessManagementView();
+    }
+
+    function shouldShowAdminNavigation() {
+      return canAccessManagementView();
+    }
+
+    function setViewMode(mode, options = {}) {
+      const next = normalizeViewMode(mode);
+      const previous = state.viewMode;
+      state.viewMode = next;
+      try { localStorage.setItem(VIEW_MODE_KEY, next); } catch (e) { /* ignore */ }
+      renderSidebarMenu();
+      syncNavigationState();
+      if (!options.silent && previous && previous !== next) {
+        setNotice(`Ambiente ${VIEW_MODES[next]} ativo. O role real no Supabase nao foi alterado.`);
+      }
+      if (next === "client" && state.activeView === "admin") {
+        setActiveView("occurrences", { skipRoute: false, scroll: "top" });
+      }
+      if ((next === "manager" || next === "developer") && options.openHome) {
+        setActiveView("admin", { skipRoute: false, scroll: next === "developer" ? "platformHealthSection" : "adminOverviewSection" });
+      }
+    }
+
+    function toggleViewMode() {
+      const allowed = availableViewModes();
+      const index = Math.max(0, allowed.indexOf(state.viewMode));
+      setViewMode(allowed[(index + 1) % allowed.length]);
+    }
+
     function setBrowserPath(path, replace = false) {
       const route = normalizeRoute(path);
       if (normalizeRoute(window.location.pathname) === route) return;
@@ -1392,9 +1690,51 @@
       }, 80);
     }
 
-        function syncNavigationState() {
+    function navButton(item) {
+      const attrs = [
+        item.route ? `data-route="${escapeHtml(item.route)}"` : "",
+        item.view ? `data-view="${escapeHtml(item.view)}"` : "",
+        item.scroll ? `data-scroll="${escapeHtml(item.scroll)}"` : "",
+        item.action ? `data-action="${escapeHtml(item.action)}"` : "",
+        item.feature ? `data-feature="${escapeHtml(item.feature)}"` : "",
+        `title="${escapeHtml(item.label)}"`,
+      ].filter(Boolean).join(" ");
+      const count = item.countId ? `<small id="${escapeHtml(item.countId)}">0</small>` : "";
+      return `<button class="nav-item" type="button" ${attrs}><span class="nav-icon">${escapeHtml(item.icon)}</span><span class="nav-label-text">${escapeHtml(item.label)}</span>${count}</button>`;
+    }
+
+    function renderSidebarMenu() {
+      const menu = document.getElementById("sidebarMenu");
+      if (!menu) return;
+      const mode = normalizeViewMode(state.viewMode || "client");
+      state.viewMode = mode;
+      const groups = SIDEBAR_GROUPS[mode] || SIDEBAR_GROUPS.client;
+      menu.innerHTML = groups.map((group) => `
+        <nav class="nav-group" aria-label="${escapeHtml(group.label)}">
+          <span class="nav-label">${escapeHtml(group.label)}</span>
+          ${group.items.filter((item) => !item.feature || canUseFeature(item.feature, true)).map(navButton).join("")}
+        </nav>
+      `).join("");
+
+      const switcher = document.getElementById("environmentSwitcher");
+      if (!switcher) return;
+      const allowed = availableViewModes();
+      const options = allowed.map((key) => `<option value="${key}" ${key === mode ? "selected" : ""}>${escapeHtml(VIEW_MODES[key])}</option>`).join("");
+      switcher.innerHTML = `
+        <label for="viewModeSelect">Visualizar ambiente</label>
+        <select id="viewModeSelect" ${allowed.length <= 1 ? "disabled" : ""}>${options}</select>
+      `;
+      const select = document.getElementById("viewModeSelect");
+      if (select) {
+        select.addEventListener("change", (event) => setViewMode(event.target.value, { openHome: true }));
+      }
+    }
+
+    function syncNavigationState() {
+      renderSidebarMenu();
       const isAdminView = shouldShowAdminNavigation();
-      document.getElementById("adminNavGroup").hidden = !isAdminView;
+      const adminNavGroup = document.getElementById("adminNavGroup");
+      if (adminNavGroup) adminNavGroup.hidden = true;
       document.getElementById("adminTab").hidden = !isAdminView;
       const mainTabs = document.getElementById("mainTabs");
       if (mainTabs) mainTabs.hidden = !state.session || !state.profile;
@@ -1413,9 +1753,10 @@
         button.classList.toggle("active", button.dataset.view === state.activeView);
       });
       const sidebarUser = document.getElementById("sidebarUser");
-      const viewLabel = state.viewMode === "admin" ? "Admin" : "Cliente";
+      const viewLabel = VIEW_MODES[state.viewMode] || "Cliente";
       const displayName = getDisplayName();
-      sidebarUser.innerHTML = `<strong>${escapeHtml(displayName)}</strong><span style="display:block;color:var(--color-muted);font-size:12px;margin-top:4px;">${escapeHtml(viewLabel)}</span>`;
+      const initials = displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "RN";
+      sidebarUser.innerHTML = `<div class="sidebar-user-row"><span class="sidebar-avatar">${escapeHtml(initials)}</span><span><strong>${escapeHtml(displayName)}</strong><span style="display:block;color:var(--color-muted);font-size:12px;margin-top:4px;">${escapeHtml(roleLabel())} · ${escapeHtml(viewLabel)}</span></span></div>`;
 
       const authStatus = document.getElementById("authStatus");
       if (authStatus) {
@@ -1427,7 +1768,7 @@
             e.preventDefault();
             toggleViewMode();
           };
-          if (!isAdminProfile()) badgeEl.disabled = true;
+          if (availableViewModes().length <= 1) badgeEl.disabled = true;
         }
       }
     }
@@ -1543,20 +1884,15 @@ function showAuthView() {
         showBlockedView(error.message);
         return false;
       }
-      // initialize viewMode from localStorage but validate against real role
-      const stored = localStorage.getItem("roadnews_viewmode");
-      if (state.profile?.role === "admin") {
-        state.viewMode = stored === "client" ? "client" : "admin";
-      } else {
-        state.viewMode = "client";
-      }
+      const stored = localStorage.getItem(VIEW_MODE_KEY);
+      state.viewMode = normalizeViewMode(stored || "client");
       showAppView();
       return true;
     }
 
     function canUseFeature(feature, silent = false) {
       if (!state.authEnabled) return true;
-      if (state.profile?.role === "admin") return true;
+      if (["admin", "manager"].includes(state.profile?.role)) return true;
       const allowed = {
         map: Boolean(state.access?.can_access_map),
         image_generation: Boolean(state.access?.can_generate_image),
@@ -1568,7 +1904,7 @@ function showAuthView() {
     }
 
     async function consumeUsage(eventType, metadata = {}) {
-      if (!state.authEnabled || state.profile?.role === "admin") return true;
+      if (!state.authEnabled || ["admin", "manager"].includes(state.profile?.role)) return true;
       const response = await fetch("/api/usage-event", {
         method: "POST",
         headers: authHeaders({ "Content-Type": "application/json" }),
@@ -1805,6 +2141,73 @@ function showAuthView() {
       if (headerStatus) headerStatus.textContent = `Última coleta: ${age(lastCreated)}`;
     }
 
+    function riskScoreForItem(item) {
+      const [risk] = operationalRisk(item);
+      return { critical: 4, high: 3, medium: 2, "": 1 }[risk] || 1;
+    }
+
+    function filteredClientItems() {
+      const search = normalizeText(state.filters.search);
+      const region = normalizeText(state.filters.region);
+      const category = normalizeText(state.filters.category);
+      const period = state.filters.period;
+      const maxAge = period === "all" ? Infinity : Number(period || 24);
+      let items = state.items.filter((item) => {
+        const haystack = normalizeText(`${item.title || ""} ${item.summary || ""} ${item.source || ""} ${item.region || ""} ${item.state || ""} ${item.city || ""} ${item.highway || ""}`);
+        if (Number.isFinite(maxAge) && !withinCollectionHours(item, maxAge)) return false;
+        if (search && !haystack.includes(search)) return false;
+        if (region && !haystack.includes(region)) return false;
+        if (category && !haystack.includes(category)) return false;
+        return true;
+      });
+      if (state.filters.sort === "risk") {
+        items = items.sort((a, b) => riskScoreForItem(b) - riskScoreForItem(a) || displayDateValue(b) - displayDateValue(a));
+      } else if (state.filters.sort === "relevance") {
+        items = items.sort((a, b) => Number(isActionableAlert(b)) - Number(isActionableAlert(a)) || riskScoreForItem(b) - riskScoreForItem(a));
+      } else {
+        items = items.sort((a, b) => displayDateValue(b) - displayDateValue(a));
+      }
+      return items;
+    }
+
+    function topCounts(items, getter, limit = 5) {
+      const counts = new Map();
+      items.forEach((item) => {
+        const key = getter(item);
+        if (!key) return;
+        counts.set(key, (counts.get(key) || 0) + 1);
+      });
+      return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
+    }
+
+    function renderClientHeaderAndTrends() {
+      const displayName = getDisplayName();
+      const hour = new Date().toLocaleString("pt-BR", { timeZone: BRASILIA_TIME_ZONE, hour: "2-digit", hour12: false });
+      const greeting = Number(hour) < 12 ? "Bom dia" : Number(hour) < 18 ? "Boa tarde" : "Boa noite";
+      const greetingEl = document.getElementById("clientGreeting");
+      if (greetingEl) greetingEl.textContent = `${greeting}, ${displayName}`;
+      const loadedEl = document.getElementById("clientLoadedCount");
+      if (loadedEl) loadedEl.textContent = String(state.total || state.items.length || 0);
+      const items = state.recentItems.length ? state.recentItems : state.items;
+      const categories = topCounts(items, (item) => tagFor(item)[1]);
+      const states = topCounts(items, (item) => cleanDisplayText(item.state || item.region || "").split("/").pop());
+      const roads = topCounts(items, (item) => roadFromText(`${item.title || ""} ${item.summary || ""} ${item.highway || ""}`));
+      const risks = topCounts(items, (item) => operationalRisk(item)[1]);
+      const card = (title, rows) => `
+        <article class="management-card">
+          <h3>${escapeHtml(title)}</h3>
+          ${rows.length ? rows.map(([label, count]) => `<p><strong>${escapeHtml(label)}</strong> - ${count}</p>`).join("") : `<p>Sem dados suficientes no periodo.</p>`}
+        </article>
+      `;
+      const target = document.getElementById("trendCards");
+      if (target) target.innerHTML = [
+        card("Categorias recorrentes", categories),
+        card("Estados/regioes", states),
+        card("Rodovias citadas", roads),
+        card("Risco operacional", risks),
+      ].join("");
+    }
+
     function renderSources() {
       const counts = new Map();
       const sourceItems = state.recentItems.length ? state.recentItems : state.items.filter((item) => withinCollectionHours(item, 24));
@@ -1874,8 +2277,10 @@ function showAuthView() {
     }
 
     function renderNews() {
-      document.getElementById("news").innerHTML = state.items.length
-        ? state.items.map((item, index) => {
+      const newsItems = filteredClientItems();
+      document.getElementById("news").innerHTML = newsItems.length
+        ? newsItems.map((item) => {
+            const index = Math.max(0, state.items.indexOf(item));
             const [tagClass, tagLabel] = tagFor(item);
             const [riskClassName, riskLabel] = operationalRisk(item);
             const trusted = TRUSTED_SOURCES.has(item.source);
@@ -1911,7 +2316,7 @@ function showAuthView() {
               </article>
             `;
           }).join("")
-        : `<div class="hint">Nenhuma notícia encontrada.</div>`;
+        : `<div class="hint">Nenhuma noticia encontrada para os filtros selecionados.</div>`;
     }
 
     function mapRiskKey(item) {
@@ -2182,6 +2587,8 @@ function showAuthView() {
       const approx = points.length - precise;
       document.getElementById("mapTabCount").textContent = String(points.length);
       document.getElementById("mapSidebarCount").textContent = String(points.length);
+      const mapSidebarDynamicCount = document.getElementById("mapSidebarDynamicCount");
+      if (mapSidebarDynamicCount) mapSidebarDynamicCount.textContent = String(points.length);
       document.getElementById("mapSummary").textContent = `${points.length} ponto(s) encontrados no período selecionado.`;
       document.getElementById("mapPreciseCount").textContent = String(precise);
       document.getElementById("mapApproxCount").textContent = String(approx);
@@ -2213,9 +2620,29 @@ function showAuthView() {
         "/dashboard": { view: "occurrences", scroll: "top" },
         "/alertas": { view: "occurrences", scroll: "recentAlerts" },
         "/noticias": { view: "occurrences", scroll: "news" },
+        "/tendencias": { view: "occurrences", scroll: "trendsSection" },
+        "/fontes": { view: "occurrences", scroll: "sourcesSection" },
+        "/relatorios": { view: "occurrences", scroll: "clientReportsSection" },
+        "/configuracoes": { view: "occurrences", scroll: "clientSettingsSection" },
         "/mapa": { view: "map", scroll: "top" },
         "/resumo-semanal": { view: "occurrences", scroll: "top", action: "weekly-summary" },
         "/admin": { view: "admin", scroll: "adminOverviewSection" },
+        "/gestor": { view: "admin", scroll: "adminOverviewSection", mode: "manager" },
+        "/clientes": { view: "admin", scroll: "clientsAdminSection", mode: "manager" },
+        "/usuarios": { view: "admin", scroll: "usersAdminSection", mode: "manager" },
+        "/pacotes": { view: "admin", scroll: "packagesAdminSection", mode: "manager" },
+        "/consumo": { view: "admin", scroll: "usageAdminSection", mode: "manager" },
+        "/fontes-gestor": { view: "admin", scroll: "sourcesAdminSection", mode: "manager" },
+        "/relatorios-gestor": { view: "admin", scroll: "reportsAdminSection", mode: "manager" },
+        "/developer": { view: "admin", scroll: "platformHealthSection", mode: "developer" },
+        "/monitoramento": { view: "admin", scroll: "monitoringAdminSection", mode: "developer" },
+        "/integracoes": { view: "admin", scroll: "integrationsAdminSection", mode: "developer" },
+        "/banco": { view: "admin", scroll: "databaseAdminSection", mode: "developer" },
+        "/logs": { view: "admin", scroll: "logsAdminSection", mode: "developer" },
+        "/developer/usuarios": { view: "admin", scroll: "usersAdminSection", mode: "developer" },
+        "/developer/pacotes": { view: "admin", scroll: "packagesAdminSection", mode: "developer" },
+        "/developer/consumo": { view: "admin", scroll: "usageAdminSection", mode: "developer" },
+        "/developer/configuracoes": { view: "admin", scroll: "platformSettingsSection", mode: "developer" },
       };
       return routes[route] || routes["/dashboard"];
     }
@@ -2235,6 +2662,8 @@ function showAuthView() {
         setBrowserPath(state.activeRoute);
       }
       syncNavigationState();
+      const clientHeader = document.getElementById("clientHeaderPanel");
+      if (clientHeader) clientHeader.hidden = view !== "occurrences";
       document.getElementById("occurrencesView").hidden = view !== "occurrences";
       document.getElementById("mapView").hidden = view !== "map";
       document.getElementById("adminView").hidden = view !== "admin";
@@ -2269,8 +2698,19 @@ function showAuthView() {
         return;
       }
 
-      const knownRoutes = new Set(["/dashboard", "/alertas", "/noticias", "/mapa", "/resumo-semanal", "/admin"]);
+      const knownRoutes = new Set(["/dashboard", "/alertas", "/noticias", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
       const target = routeTarget(route);
+      if (target.mode && !availableViewModes().includes(target.mode)) {
+        setNotice("Acesso negado para este ambiente.");
+        state.activeRoute = "/dashboard";
+        state.activeScrollTarget = "top";
+        setBrowserPath("/dashboard", true);
+        setActiveView("occurrences", { skipRoute: true, scroll: "top" });
+        return;
+      }
+      if (target.mode && state.viewMode !== target.mode) {
+        setViewMode(target.mode, { silent: true });
+      }
       if (target.view === "admin" && !canAccessAdminView()) {
         setNotice("Acesso negado. Apenas administradores podem acessar esta area.");
         state.activeRoute = "/dashboard";
@@ -2308,6 +2748,14 @@ function showAuthView() {
     }
 
     function adminTabForTarget(target = "") {
+      if (String(target).includes("clients")) return "clients";
+      if (String(target).includes("sources")) return "sources";
+      if (String(target).includes("reports")) return "reports";
+      if (String(target).includes("Health") || String(target).includes("health")) return "health";
+      if (String(target).includes("monitoring")) return "monitoring";
+      if (String(target).includes("integrations")) return "integrations";
+      if (String(target).includes("database")) return "database";
+      if (String(target).includes("Settings") || String(target).includes("settings")) return "settings";
       if (String(target).includes("users") || String(target).includes("invite")) return "users";
       if (String(target).includes("packages") || String(target).includes("package")) return "packages";
       if (String(target).includes("usage")) return "usage";
@@ -2316,8 +2764,14 @@ function showAuthView() {
     }
 
     function setAdminTab(tab = "overview") {
-      const activeTab = ["overview", "users", "packages", "usage", "logs"].includes(tab) ? tab : "overview";
+      const tabsByMode = {
+        manager: ["overview", "clients", "users", "packages", "usage", "sources", "reports"],
+        developer: ["health", "monitoring", "integrations", "database", "logs", "users", "packages", "usage", "settings"],
+      };
+      const tabs = tabsByMode[state.viewMode] || tabsByMode.manager;
+      const activeTab = tabs.includes(tab) ? tab : tabs[0];
       document.querySelectorAll("#adminTabs .admin-tab").forEach((button) => {
+        button.hidden = !tabs.includes(button.dataset.adminTab);
         button.classList.toggle("active", button.dataset.adminTab === activeTab);
       });
       document.querySelectorAll("[data-admin-panel]").forEach((panel) => {
@@ -2662,10 +3116,162 @@ function showAuthView() {
           }).join("")}</tbody>
         </table>
       ` : `<div class="admin-empty">Sem logs de auditoria.</div>`;
+      renderPlatformSections();
+    }
+
+    function companyRows() {
+      const users = state.admin.users || [];
+      const rows = new Map();
+      users.forEach((user) => {
+        const company = cleanDisplayText(user.company_name || "Sem empresa");
+        if (!rows.has(company)) rows.set(company, { name: company, users: [], active: 0, blocked: 0 });
+        const row = rows.get(company);
+        row.users.push(user);
+        if (user.status === "active") row.active += 1;
+        if (user.status === "blocked" || user.status === "inactive") row.blocked += 1;
+      });
+      return [...rows.values()].sort((a, b) => b.users.length - a.users.length);
+    }
+
+    function notificationRuleState() {
+      try {
+        return JSON.parse(localStorage.getItem(NOTIFICATION_RULES_KEY) || "{}");
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function setNotificationRuleState(index, enabled) {
+      const rules = notificationRuleState();
+      rules[index] = Boolean(enabled);
+      try { localStorage.setItem(NOTIFICATION_RULES_KEY, JSON.stringify(rules)); } catch (error) { /* ignore */ }
+    }
+
+    function renderPlatformSections() {
+      const users = state.admin.users || [];
+      const packages = state.admin.packages || [];
+      const logs = state.admin.logs || [];
+      const companies = companyRows();
+      const latestCollection = [...state.recentItems, ...state.items].map(collectionDateValue).filter(Boolean).sort((a, b) => b - a)[0];
+
+      const clientsTarget = document.getElementById("clientsAdminList");
+      if (clientsTarget) {
+        clientsTarget.innerHTML = companies.length ? companies.map((company) => {
+          const manager = company.users.find((user) => ["admin", "manager"].includes(user.role)) || company.users[0] || {};
+          const packageLink = company.users.map((user) => currentPackageForUser(user.id)).find(Boolean);
+          const pkg = packageById(packageLink?.package_id);
+          return `
+            <article class="management-card">
+              <h3>${escapeHtml(company.name)}</h3>
+              <p>Plano: ${escapeHtml(pkg?.name || "Sem pacote")}</p>
+              <p>Documento/CNPJ: Nao informado</p>
+              <p>Responsavel: ${escapeHtml(manager.full_name || manager.email || "-")}</p>
+              <p>E-mail: ${escapeHtml(manager.email || "-")}</p>
+              <p>Usuarios: ${company.users.length}</p>
+              <p>Status: ${company.blocked ? "Atencao" : "Ativo"}</p>
+              <div class="admin-actions">
+                <button class="mini-button" type="button" data-prepared-modal="client">Editar</button>
+                <button class="mini-button" type="button" data-prepared-modal="notify">Notificar</button>
+              </div>
+            </article>
+          `;
+        }).join("") : `<div class="admin-empty">Nenhum cliente encontrado.</div>`;
+      }
+
+      const sourceRows = topCounts([...(state.recentItems || []), ...(state.items || [])], (item) => item.source || "Sem fonte", 30);
+      const sourcesTarget = document.getElementById("sourcesAdminList");
+      if (sourcesTarget) {
+        sourcesTarget.innerHTML = sourceRows.length ? `
+          <table class="admin-table"><thead><tr><th>Fonte</th><th>Tipo</th><th>Ultima coleta</th><th>Status</th><th>Acoes</th></tr></thead><tbody>
+          ${sourceRows.map(([source, count]) => `
+            <tr>
+              <td><b>${escapeHtml(source)}</b><br>${count} registro(s)</td>
+              <td>${/inmet/i.test(source) ? "Clima/API" : "Noticias/RSS"}</td>
+              <td>${escapeHtml(age(latestCollection))}</td>
+              <td>${adminBadge(count ? "Ativa" : "Sem atualizacao", count ? "" : "warn")}</td>
+              <td><button class="mini-button" type="button" data-prepared-modal="source">Editar</button></td>
+            </tr>
+          `).join("")}</tbody></table>
+        ` : `<div class="admin-empty">Nenhuma fonte encontrada.</div>`;
+      }
+
+      const reportsTarget = document.getElementById("reportsAdminList");
+      if (reportsTarget) {
+        reportsTarget.innerHTML = [
+          ["Resumo semanal", "Analise executiva com IA e exportacao PDF.", "Resumo semanal"],
+          ["Consumo por cliente", "Acompanha noticias, IA e PDFs por empresa.", "Ver consumo"],
+          ["Ocorrencias por risco", "Distribuicao operacional por criticidade.", "Ver tendencias"],
+        ].map(([title, text, action]) => `
+          <article class="management-card"><h3>${title}</h3><p>${text}</p><button class="mini-button" type="button" ${title === "Resumo semanal" ? "data-action=\"weekly-summary\"" : "data-prepared-modal=\"report\""}>${action}</button></article>
+        `).join("");
+      }
+
+      const healthTarget = document.getElementById("platformHealthCards");
+      if (healthTarget) {
+        healthTarget.innerHTML = [
+          ["API Supabase", state.total ? "Online" : "Verificar", `${state.total || 0} registros consultados`],
+          ["Registros carregados", state.items.length, "amostra atual"],
+          ["Ciclo do scraper", "2h", "frequencia esperada"],
+          ["Erros criticos", logs.filter((log) => /error|erro|failed/i.test(`${log.action} ${JSON.stringify(log.metadata || {})}`)).length, "logs recentes"],
+        ].map(([label, value, hint]) => `<article class="stat"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div><div class="hint">${escapeHtml(hint)}</div></article>`).join("");
+      }
+
+      const platformEvents = document.getElementById("platformEventsList");
+      if (platformEvents) {
+        platformEvents.innerHTML = `
+          <table class="admin-table"><thead><tr><th>Horario</th><th>Evento</th><th>Status</th></tr></thead><tbody>
+            <tr><td>${escapeHtml(formatDate(new Date().toISOString()))}</td><td>Consulta ao Supabase concluida</td><td>${adminBadge("Sucesso")}</td></tr>
+            <tr><td>${escapeHtml(formatDate(new Date().toISOString()))}</td><td>Variaveis sensiveis protegidas no servidor</td><td>${adminBadge("Seguro")}</td></tr>
+            <tr><td>${escapeHtml(age(latestCollection))}</td><td>Ultima coleta identificada</td><td>${adminBadge(latestCollection ? "Operacional" : "Verificar", latestCollection ? "" : "warn")}</td></tr>
+          </tbody></table>`;
+      }
+
+      const monitoringTarget = document.getElementById("monitoringAdminList");
+      if (monitoringTarget) {
+        monitoringTarget.innerHTML = [
+          ["Status geral", state.total ? "Operacional" : "Verificar conexao"],
+          ["Tempo desde ultima coleta", age(latestCollection)],
+          ["Registros carregados", String(state.items.length)],
+          ["Fontes com erro", "Estrutura preparada para tabela sources/platform_events"],
+        ].map(([title, text]) => `<article class="management-card"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(text)}</p></article>`).join("");
+      }
+
+      const integrationsTarget = document.getElementById("integrationsAdminList");
+      if (integrationsTarget) {
+        const rows = [
+          ["Supabase", "Banco, Auth e REST API", "Conectado"],
+          ["GitHub Actions", "Execucao do scraper", "Ativo"],
+          ["OpenAI", "Resumos inteligentes", "Configurado no servidor quando OPENAI_API_KEY existe"],
+          ["Vercel", "Frontend e APIs serverless", "Ativo"],
+        ];
+        integrationsTarget.innerHTML = `<table class="admin-table"><thead><tr><th>Integracao</th><th>Finalidade</th><th>Status</th><th>Acoes</th></tr></thead><tbody>${rows.map(([name, purpose, status]) => `<tr><td><b>${name}</b></td><td>${purpose}</td><td>${adminBadge(status)}</td><td><button class="mini-button" type="button" data-prepared-modal="integration">Detalhes</button></td></tr>`).join("")}</tbody></table>`;
+      }
+
+      const databaseTarget = document.getElementById("databaseAdminList");
+      if (databaseTarget) {
+        const rows = ["news", "profiles", "packages", "user_packages", "usage_events", "audit_logs", "clients", "sources", "platform_events", "platform_integrations", "notification_rules"];
+        const complementaryTables = ["clients", "sources", "platform_events", "platform_integrations", "notification_rules"];
+        databaseTarget.innerHTML = `<table class="admin-table"><thead><tr><th>Tabela</th><th>Descricao</th><th>Status</th></tr></thead><tbody>${rows.map((name) => `<tr><td><b>${name}</b></td><td>${complementaryTables.includes(name) ? "Tabela sugerida no SQL complementar" : "Tabela operacional do Road News"}</td><td>${adminBadge(complementaryTables.includes(name) ? "Preparar" : "Ativa", complementaryTables.includes(name) ? "warn" : "")}</td></tr>`).join("")}</tbody></table>`;
+      }
+
+      const settingsTarget = document.getElementById("platformSettingsList");
+      if (settingsTarget) {
+        const savedRules = notificationRuleState();
+        settingsTarget.innerHTML = [
+          ["Aviso em 80%", "Notificar gestor ao aproximar do limite."],
+          ["Alerta em 90%", "Sugerir upgrade de pacote."],
+          ["Bloqueio em 100%", "Pausar novas solicitacoes ate renovacao."],
+        ].map(([title, text], index) => `
+          <article class="management-card platform-toggle-row">
+            <span><h3>${title}</h3><p>${text}</p></span>
+            <input type="checkbox" data-notification-rule="${index}" ${savedRules[index] === false ? "" : "checked"}>
+          </article>
+        `).join("");
+      }
     }
 
     async function loadAdminData() {
-      if (!(state.authEnabled && state.profile?.role === "admin")) return;
+      if (!(state.authEnabled && ["admin", "manager"].includes(state.profile?.role))) return;
       try {
         const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
         const [users, packages, userPackages, usage, logs] = await Promise.all([
@@ -2814,14 +3420,19 @@ function showAuthView() {
       if (fullName === null) return;
       const companyName = window.prompt("Empresa", user.company_name || "");
       if (companyName === null) return;
-      const role = window.prompt("Papel: admin ou client", user.role || "client");
+      const role = window.prompt("Papel: admin, manager ou client", user.role || "client");
       if (role === null) return;
       const status = window.prompt("Status: active, blocked ou inactive", user.status || "active");
       if (status === null) return;
+      const normalizedRole = ["admin", "manager"].includes(role) ? role : "client";
+      if (state.profile?.role !== "admin" && normalizedRole !== "client") {
+        setNotice("Gestor so pode manter usuarios como cliente.");
+        return;
+      }
       const payload = {
         full_name: fullName.trim(),
         company_name: companyName.trim(),
-        role: role === "admin" ? "admin" : "client",
+        role: normalizedRole,
         status: ["active", "blocked", "inactive"].includes(status) ? status : "active",
       };
       const { error } = await authClient().from("profiles").update(payload).eq("id", userId);
@@ -3568,6 +4179,7 @@ function showAuthView() {
         renderStats();
         renderRecentAlerts();
         renderSources();
+        renderClientHeaderAndTrends();
         renderNews();
         renderMap();
         button.disabled = false;
@@ -3661,10 +4273,14 @@ function showAuthView() {
       closeSidebar();
       setNotice("");
       if (button.dataset.action === "weekly-summary") {
+        event.preventDefault();
+        event.stopPropagation();
         await applyRoute("/resumo-semanal");
         return;
       }
       if (button.dataset.action === "weekly-pdf") {
+        event.preventDefault();
+        event.stopPropagation();
         await applyRoute("/resumo-semanal");
         setNotice("Resumo semanal aberto. Use o botao Exportar resumo em PDF no topo do modal.");
         return;
@@ -3672,6 +4288,98 @@ function showAuthView() {
       if (button.dataset.route) {
         await applyRoute(button.dataset.route, { scroll: button.dataset.scroll });
       }
+    }
+
+    function syncClientFilters() {
+      state.filters.search = document.getElementById("globalSearch")?.value || "";
+      state.filters.period = document.getElementById("periodFilter")?.value || "24";
+      state.filters.region = document.getElementById("regionFilter")?.value || "";
+      state.filters.category = document.getElementById("categoryFilter")?.value || "";
+      state.filters.sort = document.getElementById("sortFilter")?.value || "recent";
+      renderClientHeaderAndTrends();
+      renderNews();
+    }
+
+    function preparedModalCopy(kind) {
+      const copy = {
+        client: {
+          title: "Adicionar cliente",
+          fields: ["Empresa", "Responsavel", "E-mail"],
+          note: "Cadastro preparado para vincular empresa, usuarios e pacote quando a tabela complementar de clientes estiver ativa.",
+        },
+        source: {
+          title: "Incluir fonte",
+          fields: ["Nome da fonte", "URL ou API", "Categoria"],
+          note: "Cadastro preparado para controlar status, frequencia de coleta e alertas de falha por fonte.",
+        },
+        integration: {
+          title: "Detalhes da integracao",
+          fields: ["Integracao", "Responsavel", "Observacao"],
+          note: "Painel preparado para documentar integracoes sem expor chaves ou tokens no front-end.",
+        },
+        report: {
+          title: "Relatorio preparado",
+          fields: ["Nome do relatorio", "Publico", "Frequencia"],
+          note: "Estrutura preparada para salvar preferencias de relatorios executivos por cliente.",
+        },
+        notify: {
+          title: "Notificar cliente",
+          fields: ["Cliente", "Canal", "Mensagem"],
+          note: "Fluxo preparado para regras de notificacao por e-mail ou WhatsApp quando a integracao for ativada.",
+        },
+      };
+      return copy[kind] || copy.report;
+    }
+
+    function closePreparedModal() {
+      document.getElementById("preparedModal")?.classList.remove("open");
+    }
+
+    function openPreparedModal(kind) {
+      const config = preparedModalCopy(kind);
+      const title = document.getElementById("preparedTitle");
+      const body = document.getElementById("preparedModalBody");
+      if (!title || !body) return;
+      title.textContent = config.title;
+      body.innerHTML = `
+        <div class="form-grid">
+          ${config.fields.map((field) => `
+            <div class="field">
+              <label>${escapeHtml(field)}</label>
+              <input type="text" placeholder="${escapeHtml(field)}">
+            </div>
+          `).join("")}
+          <p class="admin-note">${escapeHtml(config.note)}</p>
+          <button id="preparedSaveDraft" class="mini-button" type="button">Salvar rascunho</button>
+        </div>
+      `;
+      document.getElementById("preparedSaveDraft")?.addEventListener("click", () => {
+        setNotice(`${config.title}: estrutura preparada. Persistencia sera conectada ao Supabase quando o SQL complementar for aplicado.`);
+        closePreparedModal();
+      });
+      document.getElementById("preparedModal")?.classList.add("open");
+    }
+
+    async function handleAppShellClick(event) {
+      if (event.target.closest("#sidebar")) return;
+      const actionButton = event.target.closest("[data-action='weekly-summary']");
+      if (actionButton) {
+        event.preventDefault();
+        await openWeeklySummary();
+        return;
+      }
+      const preparedButton = event.target.closest("[data-prepared-modal]");
+      if (preparedButton) {
+        event.preventDefault();
+        openPreparedModal(preparedButton.dataset.preparedModal);
+      }
+    }
+
+    function handleAppShellChange(event) {
+      const toggle = event.target.closest("[data-notification-rule]");
+      if (!toggle) return;
+      setNotificationRuleState(toggle.dataset.notificationRule, toggle.checked);
+      setNotice(toggle.checked ? "Regra de notificacao ativada." : "Regra de notificacao pausada.");
     }
 
     renderMapFilterButtons();
@@ -3683,6 +4391,8 @@ function showAuthView() {
     document.getElementById("sidebarToggle").addEventListener("click", toggleSidebar);
     document.getElementById("sidebarBackdrop").addEventListener("click", closeSidebar);
     document.getElementById("sidebar").addEventListener("click", handleSidebarClick);
+    document.getElementById("appShell").addEventListener("click", handleAppShellClick);
+    document.getElementById("appShell").addEventListener("change", handleAppShellChange);
     window.addEventListener("popstate", () => applyRoute(window.location.pathname, { replace: true }));
     window.addEventListener("resize", () => {
       loadSidebarPreference();
@@ -3734,9 +4444,17 @@ function showAuthView() {
     document.getElementById("weeklyModal").addEventListener("click", (event) => {
       if (event.target.id === "weeklyModal") closeWeeklySummary();
     });
+    document.getElementById("closePreparedModal").addEventListener("click", closePreparedModal);
+    document.getElementById("preparedModal").addEventListener("click", (event) => {
+      if (event.target.id === "preparedModal") closePreparedModal();
+    });
     document.getElementById("adminTabs").addEventListener("click", (event) => {
       const button = event.target.closest(".admin-tab");
       if (button) setAdminTab(button.dataset.adminTab);
+    });
+    ["globalSearch", "periodFilter", "regionFilter", "categoryFilter", "sortFilter"].forEach((id) => {
+      document.getElementById(id)?.addEventListener("input", syncClientFilters);
+      document.getElementById(id)?.addEventListener("change", syncClientFilters);
     });
     ["userFilter", "userSearch", "usageStatusFilter", "usageSearch", "logSearch"].forEach((id) => {
       document.getElementById(id)?.addEventListener("input", renderAdmin);

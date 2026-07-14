@@ -79,6 +79,10 @@ function monthStartIso() {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0)).toISOString();
 }
 
+function isManagerRole(role) {
+  return role === "admin" || role === "manager";
+}
+
 async function monthlyUsage(userId, eventTypes) {
   const types = Array.isArray(eventTypes) ? eventTypes : [eventTypes];
   const since = encodeURIComponent(monthStartIso());
@@ -97,6 +101,8 @@ async function requireAccount(req) {
       profile: { role: "demo", status: "active" },
       activePackage: null,
       isAdmin: false,
+      isManager: false,
+      isPrivileged: false,
     };
   }
   const { user, token } = await getAuthUser(req);
@@ -104,8 +110,10 @@ async function requireAccount(req) {
   if (!profile) throw new Error("Perfil nao encontrado. Contate o administrador.");
   if (profile.status !== "active") throw new Error("Seu usuario esta inativo. Contate o administrador.");
   const isAdmin = profile.role === "admin";
-  const activePackage = isAdmin ? null : await getActivePackage(user.id);
-  return { authEnabled: true, user, token, profile, activePackage, isAdmin };
+  const isManager = profile.role === "manager";
+  const isPrivileged = isManagerRole(profile.role);
+  const activePackage = isPrivileged ? null : await getActivePackage(user.id);
+  return { authEnabled: true, user, token, profile, activePackage, isAdmin, isManager, isPrivileged };
 }
 
 function packageFor(account) {
@@ -125,7 +133,7 @@ function featureAllowed(pkg, feature) {
 
 async function assertCanUse(req, feature) {
   const account = await requireAccount(req);
-  if (!account.authEnabled || account.isAdmin) return account;
+  if (!account.authEnabled || account.isPrivileged) return account;
   const pkg = packageFor(account);
   if (!pkg) throw new Error("Recurso nao disponivel: usuario sem pacote ativo.");
   if (!featureAllowed(pkg, feature)) throw new Error("Recurso nao disponivel no pacote atual.");
@@ -165,6 +173,13 @@ async function requireAdmin(req) {
   return account;
 }
 
+async function requireManager(req) {
+  const account = await requireAccount(req);
+  if (!account.authEnabled) throw new Error("Gestao indisponivel no modo demo.");
+  if (!account.isPrivileged) throw new Error("Acesso negado.");
+  return account;
+}
+
 module.exports = {
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
@@ -174,8 +189,10 @@ module.exports = {
   json,
   supabaseFetch,
   monthlyUsage,
+  isManagerRole,
   requireAccount,
   requireAdmin,
+  requireManager,
   assertCanUse,
   recordUsage,
 };

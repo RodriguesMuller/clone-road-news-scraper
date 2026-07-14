@@ -32,13 +32,13 @@ module.exports = async function handler(req, res) {
   try {
     const account = await requireAccount(req);
     const pkg = account.activePackage?.packages || null;
-    const monthlyNewsLimit = account.isAdmin || !account.authEnabled
+    const monthlyNewsLimit = account.isPrivileged || !account.authEnabled
       ? 700
       : Number(pkg?.monthly_news_limit || 0);
-    if (account.authEnabled && !account.isAdmin && monthlyNewsLimit <= 0) {
+    if (account.authEnabled && !account.isPrivileged && monthlyNewsLimit <= 0) {
       throw new Error("Usuario sem pacote ativo para visualizar noticias.");
     }
-    if (account.authEnabled && !account.isAdmin) {
+    if (account.authEnabled && !account.isPrivileged) {
       const usedNewsViews = await monthlyUsage(account.user.id, "news_view");
       if (usedNewsViews >= monthlyNewsLimit) {
         throw new Error("Limite mensal de consultas de noticias atingido.");
