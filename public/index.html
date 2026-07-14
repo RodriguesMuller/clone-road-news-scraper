@@ -133,7 +133,8 @@
     .layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
     .panel { padding: 16px; }
     .list, .sources { display: grid; gap: 10px; }
-    .item { padding: 16px; }
+    .item { padding: 16px; position: relative; }
+    .item.has-save { padding-right: 56px; }
     .item:hover, .alert-card:hover { border-color: rgba(32, 242, 155, .42); }
     .alerts-panel { margin-bottom: 18px; }
     .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -173,6 +174,39 @@
     .summary { margin: 9px 0 0; color: var(--color-muted-strong); font-size: 13.5px; line-height: 1.5; }
     .badge-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
     .actions { margin-top: 13px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .news-save-toggle {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 999px;
+      border: 1px solid rgba(32, 242, 155, .24);
+      background: rgba(3, 18, 13, .72);
+      color: var(--color-muted-strong);
+      box-shadow: none;
+      display: inline-grid;
+      place-items: center;
+      z-index: 2;
+    }
+    .news-save-toggle:hover { background: rgba(32, 242, 155, .12); border-color: rgba(32, 242, 155, .45); color: var(--color-primary); box-shadow: none; transform: translateY(-1px); }
+    .news-save-toggle.saved { background: rgba(32, 242, 155, .18); border-color: rgba(32, 242, 155, .55); color: var(--color-primary); }
+    .news-save-toggle svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    .news-save-toggle.saved svg { fill: currentColor; }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--color-border-soft);
+    }
+    .pagination[hidden] { display: none !important; }
+    .pagination-status { color: var(--color-muted-strong); font-size: 12px; font-weight: 900; }
+    .pagination .mini-button { min-width: 88px; }
     .mini-button {
       border: 1px solid var(--color-border-soft);
       background: rgba(255,255,255,.055);
@@ -191,6 +225,38 @@
     .source .badge { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(32, 242, 155, .14); color: #8dffc9; border: 1px solid rgba(32, 242, 155, .25); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
     .source.trusted { color: var(--color-muted-strong); font-weight: 800; }
     .source.trusted b { color: var(--color-primary); }
+    .sidebar-sources {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--color-border-soft);
+    }
+    .sidebar-sources[hidden] { display: none !important; }
+    .sidebar-sources-title {
+      color: var(--color-muted);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 0 6px;
+    }
+    .sidebar-source-list { display: grid; gap: 6px; max-height: 168px; overflow: hidden; }
+    .sidebar-source-item {
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 7px;
+      padding: 7px 8px;
+      background: rgba(255,255,255,.035);
+      color: var(--color-muted-strong);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.25;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sidebar-source-more { color: var(--color-muted); font-size: 11px; font-weight: 800; padding: 0 6px; }
+    .sidebar.collapsed .sidebar-sources { display: none !important; }
     .auth-view {
       min-height: 68vh;
       display: grid;
@@ -955,6 +1021,7 @@
             </span>
           </div>
           <div id="sidebarMenu" class="sidebar-menu"></div>
+          <div id="sidebarSources" class="sidebar-sources" hidden></div>
           <div class="sidebar-footer">
             <button id="sidebarSettingsButton" class="nav-item" type="button" data-route="/configuracoes" data-view="occurrences" data-page="settings" data-scroll="clientSettingsSection" aria-label="Configurações" title="Configurações"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3"></path><path d="M12 19v3"></path><path d="M2 12h3"></path><path d="M19 12h3"></path><path d="m4.9 4.9 2.1 2.1"></path><path d="m17 17 2.1 2.1"></path><path d="m19.1 4.9-2.1 2.1"></path><path d="m7 17-2.1 2.1"></path></svg></span><span class="nav-label-text">Configurações</span></button>
             <div id="environmentSwitcher" class="sidebar-env"></div>
@@ -990,25 +1057,12 @@
       <section id="occurrencesView" class="view-panel">
         <section id="clientOverviewPage" class="client-page" data-client-page="overview">
           <section class="stats" id="stats"></section>
-          <div class="overview-grid">
-            <section class="panel">
-              <div class="panel-head">
-                <h2>Alertas recentes resumidos</h2>
-                <button class="mini-button" type="button" data-route="/alertas">Ver alertas</button>
-              </div>
-              <div id="overviewAlerts" class="alert-list"></div>
-            </section>
-            <section id="sourcesSection" class="panel">
-              <h2>Fontes nas últimas 24h</h2>
-              <div id="sources" class="sources"></div>
-            </section>
-          </div>
-          <section id="trendsSection" class="panel">
+          <section class="panel">
             <div class="panel-head">
-              <h2>Resumo operacional</h2>
-              <span class="admin-note">Categorias, estados e rodovias mais recorrentes.</span>
+              <h2>Alertas recentes resumidos</h2>
+              <button class="mini-button" type="button" data-route="/alertas">Ver alertas</button>
             </div>
-            <div id="trendCards" class="management-grid"></div>
+            <div id="overviewAlerts" class="alert-list"></div>
           </section>
         </section>
 
@@ -1016,6 +1070,7 @@
           <section class="panel">
             <h2>Notícias recentes</h2>
             <div id="news" class="list"></div>
+            <div id="newsPagination" class="pagination" hidden></div>
           </section>
         </section>
 
@@ -1040,6 +1095,17 @@
             <p class="admin-note">Notícias marcadas para acompanhamento rápido neste navegador.</p>
             <div id="savedNews" class="saved-list"></div>
           </section>
+        </section>
+
+        <section id="trendsSection" class="panel client-page" data-client-page="operational">
+          <div class="panel-head">
+            <div>
+              <h2>Resumo operacional</h2>
+              <p id="trendPeriod" class="admin-note">Período analisado: últimas 24h.</p>
+            </div>
+            <span id="trendUpdatedAt" class="admin-note">Atualizado agora</span>
+          </div>
+          <div id="trendCards" class="management-grid"></div>
         </section>
 
         <section id="clientReportsSection" class="panel client-extra-section">
@@ -1444,6 +1510,7 @@
       items: [],
       recentItems: [],
       mapItems: [],
+      sourceRows: [],
       total: 0,
       alertHours: 6,
       activeView: "occurrences",
@@ -1451,6 +1518,7 @@
       activeScrollTarget: "top",
       activeClientPage: "overview",
       savedNewsKeys: new Set(),
+      newsPage: 1,
       pendingPath: "/dashboard",
       authConfigError: false,
       authEnabled: false,
@@ -1474,14 +1542,17 @@
     const VIEW_MODE_KEY = "roadnews_viewmode";
     const NOTIFICATION_RULES_KEY = "roadnews_notification_rules";
     const SAVED_NEWS_KEY = "roadnews_saved_news";
+    const NEWS_PER_PAGE = 10;
+    const SIDEBAR_SOURCE_LIMIT = 8;
     const CLIENT_PAGE_META = {
-      overview: { title: "Visão geral", subtitle: "Resumo operacional da plataforma." },
+      overview: { title: "Visão geral", subtitle: "Panorama rápido da plataforma." },
       news: { title: "Notícias", subtitle: "Busca, filtros e acompanhamento das notícias recentes." },
       alerts: { title: "Alertas", subtitle: "Ocorrências recentes com impacto operacional." },
       saved: { title: "Salvos", subtitle: "Notícias marcadas para acompanhar depois." },
+      operational: { title: "Resumo operacional", subtitle: "Tendências, regiões, rodovias e riscos do período." },
       settings: { title: "Configurações", subtitle: "Preferências básicas do ambiente Cliente." },
     };
-    const CLIENT_ROUTES = new Set(["/dashboard", "/noticias", "/mapa", "/alertas", "/salvos", "/configuracoes"]);
+    const CLIENT_ROUTES = new Set(["/dashboard", "/noticias", "/mapa", "/alertas", "/salvos", "/resumo-operacional", "/configuracoes"]);
     const VIEW_MODES = {
       client: "Cliente",
       manager: "Gestor da plataforma",
@@ -1515,6 +1586,7 @@
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
           { label: "Alertas", icon: "bell", route: "/alertas", view: "occurrences", scroll: "recentAlerts" },
           { label: "Salvos", icon: "bookmark", route: "/salvos", view: "occurrences", scroll: "savedNews" },
+          { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
         ] },
       ],
       manager: [
@@ -1787,6 +1859,7 @@
       if (value === "news" || value === "clientNewsPage") return "news";
       if (value === "recentAlerts" || value === "clientAlertsPage") return "alerts";
       if (value === "savedNews" || value === "clientSavedPage") return "saved";
+      if (value === "trendsSection") return "operational";
       if (value === "clientSettingsSection") return "settings";
       return "overview";
     }
@@ -1811,6 +1884,26 @@
       if (settingsUser) settingsUser.textContent = `${getDisplayName()} · ${state.profile?.email || state.session?.user?.email || "e-mail não informado"}`;
       const settingsEnvironment = document.getElementById("settingsEnvironmentInfo");
       if (settingsEnvironment) settingsEnvironment.textContent = `${roleLabel()} · ${VIEW_MODES[state.viewMode] || "Cliente"}`;
+    }
+
+    function renderSidebarSources(rows = []) {
+      const target = document.getElementById("sidebarSources");
+      if (!target) return;
+      const shouldShow = state.viewMode === "client" && state.activeView !== "admin" && rows.length;
+      target.hidden = !shouldShow;
+      if (!shouldShow) {
+        target.innerHTML = "";
+        return;
+      }
+      const visible = rows.slice(0, SIDEBAR_SOURCE_LIMIT);
+      const hiddenCount = Math.max(0, rows.length - visible.length);
+      target.innerHTML = `
+        <div class="sidebar-sources-title">Fontes utilizadas</div>
+        <div class="sidebar-source-list">
+          ${visible.map(([source]) => `<div class="sidebar-source-item" title="${escapeHtml(source)}">${escapeHtml(source)}</div>`).join("")}
+        </div>
+        ${hiddenCount ? `<div class="sidebar-source-more">+${hiddenCount} fontes utilizadas</div>` : ""}
+      `;
     }
 
     function iconSvg(name) {
@@ -1840,6 +1933,7 @@
       const groups = SIDEBAR_GROUPS[mode] || SIDEBAR_GROUPS.client;
       const settingsButton = document.getElementById("sidebarSettingsButton");
       if (settingsButton) settingsButton.hidden = mode !== "client";
+      renderSidebarSources(mode === "client" ? state.sourceRows : []);
       menu.innerHTML = groups.map((group) => `
         <nav class="nav-group" aria-label="${escapeHtml(group.label)}">
           <span class="nav-label">${escapeHtml(group.label)}</span>
@@ -2364,12 +2458,25 @@ function showAuthView() {
       const states = topCounts(items, (item) => cleanDisplayText(item.state || item.region || "").split("/").pop());
       const roads = topCounts(items, (item) => roadFromText(`${item.title || ""} ${item.summary || ""} ${item.highway || ""}`));
       const risks = topCounts(items, (item) => operationalRisk(item)[1]);
+      const periodHours = Number(state.filters.period || 24);
+      const periodLabel = state.filters.period === "all"
+        ? "todo o histórico carregado"
+        : periodHours === 24
+          ? "últimas 24h"
+          : periodHours > 24 && periodHours % 24 === 0
+            ? `últimos ${Math.round(periodHours / 24)} dias`
+            : `últimas ${periodHours}h`;
+      const lastCreated = items.map(collectionDateValue).filter(Boolean).sort((a, b) => b - a)[0];
       const card = (title, rows) => `
         <article class="management-card">
           <h3>${escapeHtml(title)}</h3>
           ${rows.length ? rows.map(([label, count]) => `<p><strong>${escapeHtml(label)}</strong> - ${count}</p>`).join("") : `<p>Sem dados suficientes no período.</p>`}
         </article>
       `;
+      const periodTarget = document.getElementById("trendPeriod");
+      if (periodTarget) periodTarget.textContent = `Período analisado: ${periodLabel}.`;
+      const updatedTarget = document.getElementById("trendUpdatedAt");
+      if (updatedTarget) updatedTarget.textContent = `Atualizado ${age(lastCreated)}`;
       const target = document.getElementById("trendCards");
       if (target) target.innerHTML = [
         card("Categorias recorrentes", categories),
@@ -2388,14 +2495,19 @@ function showAuthView() {
         counts.set(source, (counts.get(source) || 0) + 1);
       });
 
-      const rows = [...counts.entries()].sort((a, b) => {
+      const allRows = [...counts.entries()].sort((a, b) => {
         const aTrusted = TRUSTED_SOURCES.has(a[0]) ? 1 : 0;
         const bTrusted = TRUSTED_SOURCES.has(b[0]) ? 1 : 0;
         if (aTrusted !== bTrusted) return bTrusted - aTrusted;
         return b[1] - a[1];
-      }).slice(0, 12);
+      });
+      state.sourceRows = allRows;
+      renderSidebarSources(allRows);
 
-      document.getElementById("sources").innerHTML = rows.length
+      const sourceTarget = document.getElementById("sources");
+      if (!sourceTarget) return;
+      const rows = allRows.slice(0, 12);
+      sourceTarget.innerHTML = rows.length
         ? rows.map(([source, count]) => {
             const trusted = TRUSTED_SOURCES.has(source);
             return `<div class="source${trusted ? " trusted" : ""}"><span>${escapeHtml(source)}${trusted ? "<span class=\"badge\">Fonte confiável</span>" : ""}</span><b>${count}</b></div>`;
@@ -2544,7 +2656,11 @@ function showAuthView() {
     }
 
     function renderNews() {
-      const newsItems = filteredClientItems();
+      const allNewsItems = filteredClientItems();
+      const totalPages = Math.max(1, Math.ceil(allNewsItems.length / NEWS_PER_PAGE));
+      state.newsPage = Math.min(Math.max(1, state.newsPage || 1), totalPages);
+      const start = (state.newsPage - 1) * NEWS_PER_PAGE;
+      const newsItems = allNewsItems.slice(start, start + NEWS_PER_PAGE);
       document.getElementById("news").innerHTML = newsItems.length
         ? newsItems.map((item) => {
             const index = Math.max(0, state.items.indexOf(item));
@@ -2564,8 +2680,12 @@ function showAuthView() {
               region ? `<span class="info-badge">Região ${escapeHtml(region)}</span>` : "",
               relevance ? `<span class="info-badge">Relevância ${escapeHtml(shortText(relevance, 48))}</span>` : "",
             ].filter(Boolean).join("");
+            const saveTitle = saved ? "Remover dos salvos" : "Salvar notícia";
             return `
-              <article class="item">
+              <article class="item has-save">
+                <button class="news-save-toggle save-news ${saved ? "saved" : ""}" type="button" data-index="${index}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">
+                  ${iconSvg("bookmark")}
+                </button>
                 <div class="meta">
                   <span class="tag ${tagClass}${trusted ? " trusted" : ""}">
                     ${tagLabel}${trusted ? "<span class=\"verified\">Fonte confiável</span>" : ""}
@@ -2579,13 +2699,21 @@ function showAuthView() {
                 <div class="badge-row">${badges}</div>
                 <div class="actions">
                   <button class="mini-button make-image" type="button" data-index="${index}">Gerar resumo</button>
-                  <button class="mini-button save-news" type="button" data-index="${index}">${saved ? "Remover dos salvos" : "Salvar"}</button>
                   ${url ? `<a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir fonte</a>` : ""}
                 </div>
               </article>
             `;
           }).join("")
         : `<div class="hint">Nenhuma notícia encontrada para os filtros selecionados.</div>`;
+      const pagination = document.getElementById("newsPagination");
+      if (pagination) {
+        pagination.hidden = allNewsItems.length <= NEWS_PER_PAGE;
+        pagination.innerHTML = allNewsItems.length > NEWS_PER_PAGE ? `
+          <button class="mini-button" type="button" data-page-action="prev" ${state.newsPage <= 1 ? "disabled" : ""}>Anterior</button>
+          <span class="pagination-status">Página ${state.newsPage} de ${totalPages}</span>
+          <button class="mini-button" type="button" data-page-action="next" ${state.newsPage >= totalPages ? "disabled" : ""}>Próxima</button>
+        ` : "";
+      }
       renderSavedNews();
     }
 
@@ -2890,6 +3018,7 @@ function showAuthView() {
         "/alertas": { view: "occurrences", scroll: "recentAlerts", page: "alerts" },
         "/noticias": { view: "occurrences", scroll: "news", page: "news" },
         "/salvos": { view: "occurrences", scroll: "savedNews", page: "saved" },
+        "/resumo-operacional": { view: "occurrences", scroll: "trendsSection", page: "operational" },
         "/tendencias": { view: "occurrences", scroll: "trendsSection" },
         "/fontes": { view: "occurrences", scroll: "sourcesSection" },
         "/relatorios": { view: "occurrences", scroll: "clientReportsSection" },
@@ -2970,7 +3099,7 @@ function showAuthView() {
         return;
       }
 
-      const knownRoutes = new Set(["/dashboard", "/alertas", "/noticias", "/salvos", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
+      const knownRoutes = new Set(["/dashboard", "/alertas", "/noticias", "/salvos", "/resumo-operacional", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
       if (state.viewMode === "client" && !CLIENT_ROUTES.has(route)) {
         setNotice("");
         state.activeRoute = "/dashboard";
@@ -4578,6 +4707,7 @@ function showAuthView() {
       state.filters.region = document.getElementById("regionFilter")?.value || "";
       state.filters.category = document.getElementById("categoryFilter")?.value || "";
       state.filters.sort = document.getElementById("sortFilter")?.value || "recent";
+      state.newsPage = 1;
       renderClientHeaderAndTrends();
       renderNews();
     }
@@ -4725,6 +4855,13 @@ function showAuthView() {
       }
       const button = event.target.closest(".make-image");
       if (button) generateNewsSummary(Number(button.dataset.index), button);
+    });
+    document.getElementById("newsPagination").addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-page-action]");
+      if (!button || button.disabled) return;
+      state.newsPage += button.dataset.pageAction === "next" ? 1 : -1;
+      renderNews();
+      document.getElementById("clientNewsPage")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
     document.getElementById("savedNews").addEventListener("click", (event) => {
       const removeButton = event.target.closest(".remove-saved");
