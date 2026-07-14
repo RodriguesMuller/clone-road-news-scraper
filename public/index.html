@@ -359,6 +359,14 @@
     .client-hero-row h1 { margin: 3px 0 6px; color: var(--color-text); font-size: clamp(24px, 4vw, 38px); line-height: 1.05; }
     .eyebrow { margin: 0; color: var(--color-primary); font-size: 11px; font-weight: 950; letter-spacing: .14em; text-transform: uppercase; }
     .client-filter-grid { display: grid; grid-template-columns: 1.3fr repeat(4, minmax(130px, .8fr)); gap: 10px; margin-top: 14px; }
+    .client-filter-grid[hidden], .client-page[hidden], .client-extra-section[hidden] { display: none !important; }
+    .client-page { display: grid; gap: 16px; }
+    .overview-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(260px, .85fr); gap: 16px; align-items: start; }
+    .overview-grid .panel { height: 100%; }
+    .saved-list { display: grid; gap: 12px; }
+    .auth-links { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 2px; font-size: 12px; }
+    .auth-links a { color: var(--color-muted-strong); text-decoration: none; font-weight: 800; }
+    .auth-links a:hover { color: var(--color-primary); }
     .management-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
     .management-card {
       border: 1px solid var(--color-card-border);
@@ -740,7 +748,7 @@
     .weekly-footer { border-top: 1px solid var(--color-border-soft); padding-top: 10px; color: var(--color-muted); font-size: 12px; }
     .weekly-loading { padding: 26px; color: var(--color-muted); }
     @media (max-width: 920px) { .weekly-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 820px) { .stats, .alert-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 820px) { .stats, .alert-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout, .overview-grid { grid-template-columns: 1fr; } }
     @media (max-width: 720px) {
       .weekly-kpis, .weekly-grid { grid-template-columns: 1fr; }
       .client-filter-grid { grid-template-columns: 1fr; }
@@ -919,6 +927,10 @@
           </div>
           <button id="loginButton" type="submit">Entrar</button>
           <button id="resetPasswordButton" class="link-button" type="button">Recuperar senha</button>
+          <div class="auth-links">
+            <a href="/privacidade" target="_blank" rel="noopener">Privacidade</a>
+            <a href="/termos" target="_blank" rel="noopener">Termos</a>
+          </div>
         </div>
       </form>
     </section>
@@ -947,7 +959,7 @@
           </div>
           <div id="sidebarMenu" class="sidebar-menu"></div>
           <div class="sidebar-footer">
-            <button class="nav-item" type="button" data-route="/configuracoes" data-view="occurrences" data-scroll="clientSettingsSection" aria-label="Configurações" title="Configurações"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3"></path><path d="M12 19v3"></path><path d="M2 12h3"></path><path d="M19 12h3"></path><path d="m4.9 4.9 2.1 2.1"></path><path d="m17 17 2.1 2.1"></path><path d="m19.1 4.9-2.1 2.1"></path><path d="m7 17-2.1 2.1"></path></svg></span><span class="nav-label-text">Configurações</span></button>
+            <button id="sidebarSettingsButton" class="nav-item" type="button" data-route="/configuracoes" data-view="occurrences" data-page="settings" data-scroll="clientSettingsSection" aria-label="Configurações" title="Configurações"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3"></path><path d="M12 19v3"></path><path d="M2 12h3"></path><path d="M19 12h3"></path><path d="m4.9 4.9 2.1 2.1"></path><path d="m17 17 2.1 2.1"></path><path d="m19.1 4.9-2.1 2.1"></path><path d="m7 17-2.1 2.1"></path></svg></span><span class="nav-label-text">Configurações</span></button>
             <div id="environmentSwitcher" class="sidebar-env"></div>
             <div id="sidebarUser" class="sidebar-user"></div>
             <button id="sidebarLogoutButton" class="mini-button" type="button" hidden>Sair</button>
@@ -965,7 +977,7 @@
         <div class="client-hero-row">
           <div>
             <p class="eyebrow">Road News</p>
-            <h1>Atualização em tempo real</h1>
+            <h1 id="clientPageTitle">Atualização em tempo real</h1>
             <p id="clientGreeting" class="admin-note">Bom dia.</p>
           </div>
         </div>
@@ -979,47 +991,86 @@
       </section>
 
       <section id="occurrencesView" class="view-panel">
-      <section class="stats" id="stats"></section>
-      <section class="panel alerts-panel">
-        <div class="panel-head">
-          <h2>Alertas recentes</h2>
-          <div id="alertWindows" class="segmented" aria-label="Janela de alertas recentes">
-            <button type="button" data-hours="2">2h</button>
-            <button type="button" data-hours="6" class="active">6h</button>
-            <button type="button" data-hours="12">12h</button>
-            <button type="button" data-hours="24">24h</button>
+        <section id="clientOverviewPage" class="client-page" data-client-page="overview">
+          <section class="stats" id="stats"></section>
+          <div class="overview-grid">
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Alertas recentes resumidos</h2>
+                <button class="mini-button" type="button" data-route="/alertas">Ver alertas</button>
+              </div>
+              <div id="overviewAlerts" class="alert-list"></div>
+            </section>
+            <section id="sourcesSection" class="panel">
+              <h2>Fontes nas últimas 24h</h2>
+              <div id="sources" class="sources"></div>
+            </section>
           </div>
-        </div>
-        <div id="recentAlerts" class="alert-list"></div>
-      </section>
-      <section class="layout">
-        <div class="panel">
-          <h2>Notícias recentes</h2>
-          <div id="news" class="list"></div>
-        </div>
-        <aside id="sourcesSection" class="panel">
-          <h2>Fontes nas últimas 24h</h2>
-          <div id="sources" class="sources"></div>
-        </aside>
-      </section>
-      <section id="trendsSection" class="panel">
-        <div class="panel-head">
-          <h2>Tendências</h2>
-          <span class="admin-note">Categorias, estados e rodovias mais recorrentes.</span>
-        </div>
-        <div id="trendCards" class="management-grid"></div>
-      </section>
-      <section id="clientReportsSection" class="panel">
-        <div class="panel-head">
-          <h2>Relatórios</h2>
-          <button class="mini-button" type="button" data-action="weekly-summary">Gerar resumo semanal</button>
-        </div>
-        <p class="admin-note">Use o resumo semanal para reuniões de planejamento e acompanhamento de riscos operacionais.</p>
-      </section>
-      <section id="clientSettingsSection" class="panel">
-        <h2>Configurações básicas</h2>
-        <p class="admin-note">Preferências visuais e ambiente de visualização ficam no menu lateral. Nenhuma credencial sensível é exibida no front.</p>
-      </section>
+          <section id="trendsSection" class="panel">
+            <div class="panel-head">
+              <h2>Resumo operacional</h2>
+              <span class="admin-note">Categorias, estados e rodovias mais recorrentes.</span>
+            </div>
+            <div id="trendCards" class="management-grid"></div>
+          </section>
+        </section>
+
+        <section id="clientNewsPage" class="client-page" data-client-page="news">
+          <section class="panel">
+            <h2>Notícias recentes</h2>
+            <div id="news" class="list"></div>
+          </section>
+        </section>
+
+        <section id="clientAlertsPage" class="client-page" data-client-page="alerts">
+          <section class="panel alerts-panel">
+            <div class="panel-head">
+              <h2>Alertas recentes</h2>
+              <div id="alertWindows" class="segmented" aria-label="Janela de alertas recentes">
+                <button type="button" data-hours="2">2h</button>
+                <button type="button" data-hours="6" class="active">6h</button>
+                <button type="button" data-hours="12">12h</button>
+                <button type="button" data-hours="24">24h</button>
+              </div>
+            </div>
+            <div id="recentAlerts" class="alert-list"></div>
+          </section>
+        </section>
+
+        <section id="clientSavedPage" class="client-page" data-client-page="saved">
+          <section class="panel">
+            <h2>Salvos</h2>
+            <p class="admin-note">Notícias marcadas para acompanhamento rápido neste navegador.</p>
+            <div id="savedNews" class="saved-list"></div>
+          </section>
+        </section>
+
+        <section id="clientReportsSection" class="panel client-extra-section">
+          <div class="panel-head">
+            <h2>Relatórios</h2>
+            <button class="mini-button" type="button" data-action="weekly-summary">Gerar resumo semanal</button>
+          </div>
+          <p class="admin-note">Use o resumo semanal para reuniões de planejamento e acompanhamento de riscos operacionais.</p>
+        </section>
+
+        <section id="clientSettingsSection" class="panel client-page" data-client-page="settings">
+          <h2>Configurações</h2>
+          <div class="management-grid">
+            <article class="management-card">
+              <h3>Usuário</h3>
+              <p id="settingsUserInfo">Perfil carregando...</p>
+            </article>
+            <article class="management-card">
+              <h3>Ambiente</h3>
+              <p id="settingsEnvironmentInfo">Cliente</p>
+            </article>
+            <article class="management-card">
+              <h3>Preferências</h3>
+              <p>Tema escuro Road News e navegação lateral simplificada.</p>
+            </article>
+          </div>
+          <p class="admin-note"><a href="/privacidade" target="_blank" rel="noopener">Privacidade</a> · <a href="/termos" target="_blank" rel="noopener">Termos</a></p>
+        </section>
       </section>
 
       <section id="mapView" class="view-panel" hidden>
@@ -1247,7 +1298,7 @@
     </div>
   </main>
 
-  <footer>
+  <footer id="publicFooter">
     O scraper roda no GitHub Actions e grava no Supabase. Com login ativo, o painel lê os dados pelas APIs seguras do Road News.
     <a href="/privacidade" target="_blank" rel="noopener">Privacidade</a> ·
     <a href="/termos" target="_blank" rel="noopener">Termos</a>
@@ -1403,6 +1454,8 @@
       activeView: "occurrences",
       activeRoute: "/dashboard",
       activeScrollTarget: "top",
+      activeClientPage: "overview",
+      savedNewsKeys: new Set(),
       pendingPath: "/dashboard",
       authConfigError: false,
       authEnabled: false,
@@ -1425,6 +1478,15 @@
 
     const VIEW_MODE_KEY = "roadnews_viewmode";
     const NOTIFICATION_RULES_KEY = "roadnews_notification_rules";
+    const SAVED_NEWS_KEY = "roadnews_saved_news";
+    const CLIENT_PAGE_META = {
+      overview: { title: "Visão geral", subtitle: "Resumo operacional da plataforma." },
+      news: { title: "Notícias", subtitle: "Busca, filtros e acompanhamento das notícias recentes." },
+      alerts: { title: "Alertas", subtitle: "Ocorrências recentes com impacto operacional." },
+      saved: { title: "Salvos", subtitle: "Notícias marcadas para acompanhar depois." },
+      settings: { title: "Configurações", subtitle: "Preferências básicas do ambiente Cliente." },
+    };
+    const CLIENT_ROUTES = new Set(["/dashboard", "/noticias", "/mapa", "/alertas", "/salvos", "/configuracoes"]);
     const VIEW_MODES = {
       client: "Cliente",
       manager: "Gestor da plataforma",
@@ -1444,6 +1506,7 @@
       users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>',
       package: '<path d="m21 16-9 5-9-5V8l9-5 9 5v8Z"></path><path d="M3.3 7.3 12 12l8.7-4.7"></path><path d="M12 22V12"></path>',
       bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path>',
+      bookmark: '<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Z"></path>',
       activity: '<path d="M22 12h-4l-3 8-6-16-3 8H2"></path>',
       plug: '<path d="M12 22v-5"></path><path d="M9 8V2"></path><path d="M15 8V2"></path><path d="M6 8h12v4a6 6 0 0 1-12 0V8Z"></path>',
       database: '<ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"></path><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"></path>',
@@ -1454,14 +1517,9 @@
         { label: "Cliente", items: [
           { label: "Visão geral", icon: "dashboard", route: "/dashboard", view: "occurrences", scroll: "top" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
-          { label: "Tendências", icon: "trending", route: "/tendencias", view: "occurrences", scroll: "trendsSection" },
-          { label: "Fontes", icon: "rss", route: "/fontes", view: "occurrences", scroll: "sourcesSection" },
-          { label: "Relatórios", icon: "report", route: "/relatorios", view: "occurrences", scroll: "clientReportsSection" },
-        ] },
-        { label: "Inteligência", items: [
-          { label: "Gerar resumo", icon: "sparkles", route: "/noticias", view: "occurrences", scroll: "news", feature: "image_generation" },
-          { label: "Resumo semanal", icon: "calendar", action: "weekly-summary", feature: "weekly_summary" },
-          { label: "Mapa", icon: "map", route: "/mapa", view: "map", feature: "map", countId: "mapSidebarDynamicCount" },
+          { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
+          { label: "Alertas", icon: "bell", route: "/alertas", view: "occurrences", scroll: "recentAlerts" },
+          { label: "Salvos", icon: "bookmark", route: "/salvos", view: "occurrences", scroll: "savedNews" },
         ] },
       ],
       manager: [
@@ -1729,6 +1787,37 @@
       }, 80);
     }
 
+    function clientPageFromTarget(target = "top") {
+      const value = String(target || "top");
+      if (value === "news" || value === "clientNewsPage") return "news";
+      if (value === "recentAlerts" || value === "clientAlertsPage") return "alerts";
+      if (value === "savedNews" || value === "clientSavedPage") return "saved";
+      if (value === "clientSettingsSection") return "settings";
+      return "overview";
+    }
+
+    function applyClientPageVisibility() {
+      const page = state.activeClientPage || "overview";
+      const isClientExperience = state.viewMode === "client" && state.activeView === "occurrences";
+      document.querySelectorAll("[data-client-page]").forEach((section) => {
+        section.hidden = isClientExperience ? section.dataset.clientPage !== page : false;
+      });
+      document.querySelectorAll(".client-extra-section").forEach((section) => {
+        section.hidden = isClientExperience;
+      });
+      const filters = document.querySelector(".client-filter-grid");
+      if (filters) filters.hidden = isClientExperience && page !== "news";
+      const meta = CLIENT_PAGE_META[page] || CLIENT_PAGE_META.overview;
+      const title = document.getElementById("clientPageTitle");
+      if (title) title.textContent = meta.title;
+      const greeting = document.getElementById("clientGreeting");
+      if (greeting && isClientExperience) greeting.textContent = meta.subtitle;
+      const settingsUser = document.getElementById("settingsUserInfo");
+      if (settingsUser) settingsUser.textContent = `${getDisplayName()} · ${state.profile?.email || state.session?.user?.email || "e-mail não informado"}`;
+      const settingsEnvironment = document.getElementById("settingsEnvironmentInfo");
+      if (settingsEnvironment) settingsEnvironment.textContent = `${roleLabel()} · ${VIEW_MODES[state.viewMode] || "Cliente"}`;
+    }
+
     function iconSvg(name) {
       const content = ICON_PATHS[name] || ICON_PATHS.dashboard;
       return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${content}</svg>`;
@@ -1737,9 +1826,10 @@
     function navButton(item) {
       const attrs = [
         item.route ? `data-route="${escapeHtml(item.route)}"` : "",
-        item.view ? `data-view="${escapeHtml(item.view)}"` : "",
-        item.scroll ? `data-scroll="${escapeHtml(item.scroll)}"` : "",
-        item.action ? `data-action="${escapeHtml(item.action)}"` : "",
+      item.view ? `data-view="${escapeHtml(item.view)}"` : "",
+      item.scroll ? `data-scroll="${escapeHtml(item.scroll)}"` : "",
+        item.page ? `data-page="${escapeHtml(item.page)}"` : "",
+      item.action ? `data-action="${escapeHtml(item.action)}"` : "",
         item.feature ? `data-feature="${escapeHtml(item.feature)}"` : "",
         `title="${escapeHtml(item.label)}"`,
       ].filter(Boolean).join(" ");
@@ -1753,6 +1843,8 @@
       const mode = normalizeViewMode(state.viewMode || "client");
       state.viewMode = mode;
       const groups = SIDEBAR_GROUPS[mode] || SIDEBAR_GROUPS.client;
+      const settingsButton = document.getElementById("sidebarSettingsButton");
+      if (settingsButton) settingsButton.hidden = mode !== "client";
       menu.innerHTML = groups.map((group) => `
         <nav class="nav-group" aria-label="${escapeHtml(group.label)}">
           <span class="nav-label">${escapeHtml(group.label)}</span>
@@ -1804,8 +1896,10 @@
       renderSidebarMenu();
       syncTopAdminTab();
       const mainTabs = document.getElementById("mainTabs");
-      if (mainTabs) mainTabs.hidden = !state.session || !state.profile;
+      if (mainTabs) mainTabs.hidden = (state.authEnabled && !state.session) || !state.profile || state.viewMode === "client";
       document.getElementById("sidebarLogoutButton").hidden = !state.authEnabled;
+      const weeklyButton = document.getElementById("weeklySummaryButton");
+      if (weeklyButton) weeklyButton.hidden = (state.authEnabled && !state.session) || state.viewMode === "client" || !canUseFeature("weekly_summary", true);
       document.querySelectorAll(".nav-item[data-route]").forEach((button) => {
         const sameRoute = button.dataset.route === state.activeRoute;
         const sameScroll = !state.activeScrollTarget || button.dataset.scroll === state.activeScrollTarget;
@@ -1822,6 +1916,7 @@
       const displayName = getDisplayName();
       const initials = displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "RN";
       sidebarUser.innerHTML = `<div class="sidebar-user-row"><span class="sidebar-avatar">${escapeHtml(initials)}</span><span><strong>${escapeHtml(displayName)}</strong><span style="display:block;color:var(--color-muted);font-size:12px;margin-top:4px;">${escapeHtml(roleLabel())} · ${escapeHtml(viewLabel)}</span></span></div>`;
+      applyClientPageVisibility();
 
     }
 
@@ -1838,6 +1933,8 @@ function showAuthView() {
       if (refresh) refresh.hidden = true;
       const sidebarLogout = document.getElementById("sidebarLogoutButton");
       if (sidebarLogout) sidebarLogout.hidden = true;
+      const footer = document.getElementById("publicFooter");
+      if (footer) footer.hidden = true;
       document.getElementById("authView").hidden = false;
       document.getElementById("blockedView").hidden = true;
       document.getElementById("appShell").hidden = true;
@@ -1857,6 +1954,8 @@ function showAuthView() {
       const refresh = document.getElementById("refresh");
       if (refresh) refresh.hidden = true;
       const sidebarLogout = document.getElementById("sidebarLogoutButton");
+      const footer = document.getElementById("publicFooter");
+      if (footer) footer.hidden = true;
       // render name and badge via syncNavigationState
       syncNavigationState();
       document.getElementById("blockedView").hidden = false;
@@ -1872,13 +1971,15 @@ function showAuthView() {
       document.getElementById("appShell").hidden = false;
       document.getElementById("headerActions").hidden = false;
       const weeklyButton = document.getElementById("weeklySummaryButton");
-      if (weeklyButton) weeklyButton.hidden = !canUseFeature("weekly_summary", true);
+      if (weeklyButton) weeklyButton.hidden = state.viewMode === "client" || !canUseFeature("weekly_summary", true);
       const headerStatus = document.getElementById("headerStatus");
       const refresh = document.getElementById("refresh");
       const sidebarLogout = document.getElementById("sidebarLogoutButton");
+      const footer = document.getElementById("publicFooter");
       if (headerStatus) headerStatus.hidden = false;
       if (refresh) refresh.hidden = false;
       if (sidebarLogout) sidebarLogout.hidden = !state.authEnabled;
+      if (footer) footer.hidden = false;
       loadSidebarPreference();
       syncNavigationState();
     }
@@ -2227,7 +2328,7 @@ function showAuthView() {
       const hour = new Date().toLocaleString("pt-BR", { timeZone: BRASILIA_TIME_ZONE, hour: "2-digit", hour12: false });
       const greeting = Number(hour) < 12 ? "Bom dia" : Number(hour) < 18 ? "Boa tarde" : "Boa noite";
       const greetingEl = document.getElementById("clientGreeting");
-      if (greetingEl) greetingEl.textContent = `${greeting}, ${displayName}`;
+      if (greetingEl && state.viewMode !== "client") greetingEl.textContent = `${greeting}, ${displayName}`;
       const items = state.recentItems.length ? state.recentItems : state.items;
       const categories = topCounts(items, (item) => tagFor(item)[1]);
       const states = topCounts(items, (item) => cleanDisplayText(item.state || item.region || "").split("/").pop());
@@ -2242,10 +2343,11 @@ function showAuthView() {
       const target = document.getElementById("trendCards");
       if (target) target.innerHTML = [
         card("Categorias recorrentes", categories),
-        card("Estados/regioes", states),
+        card("Estados/regiões", states),
         card("Rodovias citadas", roads),
         card("Risco operacional", risks),
       ].join("");
+      applyClientPageVisibility();
     }
 
     function renderSources() {
@@ -2310,10 +2412,105 @@ function showAuthView() {
                 </div>
                 <h3>${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${title}</a>` : title}</h3>
                 <p>${escapeHtml(shortText(summary, 135) || "Ocorrência recente com possível impacto operacional.")}</p>
+                ${url ? `<div class="actions"><a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir fonte</a></div>` : ""}
               </article>
             `;
           }).join("")
         : `<div class="hint">Nenhum alerta operacional acionável nas últimas ${state.alertHours}h.</div>`;
+      const overviewAlerts = document.getElementById("overviewAlerts");
+      if (overviewAlerts) {
+        const compact = alerts.slice(0, 3);
+        overviewAlerts.innerHTML = compact.length
+          ? compact.map((item) => {
+              const [riskClassName, riskLabel] = operationalRisk(item);
+              const road = roadFromText(`${item.title || ""} ${item.summary || ""}`);
+              return `
+                <article class="alert-card">
+                  <div class="alert-meta">
+                    <span class="alert-badge ${riskClassName}">${riskLabel}</span>
+                    <span>${escapeHtml([road, age(item.scraped_at || item.created_at || item.published_at)].filter(Boolean).join(" · ") || item.source || "Fonte não informada")}</span>
+                  </div>
+                  <h3>${escapeHtml(shortText(item.title || "Alerta operacional", 86))}</h3>
+                  <p>${escapeHtml(shortText(smartSummary(item), 110) || "Ocorrência recente com possível impacto operacional.")}</p>
+                </article>
+              `;
+            }).join("")
+          : `<div class="hint">Nenhum alerta operacional acionável nas últimas ${state.alertHours}h.</div>`;
+      }
+    }
+
+    function savedNewsKey(item) {
+      return String(item?.url || `${item?.title || ""}|${item?.published_at || ""}|${item?.source || ""}`);
+    }
+
+    function loadSavedNewsKeys() {
+      try {
+        const values = JSON.parse(localStorage.getItem(SAVED_NEWS_KEY) || "[]");
+        return new Set(Array.isArray(values) ? values.map(String) : []);
+      } catch {
+        return new Set();
+      }
+    }
+
+    function persistSavedNewsKeys() {
+      try { localStorage.setItem(SAVED_NEWS_KEY, JSON.stringify([...state.savedNewsKeys])); } catch (error) { /* ignore */ }
+    }
+
+    function isSavedNews(item) {
+      return state.savedNewsKeys.has(savedNewsKey(item));
+    }
+
+    function toggleSavedNews(index) {
+      const item = state.items[index];
+      if (!item) return;
+      const key = savedNewsKey(item);
+      if (state.savedNewsKeys.has(key)) {
+        state.savedNewsKeys.delete(key);
+        setNotice("Notícia removida dos salvos.");
+      } else {
+        state.savedNewsKeys.add(key);
+        setNotice("Notícia salva para acompanhamento.");
+      }
+      persistSavedNewsKeys();
+      renderNews();
+      renderSavedNews();
+    }
+
+    function removeSavedNews(key) {
+      state.savedNewsKeys.delete(String(key || ""));
+      persistSavedNewsKeys();
+      setNotice("Notícia removida dos salvos.");
+      renderNews();
+      renderSavedNews();
+    }
+
+    function renderSavedNews() {
+      const target = document.getElementById("savedNews");
+      if (!target) return;
+      const items = state.items.filter(isSavedNews).sort((a, b) => displayDateValue(b) - displayDateValue(a));
+      target.innerHTML = items.length
+        ? items.map((item) => {
+            const index = Math.max(0, state.items.indexOf(item));
+            const [riskClassName, riskLabel] = operationalRisk(item);
+            const url = externalNewsUrl(item);
+            const key = savedNewsKey(item);
+            return `
+              <article class="item">
+                <div class="meta">
+                  <span class="info-badge risk-${riskClassName || "low"}">Risco ${riskLabel}</span>
+                  <span>${escapeHtml([item.source, displayTime(item)].filter(Boolean).join(" · "))}</span>
+                </div>
+                <p class="title">${escapeHtml(item.title || "Notícia salva")}</p>
+                <p class="summary">${escapeHtml(shortText(smartSummary(item), 220))}</p>
+                <div class="actions">
+                  <button class="mini-button make-image" type="button" data-index="${index}">Gerar resumo</button>
+                  ${url ? `<a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir fonte</a>` : ""}
+                  <button class="mini-button remove-saved" type="button" data-key="${escapeHtml(key)}">Remover</button>
+                </div>
+              </article>
+            `;
+          }).join("")
+        : `<div class="hint">Nenhuma notícia salva ainda.</div>`;
     }
 
     function renderNews() {
@@ -2330,6 +2527,7 @@ function showAuthView() {
             const region = cleanDisplayText(item.region || item.city || item.state || findPlace(`${item.title || ""} ${item.summary || ""}`));
             const summary = shortText(smartSummary(item), 230);
             const relevance = cleanDisplayText(item.operational_relevance || item.operational_impact || "");
+            const saved = isSavedNews(item);
             const badges = [
               `<span class="info-badge risk-${riskClassName || "low"}">Risco ${riskLabel}</span>`,
               road ? `<span class="info-badge">Rodovia ${escapeHtml(road)}</span>` : "",
@@ -2351,12 +2549,14 @@ function showAuthView() {
                 <div class="badge-row">${badges}</div>
                 <div class="actions">
                   <button class="mini-button make-image" type="button" data-index="${index}">Gerar resumo</button>
-                  ${url ? `<a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir notícia</a>` : ""}
+                  <button class="mini-button save-news" type="button" data-index="${index}">${saved ? "Remover dos salvos" : "Salvar"}</button>
+                  ${url ? `<a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir fonte</a>` : ""}
                 </div>
               </article>
             `;
           }).join("")
         : `<div class="hint">Nenhuma notícia encontrada para os filtros selecionados.</div>`;
+      renderSavedNews();
     }
 
     function mapRiskKey(item) {
@@ -2613,7 +2813,7 @@ function showAuthView() {
             <span>${escapeHtml(point.precisionLabel)}</span>
           </div>
           <p>${escapeHtml(point.summary)}</p>
-          ${point.url ? `<a class="button-link" href="${escapeHtml(point.url)}" target="_blank" rel="noopener">Abrir notícia</a>` : ""}
+          ${point.url ? `<a class="button-link" href="${escapeHtml(point.url)}" target="_blank" rel="noopener">Abrir fonte</a>` : ""}
         </div>
       `;
     }
@@ -2656,14 +2856,15 @@ function showAuthView() {
     function routeTarget(path) {
       const route = normalizeRoute(path);
       const routes = {
-        "/dashboard": { view: "occurrences", scroll: "top" },
-        "/alertas": { view: "occurrences", scroll: "recentAlerts" },
-        "/noticias": { view: "occurrences", scroll: "news" },
+        "/dashboard": { view: "occurrences", scroll: "top", page: "overview" },
+        "/alertas": { view: "occurrences", scroll: "recentAlerts", page: "alerts" },
+        "/noticias": { view: "occurrences", scroll: "news", page: "news" },
+        "/salvos": { view: "occurrences", scroll: "savedNews", page: "saved" },
         "/tendencias": { view: "occurrences", scroll: "trendsSection" },
         "/fontes": { view: "occurrences", scroll: "sourcesSection" },
         "/relatorios": { view: "occurrences", scroll: "clientReportsSection" },
-        "/configuracoes": { view: "occurrences", scroll: "clientSettingsSection" },
-        "/mapa": { view: "map", scroll: "top" },
+        "/configuracoes": { view: "occurrences", scroll: "clientSettingsSection", page: "settings" },
+        "/mapa": { view: "map", scroll: "top", page: "map" },
         "/resumo-semanal": { view: "occurrences", scroll: "top", action: "weekly-summary" },
         "/admin": { view: "admin", scroll: "platformHealthSection", mode: "developer" },
         "/gestor": { view: "admin", scroll: "adminOverviewSection", mode: "manager" },
@@ -2695,6 +2896,7 @@ function showAuthView() {
         return;
       }
       state.activeView = view;
+      state.activeClientPage = options.page || clientPageFromTarget(options.scroll || state.activeScrollTarget);
       if (!options.skipRoute) {
         state.activeRoute = view === "map" ? "/mapa" : view === "admin" ? "/admin" : "/dashboard";
         state.activeScrollTarget = options.scroll || "top";
@@ -2706,6 +2908,7 @@ function showAuthView() {
       document.getElementById("occurrencesView").hidden = view !== "occurrences";
       document.getElementById("mapView").hidden = view !== "map";
       document.getElementById("adminView").hidden = view !== "admin";
+      applyClientPageVisibility();
       if (view === "map") {
         setTimeout(renderMap, 60);
       }
@@ -2737,7 +2940,16 @@ function showAuthView() {
         return;
       }
 
-      const knownRoutes = new Set(["/dashboard", "/alertas", "/noticias", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
+      const knownRoutes = new Set(["/dashboard", "/alertas", "/noticias", "/salvos", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
+      if (state.viewMode === "client" && !CLIENT_ROUTES.has(route)) {
+        setNotice("");
+        state.activeRoute = "/dashboard";
+        state.activeScrollTarget = "top";
+        state.activeClientPage = "overview";
+        setBrowserPath("/dashboard", true);
+        setActiveView("occurrences", { skipRoute: true, scroll: "top", page: "overview" });
+        return;
+      }
       const target = routeTarget(route);
       if (target.mode && !availableViewModes().includes(target.mode)) {
         setNotice("");
@@ -2761,8 +2973,9 @@ function showAuthView() {
 
       state.activeRoute = knownRoutes.has(route) ? route : "/dashboard";
       state.activeScrollTarget = options.scroll || target.scroll || "top";
+      state.activeClientPage = target.page || clientPageFromTarget(state.activeScrollTarget);
       setBrowserPath(state.activeRoute, Boolean(options.replace));
-      setActiveView(target.view, { skipRoute: true, scroll: state.activeScrollTarget });
+      setActiveView(target.view, { skipRoute: true, scroll: state.activeScrollTarget, page: state.activeClientPage });
       if (target.action === "weekly-summary") openWeeklySummary();
     }
 
@@ -4192,8 +4405,7 @@ function showAuthView() {
 
     function jumpToNews() {
       closeWeeklySummary();
-      setActiveView("occurrences");
-      document.querySelector(".layout")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      applyRoute("/noticias");
     }
 
     function setNotice(message) {
@@ -4227,6 +4439,7 @@ function showAuthView() {
 
     async function bootstrap() {
       renderMapFilterButtons();
+      state.savedNewsKeys = loadSavedNewsKeys();
       const allowed = await initAuth();
       if (!allowed) return;
       await refresh();
@@ -4407,6 +4620,12 @@ function showAuthView() {
         await openWeeklySummary();
         return;
       }
+      const routeButton = event.target.closest("[data-route]");
+      if (routeButton && !routeButton.closest("#sidebar")) {
+        event.preventDefault();
+        await applyRoute(routeButton.dataset.route, { scroll: routeButton.dataset.scroll });
+        return;
+      }
       const preparedButton = event.target.closest("[data-prepared-modal]");
       if (preparedButton) {
         event.preventDefault();
@@ -4468,8 +4687,24 @@ function showAuthView() {
     });
     document.getElementById("clearMapFilters").addEventListener("click", resetMapFilters);
     document.getElementById("news").addEventListener("click", (event) => {
+      const saveButton = event.target.closest(".save-news");
+      if (saveButton) {
+        event.preventDefault();
+        toggleSavedNews(Number(saveButton.dataset.index));
+        return;
+      }
       const button = event.target.closest(".make-image");
       if (button) generateNewsSummary(Number(button.dataset.index), button);
+    });
+    document.getElementById("savedNews").addEventListener("click", (event) => {
+      const removeButton = event.target.closest(".remove-saved");
+      if (removeButton) {
+        event.preventDefault();
+        removeSavedNews(removeButton.dataset.key);
+        return;
+      }
+      const imageButton = event.target.closest(".make-image");
+      if (imageButton) generateNewsSummary(Number(imageButton.dataset.index), imageButton);
     });
     document.getElementById("closeImage").addEventListener("click", closeImageModal);
     document.getElementById("downloadImage").addEventListener("click", downloadCurrentImage);
