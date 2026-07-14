@@ -1561,7 +1561,6 @@
           { label: "Salvos", icon: "bookmark", route: "/salvos", view: "occurrences", scroll: "savedNews" },
           { label: "Fontes", icon: "rss", route: "/fontes", view: "occurrences", scroll: "clientSourcesSection" },
           { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
-          { label: "Configurações", icon: "settings", route: "/configuracoes", view: "occurrences", scroll: "clientSettingsSection" },
         ] },
       ],
       manager: [
@@ -1579,9 +1578,6 @@
           { label: "Pacotes e limites", icon: "package", route: "/pacotes", view: "admin", scroll: "packagesAdminSection" },
           { label: "Uso e notificações", icon: "bell", route: "/consumo", view: "admin", scroll: "usageAdminSection" },
           { label: "Relatórios", icon: "report", route: "/relatorios-gestor", view: "admin", scroll: "reportsAdminSection" },
-        ] },
-        { label: "Conta", items: [
-          { label: "Configurações", icon: "settings", route: "/configuracoes", view: "occurrences", scroll: "clientSettingsSection" },
         ] },
       ],
       developer: [
@@ -1606,10 +1602,6 @@
           { label: "Integrações", icon: "plug", route: "/integracoes", view: "admin", scroll: "integrationsAdminSection" },
           { label: "Banco de dados", icon: "database", route: "/banco", view: "admin", scroll: "databaseAdminSection" },
           { label: "Logs do sistema", icon: "logs", route: "/logs", view: "admin", scroll: "logsAdminSection" },
-          { label: "Configurações técnicas", icon: "settings", route: "/developer/configuracoes", view: "admin", scroll: "platformSettingsSection" },
-        ] },
-        { label: "Conta", items: [
-          { label: "Configurações", icon: "settings", route: "/configuracoes", view: "occurrences", scroll: "clientSettingsSection" },
         ] },
       ],
     };
@@ -1914,7 +1906,7 @@
       state.viewMode = mode;
       const groups = SIDEBAR_GROUPS[mode] || SIDEBAR_GROUPS.client;
       const settingsButton = document.getElementById("sidebarSettingsButton");
-      if (settingsButton) settingsButton.hidden = true;
+      if (settingsButton) settingsButton.hidden = false;
       menu.innerHTML = groups.map((group) => {
         const items = group.items.filter((item) => !item.feature || canUseFeature(item.feature, true));
         const activeParent = items.some(isActiveNavItem);
