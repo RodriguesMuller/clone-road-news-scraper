@@ -288,25 +288,6 @@
     .app-shell[hidden], .auth-view[hidden], .blocked-view[hidden] { display: none !important; }
     .blocked-view { display: grid; place-items: center; min-height: 54vh; }
     .admin-grid { display: grid; gap: 16px; }
-    .admin-tabs {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      padding: 6px;
-      border: 1px solid rgba(32, 242, 155, .20);
-      border-radius: 8px;
-      background: rgba(3, 18, 13, .62);
-    }
-    .admin-tab {
-      min-height: 36px;
-      border: 1px solid transparent;
-      background: rgba(255,255,255,.055);
-      color: var(--color-muted-strong);
-      box-shadow: none;
-      padding: 8px 11px;
-      font-size: 12px;
-    }
-    .admin-tab.active { background: var(--color-primary); color: #03120d; border-color: rgba(32, 242, 155, .62); }
     .admin-section { display: grid; gap: 12px; }
     .admin-section[hidden] { display: none !important; }
     .admin-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -455,6 +436,10 @@
     .sidebar.collapsed .sidebar-env,
     .sidebar.collapsed .sidebar-user,
     .sidebar.collapsed #sidebarLogoutButton { display: none !important; }
+    .sidebar.collapsed .nav-group-toggle { display: none; }
+    .sidebar.collapsed .nav-group { padding-top: 8px; }
+    .sidebar.collapsed .nav-group-content,
+    .sidebar.collapsed .nav-group.is-collapsed .nav-group-content { display: grid; gap: 6px; }
     .sidebar.collapsed .nav-item { justify-content: center; padding: 10px 0; }
     .sidebar.collapsed .sidebar-footer { display: grid; padding-top: 12px; margin-top: 12px; }
     .sidebar-head { display: flex; align-items: center; gap: 10px; padding: 4px 4px 14px; border-bottom: 1px solid var(--color-border-soft); }
@@ -477,7 +462,32 @@
     .sidebar-toggle:hover { background: rgba(255,255,255,.12); }
     .sidebar-toggle:focus { outline: 2px solid rgba(32, 242, 155, .45); outline-offset: 2px; }
     .sidebar-menu { display: grid; gap: 0; }
-    .nav-group { display: grid; gap: 6px; padding: 14px 0 0; }
+    .nav-group { display: grid; gap: 6px; padding: 12px 0 0; }
+    .nav-group-toggle {
+      width: 100%;
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border: 0;
+      background: transparent;
+      color: var(--color-muted);
+      box-shadow: none;
+      padding: 0 6px;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      text-align: left;
+    }
+    .nav-group-toggle:hover { color: var(--color-primary); transform: none; box-shadow: none; }
+    .nav-group-toggle:focus { outline: 2px solid rgba(32, 242, 155, .35); outline-offset: 2px; border-radius: 6px; }
+    .nav-group-chevron { transition: transform .18s ease; opacity: .72; }
+    .nav-group.is-collapsed .nav-group-chevron { transform: rotate(-90deg); }
+    .nav-group-content { display: grid; gap: 6px; }
+    .nav-group.is-collapsed .nav-group-content { display: none; }
+    .nav-group.active-parent .nav-group-toggle { color: var(--color-primary); }
     .nav-label { color: var(--color-muted); font-size: 10px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; padding: 0 6px 3px; }
     .nav-item {
       width: 100%;
@@ -743,7 +753,6 @@
     .modal-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .canvas-wrap { background: #03120d; padding: 16px; display: grid; place-items: center; }
     #shareCanvas { width: min(100%, 720px); height: auto; border-radius: 6px; box-shadow: 0 14px 42px rgba(0,0,0,.36); }
-    .weekly-fab { position: fixed; right: 22px; bottom: 22px; z-index: 8; box-shadow: 0 16px 38px rgba(17, 217, 129, .22); }
     .weekly-body { padding: 18px; display: grid; gap: 14px; }
     #weekly-summary-report { display: grid; gap: 14px; }
     .weekly-hero {
@@ -817,7 +826,6 @@
       .bar { align-items: flex-start; }
       .header-actions { width: 100%; }
       .status-pill { width: 100%; }
-      .weekly-fab { left: 18px; right: 18px; }
       .modal-head { align-items: flex-start; }
     }
     @media (max-width: 480px) {
@@ -850,7 +858,7 @@
         color: #f3f7f5 !important;
         gap: 7px;
       }
-      header, main, footer, .weekly-fab, .modal-head, #imageModal, .modal-actions, button { display: none !important; }
+      header, main, footer, .modal-head, #imageModal, .modal-actions, button { display: none !important; }
       .modal, .modal.open, .modal-card, .weekly-body {
         position: static !important;
         inset: auto !important;
@@ -1087,7 +1095,7 @@
           </div>
         </section>
 
-        <section id="clientReportsSection" class="panel client-extra-section">
+        <section id="clientReportsSection" class="panel client-page" data-client-page="reports">
           <div class="panel-head">
             <h2>Relatórios</h2>
             <button class="mini-button" type="button" data-action="weekly-summary">Gerar resumo semanal</button>
@@ -1159,21 +1167,6 @@
 
       <section id="adminView" class="view-panel" hidden>
         <div class="admin-grid">
-          <nav id="adminTabs" class="admin-tabs" aria-label="Administração">
-            <button class="admin-tab active" type="button" data-admin-tab="overview">Visão geral</button>
-            <button class="admin-tab" type="button" data-admin-tab="users">Usuários</button>
-            <button class="admin-tab" type="button" data-admin-tab="packages">Pacotes</button>
-            <button class="admin-tab" type="button" data-admin-tab="usage">Consumo</button>
-            <button class="admin-tab" type="button" data-admin-tab="logs">Logs</button>
-            <button class="admin-tab" type="button" data-admin-tab="clients">Clientes</button>
-            <button class="admin-tab" type="button" data-admin-tab="sources">Fontes</button>
-            <button class="admin-tab" type="button" data-admin-tab="reports">Relatórios</button>
-            <button class="admin-tab" type="button" data-admin-tab="health">Saúde</button>
-            <button class="admin-tab" type="button" data-admin-tab="monitoring">Monitoramento</button>
-            <button class="admin-tab" type="button" data-admin-tab="integrations">Integrações</button>
-            <button class="admin-tab" type="button" data-admin-tab="database">Banco</button>
-            <button class="admin-tab" type="button" data-admin-tab="settings">Configurações</button>
-          </nav>
           <section id="adminOverviewSection" class="panel admin-section" data-admin-panel="overview">
             <div class="panel-head">
               <h2>Administração</h2>
@@ -1529,6 +1522,7 @@
       saved: { title: "Salvos", subtitle: "Notícias marcadas para acompanhar depois." },
       operational: { title: "Resumo operacional", subtitle: "Tendências, regiões, rodovias e riscos do período." },
       sources: { title: "Fontes", subtitle: "Fontes monitoradas pelo Road News." },
+      reports: { title: "Relatórios", subtitle: "Resumo semanal e materiais executivos." },
       settings: { title: "Configurações", subtitle: "Preferências básicas do ambiente Cliente." },
     };
     const CLIENT_ROUTES = new Set(["/dashboard", "/noticias", "/mapa", "/alertas", "/salvos", "/resumo-operacional", "/fontes", "/configuracoes"]);
@@ -1559,40 +1553,63 @@
     };
     const SIDEBAR_GROUPS = {
       client: [
-        { label: "Cliente", items: [
+        { label: "Ambiente Cliente", items: [
           { label: "Visão geral", icon: "dashboard", route: "/dashboard", view: "occurrences", scroll: "top" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
           { label: "Alertas", icon: "bell", route: "/alertas", view: "occurrences", scroll: "recentAlerts" },
           { label: "Salvos", icon: "bookmark", route: "/salvos", view: "occurrences", scroll: "savedNews" },
-          { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
           { label: "Fontes", icon: "rss", route: "/fontes", view: "occurrences", scroll: "clientSourcesSection" },
+          { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
+          { label: "Configurações", icon: "settings", route: "/configuracoes", view: "occurrences", scroll: "clientSettingsSection" },
         ] },
       ],
       manager: [
-        { label: "Gestão", items: [
-          { label: "Visão geral", icon: "dashboard", route: "/gestor", view: "admin", scroll: "adminOverviewSection" },
+        { label: "Operação", items: [
+          { label: "Visão geral", icon: "dashboard", route: "/dashboard", view: "occurrences", scroll: "top" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
-          { label: "Tendências", icon: "trending", route: "/tendencias", view: "occurrences", scroll: "trendsSection" },
+          { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
+          { label: "Alertas", icon: "bell", route: "/alertas", view: "occurrences", scroll: "recentAlerts" },
           { label: "Fontes", icon: "rss", route: "/fontes-gestor", view: "admin", scroll: "sourcesAdminSection" },
+          { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
+        ] },
+        { label: "Gestão", items: [
           { label: "Clientes", icon: "building", route: "/clientes", view: "admin", scroll: "clientsAdminSection" },
           { label: "Usuários", icon: "users", route: "/usuarios", view: "admin", scroll: "usersAdminSection" },
           { label: "Pacotes e limites", icon: "package", route: "/pacotes", view: "admin", scroll: "packagesAdminSection" },
           { label: "Uso e notificações", icon: "bell", route: "/consumo", view: "admin", scroll: "usageAdminSection" },
           { label: "Relatórios", icon: "report", route: "/relatorios-gestor", view: "admin", scroll: "reportsAdminSection" },
         ] },
+        { label: "Conta", items: [
+          { label: "Configurações", icon: "settings", route: "/configuracoes", view: "occurrences", scroll: "clientSettingsSection" },
+        ] },
       ],
       developer: [
-        { label: "Admin / Dev", items: [
-          { label: "Visão geral", icon: "dashboard", route: "/developer", view: "admin", scroll: "platformHealthSection" },
+        { label: "Operação", items: [
+          { label: "Visão geral", icon: "dashboard", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
+          { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
+          { label: "Alertas", icon: "bell", route: "/alertas", view: "occurrences", scroll: "recentAlerts" },
+          { label: "Fontes", icon: "rss", route: "/developer/fontes", view: "admin", scroll: "sourcesAdminSection" },
+          { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
+        ] },
+        { label: "Gestão", items: [
+          { label: "Clientes", icon: "building", route: "/developer/clientes", view: "admin", scroll: "clientsAdminSection" },
+          { label: "Usuários", icon: "users", route: "/developer/usuarios", view: "admin", scroll: "usersAdminSection" },
+          { label: "Pacotes e limites", icon: "package", route: "/developer/pacotes", view: "admin", scroll: "packagesAdminSection" },
+          { label: "Uso e notificações", icon: "bell", route: "/developer/consumo", view: "admin", scroll: "usageAdminSection" },
+          { label: "Relatórios", icon: "report", route: "/developer/relatorios", view: "admin", scroll: "reportsAdminSection" },
+        ] },
+        { label: "Administração técnica", items: [
+          { label: "Saúde da plataforma", icon: "activity", route: "/developer", view: "admin", scroll: "platformHealthSection" },
           { label: "Monitoramento", icon: "activity", route: "/monitoramento", view: "admin", scroll: "monitoringAdminSection" },
           { label: "Integrações", icon: "plug", route: "/integracoes", view: "admin", scroll: "integrationsAdminSection" },
           { label: "Banco de dados", icon: "database", route: "/banco", view: "admin", scroll: "databaseAdminSection" },
           { label: "Logs do sistema", icon: "logs", route: "/logs", view: "admin", scroll: "logsAdminSection" },
-          { label: "Usuários", icon: "users", route: "/developer/usuarios", view: "admin", scroll: "usersAdminSection" },
-          { label: "Pacotes e limites", icon: "package", route: "/developer/pacotes", view: "admin", scroll: "packagesAdminSection" },
-          { label: "Uso e notificações", icon: "bell", route: "/developer/consumo", view: "admin", scroll: "usageAdminSection" },
-          { label: "Configurações", icon: "settings", route: "/developer/configuracoes", view: "admin", scroll: "platformSettingsSection" },
+          { label: "Configurações técnicas", icon: "settings", route: "/developer/configuracoes", view: "admin", scroll: "platformSettingsSection" },
+        ] },
+        { label: "Conta", items: [
+          { label: "Configurações", icon: "settings", route: "/configuracoes", view: "occurrences", scroll: "clientSettingsSection" },
         ] },
       ],
     };
@@ -1742,12 +1759,12 @@
         setActiveView("occurrences", { skipRoute: false, scroll: "top" });
       }
       if ((next === "manager" || next === "developer") && options.openHome) {
-        const route = next === "developer" ? "/developer" : "/gestor";
-        const scroll = next === "developer" ? "platformHealthSection" : "adminOverviewSection";
+        const route = "/dashboard";
+        const scroll = "top";
         state.activeRoute = route;
         state.activeScrollTarget = scroll;
         setBrowserPath(route);
-        setActiveView("admin", { skipRoute: true, scroll });
+        setActiveView("occurrences", { skipRoute: true, scroll, page: "overview" });
       }
     }
 
@@ -1847,20 +1864,20 @@
 
     function applyClientPageVisibility() {
       const page = state.activeClientPage || "overview";
-      const isClientExperience = state.viewMode === "client" && state.activeView === "occurrences";
+      const isOccurrenceView = state.activeView === "occurrences";
       document.querySelectorAll("[data-client-page]").forEach((section) => {
-        section.hidden = isClientExperience ? section.dataset.clientPage !== page : false;
+        section.hidden = isOccurrenceView ? section.dataset.clientPage !== page : false;
       });
       document.querySelectorAll(".client-extra-section").forEach((section) => {
-        section.hidden = isClientExperience;
+        section.hidden = true;
       });
       const filters = document.querySelector(".client-filter-grid");
-      if (filters) filters.hidden = isClientExperience && page !== "news";
+      if (filters) filters.hidden = !isOccurrenceView || page !== "news";
       const meta = CLIENT_PAGE_META[page] || CLIENT_PAGE_META.overview;
       const title = document.getElementById("clientPageTitle");
       if (title) title.textContent = meta.title;
       const greeting = document.getElementById("clientGreeting");
-      if (greeting && isClientExperience) greeting.textContent = meta.subtitle;
+      if (greeting && isOccurrenceView) greeting.textContent = meta.subtitle;
       const settingsUser = document.getElementById("settingsUserInfo");
       if (settingsUser) settingsUser.textContent = `${getDisplayName()} · ${state.profile?.email || state.session?.user?.email || "e-mail não informado"}`;
       const settingsEnvironment = document.getElementById("settingsEnvironmentInfo");
@@ -1886,6 +1903,10 @@
       return `<button class="nav-item" type="button" aria-label="${escapeHtml(item.label)}" ${attrs}><span class="nav-icon">${iconSvg(item.icon)}</span><span class="nav-label-text">${escapeHtml(item.label)}</span>${count}</button>`;
     }
 
+    function isActiveNavItem(item) {
+      return item.route === state.activeRoute && (!state.activeScrollTarget || item.scroll === state.activeScrollTarget);
+    }
+
     function renderSidebarMenu() {
       const menu = document.getElementById("sidebarMenu");
       if (!menu) return;
@@ -1893,13 +1914,22 @@
       state.viewMode = mode;
       const groups = SIDEBAR_GROUPS[mode] || SIDEBAR_GROUPS.client;
       const settingsButton = document.getElementById("sidebarSettingsButton");
-      if (settingsButton) settingsButton.hidden = mode !== "client";
-      menu.innerHTML = groups.map((group) => `
-        <nav class="nav-group" aria-label="${escapeHtml(group.label)}">
-          <span class="nav-label">${escapeHtml(group.label)}</span>
-          ${group.items.filter((item) => !item.feature || canUseFeature(item.feature, true)).map(navButton).join("")}
+      if (settingsButton) settingsButton.hidden = true;
+      menu.innerHTML = groups.map((group) => {
+        const items = group.items.filter((item) => !item.feature || canUseFeature(item.feature, true));
+        const activeParent = items.some(isActiveNavItem);
+        return `
+        <nav class="nav-group${activeParent ? " active-parent" : ""}" aria-label="${escapeHtml(group.label)}">
+          <button class="nav-group-toggle" type="button" aria-expanded="true">
+            <span>${escapeHtml(group.label)}</span>
+            <span class="nav-group-chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="nav-group-content">
+            ${items.map(navButton).join("")}
+          </div>
         </nav>
-      `).join("");
+      `;
+      }).join("");
 
       const switcher = document.getElementById("environmentSwitcher");
       if (!switcher) return;
@@ -1922,25 +1952,6 @@
       }
     }
 
-    function syncTopAdminTab() {
-      const mainTabs = document.getElementById("mainTabs");
-      if (!mainTabs) return;
-      let adminTab = document.getElementById("adminTab");
-      if (!shouldShowAdminNavigation()) {
-        adminTab?.remove();
-        return;
-      }
-      if (!adminTab) {
-        adminTab = document.createElement("button");
-        adminTab.id = "adminTab";
-        adminTab.className = "view-tab";
-        adminTab.type = "button";
-        adminTab.dataset.view = "admin";
-        adminTab.textContent = "Admin";
-        mainTabs.appendChild(adminTab);
-      }
-    }
-
     function isLoginPage() {
       return normalizeRoute(window.location.pathname) === "/login";
     }
@@ -1957,7 +1968,6 @@
         headerActions.innerHTML = "";
         headerActions.hidden = true;
       }
-      document.getElementById("weeklySummaryButton")?.remove();
     }
 
     function renderPlatformActions() {
@@ -1978,29 +1988,12 @@
         headerActions.hidden = false;
       }
 
-      const canShowWeekly = state.viewMode !== "client" && canUseFeature("weekly_summary", true);
-      let weeklyButton = document.getElementById("weeklySummaryButton");
-      if (!canShowWeekly) {
-        weeklyButton?.remove();
-        return;
-      }
-      if (!weeklyButton) {
-        weeklyButton = document.createElement("button");
-        weeklyButton.id = "weeklySummaryButton";
-        weeklyButton.className = "weekly-fab";
-        weeklyButton.type = "button";
-        weeklyButton.textContent = "Gerar resumo semanal";
-        weeklyButton.addEventListener("click", openWeeklySummary);
-        document.body.appendChild(weeklyButton);
-      }
-      weeklyButton.hidden = false;
     }
 
     function syncNavigationState() {
       renderSidebarMenu();
-      syncTopAdminTab();
       const mainTabs = document.getElementById("mainTabs");
-      if (mainTabs) mainTabs.hidden = (state.authEnabled && !state.session) || !state.profile || state.viewMode === "client";
+      if (mainTabs) mainTabs.hidden = true;
       document.getElementById("sidebarLogoutButton").hidden = !state.authEnabled;
       document.querySelectorAll(".nav-item[data-route]").forEach((button) => {
         const sameRoute = button.dataset.route === state.activeRoute;
@@ -2057,7 +2050,7 @@ function showAuthView() {
 
     function showAppView() {
       document.getElementById("authView").hidden = true;
-      document.getElementById("mainTabs").hidden = false;
+      document.getElementById("mainTabs").hidden = true;
       document.getElementById("blockedView").hidden = true;
       document.getElementById("appShell").hidden = false;
       const sidebarLogout = document.getElementById("sidebarLogoutButton");
@@ -3033,6 +3026,9 @@ function showAuthView() {
         "/fontes-gestor": { view: "admin", scroll: "sourcesAdminSection", mode: "manager" },
         "/relatorios-gestor": { view: "admin", scroll: "reportsAdminSection", mode: "manager" },
         "/developer": { view: "admin", scroll: "platformHealthSection", mode: "developer" },
+        "/developer/clientes": { view: "admin", scroll: "clientsAdminSection", mode: "developer" },
+        "/developer/fontes": { view: "admin", scroll: "sourcesAdminSection", mode: "developer" },
+        "/developer/relatorios": { view: "admin", scroll: "reportsAdminSection", mode: "developer" },
         "/monitoramento": { view: "admin", scroll: "monitoringAdminSection", mode: "developer" },
         "/integracoes": { view: "admin", scroll: "integrationsAdminSection", mode: "developer" },
         "/banco": { view: "admin", scroll: "databaseAdminSection", mode: "developer" },
@@ -3098,7 +3094,7 @@ function showAuthView() {
         return;
       }
 
-      const knownRoutes = new Set(["/dashboard", "/alertas", "/noticias", "/salvos", "/resumo-operacional", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
+      const knownRoutes = new Set(["/dashboard", "/alertas", "/noticias", "/salvos", "/resumo-operacional", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/developer/clientes", "/developer/fontes", "/developer/relatorios", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
       if (state.viewMode === "client" && !CLIENT_ROUTES.has(route)) {
         setNotice("");
         state.activeRoute = "/dashboard";
@@ -3176,14 +3172,10 @@ function showAuthView() {
     function setAdminTab(tab = "overview") {
       const tabsByMode = {
         manager: ["overview", "clients", "users", "packages", "usage", "sources", "reports"],
-        developer: ["health", "monitoring", "integrations", "database", "logs", "users", "packages", "usage", "settings"],
+        developer: ["clients", "users", "packages", "usage", "sources", "reports", "health", "monitoring", "integrations", "database", "logs", "settings"],
       };
       const tabs = tabsByMode[state.viewMode] || tabsByMode.manager;
       const activeTab = tabs.includes(tab) ? tab : tabs[0];
-      document.querySelectorAll("#adminTabs .admin-tab").forEach((button) => {
-        button.hidden = !tabs.includes(button.dataset.adminTab);
-        button.classList.toggle("active", button.dataset.adminTab === activeTab);
-      });
       document.querySelectorAll("[data-admin-panel]").forEach((panel) => {
         panel.hidden = panel.dataset.adminPanel !== activeTab;
       });
@@ -4485,10 +4477,10 @@ function showAuthView() {
       if (!canUseFeature("weekly_summary")) return;
       const modal = document.getElementById("weeklyModal");
       const content = document.getElementById("weeklyContent");
-      const button = document.getElementById("weeklySummaryButton");
+      const buttons = [...document.querySelectorAll("[data-action='weekly-summary']")];
       modal.classList.add("open");
       content.innerHTML = `<div class="weekly-loading">Preparando resumo semanal...</div>`;
-      button.disabled = true;
+      buttons.forEach((button) => { button.disabled = true; });
       try {
         const response = await fetch("/api/weekly-summary", { method: "POST", headers: authHeaders() });
         const contentType = response.headers.get("content-type") || "";
@@ -4500,7 +4492,7 @@ function showAuthView() {
       } catch (error) {
         content.innerHTML = `<div class="notice" style="display:block">${escapeHtml(error.message)}</div>`;
       } finally {
-        button.disabled = false;
+        buttons.forEach((button) => { button.disabled = false; });
       }
     }
 
@@ -4680,6 +4672,14 @@ function showAuthView() {
     }
 
     async function handleSidebarClick(event) {
+      const groupToggle = event.target.closest(".nav-group-toggle");
+      if (groupToggle) {
+        event.preventDefault();
+        const group = groupToggle.closest(".nav-group");
+        group?.classList.toggle("is-collapsed");
+        groupToggle.setAttribute("aria-expanded", String(!group?.classList.contains("is-collapsed")));
+        return;
+      }
       const button = event.target.closest(".nav-item");
       if (!button) return;
       closeSidebar();
@@ -4822,7 +4822,7 @@ function showAuthView() {
       setSidebarButtonState();
     });
     document.getElementById("refresh")?.addEventListener("click", refresh);
-    document.getElementById("mainTabs").addEventListener("click", (event) => {
+    document.getElementById("mainTabs")?.addEventListener("click", (event) => {
       const button = event.target.closest(".view-tab[data-view]");
       if (!button) return;
       setActiveView(button.dataset.view);
@@ -4880,7 +4880,6 @@ function showAuthView() {
     });
     document.getElementById("closeImage").addEventListener("click", closeImageModal);
     document.getElementById("downloadImage").addEventListener("click", downloadCurrentImage);
-    document.getElementById("weeklySummaryButton")?.addEventListener("click", openWeeklySummary);
     document.getElementById("printWeekly").addEventListener("click", printWeeklySummary);
     document.getElementById("jumpNews").addEventListener("click", jumpToNews);
     document.getElementById("closeWeekly").addEventListener("click", closeWeeklySummary);
@@ -4893,10 +4892,6 @@ function showAuthView() {
     document.getElementById("closePreparedModal").addEventListener("click", closePreparedModal);
     document.getElementById("preparedModal").addEventListener("click", (event) => {
       if (event.target.id === "preparedModal") closePreparedModal();
-    });
-    document.getElementById("adminTabs").addEventListener("click", (event) => {
-      const button = event.target.closest(".admin-tab");
-      if (button) setAdminTab(button.dataset.adminTab);
     });
     ["globalSearch", "periodFilter", "regionFilter", "categoryFilter", "sortFilter"].forEach((id) => {
       document.getElementById(id)?.addEventListener("input", syncClientFilters);
