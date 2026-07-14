@@ -753,6 +753,7 @@
     .modal-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .canvas-wrap { background: #03120d; padding: 16px; display: grid; place-items: center; }
     #shareCanvas { width: min(100%, 720px); height: auto; border-radius: 6px; box-shadow: 0 14px 42px rgba(0,0,0,.36); }
+    .weekly-fab { position: fixed; right: 22px; bottom: 22px; z-index: 8; box-shadow: 0 16px 38px rgba(17, 217, 129, .22); }
     .weekly-body { padding: 18px; display: grid; gap: 14px; }
     #weekly-summary-report { display: grid; gap: 14px; }
     .weekly-hero {
@@ -826,6 +827,7 @@
       .bar { align-items: flex-start; }
       .header-actions { width: 100%; }
       .status-pill { width: 100%; }
+      .weekly-fab { left: 18px; right: 18px; width: auto; }
       .modal-head { align-items: flex-start; }
     }
     @media (max-width: 480px) {
@@ -858,7 +860,7 @@
         color: #f3f7f5 !important;
         gap: 7px;
       }
-      header, main, footer, .modal-head, #imageModal, .modal-actions, button { display: none !important; }
+      header, main, footer, .weekly-fab, .modal-head, #imageModal, .modal-actions, button { display: none !important; }
       .modal, .modal.open, .modal-card, .weekly-body {
         position: static !important;
         inset: auto !important;
@@ -1360,6 +1362,7 @@
         <strong id="weeklyTitle">Resumo semanal</strong>
         <div class="modal-actions">
           <button id="printWeekly" type="button">Exportar resumo em PDF</button>
+          <button id="copyWeekly" type="button" class="mini-button">Copiar resumo</button>
           <button id="jumpNews" type="button" class="mini-button">Ver notícias completas</button>
           <button id="closeWeekly" type="button" class="mini-button">Fechar</button>
         </div>
@@ -1960,6 +1963,7 @@
         headerActions.innerHTML = "";
         headerActions.hidden = true;
       }
+      document.getElementById("weeklySummaryButton")?.remove();
     }
 
     function renderPlatformActions() {
@@ -1980,6 +1984,22 @@
         headerActions.hidden = false;
       }
 
+      const canShowWeekly = canUseFeature("weekly_summary", true);
+      let weeklyButton = document.getElementById("weeklySummaryButton");
+      if (!canShowWeekly) {
+        weeklyButton?.remove();
+        return;
+      }
+      if (!weeklyButton) {
+        weeklyButton = document.createElement("button");
+        weeklyButton.id = "weeklySummaryButton";
+        weeklyButton.className = "weekly-fab";
+        weeklyButton.type = "button";
+        weeklyButton.textContent = "Gerar resumo semanal";
+        weeklyButton.addEventListener("click", openWeeklySummary);
+        document.body.appendChild(weeklyButton);
+      }
+      weeklyButton.hidden = false;
     }
 
     function syncNavigationState() {
@@ -3635,7 +3655,7 @@ function showAuthView() {
         const rows = [
           ["Supabase", "Banco, Auth e REST API", "Conectado"],
           ["GitHub Actions", "Execucao do scraper", "Ativo"],
-          ["OpenAI", "Resumos inteligentes", "Configurado no servidor quando OPENAI_API_KEY existe"],
+          ["OpenAI", "Resumos inteligentes", "Configurado no servidor quando a chave de IA esta ativa"],
           ["Vercel", "Frontend e APIs serverless", "Ativo"],
         ];
         integrationsTarget.innerHTML = `<table class="admin-table"><thead><tr><th>Integração</th><th>Finalidade</th><th>Status</th><th>Ações</th></tr></thead><tbody>${rows.map(([name, purpose, status]) => `<tr><td><b>${name}</b></td><td>${purpose}</td><td>${adminBadge(status)}</td><td><button class="mini-button" type="button" data-prepared-modal="integration">Detalhes</button></td></tr>`).join("")}</tbody></table>`;
@@ -4420,6 +4440,10 @@ function showAuthView() {
     function renderWeeklySummary(data) {
       const summary = data.summary || {};
       const context = data.context || {};
+      if (!Number(context.total || 0)) {
+        document.getElementById("weeklyContent").innerHTML = `<div class="notice" style="display:block">Não há notícias suficientes para gerar o resumo semanal.</div>`;
+        return;
+      }
 
       document.getElementById("weeklyContent").innerHTML = `
         <div id="weekly-summary-report">
@@ -4469,9 +4493,9 @@ function showAuthView() {
       if (!canUseFeature("weekly_summary")) return;
       const modal = document.getElementById("weeklyModal");
       const content = document.getElementById("weeklyContent");
-      const buttons = [...document.querySelectorAll("[data-action='weekly-summary']")];
+      const buttons = [...document.querySelectorAll("[data-action='weekly-summary']"), document.getElementById("weeklySummaryButton")].filter(Boolean);
       modal.classList.add("open");
-      content.innerHTML = `<div class="weekly-loading">Preparando resumo semanal...</div>`;
+      content.innerHTML = `<div class="weekly-loading">Gerando resumo semanal...</div>`;
       buttons.forEach((button) => { button.disabled = true; });
       try {
         const response = await fetch("/api/weekly-summary", { method: "POST", headers: authHeaders() });
@@ -4482,7 +4506,10 @@ function showAuthView() {
         if (!response.ok) throw new Error(data.error || "Erro ao gerar resumo semanal");
         renderWeeklySummary(data);
       } catch (error) {
-        content.innerHTML = `<div class="notice" style="display:block">${escapeHtml(error.message)}</div>`;
+        const message = /noticias suficientes|notícias suficientes/i.test(error.message || "")
+          ? "Não há notícias suficientes para gerar o resumo semanal."
+          : "Não foi possível gerar o resumo semanal. Tente novamente.";
+        content.innerHTML = `<div class="notice" style="display:block">${escapeHtml(message)}</div>`;
       } finally {
         buttons.forEach((button) => { button.disabled = false; });
       }
@@ -4548,6 +4575,30 @@ function showAuthView() {
     function jumpToNews() {
       closeWeeklySummary();
       applyRoute("/noticias");
+    }
+
+    async function copyWeeklySummary() {
+      const report = document.getElementById("weekly-summary-report");
+      const text = report?.innerText?.replace(/\n{3,}/g, "\n\n").trim();
+      if (!text) {
+        setNotice("Gere o resumo semanal antes de copiar.");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        setNotice("Resumo semanal copiado.");
+      } catch {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        textarea.remove();
+        setNotice("Resumo semanal copiado.");
+      }
     }
 
     function setNotice(message) {
@@ -4873,6 +4924,7 @@ function showAuthView() {
     document.getElementById("closeImage").addEventListener("click", closeImageModal);
     document.getElementById("downloadImage").addEventListener("click", downloadCurrentImage);
     document.getElementById("printWeekly").addEventListener("click", printWeeklySummary);
+    document.getElementById("copyWeekly").addEventListener("click", copyWeeklySummary);
     document.getElementById("jumpNews").addEventListener("click", jumpToNews);
     document.getElementById("closeWeekly").addEventListener("click", closeWeeklySummary);
     document.getElementById("imageModal").addEventListener("click", (event) => {

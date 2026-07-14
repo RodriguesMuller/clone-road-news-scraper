@@ -142,11 +142,7 @@ async function fetchWeeklyItems() {
     },
   });
   if (!response.ok) {
-    const detail = await response.text();
-    if (response.status === 401 || /invalid_api_key|incorrect api key/i.test(detail)) {
-      throw new Error("OPENAI_API_KEY invalida ou ainda nao atualizada no deploy da Vercel. Revogue a chave exposta, crie uma nova, atualize a variavel e faca redeploy sem cache.");
-    }
-    throw new Error("Nao foi possivel gerar o resumo com IA agora. Verifique os logs da Vercel para detalhes da OpenAI.");
+    throw new Error("Nao foi possivel buscar as noticias para gerar o resumo semanal.");
   }
   return response.json();
 }
@@ -350,6 +346,38 @@ async function generateAiSummary(context) {
   }
 }
 
+function emptyWeeklySummary(context) {
+  return {
+    headline: "Resumo semanal indisponivel",
+    executive_summary: "Nao ha noticias suficientes para gerar o resumo semanal.",
+    risk_level: "Normal",
+    indicators: context.indicators,
+    weekly_points: [],
+    top_occurrences: [],
+    featured_regions: [],
+    featured_roads: [],
+    featured_categories: [],
+    operational_points: [],
+    critical_roads: [],
+    inmet_regions: [],
+    blockages_or_works: [],
+    detours: [],
+    weather_notes: [],
+    recommendations: [],
+  };
+}
+
+function publicErrorMessage(error) {
+  const message = String(error?.message || "");
+  if (/noticias suficientes|notícias suficientes/i.test(message)) {
+    return "Nao ha noticias suficientes para gerar o resumo semanal.";
+  }
+  if (/login|sessao|sessão|perfil|inativo|pacote|recurso|limite|acesso/i.test(message)) {
+    return message;
+  }
+  return "Nao foi possivel gerar o resumo semanal. Tente novamente.";
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "GET" && req.method !== "POST") {
     res.statusCode = 405;
@@ -361,6 +389,10 @@ module.exports = async function handler(req, res) {
     const account = await assertCanUse(req, "weekly_summary");
     const items = await fetchWeeklyItems();
     const context = buildContext(items);
+    if (!items.length) {
+      json(res, 200, { summary: emptyWeeklySummary(context), context });
+      return;
+    }
     const summary = await generateAiSummary(context);
     if (summary._ai_used) {
       await recordUsage(account, "weekly_summary", {
@@ -373,8 +405,9 @@ module.exports = async function handler(req, res) {
     const { _usage, _model, _ai_used, ...publicSummary } = summary;
     json(res, 200, { summary: publicSummary, context });
   } catch (error) {
-    res.statusCode = /limite|pacote|login|sessao|acesso|recurso/i.test(error.message || "") ? 403 : 500;
+    const safeMessage = publicErrorMessage(error);
+    res.statusCode = /limite|pacote|login|sessao|sessão|acesso|recurso|perfil|inativo/i.test(safeMessage) ? 403 : 500;
     res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ error: error.message || "Erro ao gerar resumo semanal" }));
+    res.end(JSON.stringify({ error: safeMessage }));
   }
 };
