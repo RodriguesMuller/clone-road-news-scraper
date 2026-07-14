@@ -225,38 +225,6 @@
     .source .badge { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(32, 242, 155, .14); color: #8dffc9; border: 1px solid rgba(32, 242, 155, .25); font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
     .source.trusted { color: var(--color-muted-strong); font-weight: 800; }
     .source.trusted b { color: var(--color-primary); }
-    .sidebar-sources {
-      display: grid;
-      gap: 8px;
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid var(--color-border-soft);
-    }
-    .sidebar-sources[hidden] { display: none !important; }
-    .sidebar-sources-title {
-      color: var(--color-muted);
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      padding: 0 6px;
-    }
-    .sidebar-source-list { display: grid; gap: 6px; max-height: 168px; overflow: hidden; }
-    .sidebar-source-item {
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 7px;
-      padding: 7px 8px;
-      background: rgba(255,255,255,.035);
-      color: var(--color-muted-strong);
-      font-size: 11px;
-      font-weight: 800;
-      line-height: 1.25;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .sidebar-source-more { color: var(--color-muted); font-size: 11px; font-weight: 800; padding: 0 6px; }
-    .sidebar.collapsed .sidebar-sources { display: none !important; }
     .auth-view {
       min-height: 68vh;
       display: grid;
@@ -1021,7 +989,6 @@
             </span>
           </div>
           <div id="sidebarMenu" class="sidebar-menu"></div>
-          <div id="sidebarSources" class="sidebar-sources" hidden></div>
           <div class="sidebar-footer">
             <button id="sidebarSettingsButton" class="nav-item" type="button" data-route="/configuracoes" data-view="occurrences" data-page="settings" data-scroll="clientSettingsSection" aria-label="Configurações" title="Configurações"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3"></path><path d="M12 19v3"></path><path d="M2 12h3"></path><path d="M19 12h3"></path><path d="m4.9 4.9 2.1 2.1"></path><path d="m17 17 2.1 2.1"></path><path d="m19.1 4.9-2.1 2.1"></path><path d="m7 17-2.1 2.1"></path></svg></span><span class="nav-label-text">Configurações</span></button>
             <div id="environmentSwitcher" class="sidebar-env"></div>
@@ -1106,6 +1073,18 @@
             <span id="trendUpdatedAt" class="admin-note">Atualizado agora</span>
           </div>
           <div id="trendCards" class="management-grid"></div>
+        </section>
+
+        <section id="clientSourcesSection" class="panel client-page" data-client-page="sources">
+          <div class="panel-head">
+            <div>
+              <h2>Fontes monitoradas</h2>
+              <p class="admin-note">Consulte as fontes utilizadas pelo Road News para monitoramento rodoviário.</p>
+            </div>
+          </div>
+          <div id="clientSourcesList" class="admin-table-wrap">
+            <div class="admin-empty">Carregando fontes monitoradas...</div>
+          </div>
         </section>
 
         <section id="clientReportsSection" class="panel client-extra-section">
@@ -1510,7 +1489,6 @@
       items: [],
       recentItems: [],
       mapItems: [],
-      sourceRows: [],
       total: 0,
       alertHours: 6,
       activeView: "occurrences",
@@ -1527,6 +1505,7 @@
       profile: null,
       viewMode: null,
       access: null,
+      dataLoadError: "",
       admin: { users: [], packages: [], usage: [], logs: [] },
       filters: { search: "", period: "24", region: "", category: "", sort: "recent" },
       map: {
@@ -1543,16 +1522,16 @@
     const NOTIFICATION_RULES_KEY = "roadnews_notification_rules";
     const SAVED_NEWS_KEY = "roadnews_saved_news";
     const NEWS_PER_PAGE = 10;
-    const SIDEBAR_SOURCE_LIMIT = 8;
     const CLIENT_PAGE_META = {
       overview: { title: "Visão geral", subtitle: "Panorama rápido da plataforma." },
       news: { title: "Notícias", subtitle: "Busca, filtros e acompanhamento das notícias recentes." },
       alerts: { title: "Alertas", subtitle: "Ocorrências recentes com impacto operacional." },
       saved: { title: "Salvos", subtitle: "Notícias marcadas para acompanhar depois." },
       operational: { title: "Resumo operacional", subtitle: "Tendências, regiões, rodovias e riscos do período." },
+      sources: { title: "Fontes", subtitle: "Fontes monitoradas pelo Road News." },
       settings: { title: "Configurações", subtitle: "Preferências básicas do ambiente Cliente." },
     };
-    const CLIENT_ROUTES = new Set(["/dashboard", "/noticias", "/mapa", "/alertas", "/salvos", "/resumo-operacional", "/configuracoes"]);
+    const CLIENT_ROUTES = new Set(["/dashboard", "/noticias", "/mapa", "/alertas", "/salvos", "/resumo-operacional", "/fontes", "/configuracoes"]);
     const VIEW_MODES = {
       client: "Cliente",
       manager: "Gestor da plataforma",
@@ -1587,6 +1566,7 @@
           { label: "Alertas", icon: "bell", route: "/alertas", view: "occurrences", scroll: "recentAlerts" },
           { label: "Salvos", icon: "bookmark", route: "/salvos", view: "occurrences", scroll: "savedNews" },
           { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
+          { label: "Fontes", icon: "rss", route: "/fontes", view: "occurrences", scroll: "clientSourcesSection" },
         ] },
       ],
       manager: [
@@ -1860,6 +1840,7 @@
       if (value === "recentAlerts" || value === "clientAlertsPage") return "alerts";
       if (value === "savedNews" || value === "clientSavedPage") return "saved";
       if (value === "trendsSection") return "operational";
+      if (value === "clientSourcesSection") return "sources";
       if (value === "clientSettingsSection") return "settings";
       return "overview";
     }
@@ -1884,26 +1865,6 @@
       if (settingsUser) settingsUser.textContent = `${getDisplayName()} · ${state.profile?.email || state.session?.user?.email || "e-mail não informado"}`;
       const settingsEnvironment = document.getElementById("settingsEnvironmentInfo");
       if (settingsEnvironment) settingsEnvironment.textContent = `${roleLabel()} · ${VIEW_MODES[state.viewMode] || "Cliente"}`;
-    }
-
-    function renderSidebarSources(rows = []) {
-      const target = document.getElementById("sidebarSources");
-      if (!target) return;
-      const shouldShow = state.viewMode === "client" && state.activeView !== "admin" && rows.length;
-      target.hidden = !shouldShow;
-      if (!shouldShow) {
-        target.innerHTML = "";
-        return;
-      }
-      const visible = rows.slice(0, SIDEBAR_SOURCE_LIMIT);
-      const hiddenCount = Math.max(0, rows.length - visible.length);
-      target.innerHTML = `
-        <div class="sidebar-sources-title">Fontes utilizadas</div>
-        <div class="sidebar-source-list">
-          ${visible.map(([source]) => `<div class="sidebar-source-item" title="${escapeHtml(source)}">${escapeHtml(source)}</div>`).join("")}
-        </div>
-        ${hiddenCount ? `<div class="sidebar-source-more">+${hiddenCount} fontes utilizadas</div>` : ""}
-      `;
     }
 
     function iconSvg(name) {
@@ -1933,7 +1894,6 @@
       const groups = SIDEBAR_GROUPS[mode] || SIDEBAR_GROUPS.client;
       const settingsButton = document.getElementById("sidebarSettingsButton");
       if (settingsButton) settingsButton.hidden = mode !== "client";
-      renderSidebarSources(mode === "client" ? state.sourceRows : []);
       menu.innerHTML = groups.map((group) => `
         <nav class="nav-group" aria-label="${escapeHtml(group.label)}">
           <span class="nav-label">${escapeHtml(group.label)}</span>
@@ -2487,32 +2447,71 @@ function showAuthView() {
       applyClientPageVisibility();
     }
 
-    function renderSources() {
+    function monitoredSourceRows(limit = 30) {
       const counts = new Map();
+      const latestBySource = new Map();
       const sourceItems = state.recentItems.length ? state.recentItems : state.items.filter((item) => withinCollectionHours(item, 24));
       sourceItems.forEach((item) => {
         const source = item.source || "Sem fonte";
         counts.set(source, (counts.get(source) || 0) + 1);
+        latestBySource.set(source, Math.max(latestBySource.get(source) || 0, collectionDateValue(item)));
       });
 
-      const allRows = [...counts.entries()].sort((a, b) => {
+      return [...counts.entries()].sort((a, b) => {
         const aTrusted = TRUSTED_SOURCES.has(a[0]) ? 1 : 0;
         const bTrusted = TRUSTED_SOURCES.has(b[0]) ? 1 : 0;
         if (aTrusted !== bTrusted) return bTrusted - aTrusted;
         return b[1] - a[1];
-      });
-      state.sourceRows = allRows;
-      renderSidebarSources(allRows);
+      }).slice(0, limit).map(([source, count]) => ({
+        source,
+        count,
+        type: /inmet|meteorol|clima/i.test(source) ? "Clima/API" : "Notícias/RSS",
+        latest: latestBySource.get(source) || 0,
+      }));
+    }
+
+    function sourceStatus(row) {
+      if (!row.count) return ["Sem atualização", "warn"];
+      if (!row.latest) return ["Sem atualização", "warn"];
+      const hours = (Date.now() - row.latest) / 36e5;
+      if (hours > 48) return ["Sem atualização", "warn"];
+      return ["Ativa", ""];
+    }
+
+    function renderSources() {
+      const allRows = monitoredSourceRows(30);
 
       const sourceTarget = document.getElementById("sources");
-      if (!sourceTarget) return;
-      const rows = allRows.slice(0, 12);
-      sourceTarget.innerHTML = rows.length
-        ? rows.map(([source, count]) => {
+      if (sourceTarget) {
+        const rows = allRows.slice(0, 12);
+        sourceTarget.innerHTML = rows.length
+          ? rows.map(({ source, count }) => {
             const trusted = TRUSTED_SOURCES.has(source);
             return `<div class="source${trusted ? " trusted" : ""}"><span>${escapeHtml(source)}${trusted ? "<span class=\"badge\">Fonte confiável</span>" : ""}</span><b>${count}</b></div>`;
           }).join("")
-        : `<div class="hint">Sem registros nas últimas 24h.</div>`;
+          : `<div class="hint">Sem registros nas últimas 24h.</div>`;
+      }
+
+      const clientTarget = document.getElementById("clientSourcesList");
+      if (!clientTarget) return;
+      if (state.dataLoadError && !allRows.length) {
+        clientTarget.innerHTML = `<div class="admin-empty">Não foi possível carregar as fontes monitoradas.</div>`;
+        return;
+      }
+      clientTarget.innerHTML = allRows.length ? `
+        <table class="admin-table"><thead><tr><th>Fonte</th><th>Tipo</th><th>Última coleta</th><th>Status</th></tr></thead><tbody>
+        ${allRows.map((row) => {
+          const [status, badgeType] = sourceStatus(row);
+          return `
+            <tr>
+              <td><b>${escapeHtml(row.source)}</b></td>
+              <td>${escapeHtml(row.type)}</td>
+              <td>${escapeHtml(row.latest ? age(row.latest) : "-")}</td>
+              <td>${adminBadge(status, badgeType)}</td>
+            </tr>
+          `;
+        }).join("")}</tbody></table>
+      ` : `<div class="admin-empty">Nenhuma fonte monitorada encontrada.</div>`;
     }
 
     function getRecentAlerts() {
@@ -3020,7 +3019,7 @@ function showAuthView() {
         "/salvos": { view: "occurrences", scroll: "savedNews", page: "saved" },
         "/resumo-operacional": { view: "occurrences", scroll: "trendsSection", page: "operational" },
         "/tendencias": { view: "occurrences", scroll: "trendsSection" },
-        "/fontes": { view: "occurrences", scroll: "sourcesSection" },
+        "/fontes": { view: "occurrences", scroll: "clientSourcesSection", page: "sources" },
         "/relatorios": { view: "occurrences", scroll: "clientReportsSection" },
         "/configuracoes": { view: "occurrences", scroll: "clientSettingsSection", page: "settings" },
         "/mapa": { view: "map", scroll: "top", page: "map" },
@@ -4577,6 +4576,7 @@ function showAuthView() {
       const button = document.getElementById("refresh");
       if (button) button.disabled = true;
       setNotice("");
+      state.dataLoadError = "";
       try {
         await loadNews();
       } catch (error) {
@@ -4584,6 +4584,7 @@ function showAuthView() {
         state.recentItems = [];
         state.mapItems = [];
         state.total = 0;
+        state.dataLoadError = error.message || "Erro ao carregar dados.";
         setNotice(error.message);
       } finally {
         renderStats();
@@ -4748,6 +4749,10 @@ function showAuthView() {
     }
 
     function openPreparedModal(kind) {
+      if (!canAccessManagementView()) {
+        setNotice("Acao administrativa disponivel apenas para gestor.");
+        return;
+      }
       const config = preparedModalCopy(kind);
       const title = document.getElementById("preparedTitle");
       const body = document.getElementById("preparedModalBody");
