@@ -902,10 +902,7 @@
           <span>Inteligência operacional para o modal rodoviário</span>
         </span>
       </div>
-      <div id="headerActions" class="header-actions" hidden>
-        <span id="headerStatus" class="status-pill" hidden>Última coleta: -</span>
-        <button id="refresh" type="button" hidden>Atualizar</button>
-      </div>
+      <div id="headerActions" class="header-actions" hidden></div>
     </div>
   </header>
 
@@ -1318,8 +1315,6 @@
       </div>
     </div>
   </div>
-
-  <button id="weeklySummaryButton" class="weekly-fab" type="button" hidden>Gerar resumo semanal</button>
 
   <div id="weeklyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="weeklyTitle">
     <div class="modal-card">
@@ -1892,14 +1887,67 @@
       }
     }
 
+    function isLoginPage() {
+      return normalizeRoute(window.location.pathname) === "/login";
+    }
+
+    function canRenderPlatformActions() {
+      const hasAccess = state.authEnabled ? Boolean(state.session && state.profile) : Boolean(state.profile);
+      const appShell = document.getElementById("appShell");
+      return hasAccess && !isLoginPage() && Boolean(appShell && !appShell.hidden);
+    }
+
+    function destroyPlatformActions() {
+      const headerActions = document.getElementById("headerActions");
+      if (headerActions) {
+        headerActions.innerHTML = "";
+        headerActions.hidden = true;
+      }
+      document.getElementById("weeklySummaryButton")?.remove();
+    }
+
+    function renderPlatformActions() {
+      if (!canRenderPlatformActions()) {
+        destroyPlatformActions();
+        return;
+      }
+
+      const headerActions = document.getElementById("headerActions");
+      if (headerActions) {
+        if (!document.getElementById("refresh")) {
+          headerActions.innerHTML = `
+            <span id="headerStatus" class="status-pill">Última coleta: -</span>
+            <button id="refresh" type="button">Atualizar</button>
+          `;
+          document.getElementById("refresh")?.addEventListener("click", refresh);
+        }
+        headerActions.hidden = false;
+      }
+
+      const canShowWeekly = state.viewMode !== "client" && canUseFeature("weekly_summary", true);
+      let weeklyButton = document.getElementById("weeklySummaryButton");
+      if (!canShowWeekly) {
+        weeklyButton?.remove();
+        return;
+      }
+      if (!weeklyButton) {
+        weeklyButton = document.createElement("button");
+        weeklyButton.id = "weeklySummaryButton";
+        weeklyButton.className = "weekly-fab";
+        weeklyButton.type = "button";
+        weeklyButton.textContent = "Gerar resumo semanal";
+        weeklyButton.addEventListener("click", openWeeklySummary);
+        document.body.appendChild(weeklyButton);
+      }
+      weeklyButton.hidden = false;
+    }
+
     function syncNavigationState() {
       renderSidebarMenu();
       syncTopAdminTab();
       const mainTabs = document.getElementById("mainTabs");
       if (mainTabs) mainTabs.hidden = (state.authEnabled && !state.session) || !state.profile || state.viewMode === "client";
       document.getElementById("sidebarLogoutButton").hidden = !state.authEnabled;
-      const weeklyButton = document.getElementById("weeklySummaryButton");
-      if (weeklyButton) weeklyButton.hidden = (state.authEnabled && !state.session) || state.viewMode === "client" || !canUseFeature("weekly_summary", true);
       document.querySelectorAll(".nav-item[data-route]").forEach((button) => {
         const sameRoute = button.dataset.route === state.activeRoute;
         const sameScroll = !state.activeScrollTarget || button.dataset.scroll === state.activeScrollTarget;
@@ -1917,6 +1965,7 @@
       const initials = displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "RN";
       sidebarUser.innerHTML = `<div class="sidebar-user-row"><span class="sidebar-avatar">${escapeHtml(initials)}</span><span><strong>${escapeHtml(displayName)}</strong><span style="display:block;color:var(--color-muted);font-size:12px;margin-top:4px;">${escapeHtml(roleLabel())} · ${escapeHtml(viewLabel)}</span></span></div>`;
       applyClientPageVisibility();
+      renderPlatformActions();
 
     }
 
@@ -1924,13 +1973,7 @@ function showAuthView() {
       if (state.authEnabled) setBrowserPath("/login", true);
       closeSidebar();
       document.getElementById("mainTabs").hidden = true;
-      document.getElementById("headerActions").hidden = true;
-      const weeklyButton = document.getElementById("weeklySummaryButton");
-      if (weeklyButton) weeklyButton.hidden = true;
-      const headerStatus = document.getElementById("headerStatus");
-      if (headerStatus) headerStatus.hidden = true;
-      const refresh = document.getElementById("refresh");
-      if (refresh) refresh.hidden = true;
+      destroyPlatformActions();
       const sidebarLogout = document.getElementById("sidebarLogoutButton");
       if (sidebarLogout) sidebarLogout.hidden = true;
       const footer = document.getElementById("publicFooter");
@@ -1946,20 +1989,14 @@ function showAuthView() {
     function showBlockedView(message) {
       closeSidebar();
       document.getElementById("mainTabs").hidden = true;
-      document.getElementById("headerActions").hidden = true;
-      const weeklyButton = document.getElementById("weeklySummaryButton");
-      if (weeklyButton) weeklyButton.hidden = true;
-      const headerStatus = document.getElementById("headerStatus");
-      if (headerStatus) headerStatus.hidden = true;
-      const refresh = document.getElementById("refresh");
-      if (refresh) refresh.hidden = true;
+      destroyPlatformActions();
       const sidebarLogout = document.getElementById("sidebarLogoutButton");
       const footer = document.getElementById("publicFooter");
       if (footer) footer.hidden = true;
+      document.getElementById("appShell").hidden = true;
       // render name and badge via syncNavigationState
       syncNavigationState();
       document.getElementById("blockedView").hidden = false;
-      document.getElementById("appShell").hidden = true;
       const blockedLogout = document.getElementById("blockedLogoutButton");
       if (blockedLogout) blockedLogout.hidden = false;
     }
@@ -1969,15 +2006,8 @@ function showAuthView() {
       document.getElementById("mainTabs").hidden = false;
       document.getElementById("blockedView").hidden = true;
       document.getElementById("appShell").hidden = false;
-      document.getElementById("headerActions").hidden = false;
-      const weeklyButton = document.getElementById("weeklySummaryButton");
-      if (weeklyButton) weeklyButton.hidden = state.viewMode === "client" || !canUseFeature("weekly_summary", true);
-      const headerStatus = document.getElementById("headerStatus");
-      const refresh = document.getElementById("refresh");
       const sidebarLogout = document.getElementById("sidebarLogoutButton");
       const footer = document.getElementById("publicFooter");
-      if (headerStatus) headerStatus.hidden = false;
-      if (refresh) refresh.hidden = false;
       if (sidebarLogout) sidebarLogout.hidden = !state.authEnabled;
       if (footer) footer.hidden = false;
       loadSidebarPreference();
@@ -4416,7 +4446,7 @@ function showAuthView() {
 
     async function refresh() {
       const button = document.getElementById("refresh");
-      button.disabled = true;
+      if (button) button.disabled = true;
       setNotice("");
       try {
         await loadNews();
@@ -4433,7 +4463,7 @@ function showAuthView() {
         renderClientHeaderAndTrends();
         renderNews();
         renderMap();
-        button.disabled = false;
+        if (button) button.disabled = false;
       }
     }
 
@@ -4656,7 +4686,7 @@ function showAuthView() {
       loadSidebarPreference();
       setSidebarButtonState();
     });
-    document.getElementById("refresh").addEventListener("click", refresh);
+    document.getElementById("refresh")?.addEventListener("click", refresh);
     document.getElementById("mainTabs").addEventListener("click", (event) => {
       const button = event.target.closest(".view-tab[data-view]");
       if (!button) return;
@@ -4708,7 +4738,7 @@ function showAuthView() {
     });
     document.getElementById("closeImage").addEventListener("click", closeImageModal);
     document.getElementById("downloadImage").addEventListener("click", downloadCurrentImage);
-    document.getElementById("weeklySummaryButton").addEventListener("click", openWeeklySummary);
+    document.getElementById("weeklySummaryButton")?.addEventListener("click", openWeeklySummary);
     document.getElementById("printWeekly").addEventListener("click", printWeeklySummary);
     document.getElementById("jumpNews").addEventListener("click", jumpToNews);
     document.getElementById("closeWeekly").addEventListener("click", closeWeeklySummary);
