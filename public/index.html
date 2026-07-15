@@ -1032,17 +1032,6 @@
       </section>
 
       <section id="occurrencesView" class="view-panel">
-        <section id="clientOverviewPage" class="client-page" data-client-page="overview">
-          <section class="stats" id="stats"></section>
-          <section class="panel">
-            <div class="panel-head">
-              <h2>Alertas recentes resumidos</h2>
-              <button class="mini-button" type="button" data-route="/alertas">Ver alertas</button>
-            </div>
-            <div id="overviewAlerts" class="alert-list"></div>
-          </section>
-        </section>
-
         <section id="clientNewsPage" class="client-page" data-client-page="news">
           <section class="panel">
             <h2>Notícias recentes</h2>
@@ -1052,6 +1041,7 @@
         </section>
 
         <section id="clientAlertsPage" class="client-page" data-client-page="alerts">
+          <section class="stats" id="stats"></section>
           <section class="panel alerts-panel">
             <div class="panel-head">
               <h2>Alertas recentes</h2>
@@ -1490,7 +1480,7 @@
       activeView: "occurrences",
       activeRoute: "/dashboard",
       activeScrollTarget: "top",
-      activeClientPage: "overview",
+      activeClientPage: "alerts",
       savedNewsKeys: new Set(),
       newsPage: 1,
       pendingPath: "/dashboard",
@@ -1519,7 +1509,6 @@
     const SAVED_NEWS_KEY = "roadnews_saved_news";
     const NEWS_PER_PAGE = 10;
     const CLIENT_PAGE_META = {
-      overview: { title: "Visão geral", subtitle: "Panorama rápido da plataforma." },
       news: { title: "Notícias", subtitle: "Busca, filtros e acompanhamento das notícias recentes." },
       alerts: { title: "Alertas", subtitle: "Ocorrências recentes com impacto operacional." },
       saved: { title: "Salvos", subtitle: "Notícias marcadas para acompanhar depois." },
@@ -1557,10 +1546,9 @@
     const SIDEBAR_GROUPS = {
       client: [
         { label: "Ambiente Cliente", items: [
-          { label: "Visão geral", icon: "dashboard", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Alertas", icon: "bell", route: "/dashboard", view: "occurrences", scroll: "top" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
-          { label: "Alertas", icon: "bell", route: "/alertas", view: "occurrences", scroll: "recentAlerts" },
           { label: "Salvos", icon: "bookmark", route: "/salvos", view: "occurrences", scroll: "savedNews" },
           { label: "Fontes", icon: "rss", route: "/fontes", view: "occurrences", scroll: "clientSourcesSection" },
           { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
@@ -1568,10 +1556,9 @@
       ],
       manager: [
         { label: "Operação", items: [
-          { label: "Visão geral", icon: "dashboard", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Alertas", icon: "bell", route: "/dashboard", view: "occurrences", scroll: "top" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
-          { label: "Alertas", icon: "bell", route: "/alertas", view: "occurrences", scroll: "recentAlerts" },
           { label: "Fontes", icon: "rss", route: "/fontes-gestor", view: "admin", scroll: "sourcesAdminSection" },
           { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
         ] },
@@ -1585,10 +1572,9 @@
       ],
       developer: [
         { label: "Operação", items: [
-          { label: "Visão geral", icon: "dashboard", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Alertas", icon: "bell", route: "/dashboard", view: "occurrences", scroll: "top" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
-          { label: "Alertas", icon: "bell", route: "/alertas", view: "occurrences", scroll: "recentAlerts" },
           { label: "Fontes", icon: "rss", route: "/developer/fontes", view: "admin", scroll: "sourcesAdminSection" },
           { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
         ] },
@@ -1759,7 +1745,7 @@
         state.activeRoute = route;
         state.activeScrollTarget = scroll;
         setBrowserPath(route);
-        setActiveView("occurrences", { skipRoute: true, scroll, page: "overview" });
+        setActiveView("occurrences", { skipRoute: true, scroll, page: "alerts" });
       }
     }
 
@@ -1848,17 +1834,18 @@
 
     function clientPageFromTarget(target = "top") {
       const value = String(target || "top");
+      if (value === "top") return "alerts";
       if (value === "news" || value === "clientNewsPage") return "news";
       if (value === "recentAlerts" || value === "clientAlertsPage") return "alerts";
       if (value === "savedNews" || value === "clientSavedPage") return "saved";
       if (value === "trendsSection") return "operational";
       if (value === "clientSourcesSection") return "sources";
       if (value === "clientSettingsSection") return "settings";
-      return "overview";
+      return "alerts";
     }
 
     function applyClientPageVisibility() {
-      const page = state.activeClientPage || "overview";
+      const page = state.activeClientPage || "alerts";
       const isOccurrenceView = state.activeView === "occurrences";
       document.querySelectorAll("[data-client-page]").forEach((section) => {
         section.hidden = isOccurrenceView ? section.dataset.clientPage !== page : false;
@@ -1867,8 +1854,8 @@
         section.hidden = true;
       });
       const filters = document.querySelector(".client-filter-grid");
-      if (filters) filters.hidden = !isOccurrenceView || page !== "news";
-      const meta = CLIENT_PAGE_META[page] || CLIENT_PAGE_META.overview;
+      if (filters) filters.hidden = !isOccurrenceView || !["alerts", "news"].includes(page);
+      const meta = CLIENT_PAGE_META[page] || CLIENT_PAGE_META.alerts;
       const title = document.getElementById("clientPageTitle");
       if (title) title.textContent = meta.title;
       const greeting = document.getElementById("clientGreeting");
@@ -1899,7 +1886,9 @@
     }
 
     function isActiveNavItem(item) {
-      return item.route === state.activeRoute && (!state.activeScrollTarget || item.scroll === state.activeScrollTarget);
+      const sameRoute = item.route === state.activeRoute
+        || (item.route === "/dashboard" && state.activeClientPage === "alerts" && ["/dashboard", "/alertas"].includes(state.activeRoute));
+      return sameRoute && (!state.activeScrollTarget || item.scroll === state.activeScrollTarget);
     }
 
     function renderSidebarMenu() {
@@ -2008,7 +1997,8 @@
       if (mainTabs) mainTabs.hidden = true;
       document.getElementById("sidebarLogoutButton").hidden = !state.authEnabled;
       document.querySelectorAll(".nav-item[data-route]").forEach((button) => {
-        const sameRoute = button.dataset.route === state.activeRoute;
+        const sameRoute = button.dataset.route === state.activeRoute
+          || (button.dataset.route === "/dashboard" && state.activeClientPage === "alerts" && ["/dashboard", "/alertas"].includes(state.activeRoute));
         const sameScroll = !state.activeScrollTarget || button.dataset.scroll === state.activeScrollTarget;
         button.classList.toggle("active", sameRoute && sameScroll);
       });
@@ -2525,19 +2515,31 @@ function showAuthView() {
         const key = item.url || `${item.title}|${item.published_at}|${item.source}`;
         if (!merged.has(key)) merged.set(key, item);
       }
+      const search = normalizeText(state.filters.search);
+      const region = normalizeText(state.filters.region);
+      const category = normalizeText(state.filters.category);
 
-      return [...merged.values()]
+      const alerts = [...merged.values()]
         .filter((item) => withinCollectionHours(item, state.alertHours))
         .filter(isActionableAlert)
+        .filter((item) => {
+          const haystack = normalizeText(`${item.title || ""} ${item.summary || ""} ${item.source || ""} ${item.region || ""} ${item.state || ""} ${item.city || ""} ${item.highway || ""} ${tagFor(item)[1]}`);
+          if (search && !haystack.includes(search)) return false;
+          if (region && !haystack.includes(region)) return false;
+          if (category && !haystack.includes(category)) return false;
+          return true;
+        })
         .sort((a, b) => {
           const riskScore = { critical: 4, high: 3, medium: 2, "": 1 };
           const [aRisk] = operationalRisk(a);
           const [bRisk] = operationalRisk(b);
           const aRoad = roadFromText(`${a.title || ""} ${a.summary || ""}`) ? 1 : 0;
           const bRoad = roadFromText(`${b.title || ""} ${b.summary || ""}`) ? 1 : 0;
+          if (state.filters.sort === "recent") return collectionDateValue(b) - collectionDateValue(a);
+          if (state.filters.sort === "risk") return (riskScore[bRisk] - riskScore[aRisk]) || (collectionDateValue(b) - collectionDateValue(a));
           return (riskScore[bRisk] - riskScore[aRisk]) || (bRoad - aRoad) || (collectionDateValue(b) - collectionDateValue(a));
-        })
-        .slice(0, 8);
+        });
+      return alerts.slice(0, 8);
     }
 
     function renderRecentAlerts() {
@@ -2563,26 +2565,6 @@ function showAuthView() {
             `;
           }).join("")
         : `<div class="hint">Nenhum alerta operacional acionável nas últimas ${state.alertHours}h.</div>`;
-      const overviewAlerts = document.getElementById("overviewAlerts");
-      if (overviewAlerts) {
-        const compact = alerts.slice(0, 3);
-        overviewAlerts.innerHTML = compact.length
-          ? compact.map((item) => {
-              const [riskClassName, riskLabel] = operationalRisk(item);
-              const road = roadFromText(`${item.title || ""} ${item.summary || ""}`);
-              return `
-                <article class="alert-card">
-                  <div class="alert-meta">
-                    <span class="alert-badge ${riskClassName}">${riskLabel}</span>
-                    <span>${escapeHtml([road, age(item.scraped_at || item.created_at || item.published_at)].filter(Boolean).join(" · ") || item.source || "Fonte não informada")}</span>
-                  </div>
-                  <h3>${escapeHtml(shortText(item.title || "Alerta operacional", 86))}</h3>
-                  <p>${escapeHtml(shortText(smartSummary(item), 110) || "Ocorrência recente com possível impacto operacional.")}</p>
-                </article>
-              `;
-            }).join("")
-          : `<div class="hint">Nenhum alerta operacional acionável nas últimas ${state.alertHours}h.</div>`;
-      }
     }
 
     function savedNewsKey(item) {
@@ -3018,8 +3000,8 @@ function showAuthView() {
     function routeTarget(path) {
       const route = normalizeRoute(path);
       const routes = {
-        "/dashboard": { view: "occurrences", scroll: "top", page: "overview" },
-        "/alertas": { view: "occurrences", scroll: "recentAlerts", page: "alerts" },
+        "/dashboard": { view: "occurrences", scroll: "top", page: "alerts" },
+        "/alertas": { view: "occurrences", scroll: "top", page: "alerts" },
         "/noticias": { view: "occurrences", scroll: "news", page: "news" },
         "/salvos": { view: "occurrences", scroll: "savedNews", page: "saved" },
         "/resumo-operacional": { view: "occurrences", scroll: "trendsSection", page: "operational" },
@@ -3111,9 +3093,9 @@ function showAuthView() {
         setNotice("");
         state.activeRoute = "/dashboard";
         state.activeScrollTarget = "top";
-        state.activeClientPage = "overview";
+        state.activeClientPage = "alerts";
         setBrowserPath("/dashboard", true);
-        setActiveView("occurrences", { skipRoute: true, scroll: "top", page: "overview" });
+        setActiveView("occurrences", { skipRoute: true, scroll: "top", page: "alerts" });
         return;
       }
       const target = routeTarget(route);
@@ -4753,6 +4735,7 @@ function showAuthView() {
       state.filters.sort = document.getElementById("sortFilter")?.value || "recent";
       state.newsPage = 1;
       renderClientHeaderAndTrends();
+      renderRecentAlerts();
       renderNews();
     }
 
