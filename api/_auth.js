@@ -1,5 +1,6 @@
-const SUPABASE_URL = String(process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "");
-const SUPABASE_ANON_KEY = String(process.env.SUPABASE_ANON_KEY || "").trim();
+// URL e publishable key sao identificadores publicos usados tambem pelo navegador.
+const SUPABASE_URL = String(process.env.SUPABASE_URL || "https://vdyilgbqxnrwqgoairat.supabase.co").trim().replace(/\/+$/, "");
+const SUPABASE_ANON_KEY = String(process.env.SUPABASE_ANON_KEY || "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn").trim();
 const SERVICE_ROLE_KEY = String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
 
 const FEATURE_RULES = {
