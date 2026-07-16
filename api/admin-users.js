@@ -1,5 +1,24 @@
 const { SERVICE_ROLE_KEY, SUPABASE_URL, json, requireManager, supabaseFetch } = require("./_auth");
 
+async function fetchActivePackage(packageId) {
+  try {
+    const response = await supabaseFetch(`/rest/v1/packages?id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=id,max_users&limit=1`);
+    return (await response.json())?.[0] || null;
+  } catch (error) {
+    if (!/max_users|column|schema|PGRST/i.test(error.message || "")) throw error;
+    const response = await supabaseFetch(`/rest/v1/packages?id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=id&limit=1`);
+    return (await response.json())?.[0] || null;
+  }
+}
+
+async function activePackageUsers(packageId) {
+  const response = await supabaseFetch(
+    `/rest/v1/user_packages?package_id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=id`,
+    { method: "HEAD", headers: { Prefer: "count=exact" } },
+  );
+  return Number((response.headers.get("content-range") || "0/0").split("/")[1] || 0);
+}
+
 async function inviteUser(body) {
   const email = String(body.email || "").trim().toLowerCase();
   if (!email || !email.includes("@")) throw new Error("E-mail invalido.");
@@ -60,9 +79,12 @@ module.exports = async function handler(req, res) {
       });
       const packageId = String(body.package_id || "").trim();
       if (packageId) {
-        const activePackages = await supabaseFetch(`/rest/v1/packages?id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=id`);
-        const packageRows = await activePackages.json();
-        if (!packageRows.length) throw new Error("Pacote inicial nao encontrado ou inativo.");
+        const initialPackage = await fetchActivePackage(packageId);
+        if (!initialPackage) throw new Error("Pacote inicial nao encontrado ou inativo.");
+        const maxUsers = Number(initialPackage.max_users || 0);
+        if (maxUsers > 0 && await activePackageUsers(packageId) >= maxUsers) {
+          throw new Error("Limite de usuarios deste pacote atingido.");
+        }
         await supabaseFetch("/rest/v1/user_packages", {
           method: "POST",
           headers: { Prefer: "return=minimal" },

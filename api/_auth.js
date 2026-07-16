@@ -151,19 +151,32 @@ async function assertCanUse(req, feature) {
 
 async function recordUsage(account, eventType, data = {}) {
   if (!account?.authEnabled || !account.user?.id) return;
-  await supabaseFetch("/rest/v1/usage_events", {
-    method: "POST",
-    headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({
-      user_id: account.user.id,
-      event_type: eventType,
-      news_id: data.news_id || null,
-      tokens_input: data.tokens_input ?? null,
-      tokens_output: data.tokens_output ?? null,
-      model: data.model || null,
-      metadata: data.metadata || {},
-    }),
-  });
+  const payload = {
+    user_id: account.user.id,
+    client_id: account.profile?.client_id || null,
+    package_id: account.activePackage?.package_id || null,
+    event_type: eventType,
+    news_id: data.news_id || null,
+    tokens_input: data.tokens_input ?? null,
+    tokens_output: data.tokens_output ?? null,
+    model: data.model || null,
+    metadata: data.metadata || {},
+  };
+  try {
+    await supabaseFetch("/rest/v1/usage_events", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    if (!/client_id|package_id|column|schema|PGRST/i.test(error.message || "")) throw error;
+    const { client_id, package_id, ...legacyPayload } = payload;
+    await supabaseFetch("/rest/v1/usage_events", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify(legacyPayload),
+    });
+  }
 }
 
 async function requireAdmin(req) {

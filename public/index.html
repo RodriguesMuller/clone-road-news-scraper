@@ -1204,10 +1204,13 @@
               </div>
               <div class="form-row">
                 <div class="field"><label for="packagePdfLimit">PDF/mês</label><input id="packagePdfLimit" type="number" min="0" value="20"></div>
-                <div class="field"><label for="packageMap">Mapa</label><select id="packageMap"><option value="true">Habilitado</option><option value="false">Bloqueado</option></select></div>
+                <div class="field"><label for="packageUserLimit">Usuários</label><input id="packageUserLimit" type="number" min="0" value="0"></div>
               </div>
               <div class="form-row">
+                <div class="field"><label for="packageMap">Mapa</label><select id="packageMap"><option value="true">Habilitado</option><option value="false">Bloqueado</option></select></div>
                 <div class="field"><label for="packageImage">Resumo individual</label><select id="packageImage"><option value="true">Habilitado</option><option value="false">Bloqueado</option></select></div>
+              </div>
+              <div class="form-row">
                 <div class="field"><label for="packageWeekly">Resumo semanal</label><select id="packageWeekly"><option value="true">Habilitado</option><option value="false">Bloqueado</option></select></div>
               </div>
               <div class="admin-actions">
@@ -1492,7 +1495,7 @@
       viewMode: null,
       access: null,
       dataLoadError: "",
-      admin: { users: [], packages: [], usage: [], logs: [] },
+      admin: { users: [], packages: [], userPackages: [], usage: [], logs: [] },
       filters: { search: "", period: "24", region: "", category: "", sort: "recent" },
       map: {
         instance: null,
@@ -2083,7 +2086,7 @@ function showAuthView() {
       if (!state.authEnabled) {
         state.session = null;
         state.profile = { role: "demo", status: "active" };
-        state.access = { can_access_map: true, can_generate_image: true, can_generate_weekly_summary: true };
+        state.access = { can_access_map: true, can_generate_image: true, can_generate_weekly_summary: true, can_generate_pdf: true };
         if (normalizeRoute(window.location.pathname) === "/admin") setBrowserPath("/dashboard", true);
         showAppView();
         return true;
@@ -2119,9 +2122,15 @@ function showAuthView() {
         map: Boolean(state.access?.can_access_map),
         image_generation: Boolean(state.access?.can_generate_image),
         weekly_summary: Boolean(state.access?.can_generate_weekly_summary),
-        pdf_generation: Boolean(state.access?.can_generate_weekly_summary),
+        pdf_generation: Boolean(state.access?.can_generate_pdf),
       }[feature];
-      if (!allowed && !silent) setNotice("Recurso não disponível no pacote atual.");
+      const messages = {
+        map: "Mapa rodoviário não está disponível no seu pacote.",
+        image_generation: "Resumo individual não está disponível no seu pacote ou o limite mensal de IA foi atingido.",
+        weekly_summary: "Resumo semanal não está disponível no seu pacote ou o limite mensal de IA foi atingido.",
+        pdf_generation: "Você atingiu o limite mensal de PDFs.",
+      };
+      if (!allowed && !silent) setNotice(messages[feature] || "Recurso não disponível no pacote atual.");
       return allowed;
     }
 
@@ -3175,21 +3184,17 @@ function showAuthView() {
       });
     }
 
-    async function adminQuery(table, query = "*") {
-      const { data, error } = await authClient().from(table).select(query);
-      if (error) throw error;
-      return data || [];
-    }
-
-    async function audit(action, targetType, targetId, metadata = {}) {
-      if (!state.authEnabled || state.profile?.role !== "admin") return;
-      await authClient().from("audit_logs").insert({
-        actor_user_id: state.session.user.id,
-        action,
-        target_type: targetType,
-        target_id: targetId ? String(targetId) : null,
-        metadata,
+    async function adminApi(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: authHeaders({
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...(options.headers || {}),
+        }),
       });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Não foi possível concluir a ação administrativa.");
+      return payload;
     }
 
     function packageOptions(selectedId = "") {
@@ -3228,7 +3233,7 @@ function showAuthView() {
           <tbody>${packages.map((pkg) => `
             <tr>
               <td><b>${escapeHtml(pkg.name)}</b><br>${escapeHtml(pkg.description || "")}</td>
-              <td>${Number(pkg.monthly_news_limit || 0)} consultas<br>${Number(pkg.monthly_ai_summary_limit || 0)} IA<br>${Number(pkg.monthly_pdf_limit || 0)} PDFs</td>
+              <td>${Number(pkg.monthly_news_limit || 0)} consultas<br>${Number(pkg.monthly_ai_summary_limit || 0)} IA<br>${Number(pkg.monthly_pdf_limit || 0)} PDFs<br>${Number(pkg.max_users || 0) || "Ilimitado"} usuários</td>
               <td>Mapa: ${pkg.can_access_map ? "sim" : "não"}<br>Resumo: ${pkg.can_generate_image ? "sim" : "não"}<br>Semanal: ${pkg.can_generate_weekly_summary ? "sim" : "não"}</td>
               <td>${pkg.is_active ? "Ativo" : "Inativo"}</td>
               <td><button class="mini-button edit-package" type="button" data-id="${escapeHtml(pkg.id)}">Editar</button></td>
@@ -3419,10 +3424,11 @@ function showAuthView() {
           <thead><tr><th>Pacote</th><th>Limites</th><th>Recursos</th><th>Usuários</th><th>Criado em</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody>${packages.map((pkg) => {
             const userCount = packageUsersCount(pkg.id);
+            const canDeletePackage = state.profile?.role === "admin" && userCount === 0;
             return `
               <tr>
                 <td><b>${escapeHtml(pkg.name)}</b><br>${escapeHtml(pkg.description || "")}</td>
-                <td>${Number(pkg.monthly_news_limit || 0)} consultas<br>${Number(pkg.monthly_ai_summary_limit || 0)} IA<br>${Number(pkg.monthly_pdf_limit || 0)} PDFs</td>
+                <td>${Number(pkg.monthly_news_limit || 0)} consultas<br>${Number(pkg.monthly_ai_summary_limit || 0)} IA<br>${Number(pkg.monthly_pdf_limit || 0)} PDFs<br>${Number(pkg.max_users || 0) || "Ilimitado"} usuários</td>
                 <td>${pkg.can_access_map ? adminBadge("Mapa") : adminBadge("Mapa off", "neutral")} ${pkg.can_generate_image ? adminBadge("Resumo") : adminBadge("Resumo off", "neutral")} ${pkg.can_generate_weekly_summary ? adminBadge("Semanal") : adminBadge("Semanal off", "neutral")}</td>
                 <td>${userCount}</td>
                 <td>${escapeHtml(formatDate(pkg.created_at))}</td>
@@ -3431,7 +3437,7 @@ function showAuthView() {
                   <button class="mini-button edit-package" type="button" data-id="${escapeHtml(pkg.id)}">Editar</button>
                   <button class="mini-button duplicate-package" type="button" data-id="${escapeHtml(pkg.id)}">Duplicar</button>
                   <button class="mini-button toggle-package-status" type="button" data-id="${escapeHtml(pkg.id)}" data-active="${pkg.is_active ? "false" : "true"}">${pkg.is_active ? "Desativar" : "Ativar"}</button>
-                  <button class="mini-button delete-package" type="button" data-id="${escapeHtml(pkg.id)}" ${userCount ? "disabled" : ""}>Excluir</button>
+                  <button class="mini-button delete-package" type="button" data-id="${escapeHtml(pkg.id)}" ${canDeletePackage ? "" : "disabled"} title="${canDeletePackage ? "Excluir pacote" : "Apenas admin pode excluir pacote sem usuários vinculados"}">Excluir</button>
                 </td>
               </tr>
             `;
@@ -3669,15 +3675,14 @@ function showAuthView() {
     async function loadAdminData() {
       if (!(state.authEnabled && ["admin", "manager"].includes(state.profile?.role))) return;
       try {
-        const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-        const [users, packages, userPackages, usage, logs] = await Promise.all([
-          adminQuery("profiles", "*"),
-          adminQuery("packages", "*"),
-          adminQuery("user_packages", "*"),
-          authClient().from("usage_events").select("*").gte("created_at", monthStart).order("created_at", { ascending: false }).then(({ data, error }) => { if (error) throw error; return data || []; }),
-          authClient().from("audit_logs").select("*").order("created_at", { ascending: false }).limit(80).then(({ data, error }) => { if (error) throw error; return data || []; }),
-        ]);
-        state.admin = { users, packages, userPackages, usage, logs };
+        const data = await adminApi("/api/admin-data");
+        state.admin = {
+          users: data.users || [],
+          packages: data.packages || [],
+          userPackages: data.userPackages || [],
+          usage: data.usage || [],
+          logs: data.logs || [],
+        };
         renderAdmin();
       } catch (error) {
         setNotice(`Erro ao carregar Admin: ${error.message}`);
@@ -3691,6 +3696,7 @@ function showAuthView() {
       document.getElementById("packageNewsLimit").value = pkg?.monthly_news_limit ?? 200;
       document.getElementById("packageAiLimit").value = pkg?.monthly_ai_summary_limit ?? 50;
       document.getElementById("packagePdfLimit").value = pkg?.monthly_pdf_limit ?? 20;
+      document.getElementById("packageUserLimit").value = pkg?.max_users ?? 0;
       document.getElementById("packageMap").value = String(pkg?.can_access_map ?? true);
       document.getElementById("packageImage").value = String(pkg?.can_generate_image ?? true);
       document.getElementById("packageWeekly").value = String(pkg?.can_generate_weekly_summary ?? true);
@@ -3699,6 +3705,7 @@ function showAuthView() {
 
     async function savePackage(event) {
       event.preventDefault();
+      const button = event.submitter || document.querySelector("#packageForm button[type='submit']");
       const id = document.getElementById("packageId").value;
       const payload = {
         name: document.getElementById("packageName").value.trim(),
@@ -3706,53 +3713,68 @@ function showAuthView() {
         monthly_news_limit: Number(document.getElementById("packageNewsLimit").value || 0),
         monthly_ai_summary_limit: Number(document.getElementById("packageAiLimit").value || 0),
         monthly_pdf_limit: Number(document.getElementById("packagePdfLimit").value || 0),
+        max_users: Number(document.getElementById("packageUserLimit").value || 0),
         can_access_map: document.getElementById("packageMap").value === "true",
         can_generate_image: document.getElementById("packageImage").value === "true",
         can_generate_weekly_summary: document.getElementById("packageWeekly").value === "true",
         is_active: document.getElementById("packageActive").value === "true",
       };
-      const request = id ? authClient().from("packages").update(payload).eq("id", id) : authClient().from("packages").insert(payload);
-      const { error } = await request;
-      if (error) {
-        setNotice(error.message);
-        return;
+      const originalLabel = button?.textContent || "Salvar pacote";
+      if (button) {
+        button.disabled = true;
+        button.textContent = "Salvando...";
       }
-      await audit(id ? "update_package" : "create_package", "package", id || payload.name, payload);
-      fillPackageForm(null);
-      await loadAdminData();
+      try {
+        await adminApi("/api/admin-packages", {
+          method: id ? "PATCH" : "POST",
+          body: JSON.stringify(id ? { id, ...payload } : payload),
+        });
+        setNotice(id ? "Pacote atualizado com sucesso." : "Pacote criado com sucesso.");
+        fillPackageForm(null);
+        await loadAdminData();
+      } catch (error) {
+        setNotice(error.message || "Não foi possível salvar o pacote.");
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = originalLabel;
+        }
+      }
     }
 
     async function assignPackage(userId, packageId) {
-      const activeForUser = state.admin.userPackages.filter((item) => item.user_id === userId && item.is_active);
-      for (const item of activeForUser) {
-        await authClient().from("user_packages").update({ is_active: false, ends_at: new Date().toISOString() }).eq("id", item.id);
-      }
-      if (packageId) {
-        const { error } = await authClient().from("user_packages").insert({ user_id: userId, package_id: packageId, is_active: true });
-        if (error) throw error;
-      }
-      await audit("assign_package", "profile", userId, { package_id: packageId || null });
+      await adminApi("/api/admin-user-package", {
+        method: "POST",
+        body: JSON.stringify({ user_id: userId, package_id: packageId || "" }),
+      });
+      setNotice(packageId ? "Pacote vinculado ao usuário." : "Usuário ficou sem pacote ativo.");
       await loadAdminData();
     }
 
     async function toggleUserStatus(userId, status) {
-      const { error } = await authClient().from("profiles").update({ status }).eq("id", userId);
-      if (error) {
+      try {
+        await adminApi("/api/admin-user-status", {
+          method: "PATCH",
+          body: JSON.stringify({ user_id: userId, status }),
+        });
+        setNotice(status === "active" ? "Usuário ativado." : "Usuário bloqueado.");
+        await loadAdminData();
+      } catch (error) {
         setNotice(error.message);
-        return;
       }
-      await audit("update_user_status", "profile", userId, { status });
-      await loadAdminData();
     }
 
     async function togglePackageStatus(packageId, isActive) {
-      const { error } = await authClient().from("packages").update({ is_active: isActive }).eq("id", packageId);
-      if (error) {
+      try {
+        await adminApi("/api/admin-packages", {
+          method: "PATCH",
+          body: JSON.stringify({ id: packageId, is_active: isActive }),
+        });
+        setNotice(isActive ? "Pacote ativado." : "Pacote desativado.");
+        await loadAdminData();
+      } catch (error) {
         setNotice(error.message);
-        return;
       }
-      await audit(isActive ? "activate_package" : "deactivate_package", "package", packageId, { is_active: isActive });
-      await loadAdminData();
     }
 
     async function duplicatePackage(packageId) {
@@ -3764,18 +3786,22 @@ function showAuthView() {
         monthly_news_limit: Number(source.monthly_news_limit || 0),
         monthly_ai_summary_limit: Number(source.monthly_ai_summary_limit || 0),
         monthly_pdf_limit: Number(source.monthly_pdf_limit || 0),
+        max_users: Number(source.max_users || 0),
         can_access_map: Boolean(source.can_access_map),
         can_generate_image: Boolean(source.can_generate_image),
         can_generate_weekly_summary: Boolean(source.can_generate_weekly_summary),
         is_active: false,
       };
-      const { data, error } = await authClient().from("packages").insert(payload).select("id").single();
-      if (error) {
+      try {
+        await adminApi("/api/admin-packages", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        setNotice("Pacote duplicado com sucesso.");
+        await loadAdminData();
+      } catch (error) {
         setNotice(error.message);
-        return;
       }
-      await audit("duplicate_package", "package", data?.id || payload.name, { source_package_id: packageId });
-      await loadAdminData();
     }
 
     async function deletePackage(packageId) {
@@ -3783,13 +3809,13 @@ function showAuthView() {
         setNotice("Pacote com usuários vinculados não pode ser excluído.");
         return;
       }
-      const { error } = await authClient().from("packages").delete().eq("id", packageId);
-      if (error) {
+      try {
+        await adminApi(`/api/admin-packages?id=${encodeURIComponent(packageId)}`, { method: "DELETE" });
+        setNotice("Pacote excluído.");
+        await loadAdminData();
+      } catch (error) {
         setNotice(error.message);
-        return;
       }
-      await audit("delete_package", "package", packageId, {});
-      await loadAdminData();
     }
 
     function focusAdminUsage(userId) {
@@ -3831,13 +3857,16 @@ function showAuthView() {
         role: normalizedRole,
         status: ["active", "blocked", "inactive"].includes(status) ? status : "active",
       };
-      const { error } = await authClient().from("profiles").update(payload).eq("id", userId);
-      if (error) {
+      try {
+        await adminApi("/api/admin-user-profile", {
+          method: "PATCH",
+          body: JSON.stringify({ user_id: userId, ...payload }),
+        });
+        setNotice("Usuário atualizado.");
+        await loadAdminData();
+      } catch (error) {
         setNotice(error.message);
-        return;
       }
-      await audit("update_user", "profile", userId, payload);
-      await loadAdminData();
     }
 
     async function inviteUser(event) {
@@ -4945,7 +4974,10 @@ function showAuthView() {
     });
     document.getElementById("usersAdminList").addEventListener("change", (event) => {
       const select = event.target.closest(".assign-package");
-      if (select) assignPackage(select.dataset.userId, select.value).catch((error) => setNotice(error.message));
+      if (select) assignPackage(select.dataset.userId, select.value).catch(async (error) => {
+        setNotice(error.message);
+        await loadAdminData();
+      });
     });
     document.getElementById("usersAdminList").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-user-id]");

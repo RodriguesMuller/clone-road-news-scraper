@@ -4,7 +4,7 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
   email text,
-  role text not null default 'client' check (role in ('admin', 'client')),
+  role text not null default 'client' check (role in ('admin', 'manager', 'client')),
   company_name text,
   status text not null default 'active' check (status in ('active', 'inactive', 'blocked')),
   created_at timestamptz not null default now(),
@@ -18,6 +18,7 @@ create table if not exists public.packages (
   monthly_news_limit integer not null default 200,
   monthly_ai_summary_limit integer not null default 50,
   monthly_pdf_limit integer not null default 20,
+  max_users integer not null default 0,
   can_access_map boolean not null default true,
   can_generate_image boolean not null default true,
   can_generate_weekly_summary boolean not null default true,
@@ -49,6 +50,17 @@ create table if not exists public.usage_events (
   created_at timestamptz not null default now()
 );
 
+alter table if exists public.profiles drop constraint if exists profiles_role_check;
+alter table if exists public.profiles
+  add constraint profiles_role_check check (role in ('admin', 'manager', 'client'));
+
+alter table if exists public.usage_events
+  add column if not exists client_id uuid,
+  add column if not exists package_id uuid references public.packages(id) on delete set null;
+
+alter table if exists public.packages
+  add column if not exists max_users integer not null default 0;
+
 create table if not exists public.audit_logs (
   id uuid primary key default gen_random_uuid(),
   actor_user_id uuid references public.profiles(id) on delete set null,
@@ -62,11 +74,13 @@ create table if not exists public.audit_logs (
 comment on column public.packages.monthly_news_limit is 'Limite mensal de consultas/carregamentos do painel de noticias.';
 comment on column public.packages.monthly_ai_summary_limit is 'Limite mensal somado para resumo semanal, resumo de noticia e geracao de imagem com IA.';
 comment on column public.packages.monthly_pdf_limit is 'Limite mensal de exportacoes de PDF.';
+comment on column public.packages.max_users is 'Limite de usuarios vinculados ao pacote. Zero significa ilimitado.';
 
 create index if not exists profiles_role_status_idx on public.profiles(role, status);
 create index if not exists packages_active_idx on public.packages(is_active);
 create index if not exists user_packages_user_active_idx on public.user_packages(user_id, is_active, starts_at, ends_at);
 create index if not exists usage_events_user_type_month_idx on public.usage_events(user_id, event_type, created_at);
+create index if not exists usage_events_package_month_idx on public.usage_events(package_id, created_at);
 create index if not exists audit_logs_created_idx on public.audit_logs(created_at desc);
 
 create or replace function public.set_updated_at()
@@ -103,6 +117,22 @@ as $$
     from public.profiles p
     where p.id = check_user_id
       and p.role = 'admin'
+      and p.status = 'active'
+  );
+$$;
+
+create or replace function public.is_manager_or_admin(check_user_id uuid default auth.uid())
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = check_user_id
+      and p.role in ('admin', 'manager')
       and p.status = 'active'
   );
 $$;
@@ -160,7 +190,7 @@ as $$
 declare
   pkg public.packages%rowtype;
 begin
-  if public.is_admin(check_user_id) then
+  if public.is_manager_or_admin(check_user_id) then
     return true;
   end if;
 
@@ -183,9 +213,23 @@ begin
   if feature_name = 'map' then
     return pkg.can_access_map;
   elsif feature_name = 'image_generation' then
-    return pkg.can_generate_image;
+    return pkg.can_generate_image
+      and pkg.monthly_ai_summary_limit > (
+        select count(*)::integer
+        from public.usage_events ue
+        where ue.user_id = check_user_id
+          and ue.event_type in ('ai_summary', 'image_generation', 'weekly_summary')
+          and ue.created_at >= date_trunc('month', now())
+      );
   elsif feature_name = 'weekly_summary' then
-    return pkg.can_generate_weekly_summary;
+    return pkg.can_generate_weekly_summary
+      and pkg.monthly_ai_summary_limit > (
+        select count(*)::integer
+        from public.usage_events ue
+        where ue.user_id = check_user_id
+          and ue.event_type in ('ai_summary', 'image_generation', 'weekly_summary')
+          and ue.created_at >= date_trunc('month', now())
+      );
   elsif feature_name = 'pdf_generation' then
     return pkg.monthly_pdf_limit > public.get_monthly_usage(check_user_id, 'pdf_generation');
   elsif feature_name = 'ai_summary' then
@@ -220,9 +264,9 @@ as $$
   select
     p.role,
     p.status,
-    case when p.role = 'admin' then true else coalesce(pkg.can_access_map, false) end,
-    case when p.role = 'admin' then true else coalesce(pkg.can_generate_image, false) end,
-    case when p.role = 'admin' then true else coalesce(pkg.can_generate_weekly_summary, false) end
+    case when p.role in ('admin', 'manager') then true else coalesce(pkg.can_access_map, false) end,
+    case when p.role in ('admin', 'manager') then true else coalesce(pkg.can_generate_image, false) end,
+    case when p.role in ('admin', 'manager') then true else coalesce(pkg.can_generate_weekly_summary, false) end
   from public.profiles p
   left join public.user_packages up
     on up.user_id = p.id
@@ -263,54 +307,71 @@ using (public.is_admin())
 with check (public.is_admin());
 
 drop policy if exists "packages_select_admin" on public.packages;
-create policy "packages_select_admin"
+drop policy if exists "packages_write_admin" on public.packages;
+drop policy if exists "packages_select_manager_or_own" on public.packages;
+create policy "packages_select_manager_or_own"
 on public.packages for select
 to authenticated
-using (public.is_admin());
+using (
+  public.is_manager_or_admin()
+  or id = public.get_active_package(auth.uid())
+);
 
-drop policy if exists "packages_write_admin" on public.packages;
-create policy "packages_write_admin"
-on public.packages for all
+drop policy if exists "packages_insert_manager" on public.packages;
+create policy "packages_insert_manager"
+on public.packages for insert
 to authenticated
-using (public.is_admin())
-with check (public.is_admin());
+with check (public.is_manager_or_admin());
+
+drop policy if exists "packages_update_manager" on public.packages;
+create policy "packages_update_manager"
+on public.packages for update
+to authenticated
+using (public.is_manager_or_admin())
+with check (public.is_manager_or_admin());
+
+drop policy if exists "packages_delete_admin" on public.packages;
+create policy "packages_delete_admin"
+on public.packages for delete
+to authenticated
+using (public.is_admin());
 
 drop policy if exists "user_packages_select_own_or_admin" on public.user_packages;
 create policy "user_packages_select_own_or_admin"
 on public.user_packages for select
 to authenticated
-using (user_id = auth.uid() or public.is_admin());
+using (user_id = auth.uid() or public.is_manager_or_admin());
 
 drop policy if exists "user_packages_write_admin" on public.user_packages;
 create policy "user_packages_write_admin"
 on public.user_packages for all
 to authenticated
-using (public.is_admin())
-with check (public.is_admin());
+using (public.is_manager_or_admin())
+with check (public.is_manager_or_admin());
 
 drop policy if exists "usage_events_select_admin" on public.usage_events;
 create policy "usage_events_select_admin"
 on public.usage_events for select
 to authenticated
-using (public.is_admin());
+using (user_id = auth.uid() or public.is_manager_or_admin());
 
 drop policy if exists "usage_events_insert_admin" on public.usage_events;
 create policy "usage_events_insert_admin"
 on public.usage_events for insert
 to authenticated
-with check (public.is_admin());
+with check (user_id = auth.uid() or public.is_manager_or_admin());
 
 drop policy if exists "audit_logs_select_admin" on public.audit_logs;
 create policy "audit_logs_select_admin"
 on public.audit_logs for select
 to authenticated
-using (public.is_admin());
+using (public.is_manager_or_admin());
 
 drop policy if exists "audit_logs_insert_admin" on public.audit_logs;
 create policy "audit_logs_insert_admin"
 on public.audit_logs for insert
 to authenticated
-with check (public.is_admin());
+with check (public.is_manager_or_admin());
 
 grant execute on function public.get_my_access() to authenticated;
 grant execute on function public.can_use_feature(uuid, text) to authenticated;
@@ -318,6 +379,7 @@ grant execute on function public.get_monthly_usage(uuid, text) to authenticated;
 grant execute on function public.get_active_package(uuid) to authenticated;
 grant execute on function public.get_user_role(uuid) to authenticated;
 grant execute on function public.is_admin(uuid) to authenticated;
+grant execute on function public.is_manager_or_admin(uuid) to authenticated;
 
 insert into public.packages (
   name,
@@ -325,20 +387,23 @@ insert into public.packages (
   monthly_news_limit,
   monthly_ai_summary_limit,
   monthly_pdf_limit,
+  max_users,
   can_access_map,
   can_generate_image,
   can_generate_weekly_summary
 ) 
 select *
 from (values
-  ('Pacote A', 'Operacao inicial com mapa, PDF e resumos semanais.', 200, 50, 20, true, false, true),
-  ('Pacote B', 'Operacao ampliada com resumo individual e maior limite de IA.', 500, 100, 50, true, true, true)
+  ('Teste', 'Pacote temporario para clientes avaliarem a plataforma Road News.', 100, 10, 5, 2, true, true, true),
+  ('Pacote A', 'Operacao inicial com mapa, PDF e resumos semanais.', 200, 50, 20, 0, true, false, true),
+  ('Pacote B', 'Operacao ampliada com resumo individual e maior limite de IA.', 500, 100, 50, 0, true, true, true)
 ) as seed (
   name,
   description,
   monthly_news_limit,
   monthly_ai_summary_limit,
   monthly_pdf_limit,
+  max_users,
   can_access_map,
   can_generate_image,
   can_generate_weekly_summary

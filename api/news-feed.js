@@ -44,6 +44,7 @@ module.exports = async function handler(req, res) {
         throw new Error("Limite mensal de consultas de noticias atingido.");
       }
     }
+    const canAccessMap = account.isPrivileged || !account.authEnabled || Boolean(pkg?.can_access_map);
 
     const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
     const since30d = encodeURIComponent(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
@@ -52,7 +53,7 @@ module.exports = async function handler(req, res) {
       fetchRows(`&order=created_at.desc&limit=${Math.min(50, cap)}`),
       fetchRows(`&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=${Math.min(20, cap)}`),
       fetchRows(`&created_at=gte.${since24h}&order=created_at.desc&limit=${Math.min(300, cap)}`),
-      fetchRows(`&created_at=gte.${since30d}&order=created_at.desc&limit=${cap}`),
+      canAccessMap ? fetchRows(`&created_at=gte.${since30d}&order=created_at.desc&limit=${cap}`) : Promise.resolve([]),
       supabaseFetch("/rest/v1/news?select=id", { method: "HEAD", headers: { Prefer: "count=exact" } }),
     ]);
 
