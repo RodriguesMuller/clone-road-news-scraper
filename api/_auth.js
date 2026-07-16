@@ -226,6 +226,8 @@ async function assertCanUse(req, feature) {
   const normalizedFeature = canonicalFeature(feature);
   const rule = featureRule(normalizedFeature);
   if (!rule) throw new Error("Recurso controlado invalido.");
+  // Admin e Gestor possuem acesso operacional ilimitado, independente de pacote.
+  if (account.isPrivileged) return account;
   const pkg = packageFor(account);
   if (!pkg) {
     await recordUsage(account, rule.disabledEvent || rule.blockedEvent, {

@@ -41,7 +41,9 @@ test("manual user flow never stores or returns the initial password", () => {
   assert.match(source, /\/auth\/v1\/admin\/users/);
 });
 
-function loadAuthWithUsage(usageCount, limit = 2) {
+function loadAuthWithUsage(usageCount, limit = 2, options = {}) {
+  const role = options.role || "client";
+  const withPackage = options.withPackage !== false;
   process.env.SUPABASE_URL = "https://example.supabase.co";
   process.env.SUPABASE_ANON_KEY = "anon-test";
   process.env.SUPABASE_SERVICE_ROLE_KEY = "service-test";
@@ -51,9 +53,10 @@ function loadAuthWithUsage(usageCount, limit = 2) {
   global.fetch = async (url, options = {}) => {
     const value = String(url);
     if (value.endsWith("/auth/v1/user")) return Response.json({ id: "user-1", email: "user@example.com" });
-    if (value.includes("/rest/v1/profiles")) return Response.json([{ id: "user-1", role: "client", status: "active", client_id: "client-1" }]);
+    if (value.includes("/rest/v1/profiles")) return Response.json([{ id: "user-1", role, status: "active", client_id: "client-1" }]);
     if (value.includes("/rest/v1/clients")) return Response.json([{ id: "client-1", company_name: "Transportador", status: "active" }]);
     if (value.includes("/rest/v1/user_packages")) {
+      if (!withPackage) return Response.json([]);
       return Response.json([{ package_id: "package-1", packages: {
         monthly_news_limit: limit,
         monthly_ai_summary_limit: limit,
@@ -91,6 +94,38 @@ test("an individual user below the limit remains authorized", async () => {
   const account = await auth.assertCanUse(req, "ai_summary_weekly");
   assert.equal(account.user.id, "user-1");
   assert.equal(writes.length, 0);
+});
+
+for (const role of ["admin", "manager"]) {
+  test(`${role} remains unlimited without a package`, async () => {
+    const { auth, writes } = loadAuthWithUsage(9999, 0, { role, withPackage: false });
+    const req = { headers: { authorization: "Bearer session-test" } };
+    for (const feature of ["news_query", "ai_summary_individual", "ai_summary_weekly", "pdf_generated", "map_access"]) {
+      const account = await auth.assertCanUse(req, feature);
+      assert.equal(account.profile.role, role);
+      assert.equal(account.isPrivileged, true);
+    }
+    assert.equal(writes.length, 0);
+  });
+}
+
+test("access response exposes unlimited resources to privileged profiles", async () => {
+  loadAuthWithUsage(9999, 0, { role: "admin", withPackage: false });
+  const accessPath = path.join(ROOT, "api", "my-access.js");
+  delete require.cache[require.resolve(accessPath)];
+  const handler = require(accessPath);
+  const req = { method: "GET", headers: { authorization: "Bearer session-test" } };
+  const response = { statusCode: 0, headers: {}, setHeader(key, value) { this.headers[key] = value; }, end(value) { this.body = value; } };
+  await handler(req, response);
+  const payload = JSON.parse(response.body);
+  assert.equal(response.statusCode, 200);
+  assert.equal(payload.is_unlimited, true);
+  assert.equal(payload.has_active_package, false);
+  assert.equal(payload.can_query_news, true);
+  assert.equal(payload.can_access_map, true);
+  assert.equal(payload.can_generate_individual_summary, true);
+  assert.equal(payload.can_generate_weekly_summary, true);
+  assert.equal(payload.can_generate_pdf, true);
 });
 
 test("manual user endpoint creates Auth, profile and package link without leaking password", async () => {
