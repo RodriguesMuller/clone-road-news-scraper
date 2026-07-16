@@ -18,8 +18,8 @@ module.exports = async function handler(req, res) {
 
     const requestedRole = String(body.role || current[0].role || "client").trim();
     const role = ["admin", "manager"].includes(requestedRole) ? requestedRole : "client";
-    if (!account.isAdmin && (current[0].role !== "client" || role !== "client")) {
-      throw new Error("Gestor so pode editar usuarios cliente.");
+    if (!account.isAdmin && (current[0].role === "admin" || role === "admin")) {
+      throw new Error("Voce nao tem permissao para atribuir perfil Admin.");
     }
 
     const status = ["active", "blocked", "inactive"].includes(body.status) ? body.status : "active";

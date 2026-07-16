@@ -1,4 +1,5 @@
 const { SERVICE_ROLE_KEY, SUPABASE_URL, json, requireManager, supabaseFetch } = require("./_auth");
+const { adminErrorMessage } = require("./_admin");
 
 async function fetchActivePackage(packageId) {
   try {
@@ -19,13 +20,82 @@ async function activePackageUsers(packageId) {
   return Number((response.headers.get("content-range") || "0/0").split("/")[1] || 0);
 }
 
+function publicAppUrl() {
+  const configuredUrl = process.env.APP_URL
+    || process.env.SITE_URL
+    || process.env.NEXT_PUBLIC_SITE_URL
+    || process.env.NEXT_PUBLIC_APP_URL
+    || process.env.PUBLIC_SITE_URL
+    || "";
+  if (configuredUrl) return configuredUrl.replace(/\/+$/, "");
+  const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || "";
+  if (vercelUrl) return `https://${vercelUrl}`.replace(/\/+$/, "");
+  return "http://localhost:3000";
+}
+
+function inviteRedirectUrl() {
+  return `${publicAppUrl()}/accept-invite`;
+}
+
+function friendlyInviteError(detail) {
+  let message = detail || "Nao foi possivel convidar usuario.";
+  try {
+    const parsed = JSON.parse(detail);
+    message = parsed.msg || parsed.message || parsed.error_description || message;
+  } catch (_) {
+    // Supabase pode retornar texto puro em alguns erros.
+  }
+  if (/already|registered|exists|duplicate|ja existe|já existe|cadastrado/i.test(message)) {
+    return "Este e-mail ja esta cadastrado. Use outro e-mail ou ajuste o usuario existente.";
+  }
+  if (/redirect|not allowed|site url/i.test(message)) {
+    return "O link de convite nao esta autorizado no Supabase. Confira a URL de redirecionamento do projeto.";
+  }
+  return message;
+}
+
+async function profileByEmail(email) {
+  const response = await supabaseFetch(`/rest/v1/profiles?email=ilike.${encodeURIComponent(email)}&select=id,email,status,role&limit=1`);
+  const rows = await response.json();
+  return rows?.[0] || null;
+}
+
+async function authUserByEmail(email) {
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=1000`, {
+    headers: {
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) return null;
+  const payload = await response.json().catch(() => ({}));
+  const users = Array.isArray(payload.users) ? payload.users : [];
+  return users.find((user) => String(user.email || "").toLowerCase() === email.toLowerCase()) || null;
+}
+
+async function deleteAuthUser(userId) {
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
+    method: "DELETE",
+    headers: {
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok && response.status !== 404) {
+    const detail = await response.text();
+    throw new Error(friendlyInviteError(detail));
+  }
+}
+
 async function inviteUser(body) {
   const email = String(body.email || "").trim().toLowerCase();
   if (!email || !email.includes("@")) throw new Error("E-mail invalido.");
   const requestedRole = String(body.role || "client").trim();
   const role = ["admin", "manager"].includes(requestedRole) ? requestedRole : "client";
   const status = ["active", "blocked", "inactive"].includes(body.status) ? body.status : "active";
-  const response = await fetch(`${SUPABASE_URL}/auth/v1/invite`, {
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/invite?redirect_to=${encodeURIComponent(inviteRedirectUrl())}`, {
     method: "POST",
     headers: {
       apikey: SERVICE_ROLE_KEY,
@@ -43,7 +113,7 @@ async function inviteUser(body) {
   });
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(detail || "Nao foi possivel convidar usuario.");
+    throw new Error(friendlyInviteError(detail));
   }
   const invited = await response.json();
   return { invited, role, status };
@@ -59,9 +129,29 @@ module.exports = async function handler(req, res) {
     const chunks = [];
     for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
     const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {};
+    const email = String(body.email || "").trim().toLowerCase();
     const requestedRole = String(body.role || "client").trim();
     const normalizedRole = ["admin", "manager"].includes(requestedRole) ? requestedRole : "client";
-    if (!account.isAdmin && normalizedRole !== "client") throw new Error("Gestor so pode convidar usuarios client.");
+    if (!account.isAdmin && normalizedRole === "admin") throw new Error("Voce nao tem permissao para convidar administradores.");
+    const existingProfile = email ? await profileByEmail(email) : null;
+    if (existingProfile) {
+      throw new Error("Este e-mail ja esta cadastrado. Verifique a lista de usuarios ou exclua o usuario existente antes de convidar novamente.");
+    }
+    const orphanAuthUser = email ? await authUserByEmail(email) : null;
+    if (orphanAuthUser?.id) {
+      await deleteAuthUser(orphanAuthUser.id);
+    }
+    const packageId = String(body.package_id || "").trim();
+    if (normalizedRole === "client" && !packageId) throw new Error("Selecione um pacote inicial para o cliente.");
+    let initialPackage = null;
+    if (packageId) {
+      initialPackage = await fetchActivePackage(packageId);
+      if (!initialPackage) throw new Error("Pacote inicial nao encontrado ou inativo.");
+      const maxUsers = Number(initialPackage.max_users || 0);
+      if (maxUsers > 0 && await activePackageUsers(packageId) >= maxUsers) {
+        throw new Error("Limite de usuarios deste pacote atingido.");
+      }
+    }
     const { invited, role, status } = await inviteUser(body);
     const userId = invited?.id || invited?.user?.id;
     if (userId) {
@@ -77,14 +167,7 @@ module.exports = async function handler(req, res) {
           status,
         }),
       });
-      const packageId = String(body.package_id || "").trim();
-      if (packageId) {
-        const initialPackage = await fetchActivePackage(packageId);
-        if (!initialPackage) throw new Error("Pacote inicial nao encontrado ou inativo.");
-        const maxUsers = Number(initialPackage.max_users || 0);
-        if (maxUsers > 0 && await activePackageUsers(packageId) >= maxUsers) {
-          throw new Error("Limite de usuarios deste pacote atingido.");
-        }
+      if (initialPackage) {
         await supabaseFetch("/rest/v1/user_packages", {
           method: "POST",
           headers: { Prefer: "return=minimal" },
@@ -107,8 +190,8 @@ module.exports = async function handler(req, res) {
         }),
       });
     }
-    json(res, 200, { ok: true, user_id: userId || null });
+    json(res, 200, { ok: true, user_id: userId || null, redirect_to: inviteRedirectUrl() });
   } catch (error) {
-    json(res, 403, { error: error.message || "Nao foi possivel convidar usuario." });
+    json(res, 403, { error: adminErrorMessage(error) });
   }
 };

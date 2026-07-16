@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
     }
     const linkedUsers = await activeUserPackageCount(packageId);
     if (linkedUsers > 0) {
-      throw new Error("Pacote com usuarios vinculados nao pode ser excluido. Desative o pacote.");
+      throw new Error("Este pacote possui usuarios vinculados e nao pode ser excluido.");
     }
     await supabaseFetch(`/rest/v1/packages?id=eq.${encodeURIComponent(packageId)}`, {
       method: "DELETE",

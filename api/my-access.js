@@ -1,4 +1,5 @@
 const { json, monthlyUsage, requireAccount } = require("./_auth");
+const { adminErrorMessage } = require("./_admin");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") {
@@ -41,6 +42,6 @@ module.exports = async function handler(req, res) {
       usage_this_month: usage,
     });
   } catch (error) {
-    json(res, 403, { error: error.message || "Acesso nao autorizado." });
+    json(res, 403, { error: adminErrorMessage(error) || "Acesso nao autorizado." });
   }
 };

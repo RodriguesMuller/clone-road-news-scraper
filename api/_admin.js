@@ -68,17 +68,35 @@ function adminErrorMessage(error) {
   let message = raw;
   try {
     const parsed = JSON.parse(raw);
-    message = parsed.message || parsed.error || raw;
+    message = parsed.msg || parsed.message || parsed.error_description || parsed.error || raw;
   } catch {
     // Mantem a mensagem original.
   }
-  if (/row-level security|violates row-level security/i.test(message)) {
-    return "Voce nao tem permissao para criar ou editar pacotes. Verifique as policies do Supabase.";
+  if (/invalid login credentials|invalid_credentials/i.test(message)) {
+    return "E-mail ou senha incorretos.";
+  }
+  if (/email_exists|already been registered|already registered|user_already_exists|duplicate key|already exists|ja existe|já existe|cadastrado/i.test(message)) {
+    return "Este e-mail ja esta cadastrado. Verifique a lista de usuarios ou exclua o usuario existente antes de convidar novamente.";
+  }
+  if (/row-level security|violates row-level security|permission denied|insufficient permissions|acesso negado|not allowed/i.test(message)) {
+    return "Voce nao tem permissao para realizar esta acao.";
+  }
+  if (/inativo|inactive|blocked|bloqueado/i.test(message)) {
+    return "Seu acesso esta inativo. Contate o administrador.";
+  }
+  if (/expired|token.*invalid|invalid.*token|link.*expir/i.test(message)) {
+    return "Este link expirou. Solicite um novo convite.";
+  }
+  if (/fetch failed|network|econn|timeout|connect|connection/i.test(message)) {
+    return "Nao foi possivel conectar ao servidor. Tente novamente em instantes.";
   }
   if (/service_role|SUPABASE_SERVICE_ROLE_KEY/i.test(message)) {
     return "SUPABASE_SERVICE_ROLE_KEY nao configurada no servidor.";
   }
-  return message || "Nao foi possivel concluir a acao administrativa.";
+  if (/^\s*[{[]/.test(raw) || /Supabase HTTP|PGRST|stack|trace|schema|column/i.test(message)) {
+    return "Nao foi possivel concluir a acao. Tente novamente.";
+  }
+  return message || "Nao foi possivel concluir a acao. Tente novamente.";
 }
 
 module.exports = {

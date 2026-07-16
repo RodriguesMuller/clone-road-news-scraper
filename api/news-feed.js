@@ -1,4 +1,5 @@
 const { json, monthlyUsage, recordUsage, requireAccount, supabaseFetch } = require("./_auth");
+const { adminErrorMessage } = require("./_admin");
 
 const BASE_COLUMNS = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
 const OPTIONAL_SETS = [
@@ -68,6 +69,6 @@ module.exports = async function handler(req, res) {
     const total = Number((countResponse.headers.get("content-range") || "0/0").split("/")[1] || 0);
     json(res, 200, { latestNews, latestInmet, recentRows, mapRows, total });
   } catch (error) {
-    json(res, 403, { error: error.message || "Nao foi possivel carregar noticias." });
+    json(res, 403, { error: adminErrorMessage(error) || "Nao foi possivel carregar noticias." });
   }
 };

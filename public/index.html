@@ -218,6 +218,8 @@
       font-weight: 900;
     }
     .mini-button:hover, .button-link.secondary:hover { border-color: rgba(32, 242, 155, .42); background: rgba(32, 242, 155, .10); box-shadow: none; }
+    .mini-button.danger { color: #ffb3b3; border-color: rgba(255, 100, 100, .34); background: rgba(255, 100, 100, .10); }
+    .mini-button.danger:hover { border-color: rgba(255, 100, 100, .58); background: rgba(255, 100, 100, .18); }
     .button-link.secondary { border: 1px solid var(--color-border-soft); background: rgba(255,255,255,.055); color: var(--color-text); box-shadow: none; padding: 8px 11px; font-size: 12px; }
     .source { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--color-border-soft); padding-bottom: 10px; color: var(--color-muted); font-size: 13px; }
     .source:last-child { border-bottom: 0; padding-bottom: 0; }
@@ -285,8 +287,11 @@
     .link-button:hover { transform: none; box-shadow: none; text-decoration: underline; }
     .auth-error { display: none; border: 1px solid rgba(255,100,100,.34); background: rgba(255,100,100,.12); color: #ffcccc; border-radius: 8px; padding: 10px 12px; font-size: 13px; }
     .auth-error.show { display: block; }
-    .app-shell[hidden], .auth-view[hidden], .blocked-view[hidden] { display: none !important; }
+    .app-shell[hidden], .auth-view[hidden], .blocked-view[hidden], .accept-invite-view[hidden] { display: none !important; }
     .blocked-view { display: grid; place-items: center; min-height: 54vh; }
+    .blocked-view .auth-card { border-color: rgba(32, 242, 155, .32); background: linear-gradient(160deg, rgba(11,42,32,.92), rgba(3,18,13,.98)); box-shadow: 0 24px 70px rgba(0, 0, 0, .32); }
+    .blocked-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+    .accept-invite-view { display: grid; place-items: center; min-height: 70vh; }
     .admin-grid { display: grid; gap: 16px; }
     .admin-section { display: grid; gap: 12px; }
     .admin-section[hidden] { display: none !important; }
@@ -318,6 +323,62 @@
     .admin-table th { color: var(--color-muted); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
     .admin-table b { color: var(--color-text); }
     .admin-note { color: var(--color-muted); font-size: 12px; line-height: 1.45; }
+    .admin-card-wrap { overflow: visible; border: 0; border-radius: 0; }
+    .admin-card-list { display: grid; gap: 12px; }
+    .admin-record-card {
+      display: grid;
+      gap: 12px;
+      border: 1px solid rgba(32, 242, 155, .18);
+      border-radius: 8px;
+      padding: 14px;
+      background: linear-gradient(135deg, rgba(255,255,255,.055), rgba(32,242,155,.035));
+      box-shadow: 0 12px 30px rgba(0, 0, 0, .12);
+    }
+    .admin-record-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .admin-record-title { display: grid; gap: 4px; min-width: 0; }
+    .admin-record-title strong { color: var(--color-text); font-size: 16px; line-height: 1.25; overflow-wrap: anywhere; }
+    .admin-record-title span { color: var(--color-muted); font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
+    .admin-record-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .admin-record-body { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 10px; }
+    .admin-record-field {
+      min-width: 0;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 8px;
+      padding: 10px;
+      background: rgba(0,0,0,.10);
+      color: var(--color-muted-strong);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .admin-record-field span {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--color-muted);
+      font-size: 9px;
+      font-weight: 950;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+    .admin-record-field strong { color: var(--color-text); }
+    .admin-limit-list, .admin-consumption-list { display: grid; gap: 4px; }
+    .admin-limit-list div, .admin-consumption-list div { display: flex; justify-content: space-between; gap: 10px; }
+    .admin-resource-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .admin-package-select { width: 100%; min-width: 180px; }
+    .admin-card-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+      padding-top: 2px;
+    }
+    .admin-card-actions .mini-button { min-height: 34px; }
     .shell-toolbar {
       display: flex;
       align-items: center;
@@ -748,6 +809,7 @@
     .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(1, 8, 6, .82); padding: 18px; z-index: 10; backdrop-filter: blur(8px); }
     .modal.open { display: flex; }
     .modal-card { width: min(100%, 980px); max-height: 94vh; overflow: auto; background: #071b14; border-radius: 8px; border: 1px solid rgba(32, 242, 155, .24); box-shadow: 0 24px 80px rgba(0,0,0,.48); }
+    .modal-card.form-modal { width: min(100%, 760px); }
     .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--color-border-soft); padding: 14px 16px; background: rgba(255,255,255,.035); }
     .modal-head strong { color: var(--color-text); font-size: 15px; }
     .modal-actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -755,6 +817,9 @@
     #shareCanvas { width: min(100%, 720px); height: auto; border-radius: 6px; box-shadow: 0 14px 42px rgba(0,0,0,.36); }
     .weekly-fab { position: fixed; right: 22px; bottom: 22px; z-index: 8; box-shadow: 0 16px 38px rgba(17, 217, 129, .22); }
     .weekly-body { padding: 18px; display: grid; gap: 14px; }
+    .modal-form-body { padding: 18px; display: grid; gap: 14px; }
+    .modal-form-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    .readonly-input { opacity: .78; cursor: not-allowed; }
     #weekly-summary-report { display: grid; gap: 14px; }
     .weekly-hero {
       background: linear-gradient(135deg, #061b14, #0b2a20);
@@ -796,6 +861,7 @@
     @media (max-width: 720px) {
       .weekly-kpis, .weekly-grid { grid-template-columns: 1fr; }
       .client-filter-grid { grid-template-columns: 1fr; }
+      .admin-record-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .view-tabs { overflow-x: auto; flex-wrap: nowrap; }
       .view-tab { flex: 0 0 auto; }
       .shell-toolbar { display: flex; justify-content: flex-start; }
@@ -833,6 +899,9 @@
     @media (max-width: 480px) {
       main { padding-inline: 14px; }
       .stats, .alert-list { grid-template-columns: 1fr; }
+      .admin-record-body { grid-template-columns: 1fr; }
+      .admin-card-actions { justify-content: stretch; }
+      .admin-card-actions .mini-button { flex: 1 1 130px; }
       .value { font-size: 30px; }
       .brand-copy strong { font-size: 22px; }
     }
@@ -979,10 +1048,37 @@
     <section id="blockedView" class="blocked-view" hidden>
       <div class="auth-card">
         <div class="weekly-logo">ROAD NEWS</div>
-        <h1>Acesso indisponível</h1>
-        <p id="blockedMessage">Seu usuário está inativo. Contate o administrador.</p>
-        <button id="blockedLogoutButton" type="button" class="mini-button" hidden>Sair</button>
+        <h1>Acesso temporariamente indisponível</h1>
+        <p id="blockedMessage">Seu acesso está inativo ou bloqueado no momento. Entre em contato com o administrador da plataforma para regularizar sua conta.</p>
+        <div class="blocked-actions">
+          <button id="blockedLogoutButton" type="button" class="mini-button" hidden>Sair</button>
+          <button id="blockedLoginButton" type="button" class="mini-button" hidden>Voltar para login</button>
+        </div>
       </div>
+    </section>
+
+    <section id="acceptInviteView" class="accept-invite-view" hidden>
+      <form id="acceptInviteForm" class="auth-card" aria-describedby="acceptInviteError">
+        <div class="weekly-logo">ROAD NEWS</div>
+        <h1>Aceitar convite</h1>
+        <p id="acceptInviteIntro">Crie sua senha para acessar a plataforma.</p>
+        <div id="acceptInviteError" class="auth-error"></div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="acceptPassword">Nova senha</label>
+            <input id="acceptPassword" type="password" autocomplete="new-password" minlength="8" required>
+          </div>
+          <div class="field">
+            <label for="acceptPasswordConfirm">Confirmar senha</label>
+            <input id="acceptPasswordConfirm" type="password" autocomplete="new-password" minlength="8" required>
+          </div>
+          <button id="acceptInviteButton" type="submit">Criar senha e acessar</button>
+          <div class="auth-links">
+            <a href="/privacidade" target="_blank" rel="noopener">Privacidade</a>
+            <a href="/termos" target="_blank" rel="noopener">Termos</a>
+          </div>
+        </div>
+      </form>
     </section>
 
     <div id="appShell" class="app-shell" hidden>
@@ -1178,14 +1274,14 @@
               </div>
               <div class="form-row">
                 <div class="field"><label for="inviteCompany">Empresa</label><input id="inviteCompany"></div>
-                <div class="field"><label for="inviteRole">Papel</label><select id="inviteRole"><option value="client">Cliente</option><option value="manager">Gestor</option><option value="admin">Admin</option></select></div>
+                <div class="field"><label for="inviteRole">Perfil de acesso</label><select id="inviteRole"></select></div>
               </div>
               <div class="form-row">
                 <div class="field"><label for="invitePackage">Pacote inicial</label><select id="invitePackage"><option value="">Sem pacote</option></select></div>
                 <div class="field"><label for="inviteStatus">Status inicial</label><select id="inviteStatus"><option value="active">Ativo</option><option value="blocked">Bloqueado</option><option value="inactive">Inativo</option></select></div>
               </div>
-              <div id="invitePackageWarning" class="admin-error" hidden>Crie pelo menos um pacote ativo antes de convidar clientes com pacote inicial.</div>
-              <button type="submit">Enviar convite</button>
+              <div id="invitePackageWarning" class="admin-error" hidden>Usuários sem pacote terão recursos limitados.</div>
+              <button id="inviteSubmitButton" type="submit">Enviar convite</button>
             </form>
           </section>
 
@@ -1218,7 +1314,7 @@
                 <button id="clearPackageForm" type="button" class="mini-button">Limpar</button>
               </div>
             </form>
-            <div id="packagesAdminList" class="admin-table-wrap"></div>
+            <div id="packagesAdminList" class="admin-card-wrap"></div>
           </section>
 
           <section id="usersAdminSection" class="panel admin-section" data-admin-panel="users" hidden>
@@ -1228,13 +1324,13 @@
                 <option value="all">Todos</option>
                 <option value="active">Ativos</option>
                 <option value="blocked">Bloqueados</option>
-                <option value="admin">Admins</option>
+                <option value="manager">Gestores</option>
                 <option value="client">Clientes</option>
                 <option value="no_package">Sem pacote</option>
               </select>
               <input id="userSearch" type="search" placeholder="Buscar usuario, e-mail ou empresa">
             </div>
-            <div id="usersAdminList" class="admin-table-wrap"></div>
+            <div id="usersAdminList" class="admin-card-wrap"></div>
           </section>
 
           <section id="usageAdminSection" class="panel admin-section" data-admin-panel="usage" hidden>
@@ -1378,6 +1474,79 @@
     </div>
   </div>
 
+  <div id="userEditModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="userEditTitle">
+    <form id="userEditForm" class="modal-card form-modal">
+      <div class="modal-head">
+        <strong id="userEditTitle">Editar usuário</strong>
+        <div class="modal-actions">
+          <button id="closeUserEditModal" type="button" class="mini-button">Cancelar</button>
+        </div>
+      </div>
+      <div class="modal-form-body">
+        <input id="editUserId" type="hidden">
+        <input id="editUserPackageOriginal" type="hidden">
+        <div id="userEditError" class="auth-error"></div>
+        <div class="form-row">
+          <div class="field">
+            <label for="editUserName">Nome</label>
+            <input id="editUserName" required>
+          </div>
+          <div class="field">
+            <label for="editUserEmail">E-mail</label>
+            <input id="editUserEmail" class="readonly-input" type="email" readonly>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="editUserCompany">Empresa</label>
+            <input id="editUserCompany">
+          </div>
+          <div class="field">
+            <label for="editUserRole">Perfil de acesso</label>
+            <select id="editUserRole"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="editUserStatus">Status</label>
+            <select id="editUserStatus">
+              <option value="active">Ativo</option>
+              <option value="blocked">Bloqueado</option>
+              <option value="inactive">Inativo</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="editUserPackage">Pacote atual</label>
+            <select id="editUserPackage"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="editUserNotes">Observações</label>
+          <textarea id="editUserNotes" readonly placeholder="Campo reservado para observações futuras."></textarea>
+        </div>
+        <div class="modal-form-actions">
+          <button id="cancelUserEdit" type="button" class="mini-button">Cancelar</button>
+          <button id="saveUserEdit" type="submit">Salvar alterações</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal-card form-modal">
+      <div class="modal-head">
+        <strong id="confirmTitle">Confirmar ação</strong>
+      </div>
+      <div class="modal-form-body">
+        <p id="confirmMessage" class="admin-note">Confirme para continuar.</p>
+        <div class="modal-form-actions">
+          <button id="cancelConfirmAction" type="button" class="mini-button">Cancelar</button>
+          <button id="confirmAction" type="button" class="mini-button danger">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -1386,6 +1555,7 @@
     const SUPABASE_ANON_KEY = "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
     const TABLE = "news";
     const BRASILIA_TIME_ZONE = "America/Sao_Paulo";
+    let confirmResolver = null;
 
     const TRUSTED_SOURCES = new Set(["G1 - Brasil", "CNN Brasil", "Band - Notícias", "INMET - Avisos Meteorológicos", "Arteris Fluminense (tempo real)"]);
     const MAP_RISKS = [
@@ -1604,6 +1774,46 @@
       return div.innerHTML;
     }
 
+    function rawErrorMessage(error) {
+      if (!error) return "";
+      if (typeof error === "string") return error;
+      if (error.message) return String(error.message);
+      if (error.error_description) return String(error.error_description);
+      if (error.msg) return String(error.msg);
+      if (error.error) return String(error.error);
+      try { return JSON.stringify(error); } catch { return String(error); }
+    }
+
+    function getFriendlyErrorMessage(error, fallback = "Não foi possível concluir a ação. Tente novamente.") {
+      const raw = rawErrorMessage(error).trim();
+      if (!raw) return "";
+      let message = raw;
+      try {
+        const parsed = JSON.parse(raw);
+        message = parsed.msg || parsed.message || parsed.error_description || parsed.error || raw;
+      } catch {
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            message = parsed.msg || parsed.message || parsed.error_description || parsed.error || raw;
+          } catch {
+            message = raw;
+          }
+        }
+      }
+
+      const haystack = `${raw} ${message}`.toLowerCase();
+      if (/invalid login credentials|invalid_credentials|email not confirmed|invalid grant/.test(haystack)) return "E-mail ou senha incorretos.";
+      if (/email_exists|already been registered|already registered|user_already_exists|duplicate key|already exists|cadastrado|ja existe|já existe/.test(haystack)) return "Este e-mail já está cadastrado. Verifique a lista de usuários ou exclua o usuário existente antes de convidar novamente.";
+      if (/permission denied|insufficient permissions|row-level security|violates row-level security|acesso negado|not allowed|sem permiss/.test(haystack)) return "Você não tem permissão para realizar esta ação.";
+      if (/inativo|inactive|blocked|bloqueado/.test(haystack)) return "Seu acesso está inativo. Contate o administrador.";
+      if (/expired|token.*invalid|invalid.*token|link.*expir|refresh token/.test(haystack)) return "Este link expirou. Solicite um novo convite.";
+      if (/failed to fetch|network|timeout|econn|connection|fetch failed|servidor/.test(haystack)) return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
+      if (/service_role|database_url|supabase_service_role_key|postgres|pgrst|schema|column|stack|trace|^\s*[{[]/.test(haystack)) return fallback;
+      return message || fallback;
+    }
+
     function authClient() {
       if (!window.supabase) throw new Error("Supabase Auth não carregou. Recarregue a página.");
       if (!state.authClient) {
@@ -1628,7 +1838,7 @@
 
     function setAuthError(message) {
       const box = document.getElementById("authError");
-      box.textContent = message || "";
+      box.textContent = message ? getFriendlyErrorMessage(message) : "";
       box.classList.toggle("show", Boolean(message));
     }
 
@@ -1943,10 +2153,15 @@
       return normalizeRoute(window.location.pathname) === "/login";
     }
 
+    function isInvitePage(path = window.location.pathname) {
+      const route = normalizeRoute(path);
+      return route === "/accept-invite" || route === "/auth/callback";
+    }
+
     function canRenderPlatformActions() {
       const hasAccess = state.authEnabled ? Boolean(state.session && state.profile) : Boolean(state.profile);
       const appShell = document.getElementById("appShell");
-      return hasAccess && !isLoginPage() && Boolean(appShell && !appShell.hidden);
+      return hasAccess && !isLoginPage() && !isInvitePage() && Boolean(appShell && !appShell.hidden);
     }
 
     function destroyPlatformActions() {
@@ -2031,6 +2246,7 @@ function showAuthView() {
       const footer = document.getElementById("publicFooter");
       if (footer) footer.hidden = true;
       document.getElementById("authView").hidden = false;
+      document.getElementById("acceptInviteView").hidden = true;
       document.getElementById("blockedView").hidden = true;
       document.getElementById("appShell").hidden = true;
       if (state.authConfigError) {
@@ -2045,16 +2261,27 @@ function showAuthView() {
       const sidebarLogout = document.getElementById("sidebarLogoutButton");
       const footer = document.getElementById("publicFooter");
       if (footer) footer.hidden = true;
+      document.getElementById("authView").hidden = true;
+      document.getElementById("acceptInviteView").hidden = true;
       document.getElementById("appShell").hidden = true;
       // render name and badge via syncNavigationState
       syncNavigationState();
       document.getElementById("blockedView").hidden = false;
+      const blockedMessage = document.getElementById("blockedMessage");
+      if (blockedMessage) {
+        blockedMessage.textContent = /perfil|encontrado/i.test(String(message || ""))
+          ? "Não encontramos um perfil ativo para sua conta. Entre em contato com o administrador da plataforma para regularizar seu acesso."
+          : "Seu acesso está inativo ou bloqueado no momento. Entre em contato com o administrador da plataforma para regularizar sua conta.";
+      }
       const blockedLogout = document.getElementById("blockedLogoutButton");
       if (blockedLogout) blockedLogout.hidden = false;
+      const blockedLogin = document.getElementById("blockedLoginButton");
+      if (blockedLogin) blockedLogin.hidden = false;
     }
 
     function showAppView() {
       document.getElementById("authView").hidden = true;
+      document.getElementById("acceptInviteView").hidden = true;
       document.getElementById("mainTabs").hidden = true;
       document.getElementById("blockedView").hidden = true;
       document.getElementById("appShell").hidden = false;
@@ -2064,6 +2291,28 @@ function showAuthView() {
       if (footer) footer.hidden = false;
       loadSidebarPreference();
       syncNavigationState();
+    }
+
+    function setAcceptInviteError(message = "") {
+      const target = document.getElementById("acceptInviteError");
+      if (!target) return;
+      target.textContent = message ? getFriendlyErrorMessage(message, "Não foi possível validar o convite.") : "";
+      target.classList.toggle("show", Boolean(message));
+    }
+
+    function showAcceptInviteView(message = "") {
+      closeSidebar();
+      destroyPlatformActions();
+      document.getElementById("mainTabs").hidden = true;
+      document.getElementById("authView").hidden = true;
+      document.getElementById("blockedView").hidden = true;
+      document.getElementById("appShell").hidden = true;
+      document.getElementById("acceptInviteView").hidden = false;
+      const footer = document.getElementById("publicFooter");
+      if (footer) footer.hidden = true;
+      const sidebarLogout = document.getElementById("sidebarLogoutButton");
+      if (sidebarLogout) sidebarLogout.hidden = true;
+      setAcceptInviteError(message);
     }
 
     async function loadMyAccess() {
@@ -2081,8 +2330,8 @@ function showAuthView() {
       if (access.status !== "active") throw new Error("Seu usuário está inativo. Contate o administrador.");
     }
 
-    async function initAuth() {
-      await loadAuthConfig();
+    async function initAuth(options = {}) {
+      if (!options.configLoaded) await loadAuthConfig();
       if (!state.authEnabled) {
         state.session = null;
         state.profile = { role: "demo", status: "active" };
@@ -2112,6 +2361,53 @@ function showAuthView() {
       const stored = localStorage.getItem(VIEW_MODE_KEY);
       state.viewMode = normalizeViewMode(stored || "client");
       showAppView();
+      return true;
+    }
+
+    function authRouteMessage() {
+      const hash = new URLSearchParams(String(window.location.hash || "").replace(/^#/, ""));
+      const query = new URLSearchParams(window.location.search || "");
+      return hash.get("error_description")
+        || query.get("error_description")
+        || hash.get("error")
+        || query.get("error")
+        || "";
+    }
+
+    async function prepareAcceptInvite() {
+      await loadAuthConfig();
+      showAcceptInviteView("");
+      if (!state.authEnabled) {
+        setAcceptInviteError("A autenticação não está ativa neste ambiente.");
+        return false;
+      }
+
+      const routeError = authRouteMessage();
+      if (routeError) {
+        setAcceptInviteError("Este convite não pôde ser validado. Solicite um novo convite ao administrador.");
+        return false;
+      }
+
+      const client = authClient();
+      const code = new URLSearchParams(window.location.search || "").get("code");
+      if (code) {
+        const { error } = await client.auth.exchangeCodeForSession(code);
+        if (error) {
+          setAcceptInviteError("Este convite expirou ou já foi utilizado. Solicite um novo convite ao administrador.");
+          return false;
+        }
+      }
+
+      const { data } = await client.auth.getSession();
+      state.session = data.session;
+      if (!state.session?.user) {
+        setAcceptInviteError("Não foi possível confirmar o convite. Abra novamente o link recebido por e-mail.");
+        return false;
+      }
+
+      setBrowserPath("/accept-invite", true);
+      const intro = document.getElementById("acceptInviteIntro");
+      if (intro) intro.textContent = `Convite confirmado para ${state.session.user.email || "seu e-mail"}. Crie sua senha para acessar.`;
       return true;
     }
 
@@ -2310,7 +2606,7 @@ function showAuthView() {
       if (state.authEnabled) {
         const response = await fetch("/api/news-feed", { headers: authHeaders() });
         const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.error || "Não foi possível carregar notícias.");
+        if (!response.ok) throw new Error(getFriendlyErrorMessage(payload.error || payload, "Não foi possível carregar notícias."));
 
         state.recentItems = payload.recentRows || [];
         state.mapItems = payload.mapRows || [];
@@ -3078,6 +3374,10 @@ function showAuthView() {
 
     async function applyRoute(path = window.location.pathname, options = {}) {
       const route = normalizeRoute(path);
+      if (isInvitePage(route)) {
+        await prepareAcceptInvite();
+        return;
+      }
       if (state.authEnabled && !state.session && route !== "/login") {
         state.pendingPath = route;
         showAuthView();
@@ -3193,92 +3493,8 @@ function showAuthView() {
         }),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Não foi possível concluir a ação administrativa.");
+      if (!response.ok) throw new Error(getFriendlyErrorMessage(payload.error || payload, "Não foi possível concluir a ação administrativa."));
       return payload;
-    }
-
-    function packageOptions(selectedId = "") {
-      return `<option value="">Sem pacote</option>${state.admin.packages.map((pkg) => `
-        <option value="${escapeHtml(pkg.id)}" ${pkg.id === selectedId ? "selected" : ""}>${escapeHtml(pkg.name)}</option>
-      `).join("")}`;
-    }
-
-    function currentPackageForUser(userId) {
-      return state.admin.userPackages?.find((item) => item.user_id === userId && item.is_active);
-    }
-
-    function usageCount(userId, eventTypes) {
-      const types = Array.isArray(eventTypes) ? eventTypes : [eventTypes];
-      return state.admin.usage.filter((event) => event.user_id === userId && types.includes(event.event_type)).length;
-    }
-
-    function renderAdmin() {
-      const users = state.admin.users || [];
-      const packages = state.admin.packages || [];
-      const usage = state.admin.usage || [];
-      const logs = state.admin.logs || [];
-      const activeUsers = users.filter((user) => user.status === "active").length;
-      document.getElementById("adminSummary").innerHTML = [
-        ["Usuários", users.length, `${activeUsers} ativos`],
-        ["Pacotes", packages.length, `${packages.filter((pkg) => pkg.is_active).length} ativos`],
-        ["Uso IA", usage.filter((event) => ["ai_summary", "image_generation", "weekly_summary"].includes(event.event_type)).length, "eventos no mês"],
-        ["Logs", logs.length, "últimos registros"],
-      ].map(([label, value, hint]) => `
-        <article class="stat"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div><div class="hint">${escapeHtml(hint)}</div></article>
-      `).join("");
-
-      document.getElementById("packagesAdminList").innerHTML = packages.length ? `
-        <table class="admin-table">
-          <thead><tr><th>Pacote</th><th>Limites</th><th>Recursos</th><th>Status</th><th>Ações</th></tr></thead>
-          <tbody>${packages.map((pkg) => `
-            <tr>
-              <td><b>${escapeHtml(pkg.name)}</b><br>${escapeHtml(pkg.description || "")}</td>
-              <td>${Number(pkg.monthly_news_limit || 0)} consultas<br>${Number(pkg.monthly_ai_summary_limit || 0)} IA<br>${Number(pkg.monthly_pdf_limit || 0)} PDFs<br>${Number(pkg.max_users || 0) || "Ilimitado"} usuários</td>
-              <td>Mapa: ${pkg.can_access_map ? "sim" : "não"}<br>Resumo: ${pkg.can_generate_image ? "sim" : "não"}<br>Semanal: ${pkg.can_generate_weekly_summary ? "sim" : "não"}</td>
-              <td>${pkg.is_active ? "Ativo" : "Inativo"}</td>
-              <td><button class="mini-button edit-package" type="button" data-id="${escapeHtml(pkg.id)}">Editar</button></td>
-            </tr>
-          `).join("")}</tbody>
-        </table>
-      ` : `<div class="hint">Nenhum pacote cadastrado.</div>`;
-
-      document.getElementById("usersAdminList").innerHTML = users.length ? `
-        <table class="admin-table">
-          <thead><tr><th>Usuário</th><th>Perfil</th><th>Pacote</th><th>Consumo mensal</th><th>Ações</th></tr></thead>
-          <tbody>${users.map((user) => {
-            const current = currentPackageForUser(user.id);
-            return `
-              <tr>
-                <td><b>${escapeHtml(user.full_name || user.email || "-")}</b><br>${escapeHtml(user.email || "")}<br>${escapeHtml(user.company_name || "")}</td>
-                <td>${escapeHtml(user.role)}<br>${escapeHtml(user.status)}</td>
-                <td><select class="map-select assign-package" data-user-id="${escapeHtml(user.id)}">${packageOptions(current?.package_id || "")}</select></td>
-                <td>${usageCount(user.id, "news_view")} consultas<br>${usageCount(user.id, ["ai_summary", "image_generation", "weekly_summary"])} IA<br>${usageCount(user.id, "pdf_generation")} PDFs</td>
-                <td class="admin-actions">
-                  <button class="mini-button toggle-user-status" type="button" data-user-id="${escapeHtml(user.id)}" data-status="${user.status === "active" ? "blocked" : "active"}">${user.status === "active" ? "Bloquear" : "Ativar"}</button>
-                </td>
-              </tr>
-            `;
-          }).join("")}</tbody>
-        </table>
-      ` : `<div class="hint">Nenhum usuário encontrado.</div>`;
-
-      document.getElementById("usageAdminList").innerHTML = usage.length ? `
-        <table class="admin-table">
-          <thead><tr><th>Data</th><th>Usuário</th><th>Evento</th><th>Modelo</th></tr></thead>
-          <tbody>${usage.slice(0, 80).map((event) => `
-            <tr><td>${escapeHtml(formatDate(event.created_at))}</td><td>${escapeHtml(users.find((user) => user.id === event.user_id)?.email || event.user_id)}</td><td>${escapeHtml(event.event_type)}</td><td>${escapeHtml(event.model || "-")}</td></tr>
-          `).join("")}</tbody>
-        </table>
-      ` : `<div class="hint">Sem consumo registrado neste mês.</div>`;
-
-      document.getElementById("auditAdminList").innerHTML = logs.length ? `
-        <table class="admin-table">
-          <thead><tr><th>Data</th><th>Ação</th><th>Alvo</th></tr></thead>
-          <tbody>${logs.map((log) => `
-            <tr><td>${escapeHtml(formatDate(log.created_at))}</td><td>${escapeHtml(log.action)}</td><td>${escapeHtml(log.target_type)} ${escapeHtml(log.target_id || "")}</td></tr>
-          `).join("")}</tbody>
-        </table>
-      ` : `<div class="hint">Sem logs de auditoria.</div>`;
     }
 
     function adminInputValue(id, fallback = "") {
@@ -3289,11 +3505,137 @@ function showAuthView() {
       return `<span class="admin-badge ${escapeHtml(tone)}">${escapeHtml(label)}</span>`;
     }
 
+    function roleBadge(role) {
+      if (role === "admin") return adminBadge("Admin", "warn");
+      if (role === "manager") return adminBadge("Gestor");
+      return adminBadge("Cliente", "neutral");
+    }
+
+    function statusBadge(status) {
+      if (status === "active") return adminBadge("Ativo");
+      if (status === "inactive") return adminBadge("Inativo", "warn");
+      return adminBadge("Bloqueado", "danger");
+    }
+
+    function formatLogDetails(metadata = {}) {
+      if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return "Sem detalhes";
+      const labels = {
+        email: "E-mail",
+        role: "Perfil",
+        status: "Status",
+        package_id: "Pacote",
+        company_name: "Empresa",
+        name: "Nome",
+        source: "Fonte",
+      };
+      const entries = Object.entries(metadata)
+        .filter(([, value]) => value !== null && value !== undefined && value !== "")
+        .slice(0, 6)
+        .map(([key, value]) => {
+          const label = labels[key] || key.replace(/_/g, " ");
+          const displayValue = typeof value === "object" ? "dados registrados" : String(value);
+          return `${label}: ${displayValue}`;
+        });
+      return entries.length ? entries.join(" · ") : "Sem detalhes";
+    }
+
+    function packageLimitsHtml(pkg) {
+      return `
+        <div class="admin-limit-list">
+          <div><span>Consultas/mês</span><strong>${Number(pkg.monthly_news_limit || 0)}</strong></div>
+          <div><span>IA/mês</span><strong>${Number(pkg.monthly_ai_summary_limit || 0)}</strong></div>
+          <div><span>PDFs/mês</span><strong>${Number(pkg.monthly_pdf_limit || 0)}</strong></div>
+          <div><span>Usuários</span><strong>${Number(pkg.max_users || 0) || "Ilimitado"}</strong></div>
+        </div>
+      `;
+    }
+
+    function packageResourcesHtml(pkg) {
+      return `
+        <div class="admin-resource-row">
+          ${pkg.can_access_map ? adminBadge("Mapa") : adminBadge("Mapa off", "neutral")}
+          ${pkg.can_generate_image ? adminBadge("Resumo individual") : adminBadge("Resumo off", "neutral")}
+          ${pkg.can_generate_weekly_summary ? adminBadge("Resumo semanal") : adminBadge("Semanal off", "neutral")}
+          ${Number(pkg.monthly_ai_summary_limit || 0) > 0 ? adminBadge("IA") : adminBadge("IA off", "neutral")}
+          ${Number(pkg.monthly_pdf_limit || 0) > 0 ? adminBadge("PDF") : adminBadge("PDF off", "neutral")}
+        </div>
+      `;
+    }
+
+    function userConsumptionHtml(info) {
+      if (!info.pkg) {
+        return `<span class="admin-note">Consumo indisponível até vincular um pacote.</span>`;
+      }
+      return `
+        <div class="admin-consumption-list">
+          <div><span>Consultas</span><strong>${info.news} / ${info.limits.news || 0}</strong></div>
+          <div><span>IA</span><strong>${info.ai} / ${info.limits.ai || 0}</strong></div>
+          <div><span>PDFs</span><strong>${info.pdf} / ${info.limits.pdf || 0}</strong></div>
+        </div>
+        ${(info.limits.news || info.limits.ai || info.limits.pdf) ? progressBar(info.percent) : ""}
+        ${consumptionStatus(info)}
+      `;
+    }
+
     function packageOptions(selectedId = "") {
       const packages = state.admin.packages || [];
       return `<option value="">Sem pacote</option>${packages.map((pkg) => `
         <option value="${escapeHtml(pkg.id)}" ${pkg.id === selectedId ? "selected" : ""}>${escapeHtml(pkg.name)}</option>
       `).join("")}`;
+    }
+
+    function assignableRoleOptions(selectedValue = "client") {
+      const roles = state.profile?.role === "admin"
+        ? [["client", "Cliente"], ["manager", "Gestor"], ["admin", "Admin"]]
+        : [["client", "Cliente"], ["manager", "Gestor"]];
+      const selected = roles.some(([value]) => value === selectedValue) ? selectedValue : "client";
+      return roles.map(([value, label]) => `<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`).join("");
+    }
+
+    function updateInviteRoleOptions() {
+      const select = document.getElementById("inviteRole");
+      if (!select) return;
+      const currentValue = select.value || "client";
+      select.innerHTML = assignableRoleOptions(currentValue);
+      updateInvitePackageWarning();
+    }
+
+    function updateUserFilterOptions() {
+      const select = document.getElementById("userFilter");
+      if (!select) return;
+      const currentValue = select.value || "all";
+      const options = [
+        ["all", "Todos"],
+        ["active", "Ativos"],
+        ["blocked", "Bloqueados"],
+        ...(state.profile?.role === "admin" ? [["admin", "Admins"]] : []),
+        ["manager", "Gestores"],
+        ["client", "Clientes"],
+        ["no_package", "Sem pacote"],
+      ];
+      select.innerHTML = options.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+      select.value = options.some(([value]) => value === currentValue) ? currentValue : "all";
+    }
+
+    function updateInvitePackageWarning() {
+      const warning = document.getElementById("invitePackageWarning");
+      if (!warning) return;
+      const role = document.getElementById("inviteRole")?.value || "client";
+      const packageSelect = document.getElementById("invitePackage");
+      const packageId = packageSelect?.value || "";
+      if (packageSelect) packageSelect.required = role === "client";
+      const activePackages = (state.admin.packages || []).filter((pkg) => pkg.is_active);
+      if (!activePackages.length) {
+        warning.textContent = "Crie pelo menos um pacote ativo antes de convidar clientes.";
+        warning.hidden = false;
+        return;
+      }
+      if (role === "client" && !packageId) {
+        warning.textContent = "Selecione um pacote inicial para o cliente.";
+        warning.hidden = false;
+        return;
+      }
+      warning.hidden = true;
     }
 
     function updateInvitePackageOptions() {
@@ -3303,8 +3645,7 @@ function showAuthView() {
       const currentValue = select.value;
       select.innerHTML = `<option value="">Sem pacote</option>${activePackages.map((pkg) => `<option value="${escapeHtml(pkg.id)}">${escapeHtml(pkg.name)}</option>`).join("")}`;
       select.value = activePackages.some((pkg) => pkg.id === currentValue) ? currentValue : "";
-      const warning = document.getElementById("invitePackageWarning");
-      if (warning) warning.hidden = activePackages.length > 0;
+      updateInvitePackageWarning();
     }
 
     function currentPackageForUser(userId) {
@@ -3371,6 +3712,7 @@ function showAuthView() {
       if (filter === "active") return user.status === "active";
       if (filter === "blocked") return user.status === "blocked" || user.status === "inactive";
       if (filter === "admin") return user.role === "admin";
+      if (filter === "manager") return user.role === "manager";
       if (filter === "client") return user.role === "client";
       if (filter === "no_package") return !current;
       return true;
@@ -3403,6 +3745,8 @@ function showAuthView() {
       const latestLog = logs[0];
 
       updateInvitePackageOptions();
+      updateInviteRoleOptions();
+      updateUserFilterOptions();
       document.getElementById("adminSummary").innerHTML = [
         ["Usuários ativos", activeUsers, `${users.length} cadastrados`],
         ["Pacotes ativos", packages.filter((pkg) => pkg.is_active).length, `${packages.length} cadastrados`],
@@ -3420,59 +3764,66 @@ function showAuthView() {
       ].join("");
 
       document.getElementById("packagesAdminList").innerHTML = packages.length ? `
-        <table class="admin-table">
-          <thead><tr><th>Pacote</th><th>Limites</th><th>Recursos</th><th>Usuários</th><th>Criado em</th><th>Status</th><th>Ações</th></tr></thead>
-          <tbody>${packages.map((pkg) => {
-            const userCount = packageUsersCount(pkg.id);
-            const canDeletePackage = state.profile?.role === "admin" && userCount === 0;
-            return `
-              <tr>
-                <td><b>${escapeHtml(pkg.name)}</b><br>${escapeHtml(pkg.description || "")}</td>
-                <td>${Number(pkg.monthly_news_limit || 0)} consultas<br>${Number(pkg.monthly_ai_summary_limit || 0)} IA<br>${Number(pkg.monthly_pdf_limit || 0)} PDFs<br>${Number(pkg.max_users || 0) || "Ilimitado"} usuários</td>
-                <td>${pkg.can_access_map ? adminBadge("Mapa") : adminBadge("Mapa off", "neutral")} ${pkg.can_generate_image ? adminBadge("Resumo") : adminBadge("Resumo off", "neutral")} ${pkg.can_generate_weekly_summary ? adminBadge("Semanal") : adminBadge("Semanal off", "neutral")}</td>
-                <td>${userCount}</td>
-                <td>${escapeHtml(formatDate(pkg.created_at))}</td>
-                <td>${pkg.is_active ? adminBadge("Ativo") : adminBadge("Inativo", "warn")}</td>
-                <td class="admin-actions">
-                  <button class="mini-button edit-package" type="button" data-id="${escapeHtml(pkg.id)}">Editar</button>
-                  <button class="mini-button duplicate-package" type="button" data-id="${escapeHtml(pkg.id)}">Duplicar</button>
-                  <button class="mini-button toggle-package-status" type="button" data-id="${escapeHtml(pkg.id)}" data-active="${pkg.is_active ? "false" : "true"}">${pkg.is_active ? "Desativar" : "Ativar"}</button>
-                  <button class="mini-button delete-package" type="button" data-id="${escapeHtml(pkg.id)}" ${canDeletePackage ? "" : "disabled"} title="${canDeletePackage ? "Excluir pacote" : "Apenas admin pode excluir pacote sem usuários vinculados"}">Excluir</button>
-                </td>
-              </tr>
-            `;
-          }).join("")}</tbody>
-        </table>
+        <div class="admin-card-list">${packages.map((pkg) => {
+          const userCount = packageUsersCount(pkg.id);
+          const canDeletePackage = state.profile?.role === "admin" && userCount === 0;
+          return `
+            <article class="admin-record-card">
+              <div class="admin-record-head">
+                <div class="admin-record-title">
+                  <strong>${escapeHtml(pkg.name)}</strong>
+                  <span>${escapeHtml(pkg.description || "Sem descrição")}</span>
+                </div>
+                <div class="admin-record-meta">${pkg.is_active ? adminBadge("Ativo") : adminBadge("Inativo", "warn")}</div>
+              </div>
+              <div class="admin-record-body">
+                <div class="admin-record-field"><span>Limites</span>${packageLimitsHtml(pkg)}</div>
+                <div class="admin-record-field"><span>Recursos</span>${packageResourcesHtml(pkg)}</div>
+                <div class="admin-record-field"><span>Usuários vinculados</span><strong>${userCount}</strong></div>
+                <div class="admin-record-field"><span>Criado em</span><strong>${escapeHtml(formatDate(pkg.created_at))}</strong></div>
+              </div>
+              <div class="admin-card-actions">
+                <button class="mini-button edit-package" type="button" data-id="${escapeHtml(pkg.id)}">Editar</button>
+                <button class="mini-button duplicate-package" type="button" data-id="${escapeHtml(pkg.id)}">Duplicar</button>
+                <button class="mini-button toggle-package-status" type="button" data-id="${escapeHtml(pkg.id)}" data-active="${pkg.is_active ? "false" : "true"}">${pkg.is_active ? "Desativar" : "Ativar"}</button>
+                <button class="mini-button delete-package" type="button" data-id="${escapeHtml(pkg.id)}" ${canDeletePackage ? "" : "disabled"} title="${canDeletePackage ? "Excluir pacote" : "Apenas admin pode excluir pacote sem usuários vinculados"}">Excluir</button>
+              </div>
+            </article>
+          `;
+        }).join("")}</div>
       ` : `<div class="admin-empty">Nenhum pacote cadastrado.</div>`;
 
       const filteredUsers = users.filter(userMatchesFilters);
       document.getElementById("usersAdminList").innerHTML = filteredUsers.length ? `
-        <table class="admin-table">
-          <thead><tr><th>Nome</th><th>E-mail</th><th>Empresa</th><th>Papel</th><th>Status</th><th>Pacote atual</th><th>Consumo no mês</th><th>Criado em</th><th>Último acesso</th><th>Ações</th></tr></thead>
-          <tbody>${filteredUsers.map((user) => {
-            const info = usageForUser(user);
-            return `
-              <tr>
-                <td><b>${escapeHtml(user.full_name || "-")}</b></td>
-                <td>${escapeHtml(user.email || "-")}</td>
-                <td>${escapeHtml(user.company_name || "-")}</td>
-                <td>${user.role === "admin" ? adminBadge("Admin") : adminBadge("Client", "neutral")}</td>
-                <td>${user.status === "active" ? adminBadge("Ativo") : adminBadge(user.status || "Bloqueado", "danger")}</td>
-                <td><select class="map-select assign-package" data-user-id="${escapeHtml(user.id)}">${packageOptions(info.current?.package_id || "")}</select></td>
-                <td>${info.news}/${info.limits.news || 0} consultas<br>${info.ai}/${info.limits.ai || 0} IA<br>${info.pdf}/${info.limits.pdf || 0} PDFs ${progressBar(info.percent)}${consumptionStatus(info)}</td>
-                <td>${escapeHtml(formatDate(user.created_at))}</td>
-                <td>${escapeHtml(formatDate(user.last_sign_in_at || user.updated_at || user.created_at))}</td>
-                <td class="admin-actions">
-                  <button class="mini-button edit-user" type="button" data-user-id="${escapeHtml(user.id)}">Editar</button>
-                  <button class="mini-button toggle-user-status" type="button" data-user-id="${escapeHtml(user.id)}" data-status="${user.status === "active" ? "blocked" : "active"}">${user.status === "active" ? "Bloquear" : "Ativar"}</button>
-                  <button class="mini-button view-user-usage" type="button" data-user-id="${escapeHtml(user.id)}">Consumo</button>
-                  <button class="mini-button view-user-logs" type="button" data-user-id="${escapeHtml(user.id)}">Logs</button>
-                </td>
-              </tr>
-            `;
-          }).join("")}</tbody>
-        </table>
-      ` : `<div class="admin-empty">Nenhum usuario encontrado.</div>`;
+        <div class="admin-card-list">${filteredUsers.map((user) => {
+          const info = usageForUser(user);
+          const canDeleteUser = state.profile?.role === "admin" && user.id !== state.session?.user?.id;
+          return `
+            <article class="admin-record-card">
+              <div class="admin-record-head">
+                <div class="admin-record-title">
+                  <strong>${escapeHtml(user.full_name || user.email || "-")}</strong>
+                  <span>${escapeHtml(user.email || "-")}</span>
+                </div>
+                <div class="admin-record-meta">${roleBadge(user.role)} ${statusBadge(user.status)}</div>
+              </div>
+              <div class="admin-record-body">
+                <div class="admin-record-field"><span>Empresa</span><strong>${escapeHtml(user.company_name || "-")}</strong></div>
+                <div class="admin-record-field"><span>Pacote atual</span><select class="map-select admin-package-select assign-package" data-user-id="${escapeHtml(user.id)}">${packageOptions(info.current?.package_id || "")}</select></div>
+                <div class="admin-record-field"><span>Consumo no mês</span>${userConsumptionHtml(info)}</div>
+                <div class="admin-record-field"><span>Acesso</span><strong>Criado: ${escapeHtml(formatDate(user.created_at))}</strong><br><span class="admin-note">Último acesso: ${escapeHtml(formatDate(user.last_sign_in_at || user.updated_at || user.created_at))}</span></div>
+              </div>
+              <div class="admin-card-actions">
+                <button class="mini-button edit-user" type="button" data-user-id="${escapeHtml(user.id)}">Editar</button>
+                <button class="mini-button toggle-user-status" type="button" data-user-id="${escapeHtml(user.id)}" data-status="${user.status === "active" ? "blocked" : "active"}">${user.status === "active" ? "Bloquear" : "Ativar"}</button>
+                <button class="mini-button view-user-usage" type="button" data-user-id="${escapeHtml(user.id)}">Consumo</button>
+                <button class="mini-button view-user-logs" type="button" data-user-id="${escapeHtml(user.id)}">Logs</button>
+                ${state.profile?.role === "admin" ? `<button class="mini-button danger delete-user" type="button" data-user-id="${escapeHtml(user.id)}" ${canDeleteUser ? "" : "disabled"} title="${canDeleteUser ? "Excluir usuário e dados vinculados" : "Não é permitido excluir o próprio admin"}">Excluir</button>` : ""}
+              </div>
+            </article>
+          `;
+        }).join("")}</div>
+      ` : `<div class="admin-empty">Nenhum usuário encontrado.</div>`;
 
       const usageRows = users.map((user) => ({ user, info: usageForUser(user) })).filter(({ user, info }) => usageMatchesFilters(user, info));
       document.getElementById("usageAdminList").innerHTML = usageRows.length ? `
@@ -3512,7 +3863,7 @@ function showAuthView() {
                 <td>${escapeHtml(log.action)}</td>
                 <td>${escapeHtml(log.target_type)}</td>
                 <td>${escapeHtml(log.target_id || "-")}</td>
-                <td>${escapeHtml(JSON.stringify(log.metadata || {}))}</td>
+                <td>${escapeHtml(formatLogDetails(log.metadata || {}))}</td>
               </tr>
             `;
           }).join("")}</tbody>
@@ -3806,7 +4157,7 @@ function showAuthView() {
 
     async function deletePackage(packageId) {
       if (packageUsersCount(packageId) > 0) {
-        setNotice("Pacote com usuários vinculados não pode ser excluído.");
+        setNotice("Este pacote possui usuários vinculados e não pode ser excluído.");
         return;
       }
       try {
@@ -3815,6 +4166,48 @@ function showAuthView() {
         await loadAdminData();
       } catch (error) {
         setNotice(error.message);
+      }
+    }
+
+    function resolveConfirmModal(value) {
+      document.getElementById("confirmModal").classList.remove("open");
+      if (confirmResolver) confirmResolver(Boolean(value));
+      confirmResolver = null;
+    }
+
+    function confirmActionModal(message, title = "Confirmar ação", actionLabel = "Confirmar") {
+      document.getElementById("confirmTitle").textContent = title;
+      document.getElementById("confirmMessage").textContent = message;
+      document.getElementById("confirmAction").textContent = actionLabel;
+      document.getElementById("confirmModal").classList.add("open");
+      return new Promise((resolve) => {
+        confirmResolver = resolve;
+      });
+    }
+
+    async function deleteUser(userId) {
+      if (state.profile?.role !== "admin") {
+        setNotice("Apenas Admin pode excluir usuários definitivamente.");
+        return;
+      }
+      if (userId === state.session?.user?.id) {
+        setNotice("Não é permitido excluir o próprio usuário admin.");
+        return;
+      }
+      const user = (state.admin.users || []).find((item) => item.id === userId);
+      const label = user?.email || user?.full_name || "este usuário";
+      const confirmed = await confirmActionModal(
+        `Excluir definitivamente ${label}? Esta ação removerá o acesso, pacote, consumo e configurações vinculadas.`,
+        "Excluir usuário",
+        "Excluir definitivamente",
+      );
+      if (!confirmed) return;
+      try {
+        await adminApi(`/api/admin-user-delete?user_id=${encodeURIComponent(userId)}`, { method: "DELETE" });
+        setNotice("Usuário excluído definitivamente.");
+        await loadAdminData();
+      } catch (error) {
+        setNotice(error.message || "Não foi possível excluir o usuário.");
       }
     }
 
@@ -3835,42 +4228,79 @@ function showAuthView() {
       scrollToTarget("logsAdminSection");
     }
 
-    async function editUserProfile(userId) {
+    function setUserEditError(message = "") {
+      const target = document.getElementById("userEditError");
+      if (!target) return;
+      target.textContent = message ? getFriendlyErrorMessage(message, "Não foi possível salvar o usuário.") : "";
+      target.classList.toggle("show", Boolean(message));
+    }
+
+    function closeUserEditModal() {
+      document.getElementById("userEditModal").classList.remove("open");
+      setUserEditError("");
+    }
+
+    function editUserProfile(userId) {
       const user = (state.admin.users || []).find((item) => item.id === userId);
       if (!user) return;
-      const fullName = window.prompt("Nome do usuario", user.full_name || "");
-      if (fullName === null) return;
-      const companyName = window.prompt("Empresa", user.company_name || "");
-      if (companyName === null) return;
-      const role = window.prompt("Papel: admin, manager ou client", user.role || "client");
-      if (role === null) return;
-      const status = window.prompt("Status: active, blocked ou inactive", user.status || "active");
-      if (status === null) return;
-      const normalizedRole = ["admin", "manager"].includes(role) ? role : "client";
-      if (state.profile?.role !== "admin" && normalizedRole !== "client") {
-        setNotice("Gestor só pode manter usuários como cliente.");
+      if (state.profile?.role !== "admin" && user.role === "admin") {
+        setNotice("Você não tem permissão para editar administradores.");
+        return;
+      }
+      const currentPackage = currentPackageForUser(user.id);
+      document.getElementById("editUserId").value = user.id;
+      document.getElementById("editUserName").value = user.full_name || "";
+      document.getElementById("editUserEmail").value = user.email || "";
+      document.getElementById("editUserCompany").value = user.company_name || "";
+      document.getElementById("editUserRole").innerHTML = assignableRoleOptions(user.role || "client");
+      document.getElementById("editUserStatus").value = ["active", "blocked", "inactive"].includes(user.status) ? user.status : "active";
+      document.getElementById("editUserPackage").innerHTML = packageOptions(currentPackage?.package_id || "");
+      document.getElementById("editUserPackageOriginal").value = currentPackage?.package_id || "";
+      document.getElementById("editUserNotes").value = "Alterações de usuário são registradas nos logs de auditoria.";
+      setUserEditError("");
+      document.getElementById("userEditModal").classList.add("open");
+    }
+
+    async function saveUserProfile(event) {
+      event.preventDefault();
+      const button = document.getElementById("saveUserEdit");
+      const userId = document.getElementById("editUserId").value;
+      const role = document.getElementById("editUserRole").value;
+      if (state.profile?.role !== "admin" && role === "admin") {
+        setUserEditError("Você não tem permissão para atribuir perfil Admin.");
         return;
       }
       const payload = {
-        full_name: fullName.trim(),
-        company_name: companyName.trim(),
-        role: normalizedRole,
-        status: ["active", "blocked", "inactive"].includes(status) ? status : "active",
+        full_name: document.getElementById("editUserName").value.trim(),
+        company_name: document.getElementById("editUserCompany").value.trim(),
+        role,
+        status: document.getElementById("editUserStatus").value,
       };
       try {
+        button.disabled = true;
+        button.textContent = "Salvando...";
         await adminApi("/api/admin-user-profile", {
           method: "PATCH",
           body: JSON.stringify({ user_id: userId, ...payload }),
         });
-        setNotice("Usuário atualizado.");
+        const nextPackage = document.getElementById("editUserPackage").value;
+        const originalPackage = document.getElementById("editUserPackageOriginal").value;
+        if (nextPackage !== originalPackage) await assignPackage(userId, nextPackage);
+        closeUserEditModal();
+        setNotice("Usuário atualizado com sucesso.");
         await loadAdminData();
       } catch (error) {
-        setNotice(error.message);
+        setUserEditError(error.message);
+      } finally {
+        button.disabled = false;
+        button.textContent = "Salvar alterações";
       }
     }
 
     async function inviteUser(event) {
       event.preventDefault();
+      const form = event.target;
+      const button = document.getElementById("inviteSubmitButton");
       const payload = {
         full_name: document.getElementById("inviteName").value.trim(),
         email: document.getElementById("inviteEmail").value.trim(),
@@ -3879,19 +4309,36 @@ function showAuthView() {
         package_id: document.getElementById("invitePackage").value,
         status: document.getElementById("inviteStatus").value,
       };
-      const response = await fetch("/api/admin-users", {
-        method: "POST",
-        headers: authHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setNotice(data.error || "Não foi possível convidar usuário.");
+      if (payload.role === "client" && !payload.package_id) {
+        updateInvitePackageWarning();
+        setNotice("Selecione um pacote inicial antes de convidar o cliente.");
         return;
       }
-      event.target.reset();
-      setNotice("Convite enviado e perfil preparado.");
-      await loadAdminData();
+      if (button) {
+        button.disabled = true;
+        button.textContent = "Enviando convite...";
+      }
+      try {
+        const response = await fetch("/api/admin-users", {
+          method: "POST",
+          headers: authHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Não foi possível enviar o convite.");
+        form.reset();
+        setNotice("Convite enviado com sucesso. O usuário receberá o e-mail para criar a senha.");
+        await loadAdminData();
+      } catch (error) {
+        setNotice(error.message || "Não foi possível enviar o convite. Confira os dados e tente novamente.");
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = "Enviar convite";
+        }
+        updateInviteRoleOptions();
+        updateInvitePackageOptions();
+      }
     }
 
     function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
@@ -4614,7 +5061,7 @@ function showAuthView() {
 
     function setNotice(message) {
       const notice = document.getElementById("notice");
-      notice.textContent = message || "";
+      notice.textContent = message ? getFriendlyErrorMessage(message) : "";
       notice.style.display = message ? "block" : "none";
     }
 
@@ -4630,8 +5077,8 @@ function showAuthView() {
         state.recentItems = [];
         state.mapItems = [];
         state.total = 0;
-        state.dataLoadError = error.message || "Erro ao carregar dados.";
-        setNotice(error.message);
+        state.dataLoadError = getFriendlyErrorMessage(error, "Erro ao carregar dados.");
+        setNotice(state.dataLoadError);
       } finally {
         renderStats();
         renderRecentAlerts();
@@ -4646,10 +5093,51 @@ function showAuthView() {
     async function bootstrap() {
       renderMapFilterButtons();
       state.savedNewsKeys = loadSavedNewsKeys();
-      const allowed = await initAuth();
+      await loadAuthConfig();
+      if (isInvitePage()) {
+        await prepareAcceptInvite();
+        return;
+      }
+      const allowed = await initAuth({ configLoaded: true });
       if (!allowed) return;
       await refresh();
       await applyRoute(window.location.pathname, { replace: true });
+    }
+
+    async function submitAcceptInvite(event) {
+      event.preventDefault();
+      const password = document.getElementById("acceptPassword").value;
+      const confirmation = document.getElementById("acceptPasswordConfirm").value;
+      const button = document.getElementById("acceptInviteButton");
+      setAcceptInviteError("");
+      if (password.length < 8) {
+        setAcceptInviteError("Use uma senha com pelo menos 8 caracteres.");
+        return;
+      }
+      if (password !== confirmation) {
+        setAcceptInviteError("As senhas não conferem.");
+        return;
+      }
+      button.disabled = true;
+      button.textContent = "Criando acesso...";
+      try {
+        if (!state.session?.user) {
+          const valid = await prepareAcceptInvite();
+          if (!valid) return;
+        }
+        const { error } = await authClient().auth.updateUser({ password });
+        if (error) throw error;
+        await loadMyAccess();
+        state.pendingPath = "/dashboard";
+        await refresh();
+        showAppView();
+        await applyRoute("/dashboard", { replace: true });
+      } catch (error) {
+        setAcceptInviteError(error.message || "Não foi possível criar a senha. Solicite um novo convite.");
+      } finally {
+        button.disabled = false;
+        button.textContent = "Criar senha e acessar";
+      }
     }
 
     async function submitLogin(event) {
@@ -4684,12 +5172,12 @@ function showAuthView() {
         setAuthError("Informe o e-mail para recuperar a senha.");
         return;
       }
-      const { error } = await authClient().auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+      const { error } = await authClient().auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/accept-invite` });
       setAuthError(error ? error.message : "Enviamos as instruções de recuperação para o e-mail informado.");
     }
 
     async function logout() {
-      const buttons = [document.getElementById("logoutButton"), document.getElementById("sidebarLogoutButton"), document.getElementById("blockedLogoutButton")].filter(Boolean);
+      const buttons = [document.getElementById("logoutButton"), document.getElementById("sidebarLogoutButton"), document.getElementById("blockedLogoutButton"), document.getElementById("blockedLoginButton")].filter(Boolean);
       const labels = buttons.map((button) => button.textContent);
       buttons.forEach((button) => {
         button.disabled = true;
@@ -4949,6 +5437,18 @@ function showAuthView() {
     document.getElementById("preparedModal").addEventListener("click", (event) => {
       if (event.target.id === "preparedModal") closePreparedModal();
     });
+    document.getElementById("closeUserEditModal").addEventListener("click", closeUserEditModal);
+    document.getElementById("cancelUserEdit").addEventListener("click", closeUserEditModal);
+    document.getElementById("userEditForm").addEventListener("submit", saveUserProfile);
+    document.getElementById("userEditModal").addEventListener("click", (event) => {
+      if (event.target.id === "userEditModal") closeUserEditModal();
+    });
+    document.getElementById("cancelConfirmAction").addEventListener("click", () => resolveConfirmModal(false));
+    document.getElementById("confirmAction").addEventListener("click", () => resolveConfirmModal(true));
+    document.getElementById("confirmModal").addEventListener("click", (event) => {
+      if (event.target.id === "confirmModal") resolveConfirmModal(false);
+    });
+    document.getElementById("blockedLoginButton")?.addEventListener("click", logout);
     ["globalSearch", "periodFilter", "regionFilter", "categoryFilter", "sortFilter"].forEach((id) => {
       document.getElementById(id)?.addEventListener("input", syncClientFilters);
       document.getElementById(id)?.addEventListener("change", syncClientFilters);
@@ -4961,6 +5461,9 @@ function showAuthView() {
     document.getElementById("packageForm").addEventListener("submit", savePackage);
     document.getElementById("clearPackageForm").addEventListener("click", () => fillPackageForm(null));
     document.getElementById("inviteUserForm").addEventListener("submit", inviteUser);
+    document.getElementById("inviteRole").addEventListener("change", updateInvitePackageWarning);
+    document.getElementById("invitePackage").addEventListener("change", updateInvitePackageWarning);
+    document.getElementById("acceptInviteForm").addEventListener("submit", submitAcceptInvite);
     document.getElementById("packagesAdminList").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-id]");
       if (!button) return;
@@ -4986,6 +5489,7 @@ function showAuthView() {
       if (button.classList.contains("edit-user")) editUserProfile(button.dataset.userId);
       if (button.classList.contains("view-user-usage")) focusAdminUsage(button.dataset.userId);
       if (button.classList.contains("view-user-logs")) focusAdminLogs(button.dataset.userId);
+      if (button.classList.contains("delete-user")) deleteUser(button.dataset.userId);
     });
     bootstrap();
   </script>

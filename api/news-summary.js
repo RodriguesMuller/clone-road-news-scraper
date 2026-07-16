@@ -175,6 +175,18 @@ function openAiApiKey() {
   return value;
 }
 
+function publicErrorMessage(error) {
+  const message = String(error?.message || "");
+  if (/login|sessao|sessão|perfil|inativo|pacote|recurso|limite|acesso/i.test(message)) return message;
+  if (/openai_api_key|invalid_api_key|incorrect api key/i.test(message)) {
+    return "A IA ainda nao esta configurada corretamente. Verifique a chave da OpenAI na Vercel.";
+  }
+  if (/quota|billing|cota/i.test(message)) {
+    return "A IA recusou a chamada por limite de cota ou billing.";
+  }
+  return "Nao foi possivel gerar o resumo da noticia. Tente novamente.";
+}
+
 async function generateAiSummary(item) {
   const fallback = fallbackSummary(item);
   const apiKey = openAiApiKey();
@@ -276,8 +288,9 @@ module.exports = async function handler(req, res) {
     const { _usage, _model, ...publicSummary } = summary;
     json(res, 200, publicSummary);
   } catch (error) {
-    res.statusCode = /limite|pacote|login|sessao|acesso|recurso/i.test(error.message || "") ? 403 : 500;
+    const safeMessage = publicErrorMessage(error);
+    res.statusCode = /limite|pacote|login|sessao|acesso|recurso|perfil|inativo/i.test(safeMessage) ? 403 : 500;
     res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ error: error.message || "Erro ao gerar resumo da notícia" }));
+    res.end(JSON.stringify({ error: safeMessage }));
   }
 };

@@ -1,4 +1,5 @@
 const { assertCanUse, json, recordUsage } = require("./_auth");
+const { adminErrorMessage } = require("./_admin");
 
 const FEATURE_BY_EVENT = {
   pdf_generation: "pdf_generation",
@@ -23,6 +24,6 @@ module.exports = async function handler(req, res) {
     await recordUsage(account, eventType, { metadata: body.metadata || {} });
     json(res, 200, { ok: true });
   } catch (error) {
-    json(res, 403, { error: error.message || "Uso nao autorizado." });
+    json(res, 403, { error: adminErrorMessage(error) || "Uso nao autorizado." });
   }
 };
