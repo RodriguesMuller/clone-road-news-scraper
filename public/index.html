@@ -501,9 +501,10 @@
     .event-badge.monitoring { color: #ffe3a6; border-color: rgba(245,184,75,.42); background: rgba(245,184,75,.12); }
     .event-hero h2 { margin: 14px 0 8px; color: var(--color-text); font-size: clamp(24px, 4vw, 38px); line-height: 1.08; letter-spacing: 0; text-transform: none; }
     .event-lead { max-width: 900px; margin: 0; color: var(--color-muted-strong); font-size: 15px; line-height: 1.58; }
-    .event-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid rgba(255,255,255,.10); background: rgba(0,0,0,.14); }
+    .event-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid rgba(255,255,255,.10); background: rgba(0,0,0,.14); }
     .event-metric { min-width: 0; padding: 14px 18px; border-right: 1px solid rgba(255,255,255,.10); }
-    .event-metric:last-child { border-right: 0; }
+    .event-metric:nth-child(3n) { border-right: 0; }
+    .event-metric:nth-child(-n+3) { border-bottom: 1px solid rgba(255,255,255,.10); }
     .event-metric span { display: block; color: var(--color-muted); font-size: 9px; font-weight: 950; letter-spacing: .10em; text-transform: uppercase; }
     .event-metric strong { display: block; margin-top: 6px; color: var(--color-text); font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
     .event-detail-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr); gap: 16px; align-items: start; }
@@ -938,8 +939,9 @@
       .client-filter-grid { grid-template-columns: 1fr; }
       .event-detail-grid { grid-template-columns: 1fr; }
       .event-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .event-metric:nth-child(2) { border-right: 0; }
-      .event-metric:nth-child(-n+2) { border-bottom: 1px solid rgba(255,255,255,.10); }
+      .event-metric:nth-child(3n) { border-right: 1px solid rgba(255,255,255,.10); }
+      .event-metric:nth-child(2n) { border-right: 0; }
+      .event-metric:nth-child(-n+4) { border-bottom: 1px solid rgba(255,255,255,.10); }
       .event-alert-strip { grid-template-columns: 1fr; }
       .admin-record-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .view-tabs { overflow-x: auto; flex-wrap: nowrap; }
@@ -987,7 +989,7 @@
       .brand-copy strong { font-size: 22px; }
       .event-hero-main { padding: 18px; }
       .event-metrics { grid-template-columns: 1fr; }
-      .event-metric { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.10); }
+      .event-metric:nth-child(n) { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.10); }
       .event-metric:last-child { border-bottom: 0; }
     }
     @media print {
@@ -2644,6 +2646,20 @@ function showAuthView() {
       }).format(date);
     }
 
+    function formatCalendarDate(value) {
+      if (!value) return "Data não informada";
+      const dateOnly = String(value).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (dateOnly) return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
+      const date = parseBrasiliaDate(value);
+      if (!date) return "Data não informada";
+      return new Intl.DateTimeFormat("pt-BR", {
+        timeZone: BRASILIA_TIME_ZONE,
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }).format(date);
+    }
+
     function withinHours(item, hours) {
       const value = displayDateValue(item);
       return value >= Date.now() - hours * 60 * 60 * 1000;
@@ -3063,7 +3079,7 @@ function showAuthView() {
       if (!history.length) return `<p>O evento está sendo acompanhado desde o primeiro registro confirmado.</p>`;
       return `<div class="event-timeline">${history.map((item) => `
         <div class="event-timeline-item">
-          <strong>${escapeHtml(majorEventStatus({ status: item.status === "encerrado" ? "resolved" : "open", metadata: { operational_status: item.status } })[0])} · ${escapeHtml(formatDate(item.at))}</strong>
+          <strong>${escapeHtml(majorEventStatus({ status: item.status === "encerrado" ? "resolved" : "open", metadata: { operational_status: item.status } })[0])} · ${escapeHtml(item.on ? formatCalendarDate(item.on) : formatDate(item.at))}</strong>
           <span>${escapeHtml(item.note || "Atualização operacional registrada.")}</span>
         </div>
       `).join("")}</div>`;
@@ -3116,6 +3132,8 @@ function showAuthView() {
           </div>
           <div class="event-metrics">
             <div class="event-metric"><span>Status</span><strong>${escapeHtml(statusLabel)}</strong></div>
+            <div class="event-metric"><span>Início</span><strong>${escapeHtml(formatCalendarDate(meta.started_on || meta.started_at || event.created_at))}</strong></div>
+            <div class="event-metric"><span>Encerramento</span><strong>${escapeHtml(meta.ended_on || meta.ended_at || event.resolved_at ? formatCalendarDate(meta.ended_on || meta.ended_at || event.resolved_at) : "Em andamento")}</strong></div>
             <div class="event-metric"><span>Última atualização</span><strong>${escapeHtml(formatDate(meta.last_update_at || event.created_at))}</strong></div>
             <div class="event-metric"><span>Infraestrutura afetada</span><strong>${escapeHtml(infrastructures.join(" · ") || "Em confirmação")}</strong></div>
             <div class="event-metric"><span>Confiança da análise</span><strong>${escapeHtml(meta.confidence_label || "Alta")}</strong></div>
@@ -3180,6 +3198,7 @@ function showAuthView() {
       }
       const primary = events.find((event) => event.id === state.selectedMajorEventId) || active[0] || events[0];
       const otherActive = active.filter((event) => event.id !== primary.id);
+      const otherClosed = closed.filter((event) => event.id !== primary.id);
       target.innerHTML = renderPrimaryMajorEvent(primary) + (otherActive.length ? `
         <section class="event-section">
           <h3>Outros eventos ativos</h3>
@@ -3196,13 +3215,14 @@ function showAuthView() {
             `;
           }).join("")}</div>
         </section>
-      ` : "") + (closed.length ? `
+      ` : "") + (otherClosed.length ? `
         <section class="event-section">
           <h3>Eventos encerrados recentemente</h3>
-          <div class="event-history-list">${closed.slice(0, 5).map((event) => `
+          <div class="event-history-list">${otherClosed.slice(0, 5).map((event) => `
             <article class="event-evidence">
               <strong>${escapeHtml(event.message || "Evento encerrado")}</strong>
-              <div class="event-evidence-meta"><span>Encerrado</span><span>${escapeHtml(formatDate(event.resolved_at || majorEventMeta(event).last_update_at))}</span></div>
+              <div class="event-evidence-meta"><span>Encerrado</span><span>${escapeHtml(formatCalendarDate(majorEventMeta(event).ended_on || event.resolved_at || majorEventMeta(event).last_update_at))}</span></div>
+              <div class="event-actions" style="margin-top:10px;"><button class="mini-button" type="button" data-event-open="${escapeHtml(event.id)}">Abrir evento</button></div>
             </article>
           `).join("")}</div>
         </section>

@@ -69,3 +69,9 @@ jobs:
           EVENT_INTELLIGENCE_ENABLED: "true"
           SCRAPER_AI_SUMMARIES_ENABLED: "false"
         run: python main.py
+
+      - name: Publish curated Porto de Santos event
+        if: github.event_name == 'push'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python scripts/upsert_santos_trucker_event.py

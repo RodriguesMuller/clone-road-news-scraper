@@ -213,6 +213,15 @@ test("production UI exposes the event center only inside the authenticated app",
   assert.doesNotMatch(html, /A IA identificou um evento/);
 });
 
+test("event center presents the complete lifecycle and opens closed events", () => {
+  const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
+  assert.match(html, /<span>Início<\/span>/);
+  assert.match(html, /<span>Encerramento<\/span>/);
+  assert.match(html, /function formatCalendarDate\(value\)/);
+  assert.match(html, /data-event-open=/);
+  assert.match(html, /const otherClosed = closed\.filter/);
+});
+
 test("manager can close a major event through the existing secure summary endpoint", async () => {
   process.env.SUPABASE_URL = "https://example.supabase.co";
   process.env.SUPABASE_ANON_KEY = "anon-test";
