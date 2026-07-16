@@ -1287,7 +1287,7 @@
                 <div class="field"><label for="inviteEmail">E-mail</label><input id="inviteEmail" type="email" required></div>
               </div>
               <div class="form-row">
-                <div class="field"><label for="inviteCompany">Empresa</label><input id="inviteCompany"></div>
+                <div class="field"><label for="inviteClient">Empresa</label><select id="inviteClient" required></select></div>
                 <div class="field"><label for="inviteRole">Perfil de acesso</label><select id="inviteRole"></select></div>
               </div>
               <div class="form-row">
@@ -1512,8 +1512,8 @@
         </div>
         <div class="form-row">
           <div class="field">
-            <label for="editUserCompany">Empresa</label>
-            <input id="editUserCompany">
+            <label for="editUserClient">Empresa</label>
+            <select id="editUserClient" required></select>
           </div>
           <div class="field">
             <label for="editUserRole">Perfil de acesso</label>
@@ -1682,7 +1682,7 @@
       viewMode: null,
       access: null,
       dataLoadError: "",
-      admin: { users: [], packages: [], userPackages: [], usage: [], logs: [] },
+      admin: { users: [], clients: [], packages: [], userPackages: [], usage: [], logs: [] },
       filters: { search: "", period: "24", region: "", category: "", sort: "recent" },
       map: {
         instance: null,
@@ -2320,6 +2320,8 @@ function showAuthView() {
         status: access.status,
         email: access.email || state.session?.user?.email || "",
         full_name: access.full_name || "",
+        client_id: access.client_id || null,
+        company_name: access.company_name || "",
       };
       if (access.status !== "active") throw new Error("Seu usuário está inativo. Contate o administrador.");
     }
@@ -3623,10 +3625,28 @@ function showAuthView() {
       `).join("")}`;
     }
 
+    function clientOptions(selectedId = "") {
+      const clients = state.admin.clients || [];
+      return clients.map((client) => `
+        <option value="${escapeHtml(client.id)}" ${client.id === selectedId ? "selected" : ""}>${escapeHtml(client.company_name)}</option>
+      `).join("");
+    }
+
+    function updateInviteClientOptions() {
+      const select = document.getElementById("inviteClient");
+      if (!select) return;
+      const currentValue = select.value || state.profile?.client_id || "";
+      const available = state.admin.clients || [];
+      select.innerHTML = clientOptions(currentValue);
+      select.value = available.some((client) => client.id === currentValue)
+        ? currentValue
+        : (available[0]?.id || "");
+    }
+
     function assignableRoleOptions(selectedValue = "client") {
       const roles = state.profile?.role === "admin"
         ? [["client", "Cliente"], ["manager", "Gestor"], ["admin", "Admin"]]
-        : [["client", "Cliente"], ["manager", "Gestor"]];
+        : [["client", "Cliente"]];
       const selected = roles.some(([value]) => value === selectedValue) ? selectedValue : "client";
       return roles.map(([value, label]) => `<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`).join("");
     }
@@ -3776,6 +3796,7 @@ function showAuthView() {
       const packages = state.admin.packages || [];
       const usage = state.admin.usage || [];
       const logs = state.admin.logs || [];
+      const isAdmin = state.profile?.role === "admin";
       const activeUsers = users.filter((user) => user.status === "active" && !["pending", "not_accepted"].includes(user.invite_status)).length;
       const blockedUsers = users.filter((user) => user.status === "blocked" || user.status === "inactive").length;
       const usersNearLimit = users.filter((user) => {
@@ -3788,6 +3809,7 @@ function showAuthView() {
       updateInvitePackageOptions();
       updateInviteRoleOptions();
       updateUserFilterOptions();
+      document.getElementById("packageForm").hidden = !isAdmin;
       document.getElementById("adminSummary").innerHTML = [
         ["Usuários ativos", activeUsers, `${users.length} cadastrados`],
         ["Pacotes ativos", packages.filter((pkg) => pkg.is_active).length, `${packages.length} cadastrados`],
@@ -3834,15 +3856,19 @@ function showAuthView() {
         }).join("")}</div>
       ` : `<div class="admin-empty">Nenhum pacote cadastrado.</div>`;
 
+      document.querySelectorAll("#packagesAdminList .edit-package, #packagesAdminList .duplicate-package, #packagesAdminList .toggle-package-status, #packagesAdminList .delete-package")
+        .forEach((control) => { control.hidden = !isAdmin; });
+
       const filteredUsers = users.filter(userMatchesFilters);
       document.getElementById("usersAdminList").innerHTML = filteredUsers.length ? `
         <div class="admin-card-list">${filteredUsers.map((user) => {
           const info = usageForUser(user);
           const isOrphan = Boolean(user.orphan_auth);
+          const canManageUser = isAdmin || user.role === "client";
           const canResendInvite = !isOrphan
             && !user.auth_missing
             && !user.last_sign_in_at
-            && (state.profile?.role === "admin" || user.role !== "admin");
+            && canManageUser;
           const canDeleteUser = state.profile?.role === "admin" && user.id !== state.session?.user?.id;
           const accessDetails = ["pending", "not_accepted"].includes(user.invite_status)
             ? `<strong>Convite enviado: ${escapeHtml(formatDate(user.invitation_sent_at || user.created_at))}</strong><br><span class="admin-note">Ainda não houve primeiro acesso.</span>`
@@ -3858,13 +3884,13 @@ function showAuthView() {
               </div>
               <div class="admin-record-body">
                 <div class="admin-record-field"><span>Empresa</span><strong>${escapeHtml(user.company_name || "-")}</strong></div>
-                <div class="admin-record-field"><span>Pacote atual</span>${isOrphan ? `<strong>Não vinculado</strong>` : `<select class="map-select admin-package-select assign-package" data-user-id="${escapeHtml(user.id)}">${packageOptions(info.current?.package_id || "")}</select>`}</div>
+                <div class="admin-record-field"><span>Pacote atual</span>${isOrphan ? `<strong>Não vinculado</strong>` : `<select class="map-select admin-package-select assign-package" data-user-id="${escapeHtml(user.id)}" ${canManageUser ? "" : "disabled"}>${packageOptions(info.current?.package_id || "")}</select>`}</div>
                 <div class="admin-record-field"><span>Consumo no mês</span>${userConsumptionHtml(info)}</div>
                 <div class="admin-record-field"><span>Acesso</span>${accessDetails}</div>
               </div>
               <div class="admin-card-actions">
-                ${isOrphan ? "" : `<button class="mini-button edit-user" type="button" data-user-id="${escapeHtml(user.id)}">Editar</button>`}
-                ${isOrphan ? "" : `<button class="mini-button toggle-user-status" type="button" data-user-id="${escapeHtml(user.id)}" data-status="${user.status === "active" ? "blocked" : "active"}">${user.status === "active" ? "Bloquear" : "Ativar"}</button>`}
+                ${isOrphan || !canManageUser ? "" : `<button class="mini-button edit-user" type="button" data-user-id="${escapeHtml(user.id)}">Editar</button>`}
+                ${isOrphan || !canManageUser ? "" : `<button class="mini-button toggle-user-status" type="button" data-user-id="${escapeHtml(user.id)}" data-status="${user.status === "active" ? "blocked" : "active"}">${user.status === "active" ? "Bloquear" : "Ativar"}</button>`}
                 ${canResendInvite ? `<button class="mini-button resend-invite" type="button" data-user-id="${escapeHtml(user.id)}">Reenviar convite</button>` : ""}
                 ${isOrphan ? "" : `<button class="mini-button view-user-usage" type="button" data-user-id="${escapeHtml(user.id)}">Consumo</button>`}
                 <button class="mini-button view-user-logs" type="button" data-user-id="${escapeHtml(user.id)}">Logs</button>
@@ -3925,16 +3951,22 @@ function showAuthView() {
 
     function companyRows() {
       const users = state.admin.users || [];
-      const rows = new Map();
-      users.forEach((user) => {
-        const company = cleanDisplayText(user.company_name || "Sem empresa");
-        if (!rows.has(company)) rows.set(company, { name: company, users: [], active: 0, blocked: 0 });
-        const row = rows.get(company);
-        row.users.push(user);
-        if (user.status === "active") row.active += 1;
-        if (user.status === "blocked" || user.status === "inactive") row.blocked += 1;
-      });
-      return [...rows.values()].sort((a, b) => b.users.length - a.users.length);
+      const clients = state.admin.clients || [];
+      return clients.map((client) => {
+        const clientUsers = users.filter((user) => user.client_id === client.id);
+        return {
+          id: client.id,
+          name: cleanDisplayText(client.company_name || "Sem empresa"),
+          document: client.document || "",
+          contact_name: client.contact_name || "",
+          contact_email: client.contact_email || "",
+          package_id: client.package_id || "",
+          status: client.status || "inactive",
+          users: clientUsers,
+          active: clientUsers.filter((user) => user.status === "active").length,
+          blocked: clientUsers.filter((user) => ["blocked", "inactive"].includes(user.status)).length,
+        };
+      }).sort((a, b) => b.users.length - a.users.length);
     }
 
     function notificationRuleState() {
@@ -3963,7 +3995,7 @@ function showAuthView() {
         clientsTarget.innerHTML = companies.length ? companies.map((company) => {
           const manager = company.users.find((user) => ["admin", "manager"].includes(user.role)) || company.users[0] || {};
           const packageLink = company.users.map((user) => currentPackageForUser(user.id)).find(Boolean);
-          const pkg = packageById(packageLink?.package_id);
+          const pkg = packageById(packageLink?.package_id || company.package_id);
           return `
             <article class="management-card">
               <h3>${escapeHtml(company.name)}</h3>
@@ -4080,11 +4112,13 @@ function showAuthView() {
         const data = await adminApi("/api/admin-data");
         state.admin = {
           users: data.users || [],
+          clients: data.clients || [],
           packages: data.packages || [],
           userPackages: data.userPackages || [],
           usage: data.usage || [],
           logs: data.logs || [],
         };
+        updateInviteClientOptions();
         renderAdmin();
       } catch (error) {
         setNotice(getFriendlyErrorMessage(error, "Não foi possível carregar os dados administrativos. Tente novamente."));
@@ -4302,7 +4336,8 @@ function showAuthView() {
       document.getElementById("editUserId").value = user.id;
       document.getElementById("editUserName").value = user.full_name || "";
       document.getElementById("editUserEmail").value = user.email || "";
-      document.getElementById("editUserCompany").value = user.company_name || "";
+      document.getElementById("editUserClient").innerHTML = clientOptions(user.client_id || state.profile?.client_id || "");
+      document.getElementById("editUserClient").value = user.client_id || state.profile?.client_id || "";
       document.getElementById("editUserRole").innerHTML = assignableRoleOptions(user.role || "client");
       document.getElementById("editUserStatus").value = ["active", "blocked", "inactive"].includes(user.status) ? user.status : "active";
       document.getElementById("editUserPackage").innerHTML = packageOptions(currentPackage?.package_id || "");
@@ -4323,7 +4358,7 @@ function showAuthView() {
       }
       const payload = {
         full_name: document.getElementById("editUserName").value.trim(),
-        company_name: document.getElementById("editUserCompany").value.trim(),
+        client_id: document.getElementById("editUserClient").value,
         role,
         status: document.getElementById("editUserStatus").value,
       };
@@ -4355,7 +4390,7 @@ function showAuthView() {
       const payload = {
         full_name: document.getElementById("inviteName").value.trim(),
         email: document.getElementById("inviteEmail").value.trim(),
-        company_name: document.getElementById("inviteCompany").value.trim(),
+        client_id: document.getElementById("inviteClient").value,
         role: document.getElementById("inviteRole").value,
         package_id: document.getElementById("invitePackage").value,
         status: document.getElementById("inviteStatus").value,
@@ -4385,6 +4420,7 @@ function showAuthView() {
           button.textContent = "Enviar convite";
         }
         updateInviteRoleOptions();
+        updateInviteClientOptions();
         updateInvitePackageOptions();
       }
     }

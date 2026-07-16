@@ -1,4 +1,4 @@
-const { isReadOnlyEnvironment, json, listAuthUsers, requireManager } = require("./_auth");
+const { accountClientId, isReadOnlyEnvironment, json, listAuthUsers, requireManager } = require("./_auth");
 const { adminErrorMessage, audit, fetchJson } = require("./_admin");
 
 const TEST_PACKAGE = {
@@ -15,7 +15,7 @@ const TEST_PACKAGE = {
 };
 
 async function ensureTestPackage(account) {
-  if (isReadOnlyEnvironment()) return;
+  if (isReadOnlyEnvironment() || !account.isAdmin) return;
   const existing = await fetchJson("/rest/v1/packages?name=eq.Teste&select=id&limit=1");
   if (Array.isArray(existing) && existing.length) return;
   let created = null;
@@ -91,17 +91,33 @@ module.exports = async function handler(req, res) {
     const account = await requireManager(req);
     await ensureTestPackage(account);
     const monthStart = encodeURIComponent(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString());
-    const [profiles, packages, userPackages, usage, logs, authUsers] = await Promise.all([
-      fetchJson("/rest/v1/profiles?select=*&order=created_at.desc"),
+    const clientId = accountClientId(account);
+    const clientFilter = account.isAdmin ? "" : `&client_id=eq.${encodeURIComponent(clientId)}`;
+    const [profiles, packages, clients, authUsers] = await Promise.all([
+      fetchJson(`/rest/v1/profiles?select=*&order=created_at.desc${clientFilter}`),
       fetchJson("/rest/v1/packages?select=*&order=name.asc"),
-      fetchJson("/rest/v1/user_packages?select=*&order=created_at.desc"),
-      fetchJson(`/rest/v1/usage_events?select=*&created_at=gte.${monthStart}&order=created_at.desc&limit=1000`),
-      fetchJson("/rest/v1/audit_logs?select=*&order=created_at.desc&limit=120"),
+      fetchJson(`/rest/v1/clients?select=*&order=company_name.asc${account.isAdmin ? "" : `&id=eq.${encodeURIComponent(clientId)}`}`),
       listAuthUsers(),
     ]);
-    const users = mergeAuthUsers(profiles || [], authUsers, account.isAdmin);
+    const profileIds = (profiles || []).map((profile) => profile.id).filter(Boolean);
+    const userFilter = account.isAdmin || !profileIds.length
+      ? ""
+      : `&user_id=in.(${profileIds.map(encodeURIComponent).join(",")})`;
+    const tenantFilter = account.isAdmin ? "" : `&client_id=eq.${encodeURIComponent(clientId)}`;
+    const [userPackages, usage, logs] = await Promise.all([
+      profileIds.length || account.isAdmin
+        ? fetchJson(`/rest/v1/user_packages?select=*&order=created_at.desc${userFilter}`)
+        : Promise.resolve([]),
+      fetchJson(`/rest/v1/usage_events?select=*&created_at=gte.${monthStart}&order=created_at.desc&limit=1000${tenantFilter}`),
+      fetchJson(`/rest/v1/audit_logs?select=*&order=created_at.desc&limit=120${tenantFilter}`),
+    ]);
+    const allowedAuthUsers = account.isAdmin
+      ? authUsers
+      : authUsers.filter((user) => profileIds.includes(user.id));
+    const users = mergeAuthUsers(profiles || [], allowedAuthUsers, account.isAdmin);
     json(res, 200, {
       users: users || [],
+      clients: clients || [],
       packages: packages || [],
       userPackages: userPackages || [],
       usage: usage || [],

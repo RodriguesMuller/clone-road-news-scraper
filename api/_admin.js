@@ -53,6 +53,7 @@ async function audit(account, action, targetType, targetId, metadata = {}) {
       headers: { Prefer: "return=minimal" },
       body: JSON.stringify({
         actor_user_id: account?.user?.id || null,
+        client_id: metadata.client_id || account?.profile?.client_id || null,
         action,
         target_type: targetType,
         target_id: targetId ? String(targetId) : null,

@@ -32,6 +32,7 @@ module.exports = async function handler(req, res) {
       status: profile.status || "inactive",
       email: profile.email || account.user?.email || "",
       full_name: profile.full_name || "",
+      client_id: profile.client_id || null,
       company_name: profile.company_name || "",
       package_name: pkg?.name || null,
       can_access_map: isPrivileged || Boolean(pkg?.can_access_map),

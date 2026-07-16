@@ -49,7 +49,7 @@ async function main() {
       return new Response(JSON.stringify({ id: "manager", email: "manager@example.com" }), { status: 200 });
     }
     if (String(url).includes("/rest/v1/profiles?id=eq.manager&select=*")) {
-      return new Response(JSON.stringify([{ id: "manager", role: "manager", status: "active" }]), { status: 200 });
+      return new Response(JSON.stringify([{ id: "manager", role: "admin", status: "active", client_id: "client_a" }]), { status: 200 });
     }
     throw new Error(`Unexpected write or request: ${method} ${url}`);
   };

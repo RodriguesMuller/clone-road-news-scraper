@@ -2,7 +2,10 @@ const crypto = require("node:crypto");
 const {
   SERVICE_ROLE_KEY,
   SUPABASE_URL,
+  assertCanAccessClient,
+  assertCanManageProfile,
   assertWritableEnvironment,
+  getClientForAccess,
   json,
   listAuthUsers,
   requireAdmin,
@@ -44,12 +47,16 @@ async function fetchActivePackage(packageId) {
   }
 }
 
-async function activePackageUsers(packageId) {
-  const response = await supabaseFetch(
-    `/rest/v1/user_packages?package_id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=id`,
-    { method: "HEAD", headers: { Prefer: "count=exact" } },
+async function activePackageUsers(packageId, clientId) {
+  const assignments = await fetchJson(
+    `/rest/v1/user_packages?package_id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=user_id`,
   );
-  return Number((response.headers.get("content-range") || "0/0").split("/")[1] || 0);
+  const userIds = (assignments || []).map((item) => item.user_id).filter(Boolean);
+  if (!clientId || !userIds.length) return clientId ? 0 : userIds.length;
+  const profiles = await fetchJson(
+    `/rest/v1/profiles?client_id=eq.${encodeURIComponent(clientId)}&id=in.(${userIds.map(encodeURIComponent).join(",")})&select=id`,
+  );
+  return (profiles || []).length;
 }
 
 function friendlyInviteError(detail) {
@@ -73,13 +80,13 @@ function friendlyInviteError(detail) {
 }
 
 async function profileByEmail(email) {
-  const response = await supabaseFetch(`/rest/v1/profiles?email=ilike.${encodeURIComponent(email)}&select=id,email,status,role,full_name,company_name&limit=1`);
+  const response = await supabaseFetch(`/rest/v1/profiles?email=ilike.${encodeURIComponent(email)}&select=id,email,status,role,full_name,company_name,client_id&limit=1`);
   const rows = await response.json();
   return rows?.[0] || null;
 }
 
 async function profileById(userId) {
-  const rows = await fetchJson(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,email,status,role,full_name,company_name&limit=1`);
+  const rows = await fetchJson(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,email,status,role,full_name,company_name,client_id&limit=1`);
   return rows?.[0] || null;
 }
 
@@ -118,8 +125,22 @@ function normalizedInvitation(body) {
     email,
     fullName: String(body.full_name || "").trim(),
     companyName: String(body.company_name || "").trim(),
+    clientId: String(body.client_id || "").trim(),
     role: ["admin", "manager"].includes(requestedRole) ? requestedRole : "client",
     status: ["active", "blocked", "inactive"].includes(body.status) ? body.status : "active",
+  };
+}
+
+async function invitationForClient(account, invitation) {
+  const clientId = invitation.clientId || account.profile?.client_id;
+  const client = await getClientForAccess(account, clientId);
+  if (!account.isAdmin && invitation.role !== "client") {
+    throw new Error("Gestor so pode convidar usuarios Cliente da propria empresa.");
+  }
+  return {
+    ...invitation,
+    clientId: client.id,
+    companyName: client.company_name,
   };
 }
 
@@ -138,6 +159,7 @@ async function generateAuthLink(type, invitation) {
       data: {
         full_name: invitation.fullName,
         company_name: invitation.companyName,
+        client_id: invitation.clientId,
         role: invitation.role,
       },
     }),
@@ -158,6 +180,7 @@ async function saveInvitationProfile(userId, invitation, packageId) {
       id: userId,
       email: invitation.email,
       full_name: invitation.fullName,
+      client_id: invitation.clientId,
       company_name: invitation.companyName,
       role: invitation.role,
       status: invitation.status,
@@ -190,8 +213,7 @@ async function deliverInvitation(invitation, actionLink, userId) {
   });
 }
 
-async function createInvitation(account, body, packageId) {
-  const invitation = normalizedInvitation(body);
+async function createInvitation(account, invitation, packageId) {
   let userId = "";
   try {
     const generated = await generateAuthLink("invite", invitation);
@@ -203,6 +225,7 @@ async function createInvitation(account, body, packageId) {
       role: invitation.role,
       status: invitation.status,
       package_id: packageId || null,
+      client_id: invitation.clientId,
       email_provider: "resend",
       delivery_id: delivery.id,
     });
@@ -218,6 +241,7 @@ async function resendInvitation(account, body) {
   const profile = userId ? await profileById(userId) : await profileByEmail(String(body.email || "").trim().toLowerCase());
   if (!profile) throw new Error("Usuário não encontrado na lista de acessos.");
   if (!account.isAdmin && profile.role === "admin") throw new Error("Você não tem permissão para reenviar convite de administradores.");
+  assertCanManageProfile(account, profile);
   const authUser = await authUserById(profile.id);
   if (!authUser) throw new Error("O cadastro de acesso está incompleto. Um Admin deve excluir o registro e enviar um novo convite.");
   if (authUser.last_sign_in_at) throw new Error("Este usuário já aceitou o convite. Para trocar a senha, use Recuperar senha na tela de login.");
@@ -226,6 +250,7 @@ async function resendInvitation(account, body) {
     email: profile.email || authUser.email,
     full_name: profile.full_name || authUser.user_metadata?.full_name,
     company_name: profile.company_name || authUser.user_metadata?.company_name,
+    client_id: profile.client_id,
     role: profile.role,
     status: profile.status,
   });
@@ -289,10 +314,11 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    const invitation = normalizedInvitation(body);
+    const invitation = await invitationForClient(account, normalizedInvitation(body));
     if (!account.isAdmin && invitation.role === "admin") throw new Error("Você não tem permissão para convidar administradores.");
     const existingProfile = await profileByEmail(invitation.email);
     if (existingProfile) {
+      assertCanAccessClient(account, existingProfile.client_id);
       throw new Error("Este e-mail já está cadastrado. Se o convite ainda não foi aceito, use Reenviar convite na lista de usuários.");
     }
     const orphanAuthUser = await authUserByEmail(invitation.email);
@@ -306,12 +332,12 @@ module.exports = async function handler(req, res) {
       const initialPackage = await fetchActivePackage(packageId);
       if (!initialPackage) throw new Error("Pacote inicial não encontrado ou inativo.");
       const maxUsers = Number(initialPackage.max_users || 0);
-      if (maxUsers > 0 && await activePackageUsers(packageId) >= maxUsers) {
+      if (maxUsers > 0 && await activePackageUsers(packageId, invitation.clientId) >= maxUsers) {
         throw new Error("Limite de usuários deste pacote atingido.");
       }
     }
 
-    const result = await createInvitation(account, body, packageId);
+    const result = await createInvitation(account, invitation, packageId);
     json(res, 200, {
       ok: true,
       user_id: result.userId,

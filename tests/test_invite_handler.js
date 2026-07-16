@@ -45,7 +45,10 @@ function mockFetch({ actorRole = "admin", resendOk = true } = {}) {
 
     if (String(url).endsWith("/auth/v1/user")) return response(200, { id: "actor", email: "admin@example.com" });
     if (String(url).includes("/rest/v1/profiles?id=eq.actor&select=*")) {
-      return response(200, [{ id: "actor", role: actorRole, status: "active", email: "admin@example.com" }]);
+      return response(200, [{ id: "actor", role: actorRole, status: "active", email: "admin@example.com", client_id: "client_a" }]);
+    }
+    if (String(url).includes("/rest/v1/clients?id=eq.client_a")) {
+      return response(200, [{ id: "client_a", company_name: "Transportadora A", status: "active", package_id: "package_test" }]);
     }
     if (String(url).includes("/rest/v1/profiles?email=ilike.")) return response(200, []);
     if (String(url).includes("/auth/v1/admin/users?page=1")) return response(200, { users: [] });
@@ -79,7 +82,7 @@ async function inviteAsAdmin() {
   await handler(request({
     full_name: "Cliente Teste",
     email: "cliente@example.com",
-    company_name: "Transportadora",
+    client_id: "client_a",
     role: "client",
     status: "active",
     package_id: "package_test",
@@ -99,14 +102,17 @@ async function inviteAsAdmin() {
   assert.equal(resend.body.from, "Road News <acesso@example.com>");
   assert.equal(resend.body.to[0], "cliente@example.com");
   assert.match(resend.body.html, /Aceitar convite/);
+  const profileWrite = calls.find((call) => call.url.includes("/rest/v1/profiles") && call.method === "POST");
+  assert.equal(profileWrite.body.client_id, "client_a");
+  assert.equal(profileWrite.body.company_name, "Transportadora A");
 }
 
 async function managerCannotInviteAdmin() {
   const calls = mockFetch({ actorRole: "manager" });
   const res = resultRecorder();
-  await handler(request({ email: "admin2@example.com", role: "admin" }), res);
+  await handler(request({ email: "admin2@example.com", role: "admin", client_id: "client_a" }), res);
   assert.equal(res.statusCode, 403);
-  assert.match(JSON.parse(res.body).error, /permissão/);
+  assert.match(JSON.parse(res.body).error, /Gestor|permiss/i);
   assert.ok(!calls.some((call) => call.url.endsWith("/auth/v1/admin/generate_link")));
 }
 
@@ -116,6 +122,7 @@ async function rollbackWhenEmailFails() {
   await handler(request({
     full_name: "Cliente Teste",
     email: "cliente@example.com",
+    client_id: "client_a",
     role: "client",
     package_id: "package_test",
   }), res);
