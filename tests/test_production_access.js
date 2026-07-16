@@ -213,6 +213,12 @@ test("production UI exposes the event center only inside the authenticated app",
   assert.doesNotMatch(html, /A IA identificou um evento/);
 });
 
+test("total news card does not expose the Supabase implementation detail", () => {
+  const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
+  assert.match(html, /\["Total de notícias", state\.total, ""\]/);
+  assert.doesNotMatch(html, /registros no Supabase/);
+});
+
 test("event center presents the complete lifecycle and opens closed events", () => {
   const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
   assert.match(html, /<span>Início<\/span>/);

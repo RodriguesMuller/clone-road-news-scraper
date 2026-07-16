@@ -2825,14 +2825,14 @@ function showAuthView() {
         ["Última coleta", age(lastCreated), "registro mais recente"],
         ["Última hora", lastHour, "registros recentes"],
         ["Últimas 24h", lastDay, "na amostra carregada"],
-        ["Total", state.total, "registros no Supabase"],
+        ["Total de notícias", state.total, ""],
       ];
 
       document.getElementById("stats").innerHTML = cards.map(([label, value, hint]) => `
         <article class="stat">
           <div class="label">${label}</div>
           <div class="value">${value}</div>
-          <div class="hint">${hint}</div>
+          ${hint ? `<div class="hint">${hint}</div>` : ""}
         </article>
       `).join("");
       const headerStatus = document.getElementById("headerStatus");
