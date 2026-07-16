@@ -1,8 +1,6 @@
-const SUPABASE_URL = "https://vdyilgbqxnrwqgoairat.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
-const { assertCanUse, json, recordUsage } = require("./_auth");
+const { assertCanUse, json, recordUsage, supabaseFetch } = require("./_auth");
 
 function clean(value) {
   return String(value || "")
@@ -134,16 +132,7 @@ function fallbackSummary(context) {
 async function fetchWeeklyItems() {
   const since = encodeURIComponent(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
   const columns = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
-  const url = `${SUPABASE_URL}/rest/v1/news?select=${columns}&created_at=gte.${since}&order=created_at.desc&limit=220`;
-  const response = await fetch(url, {
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-  });
-  if (!response.ok) {
-    throw new Error("Nao foi possivel buscar as noticias para gerar o resumo semanal.");
-  }
+  const response = await supabaseFetch(`/rest/v1/news?select=${columns}&created_at=gte.${since}&order=created_at.desc&limit=220`);
   return response.json();
 }
 
@@ -386,7 +375,7 @@ module.exports = async function handler(req, res) {
     return;
   }
   try {
-    const account = await assertCanUse(req, "weekly_summary");
+    const account = await assertCanUse(req, "ai_summary_weekly");
     const items = await fetchWeeklyItems();
     const context = buildContext(items);
     if (!items.length) {
@@ -395,7 +384,7 @@ module.exports = async function handler(req, res) {
     }
     const summary = await generateAiSummary(context);
     if (summary._ai_used) {
-      await recordUsage(account, "weekly_summary", {
+      await recordUsage(account, "ai_summary_weekly", {
         tokens_input: summary._usage?.input_tokens ?? null,
         tokens_output: summary._usage?.output_tokens ?? null,
         model: summary._model,

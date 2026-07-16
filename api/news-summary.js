@@ -262,7 +262,7 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const account = await assertCanUse(req, "image_generation");
+    const account = await assertCanUse(req, "ai_summary_individual");
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
     const body = chunks.length
@@ -278,7 +278,7 @@ module.exports = async function handler(req, res) {
 
     const summary = await generateAiSummary(item);
     if (summary.ai_used) {
-      await recordUsage(account, "ai_summary", {
+      await recordUsage(account, "ai_summary_individual", {
         tokens_input: summary._usage?.input_tokens ?? null,
         tokens_output: summary._usage?.output_tokens ?? null,
         model: summary._model,

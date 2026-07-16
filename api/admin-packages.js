@@ -19,7 +19,7 @@ async function writePackage(path, options, payload) {
     return await fetchJson(path, { ...options, body: JSON.stringify(payload) });
   } catch (error) {
     if (!/max_users|column|schema|PGRST/i.test(error.message || "")) throw error;
-    const { max_users, ...legacyPayload } = payload;
+    const { max_users, can_generate_individual_summary, ...legacyPayload } = payload;
     return fetchJson(path, { ...options, body: JSON.stringify(legacyPayload) });
   }
 }
