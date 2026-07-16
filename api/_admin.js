@@ -65,39 +65,52 @@ async function audit(account, action, targetType, targetId, metadata = {}) {
 }
 
 function adminErrorMessage(error) {
-  const raw = String(error?.message || error || "");
+  const fallback = "Nao foi possivel concluir a acao. Tente novamente.";
+  const nestedMessage = (value, depth = 0) => {
+    if (value == null || depth > 3) return "";
+    if (typeof value === "string") return value;
+    if (typeof value !== "object") return String(value);
+    return nestedMessage(value.message ?? value.msg ?? value.error_description ?? value.error ?? value.details, depth + 1);
+  };
+  const raw = nestedMessage(error).trim();
   let message = raw;
-  try {
-    const parsed = JSON.parse(raw);
-    message = parsed.msg || parsed.message || parsed.error_description || parsed.error || raw;
-  } catch {
-    // Mantem a mensagem original.
+  for (let index = 0; index < 2 && message; index += 1) {
+    try {
+      const next = nestedMessage(JSON.parse(message)).trim();
+      if (!next || next === message) break;
+      message = next;
+    } catch {
+      break;
+    }
   }
-  if (/invalid login credentials|invalid_credentials/i.test(message)) {
+  message = message.replace(/\s+/g, " ").trim();
+  const haystack = `${raw} ${message}`;
+  if (/invalid login credentials|invalid_credentials/i.test(haystack)) {
     return "E-mail ou senha incorretos.";
   }
-  if (/email_exists|already been registered|already registered|user_already_exists|duplicate key|already exists|ja existe|já existe|cadastrado/i.test(message)) {
+  if (/email_exists|already been registered|already registered|user_already_exists|duplicate key|already exists|ja existe|já existe|cadastrado/i.test(haystack)) {
     return "Este e-mail ja esta cadastrado. Verifique a lista de usuarios ou exclua o usuario existente antes de convidar novamente.";
   }
-  if (/row-level security|violates row-level security|permission denied|insufficient permissions|acesso negado|not allowed/i.test(message)) {
-    return "Voce nao tem permissao para realizar esta acao.";
+  if (/row-level security|violates row-level security|permission denied|insufficient permissions|acesso negado|not allowed|sem permiss|nao tem permiss|não tem permiss/i.test(haystack)) {
+    return "Você não tem permissão para realizar esta ação.";
   }
-  if (/inativo|inactive|blocked|bloqueado/i.test(message)) {
+  if (/inativo|inactive|blocked|bloqueado/i.test(haystack)) {
     return "Seu acesso esta inativo. Contate o administrador.";
   }
-  if (/expired|token.*invalid|invalid.*token|link.*expir/i.test(message)) {
+  if (/expired|token.*invalid|invalid.*token|link.*expir/i.test(haystack)) {
     return "Este link expirou. Solicite um novo convite.";
   }
-  if (/fetch failed|network|econn|timeout|connect|connection/i.test(message)) {
-    return "Nao foi possivel conectar ao servidor. Tente novamente em instantes.";
+  if (/fetch failed|network|econn|timeout|connect|connection/i.test(haystack)) {
+    return "Nao foi possivel conectar ao servidor. Tente novamente.";
   }
-  if (/service_role|SUPABASE_SERVICE_ROLE_KEY/i.test(message)) {
-    return "SUPABASE_SERVICE_ROLE_KEY nao configurada no servidor.";
+  if (/service[_-]?role|database_url|openai_api_key|postgres|supabase http|pgrst|sqlstate|schema|column|relation|stack|trace|unexpected token|invalid header|headers\.append|bearer\s+\S+|sk-(?:proj-)?\S+/i.test(haystack)) {
+    return fallback;
   }
-  if (/^\s*[{[]/.test(raw) || /Supabase HTTP|PGRST|stack|trace|schema|column/i.test(message)) {
-    return "Nao foi possivel concluir a acao. Tente novamente.";
+  if (/^\s*[\[{]/.test(raw) || message.length > 280) {
+    return fallback;
   }
-  return message || "Nao foi possivel concluir a acao. Tente novamente.";
+  const safeApplicationMessage = /^(acesso|ambiente|apenas|convite|este|esta|gestor|informe|limite|nao|não|o remetente|pacote|recurso|selecione|sessao|sessão|usuario|usuário|voce|você)\b/i;
+  return safeApplicationMessage.test(message) ? message : fallback;
 }
 
 module.exports = {

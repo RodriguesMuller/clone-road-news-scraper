@@ -1063,7 +1063,7 @@
       <div class="auth-card">
         <div class="weekly-logo">ROAD NEWS</div>
         <h1>Acesso temporariamente indisponível</h1>
-        <p id="blockedMessage">Seu acesso está inativo ou bloqueado no momento. Entre em contato com o administrador da plataforma para regularizar sua conta.</p>
+        <p id="blockedMessage">Seu acesso está inativo ou bloqueado. Entre em contato com o administrador da plataforma.</p>
         <div class="blocked-actions">
           <button id="blockedLogoutButton" type="button" class="mini-button" hidden>Sair</button>
           <button id="blockedLoginButton" type="button" class="mini-button" hidden>Voltar para login</button>
@@ -1564,6 +1564,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="/error-utils.js"></script>
   <script>
     let SUPABASE_URL = "";
     let SUPABASE_ANON_KEY = "";
@@ -1790,45 +1791,7 @@
       return div.innerHTML;
     }
 
-    function rawErrorMessage(error) {
-      if (!error) return "";
-      if (typeof error === "string") return error;
-      if (error.message) return String(error.message);
-      if (error.error_description) return String(error.error_description);
-      if (error.msg) return String(error.msg);
-      if (error.error) return String(error.error);
-      try { return JSON.stringify(error); } catch { return String(error); }
-    }
-
-    function getFriendlyErrorMessage(error, fallback = "Não foi possível concluir a ação. Tente novamente.") {
-      const raw = rawErrorMessage(error).trim();
-      if (!raw) return "";
-      let message = raw;
-      try {
-        const parsed = JSON.parse(raw);
-        message = parsed.msg || parsed.message || parsed.error_description || parsed.error || raw;
-      } catch {
-        const jsonMatch = raw.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          try {
-            const parsed = JSON.parse(jsonMatch[0]);
-            message = parsed.msg || parsed.message || parsed.error_description || parsed.error || raw;
-          } catch {
-            message = raw;
-          }
-        }
-      }
-
-      const haystack = `${raw} ${message}`.toLowerCase();
-      if (/invalid login credentials|invalid_credentials|email not confirmed|invalid grant/.test(haystack)) return "E-mail ou senha incorretos.";
-      if (/email_exists|already been registered|already registered|user_already_exists|duplicate key|already exists|cadastrado|ja existe|já existe/.test(haystack)) return "Este e-mail já está cadastrado. Verifique a lista de usuários ou exclua o usuário existente antes de convidar novamente.";
-      if (/permission denied|insufficient permissions|row-level security|violates row-level security|acesso negado|not allowed|sem permiss/.test(haystack)) return "Você não tem permissão para realizar esta ação.";
-      if (/inativo|inactive|blocked|bloqueado/.test(haystack)) return "Seu acesso está inativo. Contate o administrador.";
-      if (/expired|token.*invalid|invalid.*token|link.*expir|refresh token/.test(haystack)) return "Este link expirou. Solicite um novo convite.";
-      if (/failed to fetch|network|timeout|econn|connection|fetch failed|servidor/.test(haystack)) return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
-      if (/service_role|database_url|supabase_service_role_key|postgres|pgrst|schema|column|stack|trace|^\s*[{[]/.test(haystack)) return fallback;
-      return message || fallback;
-    }
+    const { getFriendlyErrorMessage } = window.RoadNewsErrors;
 
     function authClient() {
       if (!window.supabase) throw new Error("Supabase Auth não carregou. Recarregue a página.");
@@ -1903,27 +1866,6 @@
       return "Usuário";
     }
 
-    function setViewMode(mode) {
-      if (mode !== "admin" && mode !== "client") return;
-      // only allow admin mode if real role is admin
-      if (mode === "admin" && state.profile?.role !== "admin") return;
-      state.viewMode = mode;
-      try { localStorage.setItem("roadnews_viewmode", mode); } catch (e) { /* ignore */ }
-      syncNavigationState();
-      // if currently on admin view but switched to client, revert to dashboard
-      if (mode === "client" && state.activeRoute === "/admin") {
-        setNotice("Visão cliente ativa — acesso administrativo ocultado.");
-        setActiveView("occurrences", { skipRoute: false, scroll: "top" });
-      }
-    }
-
-    function toggleViewMode() {
-      const realAdmin = state.profile?.role === "admin";
-      if (!realAdmin) return;
-      const next = state.viewMode === "admin" ? "client" : "admin";
-      setViewMode(next);
-    }
-
     function authHeaders(headers = {}) {
       const token = state.session?.access_token;
       return token ? { ...headers, Authorization: `Bearer ${token}` } : headers;
@@ -1938,14 +1880,6 @@
 
     function isAdminProfile() {
       return state.authEnabled && state.profile?.role === "admin" && state.profile?.status === "active";
-    }
-
-    function canAccessAdminView() {
-      return isAdminProfile() && state.viewMode === "admin";
-    }
-
-    function shouldShowAdminNavigation() {
-      return canAccessAdminView();
     }
 
     function realRole() {
@@ -2323,7 +2257,7 @@ function showAuthView() {
       if (blockedMessage) {
         blockedMessage.textContent = /perfil|encontrado/i.test(String(message || ""))
           ? "Não encontramos um perfil ativo para sua conta. Entre em contato com o administrador da plataforma para regularizar seu acesso."
-          : "Seu acesso está inativo ou bloqueado no momento. Entre em contato com o administrador da plataforma para regularizar sua conta.";
+          : "Seu acesso está inativo ou bloqueado. Entre em contato com o administrador da plataforma.";
       }
       const blockedLogout = document.getElementById("blockedLogoutButton");
       if (blockedLogout) blockedLogout.hidden = false;
@@ -4153,7 +4087,7 @@ function showAuthView() {
         };
         renderAdmin();
       } catch (error) {
-        setNotice(`Erro ao carregar Admin: ${error.message}`);
+        setNotice(getFriendlyErrorMessage(error, "Não foi possível carregar os dados administrativos. Tente novamente."));
       }
     }
 
@@ -4201,7 +4135,7 @@ function showAuthView() {
         fillPackageForm(null);
         await loadAdminData();
       } catch (error) {
-        setNotice(error.message || "Não foi possível salvar o pacote.");
+        setNotice(getFriendlyErrorMessage(error, "Não foi possível salvar o pacote."));
       } finally {
         if (button) {
           button.disabled = false;
@@ -4228,7 +4162,7 @@ function showAuthView() {
         setNotice(status === "active" ? "Usuário ativado." : "Usuário bloqueado.");
         await loadAdminData();
       } catch (error) {
-        setNotice(error.message);
+        setNotice(getFriendlyErrorMessage(error));
       }
     }
 
@@ -4241,7 +4175,7 @@ function showAuthView() {
         setNotice(isActive ? "Pacote ativado." : "Pacote desativado.");
         await loadAdminData();
       } catch (error) {
-        setNotice(error.message);
+        setNotice(getFriendlyErrorMessage(error));
       }
     }
 
@@ -4268,7 +4202,7 @@ function showAuthView() {
         setNotice("Pacote duplicado com sucesso.");
         await loadAdminData();
       } catch (error) {
-        setNotice(error.message);
+        setNotice(getFriendlyErrorMessage(error));
       }
     }
 
@@ -4282,7 +4216,7 @@ function showAuthView() {
         setNotice("Pacote excluído.");
         await loadAdminData();
       } catch (error) {
-        setNotice(error.message);
+        setNotice(getFriendlyErrorMessage(error));
       }
     }
 
@@ -4324,7 +4258,7 @@ function showAuthView() {
         setNotice("Usuário excluído definitivamente.");
         await loadAdminData();
       } catch (error) {
-        setNotice(error.message || "Não foi possível excluir o usuário.");
+        setNotice(getFriendlyErrorMessage(error, "Não foi possível excluir o usuário."));
       }
     }
 
@@ -4407,7 +4341,7 @@ function showAuthView() {
         setNotice("Usuário atualizado com sucesso.");
         await loadAdminData();
       } catch (error) {
-        setUserEditError(error.message);
+        setUserEditError(error);
       } finally {
         button.disabled = false;
         button.textContent = "Salvar alterações";
@@ -4878,7 +4812,8 @@ function showAuthView() {
         };
       } catch (error) {
         state.items[index] = { ...item, _runtimeAiSummaryReady: true };
-        setNotice(`${error.message}. Abri o resumo local como alternativa.`);
+        const message = getFriendlyErrorMessage(error, "Não foi possível gerar o resumo com IA.");
+        setNotice(`${message} O resumo local foi aberto como alternativa.`);
       } finally {
         button.disabled = false;
         button.textContent = originalLabel;
@@ -5276,7 +5211,7 @@ function showAuthView() {
         setNotice("Convite aceito com sucesso. Sua senha foi criada.");
         await applyRoute("/dashboard", { replace: true });
       } catch (error) {
-        setAcceptInviteError(error.message || "Não foi possível criar a senha. Solicite um novo convite.");
+        setAcceptInviteError(getFriendlyErrorMessage(error, "Não foi possível criar a senha. Solicite um novo convite."));
       } finally {
         button.disabled = !state.session?.user;
         button.textContent = "Criar senha e acessar";
@@ -5302,7 +5237,7 @@ function showAuthView() {
           await applyRoute(state.pendingPath || "/dashboard", { replace: true });
         }
       } catch (error) {
-        setAuthError(error.message || "Não foi possível entrar.");
+        setAuthError(getFriendlyErrorMessage(error, "Não foi possível entrar."));
       } finally {
         button.disabled = false;
         button.textContent = "Entrar";
@@ -5320,7 +5255,9 @@ function showAuthView() {
         return;
       }
       const { error } = await authClient().auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/accept-invite` });
-      setAuthError(error ? error.message : "Enviamos as instruções de recuperação para o e-mail informado.");
+      setAuthError(error
+        ? getFriendlyErrorMessage(error, "Não foi possível enviar as instruções de recuperação. Tente novamente.")
+        : "Enviamos as instruções de recuperação para o e-mail informado.");
     }
 
     async function logout() {
@@ -5627,7 +5564,7 @@ function showAuthView() {
     document.getElementById("usersAdminList").addEventListener("change", (event) => {
       const select = event.target.closest(".assign-package");
       if (select) assignPackage(select.dataset.userId, select.value).catch(async (error) => {
-        setNotice(error.message);
+        setNotice(getFriendlyErrorMessage(error, "Não foi possível vincular o pacote."));
         await loadAdminData();
       });
     });
