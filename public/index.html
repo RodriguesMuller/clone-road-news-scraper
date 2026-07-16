@@ -2364,6 +2364,7 @@ function showAuthView() {
     }
 
     function usageThresholdMessage() {
+      if (state.access?.is_unlimited) return "";
       const limits = state.access?.limits || {};
       const usage = state.access?.usage_this_month || {};
       const ratios = [
@@ -2466,6 +2467,7 @@ function showAuthView() {
 
     function canUseFeature(feature, silent = false) {
       if (!state.authEnabled) return true;
+      if (state.access?.is_unlimited || ["admin", "manager"].includes(state.profile?.role)) return true;
       const allowed = {
         map: Boolean(state.access?.can_access_map),
         image_generation: Boolean(state.access?.can_generate_individual_summary ?? state.access?.can_generate_image),
@@ -3634,6 +3636,9 @@ function showAuthView() {
     }
 
     function userConsumptionHtml(info) {
+      if (info.unlimited) {
+        return `${adminBadge("Ilimitado")}<span class="admin-note"> Consumo registrado apenas para acompanhamento.</span>`;
+      }
       if (!info.pkg) {
         return `${adminBadge("Sem pacote", "danger")}<span class="admin-note"> Recursos controlados bloqueados.</span>`;
       }
@@ -3786,6 +3791,7 @@ function showAuthView() {
     function usageForUser(user) {
       const current = currentPackageForUser(user.id);
       const pkg = packageById(current?.package_id);
+      const unlimited = ["admin", "manager"].includes(user.role);
       const news = usageCount(user.id, ["news_query", "news_view"]);
       const ai = usageCount(user.id, ["ai_summary_individual", "ai_summary_weekly", "ai_summary", "image_generation", "weekly_summary"]);
       const pdf = usageCount(user.id, ["pdf_generated", "pdf_generation"]);
@@ -3796,11 +3802,11 @@ function showAuthView() {
         ai: Number(pkg?.monthly_ai_summary_limit || 0),
         pdf: Number(pkg?.monthly_pdf_limit || 0),
       };
-      const percentages = [limits.news > 0 ? news / limits.news : 1, limits.ai > 0 ? ai / limits.ai : 1, limits.pdf > 0 ? pdf / limits.pdf : 1];
-      const percent = Math.min(100, Math.round(Math.max(...percentages, 0) * 100));
+      const percentages = unlimited ? [0] : [limits.news > 0 ? news / limits.news : 1, limits.ai > 0 ? ai / limits.ai : 1, limits.pdf > 0 ? pdf / limits.pdf : 1];
+      const percent = unlimited ? 0 : Math.min(100, Math.round(Math.max(...percentages, 0) * 100));
       const total = news + ai + pdf;
-      const limitReached = limits.news <= 0 || limits.ai <= 0 || limits.pdf <= 0 || news >= limits.news || ai >= limits.ai || pdf >= limits.pdf;
-      return { current, pkg, news, ai, pdf, images, weekly, limits, percent, total, limitReached };
+      const limitReached = !unlimited && (limits.news <= 0 || limits.ai <= 0 || limits.pdf <= 0 || news >= limits.news || ai >= limits.ai || pdf >= limits.pdf);
+      return { current, pkg, unlimited, news, ai, pdf, images, weekly, limits, percent, total, limitReached };
     }
 
     function usageLimitLabel(used, limit) {
@@ -3814,6 +3820,7 @@ function showAuthView() {
     }
 
     function consumptionStatus(info) {
+      if (info.unlimited) return adminBadge("Ilimitado", "");
       if (!info.pkg) return adminBadge("Sem pacote", "danger");
       if (info.limitReached) return adminBadge("Bloqueado 100%", "danger");
       if (info.percent >= 90) return adminBadge("Crítico 90%", "danger");
@@ -3833,7 +3840,7 @@ function showAuthView() {
       if (filter === "admin") return user.role === "admin";
       if (filter === "manager") return user.role === "manager";
       if (filter === "client") return user.role === "client";
-      if (filter === "no_package") return !current;
+      if (filter === "no_package") return !current && !["admin", "manager"].includes(user.role);
       return true;
     }
 
@@ -3849,7 +3856,7 @@ function showAuthView() {
       if (clientFilter !== "all" && user.client_id !== clientFilter) return false;
       if (roleFilter !== "all" && user.role !== roleFilter) return false;
       if (userStatusFilter !== "all" && user.status !== userStatusFilter) return false;
-      if (packageFilter === "no_package" && info.pkg) return false;
+      if (packageFilter === "no_package" && (info.pkg || info.unlimited)) return false;
       if (packageFilter !== "all" && packageFilter !== "no_package" && info.pkg?.id !== packageFilter) return false;
       if (filter === "over80") return info.percent >= 80 && info.percent < 90 && !info.limitReached;
       if (filter === "over90") return info.percent >= 90 && !info.limitReached;
@@ -3966,14 +3973,14 @@ function showAuthView() {
             <div class="admin-record-head"><div class="admin-record-title"><strong>${escapeHtml(user.full_name || user.email || "-")}</strong><span>${escapeHtml(user.email || "")}</span></div><div class="admin-record-meta">${roleBadge(user.role)} ${statusBadge(user.status)} ${consumptionStatus(info)}</div></div>
             <div class="admin-record-body">
               <div class="admin-record-field"><span>Cliente / Empresa</span><strong>${escapeHtml(user.company_name || "-")}</strong></div>
-              <div class="admin-record-field"><span>Pacote</span><strong>${escapeHtml(info.pkg?.name || "Sem pacote")}</strong></div>
-              <div class="admin-record-field"><span>Consultas</span><strong>${info.pkg ? usageLimitLabel(info.news, info.limits.news) : "Sem pacote"}</strong></div>
-              <div class="admin-record-field"><span>IA</span><strong>${info.pkg ? usageLimitLabel(info.ai, info.limits.ai) : "Sem pacote"}</strong></div>
-              <div class="admin-record-field"><span>PDFs</span><strong>${info.pkg ? usageLimitLabel(info.pdf, info.limits.pdf) : "Sem pacote"}</strong></div>
-              <div class="admin-record-field"><span>Mapa</span><strong>${info.pkg?.can_access_map ? "Habilitado" : "Bloqueado"}</strong></div>
-              <div class="admin-record-field"><span>Resumo individual</span><strong>${(info.pkg?.can_generate_individual_summary ?? info.pkg?.can_generate_image) ? "Habilitado" : "Bloqueado"}</strong></div>
-              <div class="admin-record-field"><span>Resumo semanal</span><strong>${info.pkg?.can_generate_weekly_summary ? "Habilitado" : "Bloqueado"}</strong></div>
-              <div class="admin-record-field"><span>Maior consumo</span>${progressBar(info.pkg ? info.percent : 0)}<strong>${info.pkg ? `${info.percent}%` : "Sem pacote"}</strong></div>
+              <div class="admin-record-field"><span>Pacote</span><strong>${escapeHtml(info.unlimited ? "Ilimitado por perfil" : info.pkg?.name || "Sem pacote")}</strong></div>
+              <div class="admin-record-field"><span>Consultas</span><strong>${info.unlimited ? `${info.news} / Ilimitado` : info.pkg ? usageLimitLabel(info.news, info.limits.news) : "Sem pacote"}</strong></div>
+              <div class="admin-record-field"><span>IA</span><strong>${info.unlimited ? `${info.ai} / Ilimitado` : info.pkg ? usageLimitLabel(info.ai, info.limits.ai) : "Sem pacote"}</strong></div>
+              <div class="admin-record-field"><span>PDFs</span><strong>${info.unlimited ? `${info.pdf} / Ilimitado` : info.pkg ? usageLimitLabel(info.pdf, info.limits.pdf) : "Sem pacote"}</strong></div>
+              <div class="admin-record-field"><span>Mapa</span><strong>${info.unlimited || info.pkg?.can_access_map ? "Habilitado" : "Bloqueado"}</strong></div>
+              <div class="admin-record-field"><span>Resumo individual</span><strong>${info.unlimited || (info.pkg?.can_generate_individual_summary ?? info.pkg?.can_generate_image) ? "Habilitado" : "Bloqueado"}</strong></div>
+              <div class="admin-record-field"><span>Resumo semanal</span><strong>${info.unlimited || info.pkg?.can_generate_weekly_summary ? "Habilitado" : "Bloqueado"}</strong></div>
+              <div class="admin-record-field"><span>Status do limite</span>${info.unlimited ? adminBadge("Ilimitado") : `${progressBar(info.pkg ? info.percent : 0)}<strong>${info.pkg ? `${info.percent}%` : "Sem pacote"}</strong>`}</div>
             </div>
           </article>
         `).join("")}</div>

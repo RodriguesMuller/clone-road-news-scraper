@@ -33,8 +33,8 @@ module.exports = async function handler(req, res) {
   try {
     const account = await assertCanUse(req, "news_query");
     const pkg = account.activePackage?.packages || null;
-    const monthlyNewsLimit = account.authEnabled ? Number(pkg?.monthly_news_limit || 0) : 700;
-    const canAccessMap = !account.authEnabled || featureFlagEnabled(pkg, featureRule("map_access"));
+    const monthlyNewsLimit = !account.authEnabled || account.isPrivileged ? 700 : Number(pkg?.monthly_news_limit || 0);
+    const canAccessMap = !account.authEnabled || account.isPrivileged || featureFlagEnabled(pkg, featureRule("map_access"));
 
     const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
     const since30d = encodeURIComponent(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());

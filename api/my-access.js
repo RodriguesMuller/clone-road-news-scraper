@@ -29,6 +29,7 @@ module.exports = async function handler(req, res) {
     const individualRule = featureRule("ai_summary_individual");
     const weeklyRule = featureRule("ai_summary_weekly");
     const mapRule = featureRule("map_access");
+    const unlimited = Boolean(account.isPrivileged);
 
     json(res, 200, {
       role: profile.role || "client",
@@ -40,12 +41,13 @@ module.exports = async function handler(req, res) {
       package_id: account.activePackage?.package_id || null,
       package_name: pkg?.name || null,
       has_active_package: Boolean(pkg),
-      can_query_news: Boolean(pkg) && hasNewsQuota,
-      can_access_map: Boolean(pkg) && featureFlagEnabled(pkg, mapRule),
-      can_generate_individual_summary: Boolean(pkg) && featureFlagEnabled(pkg, individualRule) && hasAiQuota,
-      can_generate_image: Boolean(pkg) && featureFlagEnabled(pkg, individualRule) && hasAiQuota,
-      can_generate_weekly_summary: Boolean(pkg) && featureFlagEnabled(pkg, weeklyRule) && hasAiQuota,
-      can_generate_pdf: Boolean(pkg) && hasPdfQuota,
+      is_unlimited: unlimited,
+      can_query_news: unlimited || (Boolean(pkg) && hasNewsQuota),
+      can_access_map: unlimited || (Boolean(pkg) && featureFlagEnabled(pkg, mapRule)),
+      can_generate_individual_summary: unlimited || (Boolean(pkg) && featureFlagEnabled(pkg, individualRule) && hasAiQuota),
+      can_generate_image: unlimited || (Boolean(pkg) && featureFlagEnabled(pkg, individualRule) && hasAiQuota),
+      can_generate_weekly_summary: unlimited || (Boolean(pkg) && featureFlagEnabled(pkg, weeklyRule) && hasAiQuota),
+      can_generate_pdf: unlimited || (Boolean(pkg) && hasPdfQuota),
       limits,
       usage_this_month: usage,
     });
