@@ -33,9 +33,10 @@ module.exports = async function handler(req, res) {
     const packageId = String(body.package_id || "").trim();
     if (!userId) throw new Error("Usuario nao informado.");
 
-    if (!account.isAdmin) {
-      const profile = await fetchJson(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=role&limit=1`);
-      if (profile?.[0]?.role !== "client") throw new Error("Gestor so pode alterar pacote de usuarios cliente.");
+    const profile = await fetchJson(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=role,client_id&limit=1`);
+    if (!profile?.length) throw new Error("Usuario nao encontrado.");
+    if (!account.isAdmin && profile[0].role === "admin") {
+      throw new Error("Voce nao tem permissao para alterar usuarios Admin.");
     }
 
     await supabaseFetch(`/rest/v1/user_packages?user_id=eq.${encodeURIComponent(userId)}&is_active=eq.true`, {
@@ -58,7 +59,10 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    await audit(account, "assign_package", "profile", userId, { package_id: packageId || null });
+    await audit(account, "assign_package", "profile", userId, {
+      package_id: packageId || null,
+      client_id: profile[0].client_id || null,
+    });
     json(res, 200, { ok: true });
   } catch (error) {
     json(res, 403, { error: adminErrorMessage(error) });

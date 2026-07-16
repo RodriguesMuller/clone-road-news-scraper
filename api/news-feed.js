@@ -1,4 +1,4 @@
-const { json, monthlyUsage, recordUsage, requireAccount, supabaseFetch } = require("./_auth");
+const { assertCanUse, featureFlagEnabled, featureRule, json, recordUsage, supabaseFetch } = require("./_auth");
 const { adminErrorMessage } = require("./_admin");
 
 const BASE_COLUMNS = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
@@ -31,21 +31,10 @@ module.exports = async function handler(req, res) {
     return;
   }
   try {
-    const account = await requireAccount(req);
+    const account = await assertCanUse(req, "news_query");
     const pkg = account.activePackage?.packages || null;
-    const monthlyNewsLimit = account.isPrivileged || !account.authEnabled
-      ? 700
-      : Number(pkg?.monthly_news_limit || 0);
-    if (account.authEnabled && !account.isPrivileged && monthlyNewsLimit <= 0) {
-      throw new Error("Usuario sem pacote ativo para visualizar noticias.");
-    }
-    if (account.authEnabled && !account.isPrivileged) {
-      const usedNewsViews = await monthlyUsage(account.user.id, "news_view");
-      if (usedNewsViews >= monthlyNewsLimit) {
-        throw new Error("Limite mensal de consultas de noticias atingido.");
-      }
-    }
-    const canAccessMap = account.isPrivileged || !account.authEnabled || Boolean(pkg?.can_access_map);
+    const monthlyNewsLimit = account.authEnabled ? Number(pkg?.monthly_news_limit || 0) : 700;
+    const canAccessMap = !account.authEnabled || featureFlagEnabled(pkg, featureRule("map_access"));
 
     const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
     const since30d = encodeURIComponent(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
@@ -58,7 +47,7 @@ module.exports = async function handler(req, res) {
       supabaseFetch("/rest/v1/news?select=id", { method: "HEAD", headers: { Prefer: "count=exact" } }),
     ]);
 
-    await recordUsage(account, "news_view", {
+    await recordUsage(account, "news_query", {
       metadata: {
         loaded_latest: latestNews.length,
         loaded_recent: recentRows.length,

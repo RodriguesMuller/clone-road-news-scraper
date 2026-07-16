@@ -25,7 +25,36 @@ function toBoolean(value, fallback = false) {
 
 function toLimit(value, fallback = 0) {
   const number = Number(value);
-  return Number.isFinite(number) ? Math.max(0, Math.floor(number)) : fallback;
+  if (!Number.isFinite(number)) return fallback;
+  if (number < 0) throw new Error("Os limites do pacote nao podem ser negativos.");
+  return Math.floor(number);
+}
+
+function normalizeCpf(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function isValidCpf(value) {
+  const cpf = normalizeCpf(value);
+  if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf)) return false;
+  const digit = (length) => {
+    let sum = 0;
+    for (let index = 0; index < length; index += 1) {
+      sum += Number(cpf[index]) * (length + 1 - index);
+    }
+    const remainder = (sum * 10) % 11;
+    return remainder === 10 ? 0 : remainder;
+  };
+  return digit(9) === Number(cpf[9]) && digit(10) === Number(cpf[10]);
+}
+
+function maskCpf(value) {
+  return normalizeCpf(value).length === 11 ? "***.***.***-**" : "";
+}
+
+function normalizePhone(value) {
+  const phone = String(value || "").replace(/\D/g, "");
+  return phone || null;
 }
 
 function packagePayload(body = {}) {
@@ -39,7 +68,8 @@ function packagePayload(body = {}) {
     monthly_pdf_limit: toLimit(body.monthly_pdf_limit, 0),
     max_users: toLimit(body.max_users, 0),
     can_access_map: toBoolean(body.can_access_map, false),
-    can_generate_image: toBoolean(body.can_generate_image, false),
+    can_generate_image: toBoolean(body.can_generate_individual_summary ?? body.can_generate_image, false),
+    can_generate_individual_summary: toBoolean(body.can_generate_individual_summary ?? body.can_generate_image, false),
     can_generate_weekly_summary: toBoolean(body.can_generate_weekly_summary, false),
     is_active: toBoolean(body.is_active, true),
   };
@@ -52,6 +82,7 @@ async function audit(account, action, targetType, targetId, metadata = {}) {
       headers: { Prefer: "return=minimal" },
       body: JSON.stringify({
         actor_user_id: account?.user?.id || null,
+        client_id: metadata.client_id || account?.profile?.client_id || null,
         action,
         target_type: targetType,
         target_id: targetId ? String(targetId) : null,
@@ -75,25 +106,43 @@ function adminErrorMessage(error) {
   if (/invalid login credentials|invalid_credentials/i.test(message)) {
     return "E-mail ou senha incorretos.";
   }
-  if (/email_exists|already been registered|already registered|user_already_exists|duplicate key|already exists|ja existe|já existe|cadastrado/i.test(message)) {
-    return "Este e-mail ja esta cadastrado. Verifique a lista de usuarios ou exclua o usuario existente antes de convidar novamente.";
+  if (/sessao invalida|sessão inválida|jwt expired|token.*expired/i.test(message)) {
+    return "Sua sessao expirou. Faca login novamente.";
+  }
+  if (/(profiles_cpf_uidx|cpf).*(duplicate|already|existe)|(duplicate|already).*(profiles_cpf_uidx|cpf)/i.test(message)) {
+    return "Este CPF ja esta cadastrado.";
+  }
+  if (/(clients_company_name|company_name).*(duplicate|already|existe)|(duplicate|already).*(clients_company_name|company_name)/i.test(message)) {
+    return "Este cliente ja esta cadastrado.";
+  }
+  if (/email_exists|already been registered|already registered|user_already_exists|duplicate key.*email|email.*duplicate|profiles_email/i.test(message)) {
+    return "Este e-mail ja esta cadastrado.";
+  }
+  if (/duplicate key|already exists|ja existe|já existe/i.test(message)) {
+    return "Ja existe um cadastro com esses dados.";
   }
   if (/row-level security|violates row-level security|permission denied|insufficient permissions|acesso negado|not allowed/i.test(message)) {
     return "Voce nao tem permissao para realizar esta acao.";
   }
-  if (/inativo|inactive|blocked|bloqueado/i.test(message)) {
+  if (/cliente.*(inativo|inactive)|cliente nao encontrado/i.test(message)) {
+    return "Cliente nao encontrado ou inativo.";
+  }
+  if (/pacote.*(inativo|inactive)|pacote nao encontrado/i.test(message)) {
+    return "Pacote nao encontrado ou inativo.";
+  }
+  if (/seu (usuario|acesso).*(inativo|inactive|blocked|bloqueado)|profile.*inactive/i.test(message)) {
     return "Seu acesso esta inativo. Contate o administrador.";
   }
   if (/expired|token.*invalid|invalid.*token|link.*expir/i.test(message)) {
     return "Este link expirou. Solicite um novo convite.";
   }
+  if (/usuario sem pacote|sem pacote ativo|vincule um pacote/i.test(message)) {
+    return "Vincule um pacote para liberar os recursos da plataforma.";
+  }
   if (/fetch failed|network|econn|timeout|connect|connection/i.test(message)) {
     return "Nao foi possivel conectar ao servidor. Tente novamente em instantes.";
   }
-  if (/service_role|SUPABASE_SERVICE_ROLE_KEY/i.test(message)) {
-    return "SUPABASE_SERVICE_ROLE_KEY nao configurada no servidor.";
-  }
-  if (/^\s*[{[]/.test(raw) || /Supabase HTTP|PGRST|stack|trace|schema|column/i.test(message)) {
+  if (/^\s*[{[]/.test(raw) || /service_role|database_url|openai_api_key|Supabase HTTP|PGRST|stack|trace|schema|column|relation|sqlstate/i.test(message)) {
     return "Nao foi possivel concluir a acao. Tente novamente.";
   }
   return message || "Nao foi possivel concluir a acao. Tente novamente.";
@@ -103,6 +152,10 @@ module.exports = {
   adminErrorMessage,
   audit,
   fetchJson,
+  isValidCpf,
+  maskCpf,
+  normalizeCpf,
+  normalizePhone,
   packagePayload,
   readJson,
 };

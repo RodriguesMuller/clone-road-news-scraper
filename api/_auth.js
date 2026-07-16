@@ -1,6 +1,68 @@
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://vdyilgbqxnrwqgoairat.supabase.co";
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const SUPABASE_URL = String(process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "");
+const SUPABASE_ANON_KEY = String(process.env.SUPABASE_ANON_KEY || "").trim();
+const SERVICE_ROLE_KEY = String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+
+const FEATURE_RULES = {
+  news_query: {
+    events: ["news_query", "news_view"],
+    limit: "monthly_news_limit",
+    blockedEvent: "blocked_news_query_limit",
+    disabledMessage: "Limite mensal de consultas atingido. Contate o gestor da plataforma para alterar seu pacote.",
+    limitMessage: "Limite mensal de consultas atingido. Contate o gestor da plataforma para alterar seu pacote.",
+  },
+  ai_summary_individual: {
+    events: ["ai_summary_individual", "ai_summary", "image_generation"],
+    limitEvents: ["ai_summary_individual", "ai_summary_weekly", "ai_summary", "image_generation", "weekly_summary"],
+    flag: "can_generate_individual_summary",
+    legacyFlag: "can_generate_image",
+    limit: "monthly_ai_summary_limit",
+    blockedEvent: "blocked_ai_limit",
+    disabledEvent: "blocked_summary_disabled",
+    disabledMessage: "Resumo individual nao esta disponivel no seu pacote.",
+    limitMessage: "Limite mensal de IA atingido. Seu pacote nao permite novas geracoes neste mes.",
+  },
+  ai_summary_weekly: {
+    events: ["ai_summary_weekly", "weekly_summary"],
+    limitEvents: ["ai_summary_individual", "ai_summary_weekly", "ai_summary", "image_generation", "weekly_summary"],
+    flag: "can_generate_weekly_summary",
+    limit: "monthly_ai_summary_limit",
+    blockedEvent: "blocked_ai_limit",
+    disabledEvent: "blocked_summary_disabled",
+    disabledMessage: "Resumo semanal nao esta disponivel no seu pacote.",
+    limitMessage: "Limite mensal de IA atingido. Seu pacote nao permite novas geracoes neste mes.",
+  },
+  pdf_generated: {
+    events: ["pdf_generated", "pdf_generation"],
+    limit: "monthly_pdf_limit",
+    blockedEvent: "blocked_pdf_limit",
+    disabledMessage: "Limite mensal de PDFs atingido.",
+    limitMessage: "Limite mensal de PDFs atingido.",
+  },
+  map_access: {
+    events: ["map_access"],
+    flag: "can_access_map",
+    blockedEvent: "blocked_map_disabled",
+    disabledMessage: "Mapa rodoviario nao esta disponivel no seu pacote.",
+  },
+};
+
+const FEATURE_ALIASES = {
+  news_view: "news_query",
+  image_generation: "ai_summary_individual",
+  ai_summary: "ai_summary_individual",
+  weekly_summary: "ai_summary_weekly",
+  pdf_generation: "pdf_generated",
+  map: "map_access",
+};
+
+function assertSupabaseConfigured({ serviceRole = false } = {}) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error("Supabase nao configurado neste ambiente.");
+  }
+  if (serviceRole && !SERVICE_ROLE_KEY) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY nao configurada no servidor.");
+  }
+}
 
 function authSettingValue() {
   return process.env.AUTH_ENABLED ?? process.env.NEXT_PUBLIC_AUTH_ENABLED ?? "";
@@ -25,10 +87,8 @@ function bearerToken(req) {
 }
 
 async function supabaseFetch(path, options = {}, useServiceRole = true) {
+  assertSupabaseConfigured({ serviceRole: useServiceRole });
   const key = useServiceRole ? SERVICE_ROLE_KEY : SUPABASE_ANON_KEY;
-  if (useServiceRole && !SERVICE_ROLE_KEY) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY nao configurada no servidor.");
-  }
   const response = await fetch(`${SUPABASE_URL}${path}`, {
     ...options,
     headers: {
@@ -46,6 +106,7 @@ async function supabaseFetch(path, options = {}, useServiceRole = true) {
 }
 
 async function getAuthUser(req) {
+  assertSupabaseConfigured();
   const token = bearerToken(req);
   if (!token) throw new Error("Login necessario.");
   const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
@@ -71,12 +132,26 @@ async function getActivePackage(userId) {
   const path = `/rest/v1/user_packages?user_id=eq.${encodeURIComponent(userId)}&is_active=eq.true&or=(ends_at.is.null,ends_at.gt.${now})&select=*,packages(*)&order=created_at.desc&limit=1`;
   const response = await supabaseFetch(path);
   const rows = await response.json();
+  const active = rows[0] || null;
+  return active?.packages?.is_active === false ? null : active;
+}
+
+async function getClient(clientId) {
+  if (!clientId) return null;
+  const response = await supabaseFetch(`/rest/v1/clients?id=eq.${encodeURIComponent(clientId)}&select=id,company_name,status&limit=1`);
+  const rows = await response.json();
   return rows[0] || null;
 }
 
 function monthStartIso() {
-  const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0)).toISOString();
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  return new Date(`${year}-${month}-01T00:00:00-03:00`).toISOString();
 }
 
 function isManagerRole(role) {
@@ -109,42 +184,69 @@ async function requireAccount(req) {
   const profile = await getProfile(user.id);
   if (!profile) throw new Error("Perfil nao encontrado. Contate o administrador.");
   if (profile.status !== "active") throw new Error("Seu usuario esta inativo. Contate o administrador.");
+  const client = await getClient(profile.client_id);
+  if (profile.client_id && (!client || client.status !== "active")) {
+    throw new Error("Seu acesso esta inativo. Contate o administrador.");
+  }
   const isAdmin = profile.role === "admin";
   const isManager = profile.role === "manager";
   const isPrivileged = isManagerRole(profile.role);
-  const activePackage = isPrivileged ? null : await getActivePackage(user.id);
-  return { authEnabled: true, user, token, profile, activePackage, isAdmin, isManager, isPrivileged };
+  const activePackage = await getActivePackage(user.id);
+  return { authEnabled: true, user, token, profile, client, activePackage, isAdmin, isManager, isPrivileged };
 }
 
 function packageFor(account) {
   return account.activePackage?.packages || null;
 }
 
-function featureAllowed(pkg, feature) {
-  if (!pkg) return false;
-  if (feature === "map") return Boolean(pkg.can_access_map);
-  if (feature === "image_generation") return Boolean(pkg.can_generate_image);
-  if (feature === "weekly_summary") return Boolean(pkg.can_generate_weekly_summary);
-  if (feature === "news_view") return Number(pkg.monthly_news_limit || 0) > 0;
-  if (feature === "pdf_generation") return Number(pkg.monthly_pdf_limit || 0) > 0;
-  if (feature === "ai_summary") return Number(pkg.monthly_ai_summary_limit || 0) > 0;
-  return false;
+function canonicalFeature(feature) {
+  return FEATURE_ALIASES[feature] || feature;
+}
+
+function featureRule(feature) {
+  return FEATURE_RULES[canonicalFeature(feature)] || null;
+}
+
+function featureFlagEnabled(pkg, rule) {
+  if (!rule?.flag) return true;
+  if (typeof pkg?.[rule.flag] === "boolean") return pkg[rule.flag];
+  return rule.legacyFlag ? Boolean(pkg?.[rule.legacyFlag]) : false;
+}
+
+async function featureUsage(userId, feature) {
+  const rule = featureRule(feature);
+  if (!rule) return 0;
+  return monthlyUsage(userId, rule.limitEvents || rule.events);
 }
 
 async function assertCanUse(req, feature) {
   const account = await requireAccount(req);
-  if (!account.authEnabled || account.isPrivileged) return account;
+  if (!account.authEnabled) return account;
+  const normalizedFeature = canonicalFeature(feature);
+  const rule = featureRule(normalizedFeature);
+  if (!rule) throw new Error("Recurso controlado invalido.");
   const pkg = packageFor(account);
-  if (!pkg) throw new Error("Recurso nao disponivel: usuario sem pacote ativo.");
-  if (!featureAllowed(pkg, feature)) throw new Error("Recurso nao disponivel no pacote atual.");
-
-  if (feature === "ai_summary" || feature === "image_generation" || feature === "weekly_summary") {
-    const used = await monthlyUsage(account.user.id, ["ai_summary", "image_generation", "weekly_summary"]);
-    if (used >= Number(pkg.monthly_ai_summary_limit || 0)) throw new Error("Limite mensal de IA atingido.");
+  if (!pkg) {
+    await recordUsage(account, rule.disabledEvent || rule.blockedEvent, {
+      metadata: { feature: normalizedFeature, reason: "no_package" },
+    });
+    throw new Error("Vincule um pacote para liberar os recursos da plataforma.");
   }
-  if (feature === "pdf_generation") {
-    const used = await monthlyUsage(account.user.id, "pdf_generation");
-    if (used >= Number(pkg.monthly_pdf_limit || 0)) throw new Error("Limite mensal de PDF atingido.");
+  if (!featureFlagEnabled(pkg, rule)) {
+    await recordUsage(account, rule.disabledEvent || rule.blockedEvent, {
+      metadata: { feature: normalizedFeature, reason: "disabled" },
+    });
+    throw new Error(rule.disabledMessage);
+  }
+  if (rule.limit) {
+    const limit = Number(pkg[rule.limit] || 0);
+    const used = await featureUsage(account.user.id, normalizedFeature);
+    if (limit <= 0 || used >= limit) {
+      await recordUsage(account, rule.blockedEvent, {
+        metadata: { feature: normalizedFeature, reason: "limit", used, limit },
+      });
+      throw new Error(rule.limitMessage);
+    }
   }
   return account;
 }
@@ -199,9 +301,14 @@ module.exports = {
   SERVICE_ROLE_KEY,
   authSettingValue,
   isAuthEnabled,
+  assertSupabaseConfigured,
   json,
   supabaseFetch,
   monthlyUsage,
+  monthStartIso,
+  featureUsage,
+  featureRule,
+  featureFlagEnabled,
   isManagerRole,
   requireAccount,
   requireAdmin,

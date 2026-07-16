@@ -890,6 +890,7 @@
       #roadMap { min-height: 460px; height: 62vh; }
     }
     @media (max-width: 640px) {
+      .form-row { grid-template-columns: 1fr; }
       .bar { align-items: flex-start; }
       .header-actions { width: 100%; }
       .status-pill { width: 100%; }
@@ -1266,22 +1267,29 @@
           </section>
 
           <section id="inviteAdminSection" class="panel admin-section" data-admin-panel="users" hidden>
-            <h2>Convidar usuário</h2>
+            <h2>Cadastrar usuário</h2>
             <form id="inviteUserForm" class="form-grid">
               <div class="form-row">
-                <div class="field"><label for="inviteName">Nome</label><input id="inviteName" required></div>
+                <div class="field"><label for="inviteName">Nome completo</label><input id="inviteName" required></div>
                 <div class="field"><label for="inviteEmail">E-mail</label><input id="inviteEmail" type="email" required></div>
               </div>
               <div class="form-row">
-                <div class="field"><label for="inviteCompany">Empresa</label><input id="inviteCompany"></div>
-                <div class="field"><label for="inviteRole">Perfil de acesso</label><select id="inviteRole"></select></div>
+                <div class="field"><label for="invitePassword">Senha inicial</label><input id="invitePassword" type="password" minlength="8" autocomplete="new-password" required></div>
+                <div class="field"><label for="inviteCpf">CPF</label><input id="inviteCpf" inputmode="numeric" autocomplete="off" required></div>
               </div>
               <div class="form-row">
-                <div class="field"><label for="invitePackage">Pacote inicial</label><select id="invitePackage"><option value="">Sem pacote</option></select></div>
+                <div class="field"><label for="invitePhone">Telefone</label><input id="invitePhone" type="tel" autocomplete="tel"></div>
+                <div class="field"><label for="inviteClient">Cliente / Empresa</label><select id="inviteClient" required></select></div>
+              </div>
+              <div class="form-row">
+                <div class="field"><label for="inviteRole">Perfil de acesso</label><select id="inviteRole"></select></div>
+                <div class="field"><label for="invitePackage">Pacote</label><select id="invitePackage" required></select></div>
+              </div>
+              <div class="form-row">
                 <div class="field"><label for="inviteStatus">Status inicial</label><select id="inviteStatus"><option value="active">Ativo</option><option value="blocked">Bloqueado</option><option value="inactive">Inativo</option></select></div>
               </div>
-              <div id="invitePackageWarning" class="admin-error" hidden>Usuários sem pacote terão recursos limitados.</div>
-              <button id="inviteSubmitButton" type="submit">Enviar convite</button>
+              <div id="invitePackageWarning" class="admin-error" hidden></div>
+              <button id="inviteSubmitButton" type="submit">Cadastrar usuário</button>
             </form>
           </section>
 
@@ -1336,14 +1344,19 @@
           <section id="usageAdminSection" class="panel admin-section" data-admin-panel="usage" hidden>
             <h2>Consumo do mês</h2>
             <div class="admin-filterbar">
+              <select id="usageClientFilter"><option value="all">Todos os clientes</option></select>
+              <select id="usageRoleFilter"><option value="all">Todos os perfis</option><option value="admin">Admin</option><option value="manager">Gestor</option><option value="client">Cliente</option></select>
+              <select id="usageUserStatusFilter"><option value="all">Todos os status</option><option value="active">Ativos</option><option value="blocked">Bloqueados</option><option value="inactive">Inativos</option></select>
+              <select id="usagePackageFilter"><option value="all">Todos os pacotes</option><option value="no_package">Sem pacote</option></select>
               <select id="usageStatusFilter">
-                <option value="all">Todos</option>
-                <option value="over80">Acima de 80%</option>
-                <option value="limit">Limite atingido</option>
+                <option value="all">Todo consumo</option>
+                <option value="over80">Atenção 80%</option>
+                <option value="over90">Crítico 90%</option>
+                <option value="limit">Bloqueado 100%</option>
                 <option value="no_package">Sem pacote</option>
                 <option value="no_usage">Sem consumo</option>
               </select>
-              <input id="usageSearch" type="search" placeholder="Buscar usuario, empresa ou pacote">
+              <input id="usageSearch" type="search" placeholder="Buscar nome ou e-mail">
             </div>
             <div id="usageAdminList" class="admin-table-wrap"></div>
           </section>
@@ -1359,10 +1372,18 @@
             <div class="admin-section-head">
               <div>
                 <h2>Clientes</h2>
-                <p class="admin-note">Clientes derivados das empresas cadastradas em perfis. A tabela clients pode ampliar estes dados.</p>
+                <p class="admin-note">Cadastre as empresas antes de criar seus usuários.</p>
               </div>
-              <button class="mini-button" type="button" data-prepared-modal="client">Adicionar cliente</button>
             </div>
+            <form id="clientForm" class="form-grid">
+              <input id="clientId" type="hidden">
+              <div class="form-row">
+                <div class="field"><label for="clientName">Nome do cliente / empresa</label><input id="clientName" required></div>
+                <div class="field"><label for="clientStatus">Status</label><select id="clientStatus"><option value="active">Ativo</option><option value="inactive">Inativo</option><option value="blocked">Bloqueado</option></select></div>
+              </div>
+              <div class="field"><label for="clientNotes">Observações</label><textarea id="clientNotes"></textarea></div>
+              <div class="admin-actions"><button type="submit">Salvar cliente</button><button id="clearClientForm" class="mini-button" type="button">Limpar</button></div>
+            </form>
             <div id="clientsAdminList" class="management-grid"></div>
           </section>
           <section id="sourcesAdminSection" class="panel admin-section" data-admin-panel="sources" hidden>
@@ -1498,8 +1519,18 @@
         </div>
         <div class="form-row">
           <div class="field">
-            <label for="editUserCompany">Empresa</label>
-            <input id="editUserCompany">
+            <label for="editUserCpf">CPF</label>
+            <input id="editUserCpf" inputmode="numeric" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label for="editUserPhone">Telefone</label>
+            <input id="editUserPhone" type="tel" autocomplete="tel">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="editUserClient">Cliente / Empresa</label>
+            <select id="editUserClient" required></select>
           </div>
           <div class="field">
             <label for="editUserRole">Perfil de acesso</label>
@@ -1519,10 +1550,6 @@
             <label for="editUserPackage">Pacote atual</label>
             <select id="editUserPackage"></select>
           </div>
-        </div>
-        <div class="field">
-          <label for="editUserNotes">Observações</label>
-          <textarea id="editUserNotes" readonly placeholder="Campo reservado para observações futuras."></textarea>
         </div>
         <div class="modal-form-actions">
           <button id="cancelUserEdit" type="button" class="mini-button">Cancelar</button>
@@ -1665,7 +1692,7 @@
       viewMode: null,
       access: null,
       dataLoadError: "",
-      admin: { users: [], packages: [], userPackages: [], usage: [], logs: [] },
+      admin: { users: [], clients: [], packages: [], userPackages: [], usage: [], logs: [] },
       filters: { search: "", period: "24", region: "", category: "", sort: "recent" },
       map: {
         instance: null,
@@ -1674,6 +1701,7 @@
         riskFilters: new Set(MAP_RISKS.map(([key]) => key)),
         categoryFilters: new Set(MAP_CATEGORIES),
         ufFilter: "",
+        accessRecorded: false,
       },
     };
 
@@ -1805,9 +1833,14 @@
 
       const haystack = `${raw} ${message}`.toLowerCase();
       if (/invalid login credentials|invalid_credentials|email not confirmed|invalid grant/.test(haystack)) return "E-mail ou senha incorretos.";
-      if (/email_exists|already been registered|already registered|user_already_exists|duplicate key|already exists|cadastrado|ja existe|já existe/.test(haystack)) return "Este e-mail já está cadastrado. Verifique a lista de usuários ou exclua o usuário existente antes de convidar novamente.";
+      if (/(profiles_cpf_uidx|cpf).*(duplicate|already|existe)|(duplicate|already).*(profiles_cpf_uidx|cpf)/.test(haystack)) return "Este CPF já está cadastrado.";
+      if (/(clients_company_name|company_name).*(duplicate|already|existe)|(duplicate|already).*(clients_company_name|company_name)/.test(haystack)) return "Este cliente já está cadastrado.";
+      if (/email_exists|already been registered|already registered|user_already_exists|duplicate key.*email|email.*duplicate|profiles_email/.test(haystack)) return "Este e-mail já está cadastrado.";
+      if (/duplicate key|already exists|ja existe|já existe/.test(haystack)) return "Já existe um cadastro com esses dados.";
       if (/permission denied|insufficient permissions|row-level security|violates row-level security|acesso negado|not allowed|sem permiss/.test(haystack)) return "Você não tem permissão para realizar esta ação.";
-      if (/inativo|inactive|blocked|bloqueado/.test(haystack)) return "Seu acesso está inativo. Contate o administrador.";
+      if (/cliente.*(inativo|inactive)|cliente nao encontrado|cliente não encontrado/.test(haystack)) return "Cliente não encontrado ou inativo.";
+      if (/pacote.*(inativo|inactive)|pacote nao encontrado|pacote não encontrado/.test(haystack)) return "Pacote não encontrado ou inativo.";
+      if (/seu (usuario|usuário|acesso).*(inativo|inactive|blocked|bloqueado)|profile.*inactive/.test(haystack)) return "Seu acesso está inativo. Contate o administrador.";
       if (/expired|token.*invalid|invalid.*token|link.*expir|refresh token/.test(haystack)) return "Este link expirou. Solicite um novo convite.";
       if (/failed to fetch|network|timeout|econn|connection|fetch failed|servidor/.test(haystack)) return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
       if (/service_role|database_url|supabase_service_role_key|postgres|pgrst|schema|column|stack|trace|^\s*[{[]/.test(haystack)) return fallback;
@@ -2330,6 +2363,21 @@ function showAuthView() {
       if (access.status !== "active") throw new Error("Seu usuário está inativo. Contate o administrador.");
     }
 
+    function usageThresholdMessage() {
+      const limits = state.access?.limits || {};
+      const usage = state.access?.usage_this_month || {};
+      const ratios = [
+        [Number(usage.news || 0), Number(limits.monthly_news_limit || 0)],
+        [Number(usage.ai || 0), Number(limits.monthly_ai_summary_limit || 0)],
+        [Number(usage.pdf || 0), Number(limits.monthly_pdf_limit || 0)],
+      ].filter(([, limit]) => limit > 0).map(([used, limit]) => used / limit);
+      const highest = Math.max(0, ...ratios);
+      if (highest >= 1) return "Limite atingido. Recurso bloqueado até a renovação do ciclo ou alteração do pacote.";
+      if (highest >= .9) return "Atenção: você está próximo de atingir o limite do seu pacote.";
+      if (highest >= .8) return "Você já utilizou 80% do limite deste recurso no seu pacote.";
+      return "";
+    }
+
     async function initAuth(options = {}) {
       if (!options.configLoaded) await loadAuthConfig();
       if (!state.authEnabled) {
@@ -2347,6 +2395,11 @@ function showAuthView() {
       if (!state.session?.user) {
         state.profile = null;
         state.access = null;
+        state.admin = { users: [], clients: [], packages: [], userPackages: [], usage: [], logs: [] };
+        state.items = [];
+        state.recentItems = [];
+        state.mapItems = [];
+        state.map.accessRecorded = false;
         state.pendingPath = normalizeRoute(window.location.pathname) === "/login" ? "/dashboard" : normalizeRoute(window.location.pathname);
         showAuthView();
         return false;
@@ -2413,10 +2466,9 @@ function showAuthView() {
 
     function canUseFeature(feature, silent = false) {
       if (!state.authEnabled) return true;
-      if (["admin", "manager"].includes(state.profile?.role)) return true;
       const allowed = {
         map: Boolean(state.access?.can_access_map),
-        image_generation: Boolean(state.access?.can_generate_image),
+        image_generation: Boolean(state.access?.can_generate_individual_summary ?? state.access?.can_generate_image),
         weekly_summary: Boolean(state.access?.can_generate_weekly_summary),
         pdf_generation: Boolean(state.access?.can_generate_pdf),
       }[feature];
@@ -2431,7 +2483,7 @@ function showAuthView() {
     }
 
     async function consumeUsage(eventType, metadata = {}) {
-      if (!state.authEnabled || ["admin", "manager"].includes(state.profile?.role)) return true;
+      if (!state.authEnabled) return true;
       const response = await fetch("/api/usage-event", {
         method: "POST",
         headers: authHeaders({ "Content-Type": "application/json" }),
@@ -3363,6 +3415,11 @@ function showAuthView() {
       document.getElementById("adminView").hidden = view !== "admin";
       applyClientPageVisibility();
       if (view === "map") {
+        if (!state.map.accessRecorded) {
+          consumeUsage("map_access", { source: "map-view" }).then((allowed) => {
+            state.map.accessRecorded = Boolean(allowed);
+          });
+        }
         setTimeout(renderMap, 60);
       }
       if (view === "admin") {
@@ -3493,12 +3550,25 @@ function showAuthView() {
         }),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(getFriendlyErrorMessage(payload.error || payload, "Não foi possível concluir a ação administrativa."));
+      if (!response.ok) {
+        const message = getFriendlyErrorMessage(payload.error || payload, "Não foi possível concluir a ação administrativa.");
+        if (/sessão expirou|sessao expirou|sessão inválida|sessao invalida/i.test(message)) await logout();
+        throw new Error(message);
+      }
       return payload;
     }
 
     function adminInputValue(id, fallback = "") {
       return document.getElementById(id)?.value || fallback;
+    }
+
+    function formatCpfInput(input) {
+      const digits = String(input?.value || "").replace(/\D/g, "").slice(0, 11);
+      if (!input) return;
+      input.value = digits
+        .replace(/^(\d{3})(\d)/, "$1.$2")
+        .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+        .replace(/\.(\d{3})(\d)/, ".$1-$2");
     }
 
     function adminBadge(label, tone = "neutral") {
@@ -3551,10 +3621,11 @@ function showAuthView() {
     }
 
     function packageResourcesHtml(pkg) {
+      const individualSummary = pkg.can_generate_individual_summary ?? pkg.can_generate_image;
       return `
         <div class="admin-resource-row">
           ${pkg.can_access_map ? adminBadge("Mapa") : adminBadge("Mapa off", "neutral")}
-          ${pkg.can_generate_image ? adminBadge("Resumo individual") : adminBadge("Resumo off", "neutral")}
+          ${individualSummary ? adminBadge("Resumo individual") : adminBadge("Resumo off", "neutral")}
           ${pkg.can_generate_weekly_summary ? adminBadge("Resumo semanal") : adminBadge("Semanal off", "neutral")}
           ${Number(pkg.monthly_ai_summary_limit || 0) > 0 ? adminBadge("IA") : adminBadge("IA off", "neutral")}
           ${Number(pkg.monthly_pdf_limit || 0) > 0 ? adminBadge("PDF") : adminBadge("PDF off", "neutral")}
@@ -3564,23 +3635,30 @@ function showAuthView() {
 
     function userConsumptionHtml(info) {
       if (!info.pkg) {
-        return `<span class="admin-note">Consumo indisponível até vincular um pacote.</span>`;
+        return `${adminBadge("Sem pacote", "danger")}<span class="admin-note"> Recursos controlados bloqueados.</span>`;
       }
       return `
         <div class="admin-consumption-list">
-          <div><span>Consultas</span><strong>${info.news} / ${info.limits.news || 0}</strong></div>
-          <div><span>IA</span><strong>${info.ai} / ${info.limits.ai || 0}</strong></div>
-          <div><span>PDFs</span><strong>${info.pdf} / ${info.limits.pdf || 0}</strong></div>
+          <div><span>Consultas</span><strong>${usageLimitLabel(info.news, info.limits.news)}</strong></div>
+          <div><span>IA</span><strong>${usageLimitLabel(info.ai, info.limits.ai)}</strong></div>
+          <div><span>PDFs</span><strong>${usageLimitLabel(info.pdf, info.limits.pdf)}</strong></div>
         </div>
-        ${(info.limits.news || info.limits.ai || info.limits.pdf) ? progressBar(info.percent) : ""}
+        ${progressBar(info.percent)}
         ${consumptionStatus(info)}
       `;
     }
 
     function packageOptions(selectedId = "") {
-      const packages = state.admin.packages || [];
+      const packages = (state.admin.packages || []).filter((pkg) => pkg.is_active || pkg.id === selectedId);
       return `<option value="">Sem pacote</option>${packages.map((pkg) => `
         <option value="${escapeHtml(pkg.id)}" ${pkg.id === selectedId ? "selected" : ""}>${escapeHtml(pkg.name)}</option>
+      `).join("")}`;
+    }
+
+    function clientOptions(selectedId = "") {
+      const clients = (state.admin.clients || []).filter((client) => client.status === "active" || client.id === selectedId);
+      return `<option value="">Selecione um cliente</option>${clients.map((client) => `
+        <option value="${escapeHtml(client.id)}" ${client.id === selectedId ? "selected" : ""}>${escapeHtml(client.company_name)}</option>
       `).join("")}`;
     }
 
@@ -3617,24 +3695,58 @@ function showAuthView() {
       select.value = options.some(([value]) => value === currentValue) ? currentValue : "all";
     }
 
+    function updateUsageFilterOptions() {
+      const clientSelect = document.getElementById("usageClientFilter");
+      const packageSelect = document.getElementById("usagePackageFilter");
+      if (clientSelect) {
+        const selected = clientSelect.value || "all";
+        clientSelect.innerHTML = `<option value="all">Todos os clientes</option>${(state.admin.clients || []).map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(client.company_name)}</option>`).join("")}`;
+        clientSelect.value = (state.admin.clients || []).some((client) => client.id === selected) ? selected : "all";
+      }
+      if (packageSelect) {
+        const selected = packageSelect.value || "all";
+        packageSelect.innerHTML = `<option value="all">Todos os pacotes</option><option value="no_package">Sem pacote</option>${(state.admin.packages || []).map((pkg) => `<option value="${escapeHtml(pkg.id)}">${escapeHtml(pkg.name)}</option>`).join("")}`;
+        packageSelect.value = ["all", "no_package"].includes(selected) || (state.admin.packages || []).some((pkg) => pkg.id === selected) ? selected : "all";
+      }
+    }
+
     function updateInvitePackageWarning() {
       const warning = document.getElementById("invitePackageWarning");
       if (!warning) return;
-      const role = document.getElementById("inviteRole")?.value || "client";
       const packageSelect = document.getElementById("invitePackage");
       const packageId = packageSelect?.value || "";
-      if (packageSelect) packageSelect.required = role === "client";
+      const clientSelect = document.getElementById("inviteClient");
+      const clientId = clientSelect?.value || "";
+      const submitButton = document.getElementById("inviteSubmitButton");
+      if (packageSelect) packageSelect.required = true;
+      if (clientSelect) clientSelect.required = true;
+      const activeClients = (state.admin.clients || []).filter((client) => client.status === "active");
       const activePackages = (state.admin.packages || []).filter((pkg) => pkg.is_active);
+      if (!activeClients.length) {
+        if (submitButton) submitButton.disabled = true;
+        warning.textContent = "Cadastre um cliente antes de criar usuários.";
+        warning.hidden = false;
+        return;
+      }
       if (!activePackages.length) {
-        warning.textContent = "Crie pelo menos um pacote ativo antes de convidar clientes.";
+        if (submitButton) submitButton.disabled = true;
+        warning.textContent = "Cadastre um pacote antes de criar usuários.";
         warning.hidden = false;
         return;
       }
-      if (role === "client" && !packageId) {
-        warning.textContent = "Selecione um pacote inicial para o cliente.";
+      if (!clientId) {
+        if (submitButton) submitButton.disabled = false;
+        warning.textContent = "Selecione o cliente ou empresa do usuário.";
         warning.hidden = false;
         return;
       }
+      if (!packageId) {
+        if (submitButton) submitButton.disabled = false;
+        warning.textContent = "Selecione um pacote para o usuário.";
+        warning.hidden = false;
+        return;
+      }
+      if (submitButton) submitButton.disabled = false;
       warning.hidden = true;
     }
 
@@ -3643,8 +3755,14 @@ function showAuthView() {
       if (!select) return;
       const activePackages = (state.admin.packages || []).filter((pkg) => pkg.is_active);
       const currentValue = select.value;
-      select.innerHTML = `<option value="">Sem pacote</option>${activePackages.map((pkg) => `<option value="${escapeHtml(pkg.id)}">${escapeHtml(pkg.name)}</option>`).join("")}`;
+      select.innerHTML = `<option value="">Selecione um pacote</option>${activePackages.map((pkg) => `<option value="${escapeHtml(pkg.id)}">${escapeHtml(pkg.name)}</option>`).join("")}`;
       select.value = activePackages.some((pkg) => pkg.id === currentValue) ? currentValue : "";
+      const clientSelect = document.getElementById("inviteClient");
+      if (clientSelect) {
+        const currentClient = clientSelect.value;
+        clientSelect.innerHTML = clientOptions(currentClient);
+        clientSelect.value = (state.admin.clients || []).some((client) => client.id === currentClient && client.status === "active") ? currentClient : "";
+      }
       updateInvitePackageWarning();
     }
 
@@ -3668,25 +3786,25 @@ function showAuthView() {
     function usageForUser(user) {
       const current = currentPackageForUser(user.id);
       const pkg = packageById(current?.package_id);
-      const news = usageCount(user.id, "news_view");
-      const ai = usageCount(user.id, ["ai_summary", "image_generation", "weekly_summary"]);
-      const pdf = usageCount(user.id, "pdf_generation");
-      const images = usageCount(user.id, "image_generation");
-      const weekly = usageCount(user.id, "weekly_summary");
+      const news = usageCount(user.id, ["news_query", "news_view"]);
+      const ai = usageCount(user.id, ["ai_summary_individual", "ai_summary_weekly", "ai_summary", "image_generation", "weekly_summary"]);
+      const pdf = usageCount(user.id, ["pdf_generated", "pdf_generation"]);
+      const images = usageCount(user.id, ["ai_summary_individual", "ai_summary", "image_generation"]);
+      const weekly = usageCount(user.id, ["ai_summary_weekly", "weekly_summary"]);
       const limits = {
         news: Number(pkg?.monthly_news_limit || 0),
         ai: Number(pkg?.monthly_ai_summary_limit || 0),
         pdf: Number(pkg?.monthly_pdf_limit || 0),
       };
-      const percentages = [
-        limits.news ? news / limits.news : 0,
-        limits.ai ? ai / limits.ai : 0,
-        limits.pdf ? pdf / limits.pdf : 0,
-      ];
+      const percentages = [limits.news > 0 ? news / limits.news : 1, limits.ai > 0 ? ai / limits.ai : 1, limits.pdf > 0 ? pdf / limits.pdf : 1];
       const percent = Math.min(100, Math.round(Math.max(...percentages, 0) * 100));
       const total = news + ai + pdf;
-      const limitReached = (limits.news && news >= limits.news) || (limits.ai && ai >= limits.ai) || (limits.pdf && pdf >= limits.pdf);
+      const limitReached = limits.news <= 0 || limits.ai <= 0 || limits.pdf <= 0 || news >= limits.news || ai >= limits.ai || pdf >= limits.pdf;
       return { current, pkg, news, ai, pdf, images, weekly, limits, percent, total, limitReached };
+    }
+
+    function usageLimitLabel(used, limit) {
+      return Number(limit || 0) > 0 ? `${used} / ${limit}` : "Bloqueado";
     }
 
     function progressBar(percent) {
@@ -3697,8 +3815,9 @@ function showAuthView() {
 
     function consumptionStatus(info) {
       if (!info.pkg) return adminBadge("Sem pacote", "danger");
-      if (info.limitReached) return adminBadge("Limite atingido", "danger");
-      if (info.percent >= 80) return adminBadge("Acima de 80%", "warn");
+      if (info.limitReached) return adminBadge("Bloqueado 100%", "danger");
+      if (info.percent >= 90) return adminBadge("Crítico 90%", "danger");
+      if (info.percent >= 80) return adminBadge("Atenção 80%", "warn");
       if (!info.total) return adminBadge("Sem consumo", "neutral");
       return adminBadge("Normal", "");
     }
@@ -3720,10 +3839,20 @@ function showAuthView() {
 
     function usageMatchesFilters(user, info) {
       const filter = adminInputValue("usageStatusFilter", "all");
+      const clientFilter = adminInputValue("usageClientFilter", "all");
+      const roleFilter = adminInputValue("usageRoleFilter", "all");
+      const userStatusFilter = adminInputValue("usageUserStatusFilter", "all");
+      const packageFilter = adminInputValue("usagePackageFilter", "all");
       const search = adminInputValue("usageSearch").toLowerCase().trim();
-      const text = `${user.full_name || ""} ${user.email || ""} ${user.company_name || ""} ${info.pkg?.name || ""}`.toLowerCase();
+      const text = `${user.full_name || ""} ${user.email || ""}`.toLowerCase();
       if (search && !text.includes(search)) return false;
-      if (filter === "over80") return info.percent >= 80 && !info.limitReached;
+      if (clientFilter !== "all" && user.client_id !== clientFilter) return false;
+      if (roleFilter !== "all" && user.role !== roleFilter) return false;
+      if (userStatusFilter !== "all" && user.status !== userStatusFilter) return false;
+      if (packageFilter === "no_package" && info.pkg) return false;
+      if (packageFilter !== "all" && packageFilter !== "no_package" && info.pkg?.id !== packageFilter) return false;
+      if (filter === "over80") return info.percent >= 80 && info.percent < 90 && !info.limitReached;
+      if (filter === "over90") return info.percent >= 90 && !info.limitReached;
       if (filter === "limit") return info.limitReached;
       if (filter === "no_package") return !info.pkg;
       if (filter === "no_usage") return info.total === 0;
@@ -3732,6 +3861,7 @@ function showAuthView() {
 
     function renderAdmin() {
       const users = state.admin.users || [];
+      const clients = state.admin.clients || [];
       const packages = state.admin.packages || [];
       const usage = state.admin.usage || [];
       const logs = state.admin.logs || [];
@@ -3747,12 +3877,14 @@ function showAuthView() {
       updateInvitePackageOptions();
       updateInviteRoleOptions();
       updateUserFilterOptions();
+      updateUsageFilterOptions();
       document.getElementById("adminSummary").innerHTML = [
         ["Usuários ativos", activeUsers, `${users.length} cadastrados`],
+        ["Clientes ativos", clients.filter((client) => client.status === "active").length, `${clients.length} cadastrados`],
         ["Pacotes ativos", packages.filter((pkg) => pkg.is_active).length, `${packages.length} cadastrados`],
-        ["Uso IA no mês", usage.filter((event) => ["ai_summary", "image_generation", "weekly_summary"].includes(event.event_type)).length, "eventos registrados"],
+        ["Uso IA no mês", usage.filter((event) => ["ai_summary_individual", "ai_summary_weekly", "ai_summary", "image_generation", "weekly_summary"].includes(event.event_type)).length, "eventos registrados"],
         ["Logs recentes", logs.length, latestLog ? formatDate(latestLog.created_at) : "sem registros"],
-        ["Clientes perto do limite", usersNearLimit.length, "acima de 80%"],
+        ["Usuários perto do limite", usersNearLimit.length, "acima de 80%"],
         ["Usuários bloqueados", blockedUsers, "sem acesso ativo"],
       ].map(([label, value, hint]) => `
         <article class="stat"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div><div class="hint">${escapeHtml(hint)}</div></article>
@@ -3798,6 +3930,7 @@ function showAuthView() {
         <div class="admin-card-list">${filteredUsers.map((user) => {
           const info = usageForUser(user);
           const canDeleteUser = state.profile?.role === "admin" && user.id !== state.session?.user?.id;
+          const isCurrentUser = user.id === state.session?.user?.id;
           return `
             <article class="admin-record-card">
               <div class="admin-record-head">
@@ -3809,13 +3942,14 @@ function showAuthView() {
               </div>
               <div class="admin-record-body">
                 <div class="admin-record-field"><span>Empresa</span><strong>${escapeHtml(user.company_name || "-")}</strong></div>
+                <div class="admin-record-field"><span>CPF</span><strong>${escapeHtml(user.cpf_masked || "Não informado")}</strong></div>
                 <div class="admin-record-field"><span>Pacote atual</span><select class="map-select admin-package-select assign-package" data-user-id="${escapeHtml(user.id)}">${packageOptions(info.current?.package_id || "")}</select></div>
                 <div class="admin-record-field"><span>Consumo no mês</span>${userConsumptionHtml(info)}</div>
                 <div class="admin-record-field"><span>Acesso</span><strong>Criado: ${escapeHtml(formatDate(user.created_at))}</strong><br><span class="admin-note">Último acesso: ${escapeHtml(formatDate(user.last_sign_in_at || user.updated_at || user.created_at))}</span></div>
               </div>
               <div class="admin-card-actions">
                 <button class="mini-button edit-user" type="button" data-user-id="${escapeHtml(user.id)}">Editar</button>
-                <button class="mini-button toggle-user-status" type="button" data-user-id="${escapeHtml(user.id)}" data-status="${user.status === "active" ? "blocked" : "active"}">${user.status === "active" ? "Bloquear" : "Ativar"}</button>
+                <button class="mini-button toggle-user-status" type="button" data-user-id="${escapeHtml(user.id)}" data-status="${user.status === "active" ? "blocked" : "active"}" ${isCurrentUser ? "disabled title=\"Não é permitido bloquear o próprio usuário\"" : ""}>${user.status === "active" ? "Bloquear" : "Ativar"}</button>
                 <button class="mini-button view-user-usage" type="button" data-user-id="${escapeHtml(user.id)}">Consumo</button>
                 <button class="mini-button view-user-logs" type="button" data-user-id="${escapeHtml(user.id)}">Logs</button>
                 ${state.profile?.role === "admin" ? `<button class="mini-button danger delete-user" type="button" data-user-id="${escapeHtml(user.id)}" ${canDeleteUser ? "" : "disabled"} title="${canDeleteUser ? "Excluir usuário e dados vinculados" : "Não é permitido excluir o próprio admin"}">Excluir</button>` : ""}
@@ -3827,23 +3961,22 @@ function showAuthView() {
 
       const usageRows = users.map((user) => ({ user, info: usageForUser(user) })).filter(({ user, info }) => usageMatchesFilters(user, info));
       document.getElementById("usageAdminList").innerHTML = usageRows.length ? `
-        <table class="admin-table">
-          <thead><tr><th>Usuario</th><th>Empresa</th><th>Pacote</th><th>Consultas</th><th>IA</th><th>PDFs</th><th>Imagens</th><th>Semanais</th><th>% consumo</th><th>Status</th></tr></thead>
-          <tbody>${usageRows.map(({ user, info }) => `
-            <tr>
-              <td><b>${escapeHtml(user.full_name || user.email || "-")}</b><br>${escapeHtml(user.email || "")}</td>
-              <td>${escapeHtml(user.company_name || "-")}</td>
-              <td>${escapeHtml(info.pkg?.name || "Sem pacote")}</td>
-              <td>${info.news}/${info.limits.news || 0}</td>
-              <td>${info.ai}/${info.limits.ai || 0}</td>
-              <td>${info.pdf}/${info.limits.pdf || 0}</td>
-              <td>${info.images}</td>
-              <td>${info.weekly}</td>
-              <td>${progressBar(info.percent)}${info.percent}%</td>
-              <td>${consumptionStatus(info)}</td>
-            </tr>
-          `).join("")}</tbody>
-        </table>
+        <div class="admin-card-list">${usageRows.map(({ user, info }) => `
+          <article class="admin-record-card">
+            <div class="admin-record-head"><div class="admin-record-title"><strong>${escapeHtml(user.full_name || user.email || "-")}</strong><span>${escapeHtml(user.email || "")}</span></div><div class="admin-record-meta">${roleBadge(user.role)} ${statusBadge(user.status)} ${consumptionStatus(info)}</div></div>
+            <div class="admin-record-body">
+              <div class="admin-record-field"><span>Cliente / Empresa</span><strong>${escapeHtml(user.company_name || "-")}</strong></div>
+              <div class="admin-record-field"><span>Pacote</span><strong>${escapeHtml(info.pkg?.name || "Sem pacote")}</strong></div>
+              <div class="admin-record-field"><span>Consultas</span><strong>${info.pkg ? usageLimitLabel(info.news, info.limits.news) : "Sem pacote"}</strong></div>
+              <div class="admin-record-field"><span>IA</span><strong>${info.pkg ? usageLimitLabel(info.ai, info.limits.ai) : "Sem pacote"}</strong></div>
+              <div class="admin-record-field"><span>PDFs</span><strong>${info.pkg ? usageLimitLabel(info.pdf, info.limits.pdf) : "Sem pacote"}</strong></div>
+              <div class="admin-record-field"><span>Mapa</span><strong>${info.pkg?.can_access_map ? "Habilitado" : "Bloqueado"}</strong></div>
+              <div class="admin-record-field"><span>Resumo individual</span><strong>${(info.pkg?.can_generate_individual_summary ?? info.pkg?.can_generate_image) ? "Habilitado" : "Bloqueado"}</strong></div>
+              <div class="admin-record-field"><span>Resumo semanal</span><strong>${info.pkg?.can_generate_weekly_summary ? "Habilitado" : "Bloqueado"}</strong></div>
+              <div class="admin-record-field"><span>Maior consumo</span>${progressBar(info.pkg ? info.percent : 0)}<strong>${info.pkg ? `${info.percent}%` : "Sem pacote"}</strong></div>
+            </div>
+          </article>
+        `).join("")}</div>
       ` : `<div class="admin-empty">Sem consumo registrado neste mês.</div>`;
 
       const logSearch = adminInputValue("logSearch").toLowerCase().trim();
@@ -3874,16 +4007,17 @@ function showAuthView() {
 
     function companyRows() {
       const users = state.admin.users || [];
-      const rows = new Map();
-      users.forEach((user) => {
-        const company = cleanDisplayText(user.company_name || "Sem empresa");
-        if (!rows.has(company)) rows.set(company, { name: company, users: [], active: 0, blocked: 0 });
-        const row = rows.get(company);
-        row.users.push(user);
-        if (user.status === "active") row.active += 1;
-        if (user.status === "blocked" || user.status === "inactive") row.blocked += 1;
-      });
-      return [...rows.values()].sort((a, b) => b.users.length - a.users.length);
+      return (state.admin.clients || []).map((client) => {
+        const clientUsers = users.filter((user) => user.client_id === client.id);
+        return {
+          ...client,
+          name: client.company_name,
+          users: clientUsers,
+          active: clientUsers.filter((user) => user.status === "active").length,
+          blocked: clientUsers.filter((user) => user.status === "blocked" || user.status === "inactive").length,
+          totalUsage: clientUsers.reduce((total, user) => total + usageForUser(user).total, 0),
+        };
+      }).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
     }
 
     function notificationRuleState() {
@@ -3910,21 +4044,21 @@ function showAuthView() {
       const clientsTarget = document.getElementById("clientsAdminList");
       if (clientsTarget) {
         clientsTarget.innerHTML = companies.length ? companies.map((company) => {
-          const manager = company.users.find((user) => ["admin", "manager"].includes(user.role)) || company.users[0] || {};
-          const packageLink = company.users.map((user) => currentPackageForUser(user.id)).find(Boolean);
-          const pkg = packageById(packageLink?.package_id);
           return `
             <article class="management-card">
               <h3>${escapeHtml(company.name)}</h3>
-              <p>Plano: ${escapeHtml(pkg?.name || "Sem pacote")}</p>
-              <p>Documento/CNPJ: Não informado</p>
-              <p>Responsável: ${escapeHtml(manager.full_name || manager.email || "-")}</p>
-              <p>E-mail: ${escapeHtml(manager.email || "-")}</p>
-              <p>Usuários: ${company.users.length}</p>
-              <p>Status: ${company.blocked ? "Atenção" : "Ativo"}</p>
+              <p>Status: ${company.status === "active" ? "Ativo" : company.status === "blocked" ? "Bloqueado" : "Inativo"}</p>
+              <p>Usuários vinculados: ${company.users.length}</p>
+              <p>Usuários ativos: ${company.active}</p>
+              <p>Bloqueados/inativos: ${company.blocked}</p>
+              <p>Consumo total no mês: ${company.totalUsage}</p>
+              <p>Criado em: ${escapeHtml(formatDate(company.created_at))}</p>
+              <p>Atualizado em: ${escapeHtml(formatDate(company.updated_at))}</p>
               <div class="admin-actions">
-                <button class="mini-button" type="button" data-prepared-modal="client">Editar</button>
-                <button class="mini-button" type="button" data-prepared-modal="notify">Notificar</button>
+                <button class="mini-button edit-client" type="button" data-client-id="${escapeHtml(company.id)}">Editar</button>
+                <button class="mini-button view-client-users" type="button" data-client-id="${escapeHtml(company.id)}">Ver usuários</button>
+                <button class="mini-button add-client-user" type="button" data-client-id="${escapeHtml(company.id)}">Novo usuário</button>
+                <button class="mini-button toggle-client-status" type="button" data-client-id="${escapeHtml(company.id)}" data-status="${company.status === "active" ? "inactive" : "active"}">${company.status === "active" ? "Desativar" : "Ativar"}</button>
               </div>
             </article>
           `;
@@ -4003,7 +4137,7 @@ function showAuthView() {
       const databaseTarget = document.getElementById("databaseAdminList");
       if (databaseTarget) {
         const rows = ["news", "profiles", "packages", "user_packages", "usage_events", "audit_logs", "clients", "sources", "platform_events", "platform_integrations", "notification_rules"];
-        const complementaryTables = ["clients", "sources", "platform_events", "platform_integrations", "notification_rules"];
+        const complementaryTables = ["sources", "platform_events", "platform_integrations", "notification_rules"];
         databaseTarget.innerHTML = `<table class="admin-table"><thead><tr><th>Tabela</th><th>Descricao</th><th>Status</th></tr></thead><tbody>${rows.map((name) => `<tr><td><b>${name}</b></td><td>${complementaryTables.includes(name) ? "Tabela sugerida no SQL complementar" : "Tabela operacional do Road News"}</td><td>${adminBadge(complementaryTables.includes(name) ? "Preparar" : "Ativa", complementaryTables.includes(name) ? "warn" : "")}</td></tr>`).join("")}</tbody></table>`;
       }
 
@@ -4029,6 +4163,7 @@ function showAuthView() {
         const data = await adminApi("/api/admin-data");
         state.admin = {
           users: data.users || [],
+          clients: data.clients || [],
           packages: data.packages || [],
           userPackages: data.userPackages || [],
           usage: data.usage || [],
@@ -4036,8 +4171,71 @@ function showAuthView() {
         };
         renderAdmin();
       } catch (error) {
-        setNotice(`Erro ao carregar Admin: ${error.message}`);
+        setNotice(getFriendlyErrorMessage(error, "Não foi possível carregar a gestão. Tente novamente."));
       }
+    }
+
+    function fillClientForm(client) {
+      document.getElementById("clientId").value = client?.id || "";
+      document.getElementById("clientName").value = client?.company_name || "";
+      document.getElementById("clientStatus").value = ["active", "inactive", "blocked"].includes(client?.status) ? client.status : "active";
+      document.getElementById("clientNotes").value = client?.notes || "";
+    }
+
+    async function saveClient(event) {
+      event.preventDefault();
+      const button = event.submitter || document.querySelector("#clientForm button[type='submit']");
+      const id = document.getElementById("clientId").value;
+      const payload = {
+        company_name: document.getElementById("clientName").value.trim(),
+        status: document.getElementById("clientStatus").value,
+        notes: document.getElementById("clientNotes").value.trim(),
+      };
+      const originalLabel = button?.textContent || "Salvar cliente";
+      try {
+        if (button) { button.disabled = true; button.textContent = "Salvando..."; }
+        await adminApi("/api/admin-data", {
+          method: id ? "PATCH" : "POST",
+          body: JSON.stringify(id ? { id, ...payload } : payload),
+        });
+        fillClientForm(null);
+        setNotice(id ? "Cliente atualizado com sucesso." : "Cliente criado com sucesso.");
+        await loadAdminData();
+      } catch (error) {
+        setNotice(error.message || "Não foi possível salvar o cliente.");
+      } finally {
+        if (button) { button.disabled = false; button.textContent = originalLabel; }
+      }
+    }
+
+    async function toggleClientStatus(clientId, status) {
+      try {
+        await adminApi("/api/admin-data", {
+          method: "PATCH",
+          body: JSON.stringify({ id: clientId, status }),
+        });
+        setNotice(status === "active" ? "Cliente ativado." : "Cliente desativado.");
+        await loadAdminData();
+      } catch (error) {
+        setNotice(error.message || "Não foi possível alterar o cliente.");
+      }
+    }
+
+    function focusClientUsers(clientId) {
+      const client = (state.admin.clients || []).find((item) => item.id === clientId);
+      setAdminTab("users");
+      document.getElementById("userSearch").value = client?.company_name || "";
+      renderAdmin();
+      scrollToTarget("usersAdminSection");
+    }
+
+    function startUserForClient(clientId) {
+      setAdminTab("users");
+      const clientSelect = document.getElementById("inviteClient");
+      if (clientSelect) clientSelect.value = clientId;
+      updateInvitePackageWarning();
+      scrollToTarget("inviteAdminSection");
+      document.getElementById("inviteName")?.focus();
     }
 
     function fillPackageForm(pkg) {
@@ -4049,7 +4247,7 @@ function showAuthView() {
       document.getElementById("packagePdfLimit").value = pkg?.monthly_pdf_limit ?? 20;
       document.getElementById("packageUserLimit").value = pkg?.max_users ?? 0;
       document.getElementById("packageMap").value = String(pkg?.can_access_map ?? true);
-      document.getElementById("packageImage").value = String(pkg?.can_generate_image ?? true);
+      document.getElementById("packageImage").value = String(pkg?.can_generate_individual_summary ?? pkg?.can_generate_image ?? true);
       document.getElementById("packageWeekly").value = String(pkg?.can_generate_weekly_summary ?? true);
       document.getElementById("packageActive").value = String(pkg?.is_active ?? true);
     }
@@ -4066,7 +4264,7 @@ function showAuthView() {
         monthly_pdf_limit: Number(document.getElementById("packagePdfLimit").value || 0),
         max_users: Number(document.getElementById("packageUserLimit").value || 0),
         can_access_map: document.getElementById("packageMap").value === "true",
-        can_generate_image: document.getElementById("packageImage").value === "true",
+        can_generate_individual_summary: document.getElementById("packageImage").value === "true",
         can_generate_weekly_summary: document.getElementById("packageWeekly").value === "true",
         is_active: document.getElementById("packageActive").value === "true",
       };
@@ -4139,7 +4337,7 @@ function showAuthView() {
         monthly_pdf_limit: Number(source.monthly_pdf_limit || 0),
         max_users: Number(source.max_users || 0),
         can_access_map: Boolean(source.can_access_map),
-        can_generate_image: Boolean(source.can_generate_image),
+        can_generate_individual_summary: Boolean(source.can_generate_individual_summary ?? source.can_generate_image),
         can_generate_weekly_summary: Boolean(source.can_generate_weekly_summary),
         is_active: false,
       };
@@ -4240,25 +4438,35 @@ function showAuthView() {
       setUserEditError("");
     }
 
-    function editUserProfile(userId) {
+    async function editUserProfile(userId) {
       const user = (state.admin.users || []).find((item) => item.id === userId);
       if (!user) return;
       if (state.profile?.role !== "admin" && user.role === "admin") {
         setNotice("Você não tem permissão para editar administradores.");
         return;
       }
-      const currentPackage = currentPackageForUser(user.id);
-      document.getElementById("editUserId").value = user.id;
-      document.getElementById("editUserName").value = user.full_name || "";
-      document.getElementById("editUserEmail").value = user.email || "";
-      document.getElementById("editUserCompany").value = user.company_name || "";
-      document.getElementById("editUserRole").innerHTML = assignableRoleOptions(user.role || "client");
-      document.getElementById("editUserStatus").value = ["active", "blocked", "inactive"].includes(user.status) ? user.status : "active";
-      document.getElementById("editUserPackage").innerHTML = packageOptions(currentPackage?.package_id || "");
-      document.getElementById("editUserPackageOriginal").value = currentPackage?.package_id || "";
-      document.getElementById("editUserNotes").value = "Alterações de usuário são registradas nos logs de auditoria.";
-      setUserEditError("");
-      document.getElementById("userEditModal").classList.add("open");
+      try {
+        const details = await adminApi(`/api/admin-user-profile?user_id=${encodeURIComponent(userId)}`);
+        const editable = details.user || user;
+        const currentPackage = currentPackageForUser(user.id);
+        document.getElementById("editUserId").value = user.id;
+        document.getElementById("editUserName").value = editable.full_name || "";
+        document.getElementById("editUserEmail").value = editable.email || "";
+        document.getElementById("editUserCpf").value = editable.cpf || "";
+        formatCpfInput(document.getElementById("editUserCpf"));
+        document.getElementById("editUserPhone").value = editable.phone || "";
+        document.getElementById("editUserClient").innerHTML = clientOptions(editable.client_id || "");
+        document.getElementById("editUserRole").innerHTML = assignableRoleOptions(editable.role || "client");
+        document.getElementById("editUserStatus").value = ["active", "blocked", "inactive"].includes(editable.status) ? editable.status : "active";
+        document.getElementById("editUserRole").disabled = user.id === state.session?.user?.id;
+        document.getElementById("editUserStatus").disabled = user.id === state.session?.user?.id;
+        document.getElementById("editUserPackage").innerHTML = packageOptions(currentPackage?.package_id || "");
+        document.getElementById("editUserPackageOriginal").value = currentPackage?.package_id || "";
+        setUserEditError("");
+        document.getElementById("userEditModal").classList.add("open");
+      } catch (error) {
+        setNotice(error.message || "Não foi possível abrir a edição do usuário.");
+      }
     }
 
     async function saveUserProfile(event) {
@@ -4272,7 +4480,9 @@ function showAuthView() {
       }
       const payload = {
         full_name: document.getElementById("editUserName").value.trim(),
-        company_name: document.getElementById("editUserCompany").value.trim(),
+        cpf: document.getElementById("editUserCpf").value.trim(),
+        phone: document.getElementById("editUserPhone").value.trim(),
+        client_id: document.getElementById("editUserClient").value,
         role,
         status: document.getElementById("editUserStatus").value,
       };
@@ -4302,21 +4512,25 @@ function showAuthView() {
       const form = event.target;
       const button = document.getElementById("inviteSubmitButton");
       const payload = {
+        action: "create_user",
         full_name: document.getElementById("inviteName").value.trim(),
         email: document.getElementById("inviteEmail").value.trim(),
-        company_name: document.getElementById("inviteCompany").value.trim(),
+        password: document.getElementById("invitePassword").value,
+        cpf: document.getElementById("inviteCpf").value.trim(),
+        phone: document.getElementById("invitePhone").value.trim(),
+        client_id: document.getElementById("inviteClient").value,
         role: document.getElementById("inviteRole").value,
         package_id: document.getElementById("invitePackage").value,
         status: document.getElementById("inviteStatus").value,
       };
-      if (payload.role === "client" && !payload.package_id) {
+      if (!payload.client_id || !payload.package_id) {
         updateInvitePackageWarning();
-        setNotice("Selecione um pacote inicial antes de convidar o cliente.");
+        setNotice(!payload.client_id ? "Cadastre e selecione um cliente antes de criar usuários." : "Cadastre e selecione um pacote antes de criar usuários.");
         return;
       }
       if (button) {
         button.disabled = true;
-        button.textContent = "Enviando convite...";
+        button.textContent = "Cadastrando...";
       }
       try {
         const response = await fetch("/api/admin-users", {
@@ -4325,16 +4539,17 @@ function showAuthView() {
           body: JSON.stringify(payload),
         });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || "Não foi possível enviar o convite.");
+        if (!response.ok) throw new Error(getFriendlyErrorMessage(data.error || data, "Não foi possível cadastrar o usuário."));
         form.reset();
-        setNotice("Convite enviado com sucesso. O usuário receberá o e-mail para criar a senha.");
+        document.getElementById("invitePassword").value = "";
+        setNotice("Usuário cadastrado com sucesso. Ele já pode acessar com a senha inicial definida.");
         await loadAdminData();
       } catch (error) {
-        setNotice(error.message || "Não foi possível enviar o convite. Confira os dados e tente novamente.");
+        setNotice(error.message || "Não foi possível cadastrar o usuário. Confira os dados e tente novamente.");
       } finally {
         if (button) {
           button.disabled = false;
-          button.textContent = "Enviar convite";
+          button.textContent = "Cadastrar usuário";
         }
         updateInviteRoleOptions();
         updateInvitePackageOptions();
@@ -4979,7 +5194,7 @@ function showAuthView() {
 
     async function printWeeklySummary() {
       if (!canUseFeature("pdf_generation")) return;
-      const consumed = await consumeUsage("pdf_generation", { source: "weekly-summary" });
+      const consumed = await consumeUsage("pdf_generated", { source: "weekly-summary" });
       if (!consumed) return;
       const report = document.getElementById("weekly-summary-report");
       if (!report) return;
@@ -5072,6 +5287,11 @@ function showAuthView() {
       state.dataLoadError = "";
       try {
         await loadNews();
+        if (state.authEnabled) {
+          await loadMyAccess();
+          const usageMessage = usageThresholdMessage();
+          if (usageMessage) setNotice(usageMessage);
+        }
       } catch (error) {
         state.items = [];
         state.recentItems = [];
@@ -5453,16 +5673,21 @@ function showAuthView() {
       document.getElementById(id)?.addEventListener("input", syncClientFilters);
       document.getElementById(id)?.addEventListener("change", syncClientFilters);
     });
-    ["userFilter", "userSearch", "usageStatusFilter", "usageSearch", "logSearch"].forEach((id) => {
+    ["userFilter", "userSearch", "usageClientFilter", "usageRoleFilter", "usageUserStatusFilter", "usagePackageFilter", "usageStatusFilter", "usageSearch", "logSearch"].forEach((id) => {
       document.getElementById(id)?.addEventListener("input", renderAdmin);
       document.getElementById(id)?.addEventListener("change", renderAdmin);
     });
     document.getElementById("reloadAdmin").addEventListener("click", loadAdminData);
     document.getElementById("packageForm").addEventListener("submit", savePackage);
     document.getElementById("clearPackageForm").addEventListener("click", () => fillPackageForm(null));
+    document.getElementById("clientForm").addEventListener("submit", saveClient);
+    document.getElementById("clearClientForm").addEventListener("click", () => fillClientForm(null));
     document.getElementById("inviteUserForm").addEventListener("submit", inviteUser);
     document.getElementById("inviteRole").addEventListener("change", updateInvitePackageWarning);
     document.getElementById("invitePackage").addEventListener("change", updateInvitePackageWarning);
+    document.getElementById("inviteClient").addEventListener("change", updateInvitePackageWarning);
+    document.getElementById("inviteCpf").addEventListener("input", (event) => formatCpfInput(event.target));
+    document.getElementById("editUserCpf").addEventListener("input", (event) => formatCpfInput(event.target));
     document.getElementById("acceptInviteForm").addEventListener("submit", submitAcceptInvite);
     document.getElementById("packagesAdminList").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-id]");
@@ -5474,6 +5699,18 @@ function showAuthView() {
       if (button.classList.contains("duplicate-package")) duplicatePackage(button.dataset.id);
       if (button.classList.contains("toggle-package-status")) togglePackageStatus(button.dataset.id, button.dataset.active === "true");
       if (button.classList.contains("delete-package")) deletePackage(button.dataset.id);
+    });
+    document.getElementById("clientsAdminList").addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-client-id]");
+      if (!button) return;
+      const clientId = button.dataset.clientId;
+      if (button.classList.contains("edit-client")) {
+        fillClientForm((state.admin.clients || []).find((client) => client.id === clientId));
+        scrollToTarget("clientsAdminSection");
+      }
+      if (button.classList.contains("view-client-users")) focusClientUsers(clientId);
+      if (button.classList.contains("add-client-user")) startUserForClient(clientId);
+      if (button.classList.contains("toggle-client-status")) toggleClientStatus(clientId, button.dataset.status);
     });
     document.getElementById("usersAdminList").addEventListener("change", (event) => {
       const select = event.target.closest(".assign-package");

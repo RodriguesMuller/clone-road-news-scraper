@@ -1,67 +1,99 @@
-const { json, requireManager } = require("./_auth");
-const { adminErrorMessage, audit, fetchJson } = require("./_admin");
+const { json, monthStartIso, requireManager, supabaseFetch } = require("./_auth");
+const { adminErrorMessage, audit, fetchJson, maskCpf, readJson } = require("./_admin");
 
-const TEST_PACKAGE = {
-  name: "Teste",
-  description: "Pacote temporario para clientes avaliarem a plataforma Road News.",
-  monthly_news_limit: 100,
-  monthly_ai_summary_limit: 10,
-  monthly_pdf_limit: 5,
-  max_users: 2,
-  can_access_map: true,
-  can_generate_image: true,
-  can_generate_weekly_summary: true,
-  is_active: true,
-};
+function clientIdFromRequest(req, body = {}) {
+  const url = new URL(req.url, "http://road-news.local");
+  return String(body.id || body.client_id || url.searchParams.get("id") || "").trim();
+}
 
-async function ensureTestPackage(account) {
-  const existing = await fetchJson("/rest/v1/packages?name=eq.Teste&select=id&limit=1");
-  if (Array.isArray(existing) && existing.length) return;
-  let created = null;
-  try {
-    created = await fetchJson("/rest/v1/packages?select=id", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify(TEST_PACKAGE),
-    });
-  } catch (error) {
-    if (!/max_users|column|schema|PGRST/i.test(error.message || "")) throw error;
-    const { max_users, ...legacyPackage } = TEST_PACKAGE;
-    created = await fetchJson("/rest/v1/packages?select=id", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify(legacyPackage),
-    });
+function clientPayload(body = {}, partial = false) {
+  const payload = {};
+  if (!partial || Object.hasOwn(body, "company_name")) {
+    const companyName = String(body.company_name || "").trim();
+    if (!companyName) throw new Error("Informe o nome do cliente ou empresa.");
+    payload.company_name = companyName;
   }
-  await audit(account, "seed_test_package", "package", created?.[0]?.id || "Teste", {
-    name: TEST_PACKAGE.name,
-    trial_days_suggested: 15,
+  if (!partial || Object.hasOwn(body, "status")) {
+    const status = String(body.status || "active").trim();
+    if (!["active", "inactive", "blocked"].includes(status)) throw new Error("Status de cliente invalido.");
+    payload.status = status;
+  }
+  if (!partial || Object.hasOwn(body, "notes")) payload.notes = String(body.notes || "").trim() || null;
+  return payload;
+}
+
+function publicUser(profile = {}) {
+  const { cpf, phone, ...safe } = profile;
+  return {
+    ...safe,
+    cpf_masked: maskCpf(cpf),
+    has_phone: Boolean(phone),
+  };
+}
+
+async function writeClient(req, account) {
+  const body = await readJson(req);
+  const clientId = clientIdFromRequest(req, body);
+
+  if (req.method === "POST") {
+    const payload = clientPayload(body);
+    const created = await fetchJson("/rest/v1/clients?select=id", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(payload),
+    });
+    const id = created?.[0]?.id || null;
+    await audit(account, "create_client", "client", id || payload.company_name, { status: payload.status });
+    return { ok: true, id };
+  }
+
+  if (!clientId) throw new Error("Cliente nao informado.");
+  const existing = await fetchJson(`/rest/v1/clients?id=eq.${encodeURIComponent(clientId)}&select=id,company_name,status&limit=1`);
+  if (!existing?.length) throw new Error("Cliente nao encontrado.");
+  const payload = clientPayload(body, true);
+  if (!Object.keys(payload).length) throw new Error("Nenhuma alteracao informada.");
+  await supabaseFetch(`/rest/v1/clients?id=eq.${encodeURIComponent(clientId)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify(payload),
   });
+  await audit(account, payload.status && payload.status !== "active" ? "deactivate_client" : "update_client", "client", clientId, {
+    status: payload.status || existing[0].status,
+  });
+  return { ok: true, id: clientId };
 }
 
 module.exports = async function handler(req, res) {
-  if (req.method !== "GET") {
+  if (!["GET", "POST", "PATCH"].includes(req.method)) {
     json(res, 405, { error: "Method not allowed" });
     return;
   }
 
   try {
     const account = await requireManager(req);
-    await ensureTestPackage(account);
-    const monthStart = encodeURIComponent(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString());
-    const [users, packages, userPackages, usage, logs] = await Promise.all([
+    if (req.method !== "GET") {
+      json(res, 200, await writeClient(req, account));
+      return;
+    }
+
+    const monthStart = encodeURIComponent(monthStartIso());
+    const [profiles, clients, packages, userPackages, usage, logs] = await Promise.all([
       fetchJson("/rest/v1/profiles?select=*&order=created_at.desc"),
+      fetchJson("/rest/v1/clients?select=*&order=company_name.asc"),
       fetchJson("/rest/v1/packages?select=*&order=name.asc"),
       fetchJson("/rest/v1/user_packages?select=*&order=created_at.desc"),
-      fetchJson(`/rest/v1/usage_events?select=*&created_at=gte.${monthStart}&order=created_at.desc&limit=1000`),
-      fetchJson("/rest/v1/audit_logs?select=*&order=created_at.desc&limit=120"),
+      fetchJson(`/rest/v1/usage_events?select=*&created_at=gte.${monthStart}&order=created_at.desc&limit=2000`),
+      fetchJson("/rest/v1/audit_logs?select=*&order=created_at.desc&limit=200"),
     ]);
+    const visibleProfiles = account.isAdmin ? (profiles || []) : (profiles || []).filter((profile) => profile.role !== "admin");
+    const visibleUserIds = new Set(visibleProfiles.map((profile) => profile.id));
     json(res, 200, {
-      users: users || [],
+      users: visibleProfiles.map(publicUser),
+      clients: clients || [],
       packages: packages || [],
-      userPackages: userPackages || [],
-      usage: usage || [],
-      logs: logs || [],
+      userPackages: (userPackages || []).filter((item) => visibleUserIds.has(item.user_id)),
+      usage: (usage || []).filter((item) => visibleUserIds.has(item.user_id)),
+      logs: account.isAdmin ? (logs || []) : [],
     });
   } catch (error) {
     json(res, 403, { error: adminErrorMessage(error) });
