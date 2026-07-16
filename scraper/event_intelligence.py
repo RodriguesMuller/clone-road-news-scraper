@@ -496,20 +496,21 @@ def process_major_events(news_items: list[dict], database_url: str) -> int:
     if not str(os.environ.get("EVENT_INTELLIGENCE_ENABLED", "false")).lower() in {"1", "true", "yes"}:
         return 0
     api_key = (os.environ.get("OPENAI_EVENT_API_KEY") or os.environ.get("OPENAI_API_KEY") or "").strip()
-    if not api_key:
-        print("[Eventos] OPENAI_API_KEY ausente; triagem inteligente não executada.")
-        return 0
-
     candidates = select_event_candidates(news_items)
-    if not candidates:
-        print("[Eventos] Nenhuma notícia atingiu os critérios mínimos de gravidade.")
-        return 0
-
     model = os.environ.get("OPENAI_EVENT_MODEL") or os.environ.get("OPENAI_MODEL") or DEFAULT_MODEL
     try:
         with psycopg.connect(database_url, prepare_threshold=None) as conn:
             with conn.cursor() as cur:
                 _ensure_tables(cur)
+                # A estrutura fica pronta mesmo quando a chave da IA ainda não
+                # foi configurada no executor de produção.
+                conn.commit()
+                if not api_key:
+                    print("[Eventos] OPENAI_API_KEY ausente; triagem inteligente não executada.")
+                    return 0
+                if not candidates:
+                    print("[Eventos] Nenhuma notícia atingiu os critérios mínimos de gravidade.")
+                    return 0
                 current_events = _load_current_events(cur)
                 fingerprint = _fingerprint(candidates, model)
                 if _already_analyzed(cur, fingerprint):
