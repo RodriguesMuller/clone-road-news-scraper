@@ -1,4 +1,4 @@
-const { json, requireManager, supabaseFetch } = require("./_auth");
+const { assertWritableEnvironment, json, requireManager, supabaseFetch } = require("./_auth");
 const { adminErrorMessage, audit, fetchJson, readJson } = require("./_admin");
 
 async function fetchActivePackage(packageId) {
@@ -28,6 +28,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const account = await requireManager(req);
+    assertWritableEnvironment();
     const body = await readJson(req);
     const userId = String(body.user_id || "").trim();
     const packageId = String(body.package_id || "").trim();

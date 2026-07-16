@@ -12,6 +12,22 @@ function isAuthEnabled() {
   return !/^(false|0|no)$/i.test(value);
 }
 
+function appEnvironment() {
+  return String(process.env.APP_ENV || process.env.VERCEL_ENV || "production").trim().toLowerCase();
+}
+
+function isReadOnlyEnvironment() {
+  const explicit = String(process.env.STAGING_READ_ONLY || "").trim();
+  if (explicit) return /^(true|1|yes)$/i.test(explicit);
+  return appEnvironment() === "staging";
+}
+
+function assertWritableEnvironment() {
+  if (isReadOnlyEnvironment()) {
+    throw new Error("Ambiente de testes em modo somente leitura. Esta alteração não foi aplicada ao banco de produção.");
+  }
+}
+
 function json(res, statusCode, payload) {
   res.statusCode = statusCode;
   res.setHeader("Content-Type", "application/json");
@@ -58,6 +74,23 @@ async function getAuthUser(req) {
   const user = await response.json();
   if (!user?.id) throw new Error("Sessao invalida.");
   return { user, token };
+}
+
+async function listAuthUsers() {
+  if (!SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY nao configurada no servidor.");
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1000`, {
+    headers: {
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `Supabase Auth HTTP ${response.status}`);
+  }
+  const payload = await response.json().catch(() => ({}));
+  return Array.isArray(payload?.users) ? payload.users : [];
 }
 
 async function getProfile(userId) {
@@ -150,7 +183,7 @@ async function assertCanUse(req, feature) {
 }
 
 async function recordUsage(account, eventType, data = {}) {
-  if (!account?.authEnabled || !account.user?.id) return;
+  if (isReadOnlyEnvironment() || !account?.authEnabled || !account.user?.id) return;
   const payload = {
     user_id: account.user.id,
     client_id: account.profile?.client_id || null,
@@ -199,8 +232,12 @@ module.exports = {
   SERVICE_ROLE_KEY,
   authSettingValue,
   isAuthEnabled,
+  appEnvironment,
+  isReadOnlyEnvironment,
+  assertWritableEnvironment,
   json,
   supabaseFetch,
+  listAuthUsers,
   monthlyUsage,
   isManagerRole,
   requireAccount,

@@ -3,6 +3,8 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/login", "destination": "/" },
+    { "source": "/accept-invite", "destination": "/" },
+    { "source": "/auth/callback", "destination": "/" },
     { "source": "/dashboard", "destination": "/" },
     { "source": "/alertas", "destination": "/" },
     { "source": "/noticias", "destination": "/" },

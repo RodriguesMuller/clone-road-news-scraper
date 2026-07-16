@@ -1,4 +1,4 @@
-const { json, requireManager, supabaseFetch } = require("./_auth");
+const { assertWritableEnvironment, json, requireManager, supabaseFetch } = require("./_auth");
 const { adminErrorMessage, audit, fetchJson, packagePayload, readJson } = require("./_admin");
 
 function idFromRequest(req, body = {}) {
@@ -32,6 +32,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const account = await requireManager(req);
+    assertWritableEnvironment();
     const body = req.method === "DELETE" ? {} : await readJson(req);
     const packageId = idFromRequest(req, body);
 

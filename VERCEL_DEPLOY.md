@@ -63,6 +63,27 @@ Vercel deve publicar apenas o frontend estatico e a rota JavaScript em `api/`.
 Nao configure `DATABASE_URL` na Vercel. Esse segredo fica apenas no GitHub
 Actions.
 
+As rotas de autenticacao e administracao usam as funcoes JavaScript da pasta
+`api/`. Para o convite personalizado, configure tambem na Vercel:
+
+- `APP_URL=https://road-news-teal.vercel.app` (use o dominio oficial do projeto)
+- `RESEND_API_KEY`
+- `INVITE_EMAIL_FROM=Road News <acesso@seudominio.com>`
+- `INVITE_EMAIL_REPLY_TO=suporte@seudominio.com` (opcional)
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY`
+
+No Supabase, em **Authentication > URL Configuration**, deixe o dominio de
+producao como Site URL e autorize `/accept-invite` e `/auth/callback`. O
+remetente de `INVITE_EMAIL_FROM` precisa usar um dominio verificado no Resend.
+
+## Projeto de testes
+
+O dominio `road-news-preview.vercel.app` deve usar a branch `staging`. Defina
+`APP_URL=https://road-news-preview.vercel.app`, `APP_ENV=staging` e
+`STAGING_READ_ONLY=true` somente nesse projeto. Ele pode reutilizar as chaves
+de leitura e autenticacao do Supabase atual, mas as APIs de escrita e os
+registros de consumo ficam bloqueados pelo servidor.
+
 ## 4. GitHub Actions
 
 No GitHub, mantenha o secret `SUPABASE` com a connection string do banco. O

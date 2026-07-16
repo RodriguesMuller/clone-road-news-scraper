@@ -80,6 +80,54 @@ O front tambem tem o botao **Gerar resumo semanal**, que chama
 `/api/weekly-summary` no Vercel. Configure `OPENAI_API_KEY` e, se quiser,
 `OPENAI_MODEL` nas variaveis de ambiente do projeto Vercel.
 
+## Convites de usuarios
+
+Os convites sao gerados pelo Supabase Auth, mas o e-mail final e enviado pelo
+backend via Resend com identidade visual Road News. O endpoint administrativo
+nao usa o template padrao `You've been invited` do Supabase e nunca envia senha
+em texto puro.
+
+Configure estas variaveis na Vercel para **Production e Preview**:
+
+- `APP_URL=https://road-news-teal.vercel.app` (substitua pelo dominio oficial).
+- `RESEND_API_KEY` com uma chave ativa do Resend.
+- `INVITE_EMAIL_FROM=Road News <acesso@seudominio.com>`.
+- `INVITE_EMAIL_REPLY_TO=suporte@seudominio.com` (opcional).
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_SERVICE_ROLE_KEY` como ja
+  usados pela autenticacao. A service role permanece somente no backend.
+
+No Resend, verifique o dominio usado em `INVITE_EMAIL_FROM`. O remetente de
+teste `onboarding@resend.dev` costuma ficar limitado ao e-mail do proprietario
+da conta e nao deve ser usado para convites reais de clientes.
+
+No Supabase, abra **Authentication > URL Configuration** e configure:
+
+- Site URL: `https://road-news-teal.vercel.app`
+- Redirect URL: `https://road-news-teal.vercel.app/accept-invite`
+- Redirect URL: `https://road-news-teal.vercel.app/auth/callback`
+- Para desenvolvimento: `http://localhost:3000/accept-invite` e
+  `http://localhost:3000/auth/callback`
+
+O backend prioriza `APP_URL` e nunca aceita `localhost` quando esta rodando na
+Vercel. Sem `APP_URL`, ele usa o dominio de producao informado automaticamente
+pela Vercel. O template de referencia fica em
+`scripts/road_news_invite_email_template.html`.
+
+## Ambiente de testes na Vercel
+
+O projeto `road-news-preview.vercel.app` usa a branch `staging` e pode ler as
+mesmas noticias do Supabase de producao sem alterar os dados compartilhados.
+Configure nesse projeto:
+
+- `APP_URL=https://road-news-preview.vercel.app`
+- `APP_ENV=staging`
+- `STAGING_READ_ONLY=true`
+
+Nesse modo, o backend bloqueia convites, exclusoes, alteracoes de usuarios,
+pacotes e status. Registros de consumo e auditoria tambem nao sao gravados. O
+front exibe uma faixa amarela de ambiente de testes e desabilita os controles
+de escrita. Consultas de noticias, mapa e resumos continuam disponiveis.
+
 ## Banco de dados
 
 A tabela `news` é criada automaticamente na primeira execução, com constraint

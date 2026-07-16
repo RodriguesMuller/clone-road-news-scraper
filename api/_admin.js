@@ -1,4 +1,4 @@
-const { supabaseFetch } = require("./_auth");
+const { isReadOnlyEnvironment, supabaseFetch } = require("./_auth");
 
 async function readJson(req) {
   const chunks = [];
@@ -46,6 +46,7 @@ function packagePayload(body = {}) {
 }
 
 async function audit(account, action, targetType, targetId, metadata = {}) {
+  if (isReadOnlyEnvironment()) return;
   try {
     await supabaseFetch("/rest/v1/audit_logs", {
       method: "POST",

@@ -117,6 +117,19 @@
     main { padding: 28px 22px 72px; }
     footer { padding: 0 22px 30px; color: var(--color-muted); font-size: 12px; }
     .notice { display: none; margin-bottom: 18px; border: 1px solid rgba(245, 184, 75, .42); background: rgba(245, 184, 75, .12); border-radius: 8px; padding: 12px 14px; color: #ffe6b0; font-size: 14px; }
+    .environment-banner {
+      background: #f5b84b;
+      color: #1c1608;
+      border-bottom: 1px solid rgba(0, 0, 0, .28);
+      padding: 9px 18px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .environment-banner[hidden] { display: none !important; }
+    body.is-staging .brand-copy span::after { content: " \00b7 TESTES"; color: #f5b84b; }
+    body.is-staging [data-staging-write],
+    body.is-staging .staging-write-disabled { cursor: not-allowed !important; opacity: .48 !important; }
     .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
     .stat, .panel, .item, .alert-card {
       background: linear-gradient(180deg, var(--color-card-strong), rgba(255, 255, 255, .045));
@@ -1018,6 +1031,7 @@
       <div id="headerActions" class="header-actions" hidden></div>
     </div>
   </header>
+  <div id="environmentBanner" class="environment-banner" hidden>AMBIENTE DE TESTES - dados de produção disponíveis somente para leitura</div>
 
   <main>
     <section id="authView" class="auth-view" hidden>
@@ -1659,6 +1673,8 @@
       pendingPath: "/dashboard",
       authConfigError: false,
       authEnabled: false,
+      environment: "production",
+      readOnly: false,
       authClient: null,
       session: null,
       profile: null,
@@ -1828,12 +1844,38 @@
         if (!response.ok) throw new Error("auth-config indisponÃ­vel");
         const data = await response.json();
         state.authEnabled = Boolean(data.authEnabled);
+        state.environment = String(data.environment || "production").toLowerCase();
+        state.readOnly = Boolean(data.readOnly);
         state.authConfigError = false;
+        applyEnvironmentMode();
       } catch {
         // Falha fechada: se a config nao carregar, nao abrimos o dashboard em modo demo por acidente.
         state.authEnabled = true;
         state.authConfigError = true;
       }
+    }
+
+    function readOnlyMessage() {
+      return "Ambiente de testes em modo somente leitura. Nenhuma alteração foi aplicada ao banco de produção.";
+    }
+
+    function applyEnvironmentMode() {
+      const isStaging = state.environment === "staging" || state.readOnly;
+      document.body.classList.toggle("is-staging", isStaging);
+      const banner = document.getElementById("environmentBanner");
+      if (banner) banner.hidden = !isStaging;
+      document.querySelectorAll([
+        "#inviteUserForm input", "#inviteUserForm select", "#inviteUserForm button",
+        "#packageForm input", "#packageForm select", "#packageForm textarea", "#packageForm button",
+        "#packagesAdminList button",
+        "#usersAdminList .assign-package", "#usersAdminList .edit-user",
+        "#usersAdminList .toggle-user-status", "#usersAdminList .resend-invite",
+        "#usersAdminList .delete-user",
+      ].join(",")).forEach((control) => {
+        control.disabled = Boolean(state.readOnly);
+        control.classList.toggle("staging-write-disabled", Boolean(state.readOnly));
+        if (state.readOnly) control.title = readOnlyMessage();
+      });
     }
 
     function setAuthError(message) {
@@ -2300,6 +2342,13 @@ function showAuthView() {
       target.classList.toggle("show", Boolean(message));
     }
 
+    function setAcceptInviteReady(ready) {
+      ["acceptPassword", "acceptPasswordConfirm", "acceptInviteButton"].forEach((id) => {
+        const control = document.getElementById(id);
+        if (control) control.disabled = !ready;
+      });
+    }
+
     function showAcceptInviteView(message = "") {
       closeSidebar();
       destroyPlatformActions();
@@ -2312,6 +2361,7 @@ function showAuthView() {
       if (footer) footer.hidden = true;
       const sidebarLogout = document.getElementById("sidebarLogoutButton");
       if (sidebarLogout) sidebarLogout.hidden = true;
+      setAcceptInviteReady(false);
       setAcceptInviteError(message);
     }
 
@@ -2374,9 +2424,35 @@ function showAuthView() {
         || "";
     }
 
+    async function sessionFromInviteUrl(client) {
+      const query = new URLSearchParams(window.location.search || "");
+      const hash = new URLSearchParams(String(window.location.hash || "").replace(/^#/, ""));
+      const code = query.get("code");
+      if (code) {
+        const { error } = await client.auth.exchangeCodeForSession(code);
+        if (error) throw error;
+      }
+
+      let { data, error } = await client.auth.getSession();
+      if (error) throw error;
+      if (!data.session && hash.get("access_token") && hash.get("refresh_token")) {
+        const restored = await client.auth.setSession({
+          access_token: hash.get("access_token"),
+          refresh_token: hash.get("refresh_token"),
+        });
+        if (restored.error) throw restored.error;
+        data = restored.data;
+      }
+      return data.session || null;
+    }
+
     async function prepareAcceptInvite() {
       await loadAuthConfig();
       showAcceptInviteView("");
+      if (state.readOnly) {
+        setAcceptInviteError("Convites devem ser aceitos no ambiente de produção. Este ambiente de testes é somente leitura.");
+        return false;
+      }
       if (!state.authEnabled) {
         setAcceptInviteError("A autenticação não está ativa neste ambiente.");
         return false;
@@ -2389,25 +2465,22 @@ function showAuthView() {
       }
 
       const client = authClient();
-      const code = new URLSearchParams(window.location.search || "").get("code");
-      if (code) {
-        const { error } = await client.auth.exchangeCodeForSession(code);
-        if (error) {
-          setAcceptInviteError("Este convite expirou ou já foi utilizado. Solicite um novo convite ao administrador.");
-          return false;
-        }
+      try {
+        state.session = await sessionFromInviteUrl(client);
+      } catch (error) {
+        setAcceptInviteError("Este convite expirou ou já foi utilizado. Solicite um novo convite ao administrador.");
+        return false;
       }
-
-      const { data } = await client.auth.getSession();
-      state.session = data.session;
       if (!state.session?.user) {
         setAcceptInviteError("Não foi possível confirmar o convite. Abra novamente o link recebido por e-mail.");
         return false;
       }
 
-      setBrowserPath("/accept-invite", true);
+      // Remove tokens e codigos da barra do navegador assim que a sessao for criada.
+      window.history.replaceState({}, "", "/accept-invite");
       const intro = document.getElementById("acceptInviteIntro");
       if (intro) intro.textContent = `Convite confirmado para ${state.session.user.email || "seu e-mail"}. Crie sua senha para acessar.`;
+      setAcceptInviteReady(true);
       return true;
     }
 
@@ -3485,6 +3558,10 @@ function showAuthView() {
     }
 
     async function adminApi(path, options = {}) {
+      const method = String(options.method || "GET").toUpperCase();
+      if (state.readOnly && !["GET", "HEAD"].includes(method)) {
+        throw new Error(readOnlyMessage());
+      }
       const response = await fetch(path, {
         ...options,
         headers: authHeaders({
@@ -3514,7 +3591,16 @@ function showAuthView() {
     function statusBadge(status) {
       if (status === "active") return adminBadge("Ativo");
       if (status === "inactive") return adminBadge("Inativo", "warn");
+      if (status === "orphaned") return adminBadge("Cadastro incompleto", "danger");
       return adminBadge("Bloqueado", "danger");
+    }
+
+    function invitationBadge(user) {
+      if (user.orphan_auth) return adminBadge("Somente no Auth", "danger");
+      if (user.auth_missing) return adminBadge("Acesso inconsistente", "danger");
+      if (user.invite_status === "pending") return adminBadge("Convite pendente", "warn");
+      if (user.invite_status === "not_accepted") return adminBadge("Primeiro acesso pendente", "warn");
+      return "";
     }
 
     function formatLogDetails(metadata = {}) {
@@ -3607,6 +3693,7 @@ function showAuthView() {
       const options = [
         ["all", "Todos"],
         ["active", "Ativos"],
+        ["pending", "Convites pendentes"],
         ["blocked", "Bloqueados"],
         ...(state.profile?.role === "admin" ? [["admin", "Admins"]] : []),
         ["manager", "Gestores"],
@@ -3709,7 +3796,8 @@ function showAuthView() {
       const search = adminInputValue("userSearch").toLowerCase().trim();
       const current = currentPackageForUser(user.id);
       if (search && !text.includes(search)) return false;
-      if (filter === "active") return user.status === "active";
+      if (filter === "active") return user.status === "active" && !["pending", "not_accepted"].includes(user.invite_status);
+      if (filter === "pending") return ["pending", "not_accepted"].includes(user.invite_status);
       if (filter === "blocked") return user.status === "blocked" || user.status === "inactive";
       if (filter === "admin") return user.role === "admin";
       if (filter === "manager") return user.role === "manager";
@@ -3735,7 +3823,7 @@ function showAuthView() {
       const packages = state.admin.packages || [];
       const usage = state.admin.usage || [];
       const logs = state.admin.logs || [];
-      const activeUsers = users.filter((user) => user.status === "active").length;
+      const activeUsers = users.filter((user) => user.status === "active" && !["pending", "not_accepted"].includes(user.invite_status)).length;
       const blockedUsers = users.filter((user) => user.status === "blocked" || user.status === "inactive").length;
       const usersNearLimit = users.filter((user) => {
         const info = usageForUser(user);
@@ -3797,7 +3885,15 @@ function showAuthView() {
       document.getElementById("usersAdminList").innerHTML = filteredUsers.length ? `
         <div class="admin-card-list">${filteredUsers.map((user) => {
           const info = usageForUser(user);
+          const isOrphan = Boolean(user.orphan_auth);
+          const canResendInvite = !isOrphan
+            && !user.auth_missing
+            && !user.last_sign_in_at
+            && (state.profile?.role === "admin" || user.role !== "admin");
           const canDeleteUser = state.profile?.role === "admin" && user.id !== state.session?.user?.id;
+          const accessDetails = ["pending", "not_accepted"].includes(user.invite_status)
+            ? `<strong>Convite enviado: ${escapeHtml(formatDate(user.invitation_sent_at || user.created_at))}</strong><br><span class="admin-note">Ainda não houve primeiro acesso.</span>`
+            : `<strong>Criado: ${escapeHtml(formatDate(user.created_at))}</strong><br><span class="admin-note">Último acesso: ${escapeHtml(formatDate(user.last_sign_in_at || user.updated_at || user.created_at))}</span>`;
           return `
             <article class="admin-record-card">
               <div class="admin-record-head">
@@ -3805,25 +3901,27 @@ function showAuthView() {
                   <strong>${escapeHtml(user.full_name || user.email || "-")}</strong>
                   <span>${escapeHtml(user.email || "-")}</span>
                 </div>
-                <div class="admin-record-meta">${roleBadge(user.role)} ${statusBadge(user.status)}</div>
+                <div class="admin-record-meta">${roleBadge(user.role)} ${statusBadge(user.status)} ${invitationBadge(user)}</div>
               </div>
               <div class="admin-record-body">
                 <div class="admin-record-field"><span>Empresa</span><strong>${escapeHtml(user.company_name || "-")}</strong></div>
-                <div class="admin-record-field"><span>Pacote atual</span><select class="map-select admin-package-select assign-package" data-user-id="${escapeHtml(user.id)}">${packageOptions(info.current?.package_id || "")}</select></div>
+                <div class="admin-record-field"><span>Pacote atual</span>${isOrphan ? `<strong>Não vinculado</strong>` : `<select class="map-select admin-package-select assign-package" data-user-id="${escapeHtml(user.id)}">${packageOptions(info.current?.package_id || "")}</select>`}</div>
                 <div class="admin-record-field"><span>Consumo no mês</span>${userConsumptionHtml(info)}</div>
-                <div class="admin-record-field"><span>Acesso</span><strong>Criado: ${escapeHtml(formatDate(user.created_at))}</strong><br><span class="admin-note">Último acesso: ${escapeHtml(formatDate(user.last_sign_in_at || user.updated_at || user.created_at))}</span></div>
+                <div class="admin-record-field"><span>Acesso</span>${accessDetails}</div>
               </div>
               <div class="admin-card-actions">
-                <button class="mini-button edit-user" type="button" data-user-id="${escapeHtml(user.id)}">Editar</button>
-                <button class="mini-button toggle-user-status" type="button" data-user-id="${escapeHtml(user.id)}" data-status="${user.status === "active" ? "blocked" : "active"}">${user.status === "active" ? "Bloquear" : "Ativar"}</button>
-                <button class="mini-button view-user-usage" type="button" data-user-id="${escapeHtml(user.id)}">Consumo</button>
+                ${isOrphan ? "" : `<button class="mini-button edit-user" type="button" data-user-id="${escapeHtml(user.id)}">Editar</button>`}
+                ${isOrphan ? "" : `<button class="mini-button toggle-user-status" type="button" data-user-id="${escapeHtml(user.id)}" data-status="${user.status === "active" ? "blocked" : "active"}">${user.status === "active" ? "Bloquear" : "Ativar"}</button>`}
+                ${canResendInvite ? `<button class="mini-button resend-invite" type="button" data-user-id="${escapeHtml(user.id)}">Reenviar convite</button>` : ""}
+                ${isOrphan ? "" : `<button class="mini-button view-user-usage" type="button" data-user-id="${escapeHtml(user.id)}">Consumo</button>`}
                 <button class="mini-button view-user-logs" type="button" data-user-id="${escapeHtml(user.id)}">Logs</button>
-                ${state.profile?.role === "admin" ? `<button class="mini-button danger delete-user" type="button" data-user-id="${escapeHtml(user.id)}" ${canDeleteUser ? "" : "disabled"} title="${canDeleteUser ? "Excluir usuário e dados vinculados" : "Não é permitido excluir o próprio admin"}">Excluir</button>` : ""}
+                ${state.profile?.role === "admin" ? `<button class="mini-button danger delete-user" type="button" data-user-id="${escapeHtml(user.id)}" ${canDeleteUser ? "" : "disabled"} title="${canDeleteUser ? "Excluir usuário e dados vinculados" : "Não é permitido excluir o próprio admin"}">Excluir definitivamente</button>` : ""}
               </div>
             </article>
           `;
         }).join("")}</div>
       ` : `<div class="admin-empty">Nenhum usuário encontrado.</div>`;
+      applyEnvironmentMode();
 
       const usageRows = users.map((user) => ({ user, info: usageForUser(user) })).filter(({ user, info }) => usageMatchesFilters(user, info));
       document.getElementById("usageAdminList").innerHTML = usageRows.length ? `
@@ -4319,18 +4417,15 @@ function showAuthView() {
         button.textContent = "Enviando convite...";
       }
       try {
-        const response = await fetch("/api/admin-users", {
+        await adminApi("/api/admin-users", {
           method: "POST",
-          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify(payload),
         });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || "Não foi possível enviar o convite.");
         form.reset();
-        setNotice("Convite enviado com sucesso. O usuário receberá o e-mail para criar a senha.");
+        setNotice("Convite Road News enviado com sucesso. O usuário receberá um link seguro para criar a senha.");
         await loadAdminData();
       } catch (error) {
-        setNotice(error.message || "Não foi possível enviar o convite. Confira os dados e tente novamente.");
+        setNotice(getFriendlyErrorMessage(error, "Não foi possível enviar o convite. Confira os dados e tente novamente."));
       } finally {
         if (button) {
           button.disabled = false;
@@ -4338,6 +4433,34 @@ function showAuthView() {
         }
         updateInviteRoleOptions();
         updateInvitePackageOptions();
+      }
+    }
+
+    async function resendInvite(userId, button) {
+      const user = (state.admin.users || []).find((item) => item.id === userId);
+      if (!user || user.orphan_auth || user.auth_missing) {
+        setNotice("Este cadastro não possui um convite válido para reenvio.");
+        return;
+      }
+      const originalLabel = button?.textContent || "Reenviar convite";
+      try {
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Reenviando...";
+        }
+        await adminApi("/api/admin-users", {
+          method: "POST",
+          body: JSON.stringify({ action: "resend_invite", user_id: userId }),
+        });
+        setNotice(`Convite reenviado para ${user.email}.`);
+        await loadAdminData();
+      } catch (error) {
+        setNotice(getFriendlyErrorMessage(error, "Não foi possível reenviar o convite. Tente novamente."));
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = originalLabel;
+        }
       }
     }
 
@@ -5131,11 +5254,12 @@ function showAuthView() {
         state.pendingPath = "/dashboard";
         await refresh();
         showAppView();
+        setNotice("Convite aceito com sucesso. Sua senha foi criada.");
         await applyRoute("/dashboard", { replace: true });
       } catch (error) {
         setAcceptInviteError(error.message || "Não foi possível criar a senha. Solicite um novo convite.");
       } finally {
-        button.disabled = false;
+        button.disabled = !state.session?.user;
         button.textContent = "Criar senha e acessar";
       }
     }
@@ -5167,6 +5291,10 @@ function showAuthView() {
     }
 
     async function resetPassword() {
+      if (state.readOnly) {
+        setAuthError("A recuperação de senha está disponível somente no ambiente de produção.");
+        return;
+      }
       const email = document.getElementById("loginEmail").value.trim();
       if (!email) {
         setAuthError("Informe o e-mail para recuperar a senha.");
@@ -5489,6 +5617,7 @@ function showAuthView() {
       if (button.classList.contains("edit-user")) editUserProfile(button.dataset.userId);
       if (button.classList.contains("view-user-usage")) focusAdminUsage(button.dataset.userId);
       if (button.classList.contains("view-user-logs")) focusAdminLogs(button.dataset.userId);
+      if (button.classList.contains("resend-invite")) resendInvite(button.dataset.userId, button);
       if (button.classList.contains("delete-user")) deleteUser(button.dataset.userId);
     });
     bootstrap();

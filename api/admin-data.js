@@ -1,4 +1,4 @@
-const { json, requireManager } = require("./_auth");
+const { isReadOnlyEnvironment, json, listAuthUsers, requireManager } = require("./_auth");
 const { adminErrorMessage, audit, fetchJson } = require("./_admin");
 
 const TEST_PACKAGE = {
@@ -15,6 +15,7 @@ const TEST_PACKAGE = {
 };
 
 async function ensureTestPackage(account) {
+  if (isReadOnlyEnvironment()) return;
   const existing = await fetchJson("/rest/v1/packages?name=eq.Teste&select=id&limit=1");
   if (Array.isArray(existing) && existing.length) return;
   let created = null;
@@ -39,6 +40,47 @@ async function ensureTestPackage(account) {
   });
 }
 
+function normalizeRole(value) {
+  return ["admin", "manager"].includes(value) ? value : "client";
+}
+
+function authState(user) {
+  if (!user) return { auth_missing: true, invite_status: "auth_missing" };
+  const invitationSentAt = user.invited_at || user.confirmation_sent_at || null;
+  return {
+    auth_missing: false,
+    invite_status: user.last_sign_in_at ? "accepted" : (invitationSentAt ? "pending" : "not_accepted"),
+    invitation_sent_at: invitationSentAt,
+    last_sign_in_at: user.last_sign_in_at || null,
+  };
+}
+
+function mergeAuthUsers(profiles, authUsers, includeOrphans) {
+  const byId = new Map(authUsers.map((user) => [user.id, user]));
+  const profileIds = new Set(profiles.map((profile) => profile.id));
+  const enriched = profiles.map((profile) => ({
+    ...profile,
+    ...authState(byId.get(profile.id)),
+  }));
+  if (!includeOrphans) return enriched;
+
+  const orphans = authUsers
+    .filter((user) => user?.id && !profileIds.has(user.id))
+    .map((user) => ({
+      id: user.id,
+      email: user.email || "",
+      full_name: user.user_metadata?.full_name || "Cadastro incompleto",
+      company_name: user.user_metadata?.company_name || "",
+      role: normalizeRole(user.user_metadata?.role || user.app_metadata?.role),
+      status: "orphaned",
+      created_at: user.created_at || null,
+      updated_at: user.updated_at || user.created_at || null,
+      orphan_auth: true,
+      ...authState(user),
+    }));
+  return [...enriched, ...orphans].sort((left, right) => String(right.created_at || "").localeCompare(String(left.created_at || "")));
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") {
     json(res, 405, { error: "Method not allowed" });
@@ -49,13 +91,15 @@ module.exports = async function handler(req, res) {
     const account = await requireManager(req);
     await ensureTestPackage(account);
     const monthStart = encodeURIComponent(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString());
-    const [users, packages, userPackages, usage, logs] = await Promise.all([
+    const [profiles, packages, userPackages, usage, logs, authUsers] = await Promise.all([
       fetchJson("/rest/v1/profiles?select=*&order=created_at.desc"),
       fetchJson("/rest/v1/packages?select=*&order=name.asc"),
       fetchJson("/rest/v1/user_packages?select=*&order=created_at.desc"),
       fetchJson(`/rest/v1/usage_events?select=*&created_at=gte.${monthStart}&order=created_at.desc&limit=1000`),
       fetchJson("/rest/v1/audit_logs?select=*&order=created_at.desc&limit=120"),
+      listAuthUsers(),
     ]);
+    const users = mergeAuthUsers(profiles || [], authUsers, account.isAdmin);
     json(res, 200, {
       users: users || [],
       packages: packages || [],

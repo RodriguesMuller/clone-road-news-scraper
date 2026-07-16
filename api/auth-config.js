@@ -1,4 +1,4 @@
-const { authSettingValue, isAuthEnabled, json } = require("./_auth");
+const { appEnvironment, authSettingValue, isAuthEnabled, isReadOnlyEnvironment, json } = require("./_auth");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") {
@@ -8,6 +8,8 @@ module.exports = async function handler(req, res) {
   json(res, 200, {
     authEnabled: isAuthEnabled(),
     mode: isAuthEnabled() ? "auth" : "demo",
+    environment: appEnvironment(),
+    readOnly: isReadOnlyEnvironment(),
     configuredValue: authSettingValue() ? "set" : "empty",
   });
 };
