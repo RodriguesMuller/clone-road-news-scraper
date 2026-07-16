@@ -4203,7 +4203,7 @@ function showAuthView() {
       );
       if (!confirmed) return;
       try {
-        await adminApi(`/api/admin-user-delete?user_id=${encodeURIComponent(userId)}`, { method: "DELETE" });
+        await adminApi(`/api/admin-users?user_id=${encodeURIComponent(userId)}`, { method: "DELETE" });
         setNotice("Usuário excluído definitivamente.");
         await loadAdminData();
       } catch (error) {

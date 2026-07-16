@@ -1,5 +1,26 @@
-const { SERVICE_ROLE_KEY, SUPABASE_URL, json, requireManager, supabaseFetch } = require("./_auth");
-const { adminErrorMessage } = require("./_admin");
+const { SERVICE_ROLE_KEY, SUPABASE_URL, json, requireAdmin, requireManager, supabaseFetch } = require("./_auth");
+const { adminErrorMessage, audit } = require("./_admin");
+
+function idFromRequest(req, body = {}) {
+  const url = new URL(req.url, "http://road-news.local");
+  return String(body.user_id || body.id || url.searchParams.get("user_id") || url.searchParams.get("id") || "").trim();
+}
+
+function emailFromRequest(req, body = {}) {
+  const url = new URL(req.url, "http://road-news.local");
+  return String(body.email || url.searchParams.get("email") || "").trim().toLowerCase();
+}
+
+async function deleteRows(path) {
+  try {
+    await supabaseFetch(path, {
+      method: "DELETE",
+      headers: { Prefer: "return=minimal" },
+    });
+  } catch (error) {
+    if (!/column|schema|PGRST|does not exist/i.test(error.message || "")) throw error;
+  }
+}
 
 async function fetchActivePackage(packageId) {
   try {
@@ -119,12 +140,49 @@ async function inviteUser(body) {
   return { invited, role, status };
 }
 
+async function deleteUser(req) {
+  const account = await requireAdmin(req);
+  const userId = idFromRequest(req);
+  const email = emailFromRequest(req);
+  if (!userId && !email) throw new Error("Usuario nao informado.");
+  if (userId === account.user.id || (email && email === String(account.user.email || "").toLowerCase())) {
+    throw new Error("Voce nao pode excluir seu proprio usuario admin.");
+  }
+
+  const profilePath = userId
+    ? `/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,email,role,company_name&limit=1`
+    : `/rest/v1/profiles?email=ilike.${encodeURIComponent(email)}&select=id,email,role,company_name&limit=1`;
+  const response = await supabaseFetch(profilePath);
+  const rows = await response.json();
+  const profile = rows?.[0] || null;
+  const authUser = profile?.id ? { id: profile.id, email: profile.email } : await authUserByEmail(email);
+  const targetId = profile?.id || authUser?.id || userId;
+  if (!targetId) throw new Error("Usuario nao encontrado.");
+
+  await audit(account, "delete_user", "profile", targetId, {
+    email: profile?.email || authUser?.email || email || null,
+    role: profile?.role || null,
+    company_name: profile?.company_name || null,
+  });
+
+  await deleteAuthUser(targetId);
+  await deleteRows(`/rest/v1/user_packages?user_id=eq.${encodeURIComponent(targetId)}`);
+  await deleteRows(`/rest/v1/usage_events?user_id=eq.${encodeURIComponent(targetId)}`);
+  await deleteRows(`/rest/v1/profiles?id=eq.${encodeURIComponent(targetId)}`);
+}
+
 module.exports = async function handler(req, res) {
-  if (req.method !== "POST") {
+  if (req.method !== "POST" && req.method !== "DELETE") {
     json(res, 405, { error: "Method not allowed" });
     return;
   }
   try {
+    if (req.method === "DELETE") {
+      await deleteUser(req);
+      json(res, 200, { ok: true });
+      return;
+    }
+
     const account = await requireManager(req);
     const chunks = [];
     for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
