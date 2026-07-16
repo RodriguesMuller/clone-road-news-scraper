@@ -112,7 +112,26 @@ async function getActivePackage(userId) {
   const path = `/rest/v1/user_packages?user_id=eq.${encodeURIComponent(userId)}&is_active=eq.true&or=(ends_at.is.null,ends_at.gt.${now})&select=*,packages(*)&order=created_at.desc&limit=1`;
   const response = await supabaseFetch(path);
   const rows = await response.json();
-  return rows[0] || null;
+  if (rows[0]) return rows[0];
+
+  const profile = await getProfile(userId);
+  if (!profile?.client_id) return null;
+  const clientResponse = await supabaseFetch(
+    `/rest/v1/clients?id=eq.${encodeURIComponent(profile.client_id)}&status=eq.active&select=package_id&limit=1`,
+  );
+  const client = (await clientResponse.json())?.[0];
+  if (!client?.package_id) return null;
+  const packageResponse = await supabaseFetch(
+    `/rest/v1/packages?id=eq.${encodeURIComponent(client.package_id)}&is_active=eq.true&select=*&limit=1`,
+  );
+  const pkg = (await packageResponse.json())?.[0];
+  return pkg ? {
+    user_id: userId,
+    package_id: pkg.id,
+    is_active: true,
+    source: "client",
+    packages: pkg,
+  } : null;
 }
 
 function monthStartIso() {
@@ -122,6 +141,45 @@ function monthStartIso() {
 
 function isManagerRole(role) {
   return role === "admin" || role === "manager";
+}
+
+function accountClientId(account) {
+  return String(account?.profile?.client_id || "").trim();
+}
+
+function assertCanAccessClient(account, clientId) {
+  const targetClientId = String(clientId || "").trim();
+  if (!targetClientId) throw new Error("Empresa nao informada.");
+  if (!account?.isAdmin && accountClientId(account) !== targetClientId) {
+    throw new Error("Voce nao tem permissao para acessar dados de outra empresa.");
+  }
+  return targetClientId;
+}
+
+function assertCanManageProfile(account, profile) {
+  if (!profile?.id) throw new Error("Usuario nao encontrado.");
+  if (account?.isAdmin) return profile;
+  assertCanAccessClient(account, profile.client_id);
+  if (!account?.isManager || profile.role !== "client") {
+    throw new Error("Gestor so pode administrar usuarios Cliente da propria empresa.");
+  }
+  return profile;
+}
+
+async function getProfileForManagement(account, userId) {
+  const profile = await getProfile(userId);
+  return assertCanManageProfile(account, profile);
+}
+
+async function getClientForAccess(account, clientId) {
+  const targetClientId = assertCanAccessClient(account, clientId);
+  const response = await supabaseFetch(
+    `/rest/v1/clients?id=eq.${encodeURIComponent(targetClientId)}&select=id,slug,company_name,status,package_id&limit=1`,
+  );
+  const client = (await response.json())?.[0];
+  if (!client) throw new Error("Empresa nao encontrada.");
+  if (client.status !== "active") throw new Error("Empresa inativa ou bloqueada.");
+  return client;
 }
 
 async function monthlyUsage(userId, eventTypes) {
@@ -150,6 +208,7 @@ async function requireAccount(req) {
   const profile = await getProfile(user.id);
   if (!profile) throw new Error("Perfil nao encontrado. Contate o administrador.");
   if (profile.status !== "active") throw new Error("Seu usuario esta inativo. Contate o administrador.");
+  if (!profile.client_id) throw new Error("Perfil sem empresa vinculada. Contate o administrador.");
   const isAdmin = profile.role === "admin";
   const isManager = profile.role === "manager";
   const isPrivileged = isManagerRole(profile.role);
@@ -249,6 +308,11 @@ module.exports = {
   listAuthUsers,
   monthlyUsage,
   isManagerRole,
+  accountClientId,
+  assertCanAccessClient,
+  assertCanManageProfile,
+  getProfileForManagement,
+  getClientForAccess,
   requireAccount,
   requireAdmin,
   requireManager,

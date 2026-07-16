@@ -1,4 +1,4 @@
-const { assertWritableEnvironment, json, requireManager, supabaseFetch } = require("./_auth");
+const { assertWritableEnvironment, getProfileForManagement, json, requireManager, supabaseFetch } = require("./_auth");
 const { adminErrorMessage, audit, fetchJson, readJson } = require("./_admin");
 
 async function fetchActivePackage(packageId) {
@@ -12,12 +12,16 @@ async function fetchActivePackage(packageId) {
   }
 }
 
-async function activePackageUsers(packageId) {
-  const response = await supabaseFetch(
-    `/rest/v1/user_packages?package_id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=id`,
-    { method: "HEAD", headers: { Prefer: "count=exact" } },
+async function activePackageUsers(packageId, clientId) {
+  const assignments = await fetchJson(
+    `/rest/v1/user_packages?package_id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=user_id`,
   );
-  return Number((response.headers.get("content-range") || "0/0").split("/")[1] || 0);
+  const userIds = (assignments || []).map((item) => item.user_id).filter(Boolean);
+  if (!userIds.length) return 0;
+  const profiles = await fetchJson(
+    `/rest/v1/profiles?client_id=eq.${encodeURIComponent(clientId)}&id=in.(${userIds.map(encodeURIComponent).join(",")})&select=id`,
+  );
+  return (profiles || []).length;
 }
 
 module.exports = async function handler(req, res) {
@@ -34,10 +38,7 @@ module.exports = async function handler(req, res) {
     const packageId = String(body.package_id || "").trim();
     if (!userId) throw new Error("Usuario nao informado.");
 
-    if (!account.isAdmin) {
-      const profile = await fetchJson(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=role&limit=1`);
-      if (profile?.[0]?.role !== "client") throw new Error("Gestor so pode alterar pacote de usuarios cliente.");
-    }
+    const profile = await getProfileForManagement(account, userId);
 
     await supabaseFetch(`/rest/v1/user_packages?user_id=eq.${encodeURIComponent(userId)}&is_active=eq.true`, {
       method: "PATCH",
@@ -49,7 +50,7 @@ module.exports = async function handler(req, res) {
       const pkg = await fetchActivePackage(packageId);
       if (!pkg) throw new Error("Pacote inicial nao encontrado ou inativo.");
       const maxUsers = Number(pkg.max_users || 0);
-      if (maxUsers > 0 && await activePackageUsers(packageId) >= maxUsers) {
+      if (maxUsers > 0 && await activePackageUsers(packageId, profile.client_id) >= maxUsers) {
         throw new Error("Limite de usuarios deste pacote atingido.");
       }
       await supabaseFetch("/rest/v1/user_packages", {
@@ -59,7 +60,10 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    await audit(account, "assign_package", "profile", userId, { package_id: packageId || null });
+    await audit(account, "assign_package", "profile", userId, {
+      package_id: packageId || null,
+      client_id: profile.client_id,
+    });
     json(res, 200, { ok: true });
   } catch (error) {
     json(res, 403, { error: adminErrorMessage(error) });

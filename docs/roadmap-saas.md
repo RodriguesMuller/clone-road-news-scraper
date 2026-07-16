@@ -765,3 +765,60 @@ Nenhuma variavel nova foi criada e nenhum secret foi alterado.
 
 Status da Fase 1: pronta para validacao final e merge em `staging`. A Fase 2 nao
 foi iniciada.
+
+## 26. Entrega da Fase 2 - multiempresa
+
+### Branch
+
+`feature/phase-2-multitenant`
+
+### Modelo adotado
+
+- `profiles.client_id` e obrigatorio e referencia `clients.id`;
+- `clients.package_id` e o pacote padrao do tenant;
+- `user_packages` permanece como override individual compativel;
+- `profiles.company_name` permanece apenas para exibicao, nunca como chave de
+  autorizacao;
+- `sources` aceita fonte global (`client_id` nulo) ou fonte exclusiva do tenant;
+- `saved_news` persiste usuario, tenant e noticia com RLS.
+
+### Protecoes implementadas
+
+- RLS foi reescrita para clientes, perfis, pacotes, uso, auditoria, salvos,
+  fontes, notificacoes e tabelas tecnicas;
+- Admin possui visao global;
+- Gestor consulta apenas a propria empresa e administra somente usuarios
+  Cliente desse tenant;
+- Cliente consulta apenas a propria empresa, perfil e dados pessoais;
+- eventos e integracoes tecnicas sao exclusivos do Admin;
+- APIs que usam service role repetem os filtros de tenant no servidor;
+- convite e edicao usam `client_id` validado, sem empresa em texto livre;
+- criacao e alteracao de pacotes globais passaram a exigir Admin.
+
+### Seeds exclusivos de staging
+
+- tenant tecnico `road-news-staging`;
+- tenants ficticios `cliente-demonstracao-a` e `cliente-demonstracao-b`;
+- um Gestor do Cliente A;
+- um usuario Cliente A;
+- um usuario Cliente B;
+- pacote `Teste`, sem dados ou usuarios de producao.
+
+### Validacao integrada no Supabase staging
+
+- Cliente A visualizou somente o tenant e o proprio perfil do Cliente A;
+- Cliente B visualizou somente o tenant e o proprio perfil do Cliente B;
+- Gestor A visualizou somente Gestor A e Cliente A;
+- Admin visualizou todos os tenants e perfis ficticios;
+- insercao em `saved_news` no tenant correto foi aceita;
+- tentativa de inserir `saved_news` com tenant de outra empresa foi bloqueada;
+- registro criado pela validacao foi removido ao final;
+- RLS permaneceu habilitada e nenhuma policy `using (true)` foi criada.
+
+### Producao
+
+Branch `main`, Vercel de producao e Supabase de producao nao foram alterados.
+
+Status da Fase 2: implementada e validada no banco de staging; pendente apenas
+da validacao visual do deploy em `road-news-preview.vercel.app` antes do merge
+final em `staging`.

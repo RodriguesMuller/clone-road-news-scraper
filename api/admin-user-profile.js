@@ -1,5 +1,12 @@
-const { assertWritableEnvironment, json, requireManager, supabaseFetch } = require("./_auth");
-const { adminErrorMessage, audit, fetchJson, readJson } = require("./_admin");
+const {
+  assertWritableEnvironment,
+  getClientForAccess,
+  getProfileForManagement,
+  json,
+  requireManager,
+  supabaseFetch,
+} = require("./_auth");
+const { adminErrorMessage, audit, readJson } = require("./_admin");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "PATCH") {
@@ -14,19 +21,23 @@ module.exports = async function handler(req, res) {
     const userId = String(body.user_id || "").trim();
     if (!userId) throw new Error("Usuario nao informado.");
 
-    const current = await fetchJson(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=role&limit=1`);
-    if (!current?.length) throw new Error("Usuario nao encontrado.");
+    const current = await getProfileForManagement(account, userId);
 
-    const requestedRole = String(body.role || current[0].role || "client").trim();
+    const requestedRole = String(body.role || current.role || "client").trim();
     const role = ["admin", "manager"].includes(requestedRole) ? requestedRole : "client";
-    if (!account.isAdmin && (current[0].role === "admin" || role === "admin")) {
-      throw new Error("Voce nao tem permissao para atribuir perfil Admin.");
+    if (!account.isAdmin && role !== "client") {
+      throw new Error("Gestor so pode manter usuarios no perfil Cliente.");
     }
 
     const status = ["active", "blocked", "inactive"].includes(body.status) ? body.status : "active";
+    const client = await getClientForAccess(
+      account,
+      account.isAdmin ? (body.client_id || current.client_id) : current.client_id,
+    );
     const payload = {
       full_name: String(body.full_name || "").trim(),
-      company_name: String(body.company_name || "").trim(),
+      client_id: client.id,
+      company_name: client.company_name,
       role,
       status,
     };
