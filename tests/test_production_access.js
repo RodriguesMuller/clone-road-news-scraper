@@ -200,3 +200,65 @@ test("manual user endpoint creates Auth, profile and package link without leakin
   assert.equal(JSON.stringify(captures.audit).includes("SenhaSegura123!"), false);
   assert.equal(JSON.stringify(payload).includes("SenhaSegura123!"), false);
 });
+
+test("production UI exposes the event center only inside the authenticated app", () => {
+  const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
+  const authStart = html.indexOf('id="authView"');
+  const appStart = html.indexOf('id="appShell"');
+  const eventPage = html.indexOf('id="clientEventsPage"');
+  assert.ok(appStart > authStart);
+  assert.ok(eventPage > appStart);
+  assert.match(html, /Central de Evento/);
+  assert.match(html, /Foi identificado um evento/);
+  assert.doesNotMatch(html, /A IA identificou um evento/);
+});
+
+test("manager can close a major event through the existing secure summary endpoint", async () => {
+  process.env.SUPABASE_URL = "https://example.supabase.co";
+  process.env.SUPABASE_ANON_KEY = "anon-test";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "service-test";
+  let patchedEvent = null;
+  global.fetch = async (url, options = {}) => {
+    const value = String(url);
+    const method = options.method || "GET";
+    if (value.endsWith("/auth/v1/user")) return Response.json({ id: "manager-1", email: "manager@example.com" });
+    if (value.includes("/rest/v1/profiles?id=eq.manager-1")) {
+      return Response.json([{ id: "manager-1", role: "manager", status: "active", client_id: null }]);
+    }
+    if (value.includes("/rest/v1/user_packages?user_id=eq.manager-1")) return Response.json([]);
+    if (value.includes("/rest/v1/platform_events?id=eq.event-1") && method === "GET") {
+      return Response.json([{
+        id: "event-1",
+        message: "Paralisação no Porto de Santos",
+        status: "open",
+        metadata: { operational_status: "em_andamento", history: [] },
+      }]);
+    }
+    if (value.includes("/rest/v1/platform_events?id=eq.event-1") && method === "PATCH") {
+      patchedEvent = JSON.parse(options.body);
+      return new Response(null, { status: 204 });
+    }
+    throw new Error(`Unexpected fetch: ${method} ${value}`);
+  };
+
+  for (const moduleName of ["_auth.js", "news-summary.js"]) {
+    const modulePath = path.join(ROOT, "api", moduleName);
+    delete require.cache[require.resolve(modulePath)];
+  }
+  const handler = require(path.join(ROOT, "api", "news-summary.js"));
+  const req = Readable.from([JSON.stringify({
+    action: "event-status",
+    event_id: "event-1",
+    operational_status: "encerrado",
+  })]);
+  req.method = "POST";
+  req.headers = { authorization: "Bearer session-test" };
+  const response = { statusCode: 0, headers: {}, setHeader(key, value) { this.headers[key] = value; }, end(value) { this.body = value; } };
+  await handler(req, response);
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(patchedEvent.status, "resolved");
+  assert.equal(patchedEvent.metadata.operational_status, "encerrado");
+  assert.equal(patchedEvent.metadata.status_confirmed_by, "platform_manager");
+  assert.match(patchedEvent.metadata.history.at(-1).note, /encerrado por um responsável/i);
+});

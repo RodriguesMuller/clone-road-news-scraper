@@ -64,4 +64,8 @@ jobs:
       - name: Run scraper
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4.1-mini' }}
+          EVENT_INTELLIGENCE_ENABLED: "true"
+          SCRAPER_AI_SUMMARIES_ENABLED: "false"
         run: python main.py

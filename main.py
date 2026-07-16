@@ -14,6 +14,7 @@ from scraper.sources.html import HTML_SCRAPERS
 from scraper.sources.rss import scrape_rss
 from scraper.sources.inmet import scrape_inmet
 from scraper.storage.postgres import save_to_postgres
+from scraper.event_intelligence import process_major_events
 
 for _stream in (sys.stdout, sys.stderr):
     try:
@@ -91,6 +92,7 @@ def run(save: bool = True) -> dict:
     if all_news:
         new_count = save_to_postgres(all_news, database_url)
         print(f"[Postgres] {new_count} novo(s) registro(s) salvo(s).")
+        process_major_events(all_news, database_url)
     else:
         print("[Postgres] Nenhuma noticia nova para salvar.")
 

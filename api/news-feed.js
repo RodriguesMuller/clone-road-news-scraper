@@ -25,6 +25,18 @@ async function fetchRows(suffix) {
   throw lastError;
 }
 
+async function fetchMajorEvents() {
+  try {
+    const response = await supabaseFetch(
+      "/rest/v1/platform_events?event_type=eq.major_logistics_event&select=id,event_type,severity,status,message,metadata,created_at,resolved_at&order=created_at.desc&limit=20"
+    );
+    return response.json();
+  } catch (error) {
+    if (/platform_events|relation|schema|PGRST|does not exist/i.test(error.message || "")) return [];
+    throw error;
+  }
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") {
     json(res, 405, { error: "Method not allowed" });
@@ -39,11 +51,12 @@ module.exports = async function handler(req, res) {
     const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
     const since30d = encodeURIComponent(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
     const cap = Math.max(1, Math.min(monthlyNewsLimit, 700));
-    const [latestNews, latestInmet, recentRows, mapRows, countResponse] = await Promise.all([
+    const [latestNews, latestInmet, recentRows, mapRows, majorEvents, countResponse] = await Promise.all([
       fetchRows(`&order=created_at.desc&limit=${Math.min(50, cap)}`),
       fetchRows(`&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=${Math.min(20, cap)}`),
       fetchRows(`&created_at=gte.${since24h}&order=created_at.desc&limit=${Math.min(300, cap)}`),
       canAccessMap ? fetchRows(`&created_at=gte.${since30d}&order=created_at.desc&limit=${cap}`) : Promise.resolve([]),
+      fetchMajorEvents(),
       supabaseFetch("/rest/v1/news?select=id", { method: "HEAD", headers: { Prefer: "count=exact" } }),
     ]);
 
@@ -56,7 +69,7 @@ module.exports = async function handler(req, res) {
     });
 
     const total = Number((countResponse.headers.get("content-range") || "0/0").split("/")[1] || 0);
-    json(res, 200, { latestNews, latestInmet, recentRows, mapRows, total });
+    json(res, 200, { latestNews, latestInmet, recentRows, mapRows, majorEvents, total });
   } catch (error) {
     json(res, 403, { error: adminErrorMessage(error) || "Nao foi possivel carregar noticias." });
   }

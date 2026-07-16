@@ -45,8 +45,10 @@ def scrape_rss(source: dict, keywords: list) -> list:
             if is_blocked_url(link):
                 continue
 
-            # Filtrar apenas pelo título (não pelo resumo) conforme solicitado
-            if not matches_keywords(title, keywords):
+            # Fontes especializadas podem ter uma lista própria sem ampliar o
+            # filtro das demais notícias nacionais.
+            source_keywords = source.get("keywords") or keywords
+            if not matches_keywords(title, source_keywords):
                 continue
 
             # Normaliza a data de publicação
@@ -71,6 +73,8 @@ def scrape_rss(source: dict, keywords: list) -> list:
                     "type": "RSS",
                 }
             )
+            if source.get("max_items") and len(news) >= int(source["max_items"]):
+                break
 
     except Exception as e:
         print(f"    ✗ Erro ao processar '{source['name']}': {e}")

@@ -4,6 +4,8 @@ Persistencia em PostgreSQL (Supabase).
 A deduplicacao e feita pelo banco pela coluna `url`. Campos de IA sao
 opcionais: o scraper so tenta usa-los quando a migration ja existe.
 """
+import os
+
 import psycopg
 
 from scraper.utils.image_summary import build_image_summary_fallback, generate_image_summary, should_use_ai_for_image_summary
@@ -88,7 +90,12 @@ def _with_image_summary(item: dict, available_columns: set[str]) -> dict:
     if "image_summary" not in available_columns or item.get("image_summary"):
         return item
 
-    ai_data = generate_image_summary(item) if should_use_ai_for_image_summary(item) else build_image_summary_fallback(item)
+    use_ai = str(os.environ.get("SCRAPER_AI_SUMMARIES_ENABLED", "true")).lower() in {"1", "true", "yes"}
+    ai_data = (
+        generate_image_summary(item)
+        if use_ai and should_use_ai_for_image_summary(item)
+        else build_image_summary_fallback(item)
+    )
     if ai_data.get("image_summary"):
         ai_data["ai_summary"] = ai_data["image_summary"]
     enriched = {**item}

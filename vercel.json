@@ -5,6 +5,7 @@
     { "source": "/login", "destination": "/" },
     { "source": "/dashboard", "destination": "/" },
     { "source": "/alertas", "destination": "/" },
+    { "source": "/central-eventos", "destination": "/" },
     { "source": "/noticias", "destination": "/" },
     { "source": "/salvos", "destination": "/" },
     { "source": "/resumo-operacional", "destination": "/" },

@@ -456,6 +456,81 @@
     .management-card h3 { margin: 0; color: var(--color-text); font-size: 16px; line-height: 1.25; }
     .management-card p { margin: 0; color: var(--color-muted-strong); font-size: 13px; line-height: 1.45; }
     .management-card .admin-actions { margin-top: 4px; }
+    .event-alert-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 18px;
+      border: 1px solid rgba(255, 100, 100, .48);
+      border-left: 4px solid var(--color-danger);
+      border-radius: 8px;
+      background: linear-gradient(90deg, rgba(255, 100, 100, .13), rgba(255, 255, 255, .045));
+      box-shadow: var(--shadow-soft);
+    }
+    .event-alert-strip[hidden] { display: none !important; }
+    .event-alert-strip h2 { margin: 6px 0 5px; color: var(--color-text); font-size: 18px; letter-spacing: 0; text-transform: none; }
+    .event-alert-strip p { margin: 0; color: var(--color-muted-strong); font-size: 13px; line-height: 1.45; }
+    .event-center { display: grid; gap: 16px; }
+    .event-hero {
+      overflow: hidden;
+      border: 1px solid rgba(255, 100, 100, .42);
+      border-top: 4px solid var(--color-danger);
+      border-radius: 8px;
+      background: linear-gradient(140deg, rgba(76, 17, 21, .55), rgba(11, 42, 32, .94) 58%, rgba(3, 18, 13, .96));
+      box-shadow: var(--shadow-panel);
+    }
+    .event-hero-main { padding: 24px; }
+    .event-badges, .event-actions, .event-evidence-meta { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+    .event-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 25px;
+      padding: 4px 8px;
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 999px;
+      color: var(--color-muted-strong);
+      background: rgba(255,255,255,.065);
+      font-size: 10px;
+      font-weight: 950;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .event-badge.critical { color: #ffd1d1; border-color: rgba(255,100,100,.48); background: rgba(255,100,100,.16); }
+    .event-badge.active { color: #b6ffdd; border-color: rgba(32,242,155,.42); background: rgba(32,242,155,.12); }
+    .event-badge.monitoring { color: #ffe3a6; border-color: rgba(245,184,75,.42); background: rgba(245,184,75,.12); }
+    .event-hero h2 { margin: 14px 0 8px; color: var(--color-text); font-size: clamp(24px, 4vw, 38px); line-height: 1.08; letter-spacing: 0; text-transform: none; }
+    .event-lead { max-width: 900px; margin: 0; color: var(--color-muted-strong); font-size: 15px; line-height: 1.58; }
+    .event-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid rgba(255,255,255,.10); background: rgba(0,0,0,.14); }
+    .event-metric { min-width: 0; padding: 14px 18px; border-right: 1px solid rgba(255,255,255,.10); }
+    .event-metric:last-child { border-right: 0; }
+    .event-metric span { display: block; color: var(--color-muted); font-size: 9px; font-weight: 950; letter-spacing: .10em; text-transform: uppercase; }
+    .event-metric strong { display: block; margin-top: 6px; color: var(--color-text); font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+    .event-detail-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr); gap: 16px; align-items: start; }
+    .event-section { border: 1px solid var(--color-card-border); border-radius: 8px; background: rgba(255,255,255,.045); padding: 18px; }
+    .event-section h3 { margin: 0 0 12px; color: var(--color-text); font-size: 15px; }
+    .event-section h4 { margin: 16px 0 8px; color: var(--color-primary); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+    .event-section p { margin: 0; color: var(--color-muted-strong); font-size: 13px; line-height: 1.55; }
+    .event-list { margin: 0; padding-left: 18px; color: var(--color-muted-strong); }
+    .event-list li { margin: 7px 0; font-size: 13px; line-height: 1.45; }
+    .event-timeline { display: grid; gap: 12px; }
+    .event-timeline-item { position: relative; padding-left: 20px; }
+    .event-timeline-item::before { content: ""; position: absolute; left: 1px; top: 5px; width: 9px; height: 9px; border-radius: 50%; background: var(--color-primary); box-shadow: 0 0 0 4px rgba(32,242,155,.10); }
+    .event-timeline-item::after { content: ""; position: absolute; left: 5px; top: 18px; bottom: -13px; width: 1px; background: rgba(32,242,155,.24); }
+    .event-timeline-item:last-child::after { display: none; }
+    .event-timeline-item strong { display: block; color: var(--color-text); font-size: 12px; }
+    .event-timeline-item span { display: block; margin-top: 3px; color: var(--color-muted); font-size: 11px; line-height: 1.4; }
+    .event-analysis-row { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.09); }
+    .event-analysis-row:last-child { border-bottom: 0; }
+    .event-analysis-row span { display: block; color: var(--color-muted); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .event-analysis-row strong { display: block; margin-top: 5px; color: var(--color-text); font-size: 13px; line-height: 1.45; }
+    .event-evidence-list, .event-history-list { display: grid; gap: 10px; }
+    .event-evidence { padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,.09); }
+    .event-evidence:last-child { border-bottom: 0; }
+    .event-evidence a { color: var(--color-text); font-size: 13px; font-weight: 850; line-height: 1.4; text-decoration: none; }
+    .event-evidence a:hover { color: var(--color-primary); }
+    .event-evidence-meta { margin-top: 6px; color: var(--color-muted); font-size: 11px; }
+    .event-empty { padding: 34px 20px; border: 1px dashed rgba(32,242,155,.30); border-radius: 8px; color: var(--color-muted-strong); text-align: center; }
     .platform-toggle-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
     .platform-toggle-row input { width: 18px; height: 18px; accent-color: var(--color-primary); }
     .app-layout {
@@ -861,6 +936,11 @@
     @media (max-width: 720px) {
       .weekly-kpis, .weekly-grid { grid-template-columns: 1fr; }
       .client-filter-grid { grid-template-columns: 1fr; }
+      .event-detail-grid { grid-template-columns: 1fr; }
+      .event-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .event-metric:nth-child(2) { border-right: 0; }
+      .event-metric:nth-child(-n+2) { border-bottom: 1px solid rgba(255,255,255,.10); }
+      .event-alert-strip { grid-template-columns: 1fr; }
       .admin-record-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .view-tabs { overflow-x: auto; flex-wrap: nowrap; }
       .view-tab { flex: 0 0 auto; }
@@ -905,6 +985,10 @@
       .admin-card-actions .mini-button { flex: 1 1 130px; }
       .value { font-size: 30px; }
       .brand-copy strong { font-size: 22px; }
+      .event-hero-main { padding: 18px; }
+      .event-metrics { grid-template-columns: 1fr; }
+      .event-metric { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.10); }
+      .event-metric:last-child { border-bottom: 0; }
     }
     @media print {
       @page { size: A4; margin: 8mm; }
@@ -1138,6 +1222,7 @@
         </section>
 
         <section id="clientAlertsPage" class="client-page" data-client-page="alerts">
+          <section id="activeEventBanner" class="event-alert-strip" hidden></section>
           <section class="stats" id="stats"></section>
           <section class="panel alerts-panel">
             <div class="panel-head">
@@ -1151,6 +1236,12 @@
             </div>
             <div id="recentAlerts" class="alert-list"></div>
           </section>
+        </section>
+
+        <section id="clientEventsPage" class="client-page" data-client-page="events">
+          <div id="eventCenter" class="event-center">
+            <div class="event-empty">Carregando eventos operacionais...</div>
+          </div>
         </section>
 
         <section id="clientSavedPage" class="client-page" data-client-page="saved">
@@ -1692,6 +1783,8 @@
       viewMode: null,
       access: null,
       dataLoadError: "",
+      majorEvents: [],
+      selectedMajorEventId: null,
       admin: { users: [], clients: [], packages: [], userPackages: [], usage: [], logs: [] },
       filters: { search: "", period: "24", region: "", category: "", sort: "recent" },
       map: {
@@ -1712,13 +1805,14 @@
     const CLIENT_PAGE_META = {
       news: { title: "Notícias", subtitle: "Busca, filtros e acompanhamento das notícias recentes." },
       alerts: { title: "Alertas", subtitle: "Ocorrências recentes com impacto operacional." },
+      events: { title: "Central de Evento", subtitle: "Acompanhamento de eventos graves com impacto logístico confirmado." },
       saved: { title: "Salvos", subtitle: "Notícias marcadas para acompanhar depois." },
       operational: { title: "Resumo operacional", subtitle: "Tendências, regiões, rodovias e riscos do período." },
       sources: { title: "Fontes", subtitle: "Fontes monitoradas pelo Road News." },
       reports: { title: "Relatórios", subtitle: "Resumo semanal e materiais executivos." },
       settings: { title: "Configurações", subtitle: "Preferências básicas do ambiente Cliente." },
     };
-    const CLIENT_ROUTES = new Set(["/dashboard", "/noticias", "/mapa", "/alertas", "/salvos", "/resumo-operacional", "/fontes", "/configuracoes"]);
+    const CLIENT_ROUTES = new Set(["/dashboard", "/noticias", "/mapa", "/alertas", "/central-eventos", "/salvos", "/resumo-operacional", "/fontes", "/configuracoes"]);
     const VIEW_MODES = {
       client: "Cliente",
       manager: "Gestor da plataforma",
@@ -1738,6 +1832,7 @@
       users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>',
       package: '<path d="m21 16-9 5-9-5V8l9-5 9 5v8Z"></path><path d="M3.3 7.3 12 12l8.7-4.7"></path><path d="M12 22V12"></path>',
       bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path>',
+      event: '<path d="M10.3 3.7 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path>',
       bookmark: '<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Z"></path>',
       activity: '<path d="M22 12h-4l-3 8-6-16-3 8H2"></path>',
       plug: '<path d="M12 22v-5"></path><path d="M9 8V2"></path><path d="M15 8V2"></path><path d="M6 8h12v4a6 6 0 0 1-12 0V8Z"></path>',
@@ -1748,6 +1843,7 @@
       client: [
         { label: "Ambiente Cliente", items: [
           { label: "Alertas", icon: "bell", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Central de Evento", icon: "event", route: "/central-eventos", view: "occurrences", scroll: "clientEventsPage", countId: "activeEventSidebarCount" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
           { label: "Salvos", icon: "bookmark", route: "/salvos", view: "occurrences", scroll: "savedNews" },
@@ -1758,6 +1854,7 @@
       manager: [
         { label: "Operação", items: [
           { label: "Alertas", icon: "bell", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Central de Evento", icon: "event", route: "/central-eventos", view: "occurrences", scroll: "clientEventsPage", countId: "activeEventSidebarCount" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
           { label: "Fontes", icon: "rss", route: "/fontes-gestor", view: "admin", scroll: "sourcesAdminSection" },
@@ -1774,6 +1871,7 @@
       developer: [
         { label: "Operação", items: [
           { label: "Alertas", icon: "bell", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Central de Evento", icon: "event", route: "/central-eventos", view: "occurrences", scroll: "clientEventsPage", countId: "activeEventSidebarCount" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
           { label: "Fontes", icon: "rss", route: "/developer/fontes", view: "admin", scroll: "sourcesAdminSection" },
@@ -2083,6 +2181,7 @@
       if (value === "top") return "alerts";
       if (value === "news" || value === "clientNewsPage") return "news";
       if (value === "recentAlerts" || value === "clientAlertsPage") return "alerts";
+      if (value === "clientEventsPage" || value === "eventCenter") return "events";
       if (value === "savedNews" || value === "clientSavedPage") return "saved";
       if (value === "trendsSection") return "operational";
       if (value === "clientSourcesSection") return "sources";
@@ -2664,6 +2763,7 @@ function showAuthView() {
 
         state.recentItems = payload.recentRows || [];
         state.mapItems = payload.mapRows || [];
+        state.majorEvents = payload.majorEvents || [];
 
         const merged = new Map();
         for (const item of [...(payload.latestNews || []), ...(payload.latestInmet || [])]) {
@@ -2686,6 +2786,7 @@ function showAuthView() {
       const countResponse = await supabaseFetch(`${TABLE}?select=id`, { method: "HEAD" });
       state.recentItems = recentRows;
       state.mapItems = mapRows;
+      state.majorEvents = [];
 
       const merged = new Map();
       for (const item of [...latestNews, ...latestInmet]) {
@@ -2924,6 +3025,217 @@ function showAuthView() {
             `;
           }).join("")
         : `<div class="hint">Nenhum alerta operacional acionável nas últimas ${state.alertHours}h.</div>`;
+    }
+
+    function majorEventMeta(event) {
+      return event?.metadata && typeof event.metadata === "object" ? event.metadata : {};
+    }
+
+    function majorEventUpdatedValue(event) {
+      const meta = majorEventMeta(event);
+      return parseBrasiliaDate(meta.last_update_at || event.resolved_at || event.created_at)?.getTime() || 0;
+    }
+
+    function isActiveMajorEvent(event) {
+      const status = majorEventMeta(event).operational_status;
+      return event.status === "open" && status !== "encerrado";
+    }
+
+    function majorEventStatus(event) {
+      const status = majorEventMeta(event).operational_status || (event.status === "resolved" ? "encerrado" : "monitoramento");
+      const labels = {
+        em_andamento: ["Em andamento", "active"],
+        monitoramento: ["Em monitoramento", "monitoring"],
+        encerrado: ["Encerrado", ""],
+      };
+      return labels[status] || labels.monitoramento;
+    }
+
+    function renderEventList(values, emptyMessage) {
+      const items = Array.isArray(values) ? values.filter(Boolean) : [];
+      return items.length
+        ? `<ul class="event-list">${items.map((value) => `<li>${escapeHtml(value)}</li>`).join("")}</ul>`
+        : `<p>${escapeHtml(emptyMessage)}</p>`;
+    }
+
+    function renderEventTimeline(meta) {
+      const history = Array.isArray(meta.history) ? [...meta.history].reverse().slice(0, 5) : [];
+      if (!history.length) return `<p>O evento está sendo acompanhado desde o primeiro registro confirmado.</p>`;
+      return `<div class="event-timeline">${history.map((item) => `
+        <div class="event-timeline-item">
+          <strong>${escapeHtml(majorEventStatus({ status: item.status === "encerrado" ? "resolved" : "open", metadata: { operational_status: item.status } })[0])} · ${escapeHtml(formatDate(item.at))}</strong>
+          <span>${escapeHtml(item.note || "Atualização operacional registrada.")}</span>
+        </div>
+      `).join("")}</div>`;
+    }
+
+    function renderEventEvidence(meta) {
+      const evidence = Array.isArray(meta.evidence) ? meta.evidence.slice(0, 8) : [];
+      if (!evidence.length) return `<p>As fontes relacionadas ainda estão sendo consolidadas.</p>`;
+      return `<div class="event-evidence-list">${evidence.map((item) => {
+        const url = cleanDisplayText(item.url);
+        const title = escapeHtml(item.title || "Atualização relacionada");
+        return `
+          <article class="event-evidence">
+            ${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${title}</a>` : `<strong>${title}</strong>`}
+            <div class="event-evidence-meta"><span>${escapeHtml(item.source || "Fonte monitorada")}</span><span>${escapeHtml(formatDate(item.published_at))}</span></div>
+          </article>
+        `;
+      }).join("")}</div>`;
+    }
+
+    function canManageMajorEvents() {
+      return ["admin", "manager"].includes(state.profile?.role);
+    }
+
+    function renderPrimaryMajorEvent(event) {
+      const meta = majorEventMeta(event);
+      const [statusLabel, statusClass] = majorEventStatus(event);
+      const infrastructures = Array.isArray(meta.affected_infrastructure) ? meta.affected_infrastructure.filter(Boolean) : [];
+      const location = meta.location || meta.country || "Localização em confirmação";
+      const scope = meta.scope === "internacional" ? "Internacional" : "Nacional";
+      const managementActions = canManageMajorEvents() ? `
+        <div class="event-actions">
+          ${meta.operational_status === "encerrado"
+            ? `<button class="mini-button" type="button" data-event-id="${escapeHtml(event.id)}" data-event-status="em_andamento">Reabrir evento</button>`
+            : `<button class="mini-button danger" type="button" data-event-id="${escapeHtml(event.id)}" data-event-status="encerrado">Encerrar evento</button>`}
+        </div>
+      ` : "";
+      return `
+        <article class="event-hero">
+          <div class="event-hero-main">
+            <div class="event-badges">
+              <span class="event-badge critical">Crítico</span>
+              <span class="event-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
+              <span class="event-badge">${escapeHtml(meta.category || "Evento logístico")}</span>
+              <span class="event-badge">${escapeHtml(scope)}</span>
+              <span class="event-badge">${escapeHtml(location)}</span>
+            </div>
+            <h2>${escapeHtml(event.message || meta.title || "Evento logístico grave")}</h2>
+            <p class="event-lead">Foi identificado um evento ${scope.toLowerCase()} com impacto logístico relevante. ${escapeHtml(meta.summary || meta.operational_impact || "A situação está sendo acompanhada pelas fontes monitoradas.")}</p>
+          </div>
+          <div class="event-metrics">
+            <div class="event-metric"><span>Status</span><strong>${escapeHtml(statusLabel)}</strong></div>
+            <div class="event-metric"><span>Última atualização</span><strong>${escapeHtml(formatDate(meta.last_update_at || event.created_at))}</strong></div>
+            <div class="event-metric"><span>Infraestrutura afetada</span><strong>${escapeHtml(infrastructures.join(" · ") || "Em confirmação")}</strong></div>
+            <div class="event-metric"><span>Confiança da análise</span><strong>${escapeHtml(meta.confidence_label || "Alta")}</strong></div>
+          </div>
+        </article>
+        <div class="event-detail-grid">
+          <div class="event-center">
+            <section class="event-section">
+              <h3>Impacto operacional</h3>
+              <p>${escapeHtml(meta.operational_impact || "O impacto operacional está sendo consolidado.")}</p>
+              ${meta.detour ? `<h4>Alternativa confirmada</h4><p>${escapeHtml(meta.detour)}</p>` : ""}
+              <h4>Ações recomendadas</h4>
+              ${renderEventList(meta.recommended_actions, "Acompanhar as atualizações antes de alterar rotas ou janelas operacionais.")}
+            </section>
+            <section class="event-section">
+              <h3>Linha do tempo</h3>
+              ${renderEventTimeline(meta)}
+            </section>
+            <section class="event-section">
+              <h3>Notícias relacionadas</h3>
+              ${renderEventEvidence(meta)}
+            </section>
+          </div>
+          <aside class="event-section">
+            <h3>Análise operacional</h3>
+            <div class="event-analysis-row"><span>Status operacional</span><strong>${escapeHtml(statusLabel)}</strong></div>
+            <div class="event-analysis-row"><span>Critérios do evento</span><strong>${escapeHtml((meta.why_major || []).join(" · ") || "Gravidade, contexto logístico e impacto operacional confirmados.")}</strong></div>
+            <div class="event-analysis-row"><span>Abrangência</span><strong>${escapeHtml(`${scope} · ${location}`)}</strong></div>
+            <div class="event-analysis-row"><span>Duração estimada</span><strong>${escapeHtml(meta.estimated_duration || "Sem previsão confirmada")}</strong></div>
+            ${managementActions}
+          </aside>
+        </div>
+      `;
+    }
+
+    function renderMajorEvents() {
+      const events = [...(state.majorEvents || [])].sort((a, b) => majorEventUpdatedValue(b) - majorEventUpdatedValue(a));
+      const active = events.filter(isActiveMajorEvent);
+      const closed = events.filter((event) => !isActiveMajorEvent(event));
+      const banner = document.getElementById("activeEventBanner");
+      const count = document.getElementById("activeEventSidebarCount");
+      if (count) count.textContent = String(active.length);
+
+      if (banner) {
+        const event = active[0];
+        banner.hidden = !event;
+        banner.innerHTML = event ? `
+          <div>
+            <span class="event-badge critical">Evento crítico em andamento</span>
+            <h2>${escapeHtml(event.message || "Evento logístico grave")}</h2>
+            <p>${escapeHtml(shortText(majorEventMeta(event).operational_impact || majorEventMeta(event).summary, 190))}</p>
+          </div>
+          <button class="mini-button" type="button" data-route="/central-eventos" data-scroll="clientEventsPage">Acompanhar evento</button>
+        ` : "";
+      }
+
+      const target = document.getElementById("eventCenter");
+      if (!target) return;
+      if (!events.length) {
+        target.innerHTML = `<div class="event-empty"><strong>Nenhum evento grave ativo.</strong><br>Ocorrências comuns continuam disponíveis em Alertas e Notícias.</div>`;
+        return;
+      }
+      const primary = events.find((event) => event.id === state.selectedMajorEventId) || active[0] || events[0];
+      const otherActive = active.filter((event) => event.id !== primary.id);
+      target.innerHTML = renderPrimaryMajorEvent(primary) + (otherActive.length ? `
+        <section class="event-section">
+          <h3>Outros eventos ativos</h3>
+          <div class="event-history-list">${otherActive.map((event) => {
+            const meta = majorEventMeta(event);
+            const [statusLabel, statusClass] = majorEventStatus(event);
+            return `
+              <article class="event-evidence">
+                <div class="event-badges"><span class="event-badge critical">Crítico</span><span class="event-badge ${statusClass}">${escapeHtml(statusLabel)}</span><span class="event-badge">${escapeHtml(meta.scope === "internacional" ? "Internacional" : "Nacional")}</span></div>
+                <h3 style="margin:10px 0 6px;">${escapeHtml(event.message || "Evento logístico grave")}</h3>
+                <p>${escapeHtml(shortText(meta.operational_impact || meta.summary, 220))}</p>
+                <div class="event-actions" style="margin-top:10px;"><button class="mini-button" type="button" data-event-open="${escapeHtml(event.id)}">Abrir evento</button></div>
+              </article>
+            `;
+          }).join("")}</div>
+        </section>
+      ` : "") + (closed.length ? `
+        <section class="event-section">
+          <h3>Eventos encerrados recentemente</h3>
+          <div class="event-history-list">${closed.slice(0, 5).map((event) => `
+            <article class="event-evidence">
+              <strong>${escapeHtml(event.message || "Evento encerrado")}</strong>
+              <div class="event-evidence-meta"><span>Encerrado</span><span>${escapeHtml(formatDate(event.resolved_at || majorEventMeta(event).last_update_at))}</span></div>
+            </article>
+          `).join("")}</div>
+        </section>
+      ` : "");
+    }
+
+    function openMajorEvent(eventId) {
+      state.selectedMajorEventId = eventId;
+      renderMajorEvents();
+      scrollToTarget("eventCenter");
+    }
+
+    async function updateMajorEventStatus(eventId, operationalStatus) {
+      const actionLabel = operationalStatus === "encerrado" ? "encerrar" : "reabrir";
+      const confirmed = await confirmActionModal(
+        `Deseja ${actionLabel} este evento? A alteração ficará visível para todos os usuários.`,
+        operationalStatus === "encerrado" ? "Encerrar evento" : "Reabrir evento",
+        operationalStatus === "encerrado" ? "Encerrar" : "Reabrir"
+      );
+      if (!confirmed) return;
+      try {
+        const response = await fetch("/api/news-summary", {
+          method: "POST",
+          headers: authHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ action: "event-status", event_id: eventId, operational_status: operationalStatus }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "Não foi possível atualizar o evento.");
+        setNotice(operationalStatus === "encerrado" ? "Evento encerrado." : "Evento reaberto.");
+        await refresh();
+      } catch (error) {
+        setNotice(getFriendlyErrorMessage(error, "Não foi possível atualizar o evento."));
+      }
     }
 
     function savedNewsKey(item) {
@@ -3361,6 +3673,7 @@ function showAuthView() {
       const routes = {
         "/dashboard": { view: "occurrences", scroll: "top", page: "alerts" },
         "/alertas": { view: "occurrences", scroll: "top", page: "alerts" },
+        "/central-eventos": { view: "occurrences", scroll: "clientEventsPage", page: "events" },
         "/noticias": { view: "occurrences", scroll: "news", page: "news" },
         "/salvos": { view: "occurrences", scroll: "savedNews", page: "saved" },
         "/resumo-operacional": { view: "occurrences", scroll: "trendsSection", page: "operational" },
@@ -3456,7 +3769,7 @@ function showAuthView() {
         return;
       }
 
-      const knownRoutes = new Set(["/dashboard", "/alertas", "/noticias", "/salvos", "/resumo-operacional", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/developer/clientes", "/developer/fontes", "/developer/relatorios", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
+      const knownRoutes = new Set(["/dashboard", "/alertas", "/central-eventos", "/noticias", "/salvos", "/resumo-operacional", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/developer/clientes", "/developer/fontes", "/developer/relatorios", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
       const target = routeTarget(route);
       if (target.mode && !availableViewModes().includes(target.mode)) {
         setNotice("");
@@ -5303,12 +5616,14 @@ function showAuthView() {
         state.items = [];
         state.recentItems = [];
         state.mapItems = [];
+        state.majorEvents = [];
         state.total = 0;
         state.dataLoadError = getFriendlyErrorMessage(error, "Erro ao carregar dados.");
         setNotice(state.dataLoadError);
       } finally {
         renderStats();
         renderRecentAlerts();
+        renderMajorEvents();
         renderSources();
         renderClientHeaderAndTrends();
         renderNews();
@@ -5549,6 +5864,18 @@ function showAuthView() {
 
     async function handleAppShellClick(event) {
       if (event.target.closest("#sidebar")) return;
+      const eventOpenButton = event.target.closest("[data-event-open]");
+      if (eventOpenButton) {
+        event.preventDefault();
+        openMajorEvent(eventOpenButton.dataset.eventOpen);
+        return;
+      }
+      const eventStatusButton = event.target.closest("[data-event-status][data-event-id]");
+      if (eventStatusButton) {
+        event.preventDefault();
+        await updateMajorEventStatus(eventStatusButton.dataset.eventId, eventStatusButton.dataset.eventStatus);
+        return;
+      }
       const actionButton = event.target.closest("[data-action='weekly-summary']");
       if (actionButton) {
         event.preventDefault();

@@ -1,6 +1,6 @@
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
-const { assertCanUse, json, recordUsage } = require("./_auth");
+const { assertCanUse, json, recordUsage, requireManager, supabaseFetch } = require("./_auth");
 
 function clean(value) {
   return String(value || "")
@@ -177,7 +177,7 @@ function openAiApiKey() {
 
 function publicErrorMessage(error) {
   const message = String(error?.message || "");
-  if (/login|sessao|sessão|perfil|inativo|pacote|recurso|limite|acesso/i.test(message)) return message;
+  if (/login|sessao|sessão|perfil|inativo|pacote|recurso|limite|acesso|evento|status operacional/i.test(message)) return message;
   if (/openai_api_key|invalid_api_key|incorrect api key/i.test(message)) {
     return "A IA ainda nao esta configurada corretamente. Verifique a chave da OpenAI na Vercel.";
   }
@@ -185,6 +185,55 @@ function publicErrorMessage(error) {
     return "A IA recusou a chamada por limite de cota ou billing.";
   }
   return "Nao foi possivel gerar o resumo da noticia. Tente novamente.";
+}
+
+async function readBody(req) {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
+  return chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {};
+}
+
+async function updateMajorEventStatus(req, body) {
+  await requireManager(req);
+  const eventId = clean(body.event_id);
+  const operationalStatus = clean(body.operational_status).toLowerCase();
+  if (!eventId || !["em_andamento", "monitoramento", "encerrado"].includes(operationalStatus)) {
+    throw new Error("Status operacional inválido para o evento.");
+  }
+
+  const response = await supabaseFetch(
+    `/rest/v1/platform_events?id=eq.${encodeURIComponent(eventId)}&event_type=eq.major_logistics_event&select=id,message,status,metadata&limit=1`
+  );
+  const current = (await response.json())[0];
+  if (!current) throw new Error("Evento não encontrado.");
+
+  const now = new Date().toISOString();
+  const metadata = current.metadata && typeof current.metadata === "object" ? current.metadata : {};
+  const history = Array.isArray(metadata.history) ? metadata.history.slice(-11) : [];
+  const notes = {
+    em_andamento: "Evento confirmado em andamento por um responsável da plataforma.",
+    monitoramento: "Evento mantido em monitoramento por um responsável da plataforma.",
+    encerrado: "Evento encerrado por um responsável da plataforma.",
+  };
+  history.push({ at: now, status: operationalStatus, note: notes[operationalStatus] });
+  const dbStatus = operationalStatus === "encerrado" ? "resolved" : "open";
+  const payload = {
+    status: dbStatus,
+    resolved_at: dbStatus === "resolved" ? now : null,
+    metadata: {
+      ...metadata,
+      operational_status: operationalStatus,
+      last_update_at: now,
+      history,
+      status_confirmed_by: "platform_manager",
+    },
+  };
+  await supabaseFetch(`/rest/v1/platform_events?id=eq.${encodeURIComponent(eventId)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify(payload),
+  });
+  return { id: eventId, status: dbStatus, metadata: payload.metadata };
 }
 
 async function generateAiSummary(item) {
@@ -262,12 +311,14 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    const body = await readBody(req);
+    if (body.action === "event-status") {
+      const event = await updateMajorEventStatus(req, body);
+      json(res, 200, { event });
+      return;
+    }
+
     const account = await assertCanUse(req, "ai_summary_individual");
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const body = chunks.length
-      ? JSON.parse(Buffer.concat(chunks.map((chunk) => Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)))).toString("utf8"))
-      : {};
     const item = body.item || body;
     if (!item || !clean(item.title)) {
       res.statusCode = 400;

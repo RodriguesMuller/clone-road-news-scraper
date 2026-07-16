@@ -104,6 +104,38 @@ rss_sources:
     url: "https://blogdocaminhoneiro.com/feed/"
     category: "transporte"
 
+  # Eventos nacionais graves com potencial de interromper corredores, acessos
+  # portuários e o transporte rodoviário de cargas.
+  - name: "Google News - Eventos logísticos Brasil"
+    url: "https://news.google.com/rss/search?q=%28caminhoneiros+OR+%22transporte+de+cargas%22+OR+porto+OR+rodovia%29+%28paralisa%C3%A7%C3%A3o+OR+greve+OR+bloqueio+OR+interdi%C3%A7%C3%A3o+OR+protesto%29+when%3A7d&hl=pt-BR&gl=BR&ceid=BR%3Apt"
+    category: "evento logístico"
+    max_items: 30
+    keywords:
+      - caminhoneiros
+      - paralisação
+      - greve
+      - bloqueio
+      - interdição
+      - porto
+
+  # Infraestruturas internacionais capazes de afetar frete, combustível e
+  # cadeias de suprimentos conectadas ao Brasil.
+  - name: "Google News - Corredores logísticos internacionais"
+    url: "https://news.google.com/rss/search?q=%28%22Strait+of+Hormuz%22+OR+%22Estreito+de+Ormuz%22+OR+%22Suez+Canal%22+OR+%22Red+Sea%22+OR+%22Bab+el-Mandeb%22+OR+%22Panama+Canal%22%29+%28closure+OR+blockade+OR+attack+OR+disruption+OR+closed+OR+bloqueio+OR+ataque+OR+interrup%C3%A7%C3%A3o%29+when%3A7d&hl=pt-BR&gl=BR&ceid=BR%3Apt"
+    category: "logística internacional"
+    max_items: 30
+    keywords:
+      - Strait of Hormuz
+      - Estreito de Ormuz
+      - Hormuz
+      - Suez Canal
+      - Canal de Suez
+      - Red Sea
+      - Mar Vermelho
+      - Bab el-Mandeb
+      - Panama Canal
+      - Canal do Panamá
+
 # ------------------------------------------------------------------------------
 # 3) FONTES HTML  (Band)  —  filtradas pelas keywords acima
 # ------------------------------------------------------------------------------
