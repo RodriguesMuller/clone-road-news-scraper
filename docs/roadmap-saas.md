@@ -819,6 +819,6 @@ foi iniciada.
 
 Branch `main`, Vercel de producao e Supabase de producao nao foram alterados.
 
-Status da Fase 2: implementada e validada no banco de staging; pendente apenas
-da validacao visual do deploy em `road-news-preview.vercel.app` antes do merge
-final em `staging`.
+Status da Fase 2: concluida, integrada na branch `staging` e validada no banco,
+nas APIs e na interface de `road-news-preview.vercel.app`. A promocao foi feita
+somente no projeto Vercel de testes; producao permanece inalterada.
