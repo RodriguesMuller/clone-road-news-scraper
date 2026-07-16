@@ -46,6 +46,18 @@ async function main() {
     assert.ok(!contents.includes(productionProjectRef), `${file} referencia o Supabase de producao`);
   }
 
+  const index = fs.readFileSync(path.join(root, "public/index.html"), "utf8");
+  assert.ok(index.includes("dados exclusivos de staging"));
+  assert.ok(!index.includes("dados de producao disponiveis"));
+  assert.ok(index.includes('loginPassword.value = ""'));
+
+  const bootstrap = fs.readFileSync(
+    path.join(root, "scripts/supabase_staging_bootstrap.sql"),
+    "utf8",
+  );
+  assert.ok(bootstrap.includes("staging.invalid"));
+  assert.ok(!bootstrap.includes(productionProjectRef));
+
   console.log("environment isolation ok");
 }
 

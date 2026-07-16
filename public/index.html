@@ -1031,7 +1031,7 @@
       <div id="headerActions" class="header-actions" hidden></div>
     </div>
   </header>
-  <div id="environmentBanner" class="environment-banner" hidden>AMBIENTE DE TESTES - dados de produção disponíveis somente para leitura</div>
+  <div id="environmentBanner" class="environment-banner" hidden>AMBIENTE DE TESTES - dados exclusivos de staging</div>
 
   <main>
     <section id="authView" class="auth-view" hidden>
@@ -1866,7 +1866,7 @@
     }
 
     function readOnlyMessage() {
-      return "Ambiente de testes em modo somente leitura. Nenhuma alteração foi aplicada ao banco de produção.";
+      return "Ambiente de testes em modo somente leitura. Nenhuma alteração foi aplicada.";
     }
 
     function applyEnvironmentMode() {
@@ -5347,6 +5347,8 @@ function showAuthView() {
         state.activeRoute = "/dashboard";
         state.activeScrollTarget = "top";
         state.pendingPath = "/dashboard";
+        const loginPassword = document.getElementById("loginPassword");
+        if (loginPassword) loginPassword.value = "";
         buttons.forEach((button, index) => {
           button.disabled = false;
           button.textContent = labels[index] || "Sair";
