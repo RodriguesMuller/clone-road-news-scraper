@@ -691,3 +691,77 @@ Regras:
 - Staging integrado testado: nao, bloqueado por falta de Supabase separado.
 - Pronto para merge: documentacao pronta para revisao; Fase 1 ainda nao esta
   liberada ate concluir o gate G0.1.
+
+## 24. Atualizacao do gate G0.1
+
+O gate de isolamento foi concluido em 2026-07-16 antes do inicio da Fase 1:
+
+- projeto Supabase exclusivo para staging criado e configurado;
+- frontend e funcoes serverless passaram a receber a configuracao por ambiente;
+- fallbacks fixos para o projeto de producao foram removidos;
+- `road-news-preview.vercel.app` usa somente as credenciais do staging;
+- staging opera em modo somente leitura para a interface administrativa;
+- schema base, RLS, usuario Admin de teste e seis noticias ficticias foram
+  criados exclusivamente no staging;
+- teste automatico impede a referencia ao identificador do Supabase de
+  producao nos arquivos executados pela aplicacao;
+- Vercel do projeto de testes aceita builds automaticos somente da branch
+  `staging`;
+- branch `main`, Vercel de producao e Supabase de producao nao foram alterados.
+
+Status do gate G0.1: aprovado para testes integrados no staging.
+
+## 25. Entrega da Fase 1 - estabilizacao
+
+### Branch
+
+`feature/phase-1-stability`
+
+### Implementado e validado
+
+- utilitario testavel `getFriendlyErrorMessage(error)` para impedir JSON cru,
+  stack trace, SQL, nomes de secrets, detalhes do Supabase e mensagens tecnicas;
+- mapeamento amigavel para login incorreto, e-mail existente, RLS/permissao,
+  usuario inativo, token expirado e falha de conexao;
+- sanitizacao equivalente no backend administrativo;
+- remocao das declaracoes duplicadas de navegacao e `viewMode` identificadas na
+  auditoria inicial;
+- tela de usuario inativo alinhada ao texto e identidade definidos para a fase;
+- fluxos administrativos, login, convite, recuperacao de senha e resumo
+  individual deixam de repassar `error.message` sem tratamento;
+- sidebar continua como navegacao principal, com Configuracoes somente no
+  rodape e ambientes Cliente, Gestor e Admin separados;
+- barra administrativa superior permanece oculta;
+- login permanece sem Atualizar, sidebar ou Gerar resumo semanal;
+- selects continuam com tema escuro;
+- edicao de usuario permanece em modal proprio, sem `prompt` nativo.
+
+### Tabelas e SQL
+
+Nenhuma tabela foi alterada e nenhum SQL novo foi aplicado nesta fase.
+
+### Variaveis de ambiente
+
+Nenhuma variavel nova foi criada e nenhum secret foi alterado.
+
+### Testes
+
+- isolamento de ambiente e modo somente leitura;
+- convite, rollback e e-mail;
+- utilitario de erros e protecoes estaticas de UX;
+- sintaxe de todas as funcoes JavaScript;
+- 12 testes Python de resumo, limpeza e horario de Brasilia;
+- validacao integrada de login, logout e menus no staging.
+
+### Riscos e pendencias
+
+- o frontend permanece monolitico e deve ser decomposto gradualmente, sem uma
+  refatoracao ampla durante as fases funcionais;
+- os perfis ainda nao possuem isolamento multiempresa formal; isso pertence a
+  Fase 2;
+- Cliente e Gestor reais de dois tenants ainda precisam ser criados na Fase 2
+  para provar RLS e isolamento entre empresas;
+- notificacoes e salvos ainda usam `localStorage`, conforme apontado na Fase 0.
+
+Status da Fase 1: pronta para validacao final e merge em `staging`. A Fase 2 nao
+foi iniciada.
