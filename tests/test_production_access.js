@@ -290,3 +290,118 @@ test("manager can close a major event through the existing secure summary endpoi
   assert.equal(patchedEvent.metadata.status_confirmed_by, "platform_manager");
   assert.match(patchedEvent.metadata.history.at(-1).note, /encerrado por um responsável/i);
 });
+
+test("Minha Rota is rendered only inside the authenticated app and keeps the API key server-side", () => {
+  const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
+  const appStart = html.indexOf('id="appShell"');
+  const routePage = html.indexOf('id="clientRoutePage"');
+  assert.ok(routePage > appStart);
+  assert.match(html, /Minha Rota/);
+  assert.match(html, /\/minha-rota/);
+  assert.match(html, /fetch\("\/api\/news-feed"/);
+  assert.match(html, /weeklyButton\.hidden = state\.activeClientPage === "route"/);
+  assert.doesNotMatch(html, /GOOGLE_ROUTES_API_KEY|GOOGLE_MAPS_API_KEY/);
+  assert.equal(fs.existsSync(path.join(ROOT, "api", "route-analysis.js")), false);
+  const inlineScripts = [...html.matchAll(/<script(?![^>]*src)[^>]*>([\s\S]*?)<\/script>/g)];
+  assert.doesNotThrow(() => new Function(inlineScripts.at(-1)[1]));
+});
+
+test("route analysis combines traffic, route news and the server-side AI without leaking secrets", async () => {
+  process.env.SUPABASE_URL = "https://example.supabase.co";
+  process.env.SUPABASE_ANON_KEY = "anon-test";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "service-test";
+  process.env.GOOGLE_ROUTES_API_KEY = "google-routes-test";
+  process.env.OPENAI_API_KEY = "sk-route-test";
+  process.env.OPENAI_MODEL = "gpt-4.1-mini";
+  const usageWrites = [];
+  global.fetch = async (url, options = {}) => {
+    const value = String(url);
+    const method = options.method || "GET";
+    if (value.endsWith("/auth/v1/user")) return Response.json({ id: "user-1", email: "user@example.com" });
+    if (value.includes("/rest/v1/profiles")) return Response.json([{ id: "user-1", role: "client", status: "active", client_id: "client-1" }]);
+    if (value.includes("/rest/v1/clients")) return Response.json([{ id: "client-1", company_name: "Transportador", status: "active" }]);
+    if (value.includes("/rest/v1/user_packages")) {
+      return Response.json([{ package_id: "package-1", packages: {
+        is_active: true,
+        monthly_news_limit: 100,
+        monthly_ai_summary_limit: 20,
+        can_access_map: true,
+        can_generate_individual_summary: true,
+      } }]);
+    }
+    if (value.includes("/rest/v1/usage_events") && method === "HEAD") {
+      return new Response(null, { status: 200, headers: { "content-range": "0/0" } });
+    }
+    if (value.includes("/rest/v1/usage_events") && method === "POST") {
+      usageWrites.push(JSON.parse(options.body));
+      return new Response(null, { status: 201 });
+    }
+    if (value === "https://routes.googleapis.com/directions/v2:computeRoutes") {
+      const request = JSON.parse(options.body);
+      assert.match(request.origin.address, /Paulínia\/SP, Brasil/);
+      assert.equal(options.headers["X-Goog-Api-Key"], "google-routes-test");
+      return Response.json({ routes: [{
+        distanceMeters: 1034000,
+        duration: "52200s",
+        staticDuration: "50400s",
+        polyline: { encodedPolyline: "_p~iF~ps|U_ulLnnqC_mqNvxq`@" },
+        travelAdvisory: { speedReadingIntervals: [
+          { startPolylinePointIndex: 0, endPolylinePointIndex: 2, speed: "NORMAL" },
+          { startPolylinePointIndex: 2, endPolylinePointIndex: 3, speed: "SLOW" },
+        ] },
+        legs: [{ steps: [{ navigationInstruction: { instructions: "Siga pela BR-364" } }] }],
+      }] });
+    }
+    if (value.includes("/rest/v1/news?select=")) {
+      return Response.json([{
+        title: "Obra causa pare-e-siga na BR-364",
+        summary: "Intervenção exige atenção dos motoristas no trecho.",
+        source: "Fonte rodoviária",
+        category: "rodovia",
+        highway: "BR-364",
+        published_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        url: "https://example.com/noticia",
+      }]);
+    }
+    if (value === "https://api.openai.com/v1/responses") {
+      assert.equal(options.headers.Authorization, "Bearer sk-route-test");
+      return Response.json({
+        output_text: JSON.stringify({
+          status: "atencao",
+          headline: "Rota com ponto de atenção na BR-364",
+          recommendation: "Validar o pare-e-siga antes da liberação.",
+          confidence: "Média",
+          operational_points: ["Há obra relacionada à BR-364."],
+          watch_points: ["Pare-e-siga na BR-364"],
+        }),
+        usage: { input_tokens: 120, output_tokens: 60 },
+      });
+    }
+    throw new Error(`Unexpected fetch: ${method} ${value}`);
+  };
+
+  for (const moduleName of ["_auth.js", "_admin.js", "news-feed.js"]) {
+    const modulePath = path.join(ROOT, "api", moduleName);
+    delete require.cache[require.resolve(modulePath)];
+  }
+  const handler = require(path.join(ROOT, "api", "news-feed.js"));
+  const req = Readable.from([JSON.stringify({ origin: "Paulínia/SP", destination: "Cuiabá/MT" })]);
+  req.method = "POST";
+  req.headers = { authorization: "Bearer session-test" };
+  const response = { statusCode: 0, headers: {}, setHeader(key, value) { this.headers[key] = value; }, end(value) { this.body = value; } };
+  await handler(req, response);
+  const payload = JSON.parse(response.body);
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(payload.route.provider, "Google Routes");
+  assert.equal(payload.route.roads[0], "BR-364");
+  assert.equal(payload.alerts[0].highway, "BR-364");
+  assert.equal(payload.analysis.ai_used, true);
+  assert.equal(payload.analysis.status, "atencao");
+  assert.equal(JSON.stringify(payload).includes("google-routes-test"), false);
+  assert.equal(JSON.stringify(payload).includes("sk-route-test"), false);
+  assert.ok(usageWrites.some((event) => event.event_type === "route_analysis"));
+  assert.ok(usageWrites.some((event) => event.event_type === "news_query"));
+  assert.ok(usageWrites.some((event) => event.event_type === "ai_summary_individual"));
+});

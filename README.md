@@ -80,6 +80,22 @@ O front tambem tem o botao **Gerar resumo semanal**, que chama
 `/api/weekly-summary` no Vercel. Configure `OPENAI_API_KEY` e, se quiser,
 `OPENAI_MODEL` nas variaveis de ambiente do projeto Vercel.
 
+## Minha Rota com trânsito
+
+A tela **Minha Rota** combina três fontes de informação:
+
+- Google Routes API para distância, duração e condição de trânsito no traçado.
+- Notícias das últimas 72 horas no Supabase, cruzadas por rodovia, localidade e
+  proximidade geográfica do trajeto.
+- OpenAI para produzir uma recomendação operacional baseada somente nos dados
+  encontrados. Se a IA estiver indisponível, a tela mantém uma síntese segura
+  baseada em regras.
+
+Na Vercel, configure `GOOGLE_ROUTES_API_KEY` somente em **Environment
+Variables** para Production e Preview. A chave nunca é enviada ao navegador.
+No Google Cloud, habilite a **Routes API**, vincule billing e restrinja a chave
+para uso exclusivo dessa API.
+
 ## Banco de dados
 
 A tabela `news` é criada automaticamente na primeira execução, com constraint

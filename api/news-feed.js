@@ -1,3 +1,6 @@
+const GOOGLE_ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
+const OPENAI_URL = "https://api.openai.com/v1/responses";
+const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
 const { assertCanUse, featureFlagEnabled, featureRule, json, recordUsage, supabaseFetch } = require("./_auth");
 const { adminErrorMessage } = require("./_admin");
 
@@ -7,6 +10,119 @@ const OPTIONAL_SETS = [
   "image_summary,ai_summary,operational_relevance,operational_impact,risk_level,region,country,state,city,highway",
   "",
 ];
+
+function clean(value) {
+  return String(value || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;?/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalize(value) {
+  return clean(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function readDuration(value) {
+  const match = String(value || "").match(/^([\d.]+)s$/);
+  return match ? Math.round(Number(match[1])) : 0;
+}
+
+function decodePolyline(encoded) {
+  const points = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  while (index < String(encoded || "").length) {
+    let result = 0;
+    let shift = 0;
+    let byte;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20 && index <= encoded.length);
+    lat += result & 1 ? ~(result >> 1) : result >> 1;
+    result = 0;
+    shift = 0;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20 && index <= encoded.length);
+    lng += result & 1 ? ~(result >> 1) : result >> 1;
+    points.push([lat / 1e5, lng / 1e5]);
+  }
+  return points;
+}
+
+function haversineKm(a, b) {
+  const toRad = (value) => value * Math.PI / 180;
+  const earthRadius = 6371;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const lat1 = toRad(a[0]);
+  const lat2 = toRad(b[0]);
+  const value = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * earthRadius * Math.asin(Math.sqrt(value));
+}
+
+function distanceToRouteKm(point, routePoints) {
+  if (!routePoints.length) return Infinity;
+  const stride = Math.max(1, Math.floor(routePoints.length / 500));
+  let shortest = Infinity;
+  for (let index = 0; index < routePoints.length; index += stride) {
+    shortest = Math.min(shortest, haversineKm(point, routePoints[index]));
+  }
+  return shortest;
+}
+
+function extractRoads(value) {
+  const matches = clean(value).toUpperCase().match(/\b(?:BR|SP|MG|RJ|RS|SC|PR|BA|GO|MT|MS|PA|PE|CE|ES|RO|TO|MA|PI|RN|PB|AL|SE|AM|AC|RR|AP|DF)[-\s]?\d{2,4}\b/g) || [];
+  return [...new Set(matches.map((road) => road.replace(/\s+/g, "-")))];
+}
+
+function riskForItem(item) {
+  const text = normalize(`${item.title} ${item.summary} ${item.category} ${item.risk_level}`);
+  if (/bloqueio total|interdicao total|queda de barreira|manifestacao|protesto|saque|roubo de carga/.test(text)) return [4, "Crítico"];
+  if (/acidente|bloqueio|interdicao|tombamento|alagamento|tempestade|grande perigo/.test(text)) return [3, "Alto"];
+  if (/lentidao|congestionamento|pare-e-siga|obra|chuva forte|fila/.test(text)) return [2, "Médio"];
+  return [1, "Baixo"];
+}
+
+function categoryForItem(item) {
+  const explicit = clean(item.category);
+  if (explicit && !/^noticia$/i.test(explicit)) return explicit;
+  const text = normalize(`${item.title} ${item.summary} ${item.type}`);
+  if (/acidente|colisao|tombamento|capotamento/.test(text)) return "Acidente";
+  if (/interdicao|bloqueio|pare-e-siga/.test(text)) return "Interdição";
+  if (/obra|manutencao|recuperacao/.test(text)) return "Obra";
+  if (/lentidao|congestionamento|fila/.test(text)) return "Trânsito";
+  if (/chuva|tempestade|alagamento|inmet|barreira/.test(text)) return "Clima";
+  return "Monitoramento";
+}
+
+function trafficBreakdown(intervals) {
+  const totals = { NORMAL: 0, SLOW: 0, TRAFFIC_JAM: 0 };
+  let total = 0;
+  for (const interval of intervals || []) {
+    const start = Number(interval.startPolylinePointIndex || 0);
+    const end = Number(interval.endPolylinePointIndex || start + 1);
+    const weight = Math.max(1, end - start);
+    const speed = totals[interval.speed] == null ? "NORMAL" : interval.speed;
+    totals[speed] += weight;
+    total += weight;
+  }
+  const percent = (value) => total ? Math.round(value / total * 100) : 0;
+  return {
+    normal_percent: percent(totals.NORMAL),
+    slow_percent: percent(totals.SLOW),
+    jam_percent: percent(totals.TRAFFIC_JAM),
+  };
+}
 
 async function fetchRows(suffix) {
   let lastError = null;
@@ -37,40 +153,377 @@ async function fetchMajorEvents() {
   }
 }
 
-module.exports = async function handler(req, res) {
-  if (req.method !== "GET") {
-    json(res, 405, { error: "Method not allowed" });
+function routesApiKey() {
+  const value = String(process.env.GOOGLE_ROUTES_API_KEY || process.env.GOOGLE_MAPS_API_KEY || "").trim();
+  if (!value) throw new Error("GOOGLE_ROUTES_API_KEY_MISSING");
+  if (/\s|\.\.\.|…/.test(value)) throw new Error("GOOGLE_ROUTES_API_KEY_INVALID");
+  return value;
+}
+
+function brazilianAddress(value) {
+  const address = clean(value).slice(0, 160);
+  return /\bbrasil\b/i.test(address) ? address : `${address}, Brasil`;
+}
+
+async function computeRoute(origin, destination) {
+  const response = await fetch(GOOGLE_ROUTES_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": routesApiKey(),
+      "X-Goog-FieldMask": [
+        "routes.distanceMeters",
+        "routes.duration",
+        "routes.staticDuration",
+        "routes.polyline.encodedPolyline",
+        "routes.travelAdvisory.speedReadingIntervals",
+        "routes.legs.steps.navigationInstruction.instructions",
+        "routes.warnings",
+        "routes.description",
+      ].join(","),
+    },
+    body: JSON.stringify({
+      origin: { address: brazilianAddress(origin) },
+      destination: { address: brazilianAddress(destination) },
+      travelMode: "DRIVE",
+      routingPreference: "TRAFFIC_AWARE_OPTIMAL",
+      trafficModel: "BEST_GUESS",
+      computeAlternativeRoutes: false,
+      routeModifiers: { avoidTolls: false, avoidHighways: false, avoidFerries: true },
+      languageCode: "pt-BR",
+      units: "METRIC",
+      extraComputations: ["TRAFFIC_ON_POLYLINE"],
+    }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = clean(payload?.error?.message || payload?.error?.status || "");
+    if (response.status === 403) throw new Error("GOOGLE_ROUTES_API_KEY_DENIED");
+    if (response.status === 429) throw new Error("GOOGLE_ROUTES_QUOTA");
+    if (response.status === 400 || /address|route|waypoint/i.test(detail)) throw new Error("GOOGLE_ROUTES_ADDRESS");
+    throw new Error("GOOGLE_ROUTES_UNAVAILABLE");
+  }
+  const route = payload.routes?.[0];
+  if (!route?.polyline?.encodedPolyline) throw new Error("GOOGLE_ROUTES_NOT_FOUND");
+  return route;
+}
+
+function routeKeywords(origin, destination) {
+  const ignored = new Set(["brasil", "estado", "cidade", "rodovia", "origem", "destino"]);
+  return [...new Set(normalize(`${origin} ${destination}`).split(/[^a-z0-9]+/).filter((token) => token.length >= 4 && !ignored.has(token)))];
+}
+
+function matchRouteNews(items, route, origin, destination) {
+  const instructions = (route.legs || []).flatMap((leg) => (leg.steps || []).map((step) => clean(step.navigationInstruction?.instructions)));
+  const routeRoads = extractRoads(`${route.description || ""} ${instructions.join(" ")}`);
+  const routeRoadSet = new Set(routeRoads);
+  const keywords = routeKeywords(origin, destination);
+  const routePoints = decodePolyline(route.polyline?.encodedPolyline);
+  const now = Date.now();
+
+  const matches = items.map((item) => {
+    const text = `${item.title || ""} ${item.summary || ""} ${item.highway || ""} ${item.city || ""} ${item.state || ""} ${item.region || ""}`;
+    const itemRoads = extractRoads(text);
+    const roadMatch = itemRoads.find((road) => routeRoadSet.has(road));
+    const normalized = normalize(text);
+    const endpointMatch = keywords.find((keyword) => normalized.includes(keyword));
+    const lat = Number(item.latitude);
+    const lng = Number(item.longitude);
+    const precision = normalize(item.geo_precision);
+    const preciseGeo = Number.isFinite(lat) && Number.isFinite(lng) && !/state|estado|approximate_state/.test(precision);
+    const corridorDistanceKm = preciseGeo ? distanceToRouteKm([lat, lng], routePoints) : Infinity;
+    const corridorMatch = corridorDistanceKm <= 45;
+    if (!roadMatch && !corridorMatch && !endpointMatch) return null;
+    const [riskRank, riskLevel] = riskForItem(item);
+    const publishedAt = clean(item.published_at || item.scraped_at || item.created_at);
+    const ageHours = publishedAt ? Math.max(0, (now - new Date(publishedAt).getTime()) / 36e5) : 999;
+    return {
+      title: clean(item.title),
+      summary: clean(item.ai_summary || item.summary).slice(0, 360),
+      source: clean(item.source),
+      category: categoryForItem(item),
+      risk_level: riskLevel,
+      highway: roadMatch || clean(item.highway) || itemRoads[0] || "",
+      region: clean(item.city || item.region || item.state),
+      published_at: publishedAt,
+      age_hours: Math.round(ageHours * 10) / 10,
+      url: clean(item.url),
+      latitude: preciseGeo ? lat : null,
+      longitude: preciseGeo ? lng : null,
+      match_reason: roadMatch ? `Rodovia ${roadMatch}` : corridorMatch ? `A ${Math.round(corridorDistanceKm)} km do trajeto` : `Localidade ${endpointMatch}`,
+      _riskRank: riskRank,
+    };
+  }).filter(Boolean);
+
+  matches.sort((a, b) => (b._riskRank - a._riskRank) || (a.age_hours - b.age_hours));
+  return {
+    routeRoads,
+    alerts: matches.slice(0, 12).map(({ _riskRank, ...item }) => item),
+  };
+}
+
+function fallbackRouteAnalysis(context) {
+  const blocking = context.alerts.filter((item) => /bloqueio|interdi|queda de barreira|manifestacao|protesto/i.test(`${item.title} ${item.summary}`));
+  const works = context.alerts.filter((item) => /obra|manutencao|pare-e-siga/i.test(`${item.title} ${item.summary}`));
+  const severe = context.alerts.filter((item) => /Crítico|Alto/i.test(item.risk_level));
+  const hasJam = context.traffic.jam_percent > 0;
+  const hasSlow = context.traffic.slow_percent > 8;
+  const status = blocking.length || hasJam ? "validacao_obrigatoria" : severe.length || hasSlow ? "atencao" : "sem_restricao_confirmada";
+  const headline = status === "validacao_obrigatoria"
+    ? "Validação operacional necessária antes da liberação"
+    : status === "atencao"
+      ? "Rota disponível para análise com pontos de atenção"
+      : "Sem restrição crítica confirmada nas fontes monitoradas";
+  const recommendation = blocking.length
+    ? `Validar o trecho antes da liberação: ${blocking[0].title}.`
+    : hasJam
+      ? "Há trecho congestionado indicado pela API. Considere ajustar o horário de saída e valide as condições próximas à liberação."
+      : context.alerts.length
+        ? "Acompanhe as ocorrências relacionadas durante o deslocamento e confirme mudanças antes da saída."
+        : "Não há bloqueio confirmado nos dados analisados. Mantenha a checagem operacional antes da saída, pois as fontes podem ter atraso de atualização.";
+  const points = [
+    `${context.traffic.normal_percent}% do traçado com fluxo normal, ${context.traffic.slow_percent}% lento e ${context.traffic.jam_percent}% congestionado.`,
+    context.alerts.length ? `${context.alerts.length} ocorrência(s) relacionada(s) encontrada(s) nas últimas 72h.` : "Nenhuma ocorrência diretamente relacionada foi encontrada nas últimas 72h.",
+    blocking.length ? `${blocking.length} registro(s) com possível bloqueio ou interdição exigem validação.` : "Nenhum bloqueio foi confirmado pelas fontes monitoradas.",
+  ];
+  if (works.length) points.push(`${works.length} registro(s) de obra, manutenção ou pare-e-siga na rota.`);
+  return {
+    status,
+    headline,
+    recommendation,
+    confidence: context.alerts.length || context.traffic.slow_percent || context.traffic.jam_percent ? "Média" : "Baixa",
+    operational_points: points.slice(0, 4),
+    watch_points: context.alerts.slice(0, 3).map((item) => item.title),
+    ai_used: false,
+  };
+}
+
+function extractResponseText(data) {
+  if (data.output_text) return data.output_text;
+  return (data.output || []).flatMap((output) => output.content || []).map((content) => content.text || "").join("").trim();
+}
+
+async function generateRouteAnalysis(context) {
+  const fallback = fallbackRouteAnalysis(context);
+  const apiKey = String(process.env.OPENAI_API_KEY || "").trim();
+  if (!apiKey || !apiKey.startsWith("sk-") || /\s|\.\.\.|…/.test(apiKey)) return fallback;
+  const model = process.env.OPENAI_MODEL || DEFAULT_OPENAI_MODEL;
+  const compactContext = {
+    origin: context.origin,
+    destination: context.destination,
+    distance_km: Math.round(context.distance_meters / 1000),
+    duration_minutes: Math.round(context.duration_seconds / 60),
+    delay_minutes: Math.round(context.delay_seconds / 60),
+    traffic: context.traffic,
+    route_roads: context.route_roads,
+    alerts: context.alerts.map(({ title, summary, source, category, risk_level, highway, region, published_at, age_hours, match_reason }) => ({
+      title, summary, source, category, risk_level, highway, region, published_at, age_hours, match_reason,
+    })),
+  };
+  try {
+    const response = await fetch(OPENAI_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        store: false,
+        max_output_tokens: 700,
+        text: {
+          format: {
+            type: "json_schema",
+            name: "route_operational_analysis",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                status: { type: "string", enum: ["validacao_obrigatoria", "atencao", "sem_restricao_confirmada"] },
+                headline: { type: "string" },
+                recommendation: { type: "string" },
+                confidence: { type: "string", enum: ["Alta", "Média", "Baixa"] },
+                operational_points: { type: "array", maxItems: 4, items: { type: "string" } },
+                watch_points: { type: "array", maxItems: 3, items: { type: "string" } },
+              },
+              required: ["status", "headline", "recommendation", "confidence", "operational_points", "watch_points"],
+            },
+          },
+        },
+        input: [
+          {
+            role: "developer",
+            content: [{
+              type: "input_text",
+              text: "Você é analista operacional de transporte rodoviário de cargas no Brasil. Avalie somente os dados fornecidos. Não invente bloqueios, acidentes, desvios, rodovias ou condições. Trânsito vem da API de rota; bloqueios, obras e acidentes vêm das fontes monitoradas. Notícias antigas ou sem relação direta não podem justificar retenção. Não trate ausência de notícia como garantia de rota livre. Escreva em português do Brasil, de forma objetiva para uma liberação de veículo.",
+            }],
+          },
+          { role: "user", content: [{ type: "input_text", text: JSON.stringify(compactContext) }] },
+        ],
+      }),
+    });
+    if (!response.ok) return fallback;
+    const responseData = await response.json();
+    const parsed = JSON.parse(extractResponseText(responseData));
+    return {
+      ...fallback,
+      ...parsed,
+      ai_used: true,
+      _usage: responseData.usage || null,
+      _model: model,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+async function readBody(req) {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
+  return chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {};
+}
+
+function routePublicError(error) {
+  const message = String(error?.message || "");
+  if (/GOOGLE_ROUTES_API_KEY_MISSING/.test(message)) return "A análise com trânsito ainda não está configurada. Adicione GOOGLE_ROUTES_API_KEY na Vercel.";
+  if (/GOOGLE_ROUTES_API_KEY_INVALID|GOOGLE_ROUTES_API_KEY_DENIED/.test(message)) return "A chave da API de rotas não foi aceita. Revise a configuração na Vercel e faça um novo deploy.";
+  if (/GOOGLE_ROUTES_QUOTA/.test(message)) return "A API de rotas atingiu o limite de uso. Tente novamente mais tarde.";
+  if (/GOOGLE_ROUTES_ADDRESS|GOOGLE_ROUTES_NOT_FOUND/.test(message)) return "Não foi possível localizar uma rota rodoviária entre a origem e o destino informados.";
+  if (/login|sessao|sessão|perfil|inativo|pacote|limite|mapa|acesso/i.test(message)) return message;
+  return "Não foi possível analisar a rota agora. Tente novamente.";
+}
+
+async function handleRouteAnalysis(req, res) {
+  await assertCanUse(req, "map_access");
+  const account = await assertCanUse(req, "news_query");
+  const body = await readBody(req);
+  const origin = clean(body.origin);
+  const destination = clean(body.destination);
+  if (origin.length < 3 || destination.length < 3 || origin.length > 160 || destination.length > 160) {
+    json(res, 400, { error: "Informe uma origem e um destino válidos." });
     return;
   }
+  if (normalize(origin) === normalize(destination)) {
+    json(res, 400, { error: "Origem e destino precisam ser diferentes." });
+    return;
+  }
+
+  const route = await computeRoute(origin, destination);
+  const since72h = encodeURIComponent(new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString());
+  const recentRows = await fetchRows(`&created_at=gte.${since72h}&order=created_at.desc&limit=350`);
+  const matched = matchRouteNews(recentRows, route, origin, destination);
+  const intervals = route.travelAdvisory?.speedReadingIntervals || [];
+  const durationSeconds = readDuration(route.duration);
+  const staticDurationSeconds = readDuration(route.staticDuration);
+  const context = {
+    origin,
+    destination,
+    distance_meters: Number(route.distanceMeters || 0),
+    duration_seconds: durationSeconds,
+    static_duration_seconds: staticDurationSeconds,
+    delay_seconds: Math.max(0, durationSeconds - staticDurationSeconds),
+    traffic: trafficBreakdown(intervals),
+    route_roads: matched.routeRoads,
+    alerts: matched.alerts,
+  };
+
+  let aiAllowed = true;
   try {
-    const account = await assertCanUse(req, "news_query");
-    const pkg = account.activePackage?.packages || null;
-    const monthlyNewsLimit = !account.authEnabled || account.isPrivileged ? 700 : Number(pkg?.monthly_news_limit || 0);
-    const canAccessMap = !account.authEnabled || account.isPrivileged || featureFlagEnabled(pkg, featureRule("map_access"));
+    await assertCanUse(req, "ai_summary_individual");
+  } catch {
+    aiAllowed = false;
+  }
+  const analysis = aiAllowed ? await generateRouteAnalysis(context) : fallbackRouteAnalysis(context);
 
-    const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-    const since30d = encodeURIComponent(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-    const cap = Math.max(1, Math.min(monthlyNewsLimit, 700));
-    const [latestNews, latestInmet, recentRows, mapRows, majorEvents, countResponse] = await Promise.all([
-      fetchRows(`&order=created_at.desc&limit=${Math.min(50, cap)}`),
-      fetchRows(`&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=${Math.min(20, cap)}`),
-      fetchRows(`&created_at=gte.${since24h}&order=created_at.desc&limit=${Math.min(300, cap)}`),
-      canAccessMap ? fetchRows(`&created_at=gte.${since30d}&order=created_at.desc&limit=${cap}`) : Promise.resolve([]),
-      fetchMajorEvents(),
-      supabaseFetch("/rest/v1/news?select=id", { method: "HEAD", headers: { Prefer: "count=exact" } }),
-    ]);
-
-    await recordUsage(account, "news_query", {
-      metadata: {
-        loaded_latest: latestNews.length,
-        loaded_recent: recentRows.length,
-        loaded_map: mapRows.length,
-      },
+  await recordUsage(account, "route_analysis", {
+    metadata: {
+      origin,
+      destination,
+      alerts: matched.alerts.length,
+      ai_used: Boolean(analysis.ai_used),
+    },
+  });
+  await recordUsage(account, "news_query", {
+    metadata: { source: "route-analysis", origin, destination },
+  });
+  if (analysis.ai_used) {
+    await recordUsage(account, "ai_summary_individual", {
+      tokens_input: analysis._usage?.input_tokens ?? null,
+      tokens_output: analysis._usage?.output_tokens ?? null,
+      model: analysis._model,
+      metadata: { source: "route-analysis", origin, destination },
     });
+  }
 
-    const total = Number((countResponse.headers.get("content-range") || "0/0").split("/")[1] || 0);
-    json(res, 200, { latestNews, latestInmet, recentRows, mapRows, majorEvents, total });
+  const { _usage, _model, ...publicAnalysis } = analysis;
+  json(res, 200, {
+    route: {
+      provider: "Google Routes",
+      origin,
+      destination,
+      distance_meters: context.distance_meters,
+      duration_seconds: context.duration_seconds,
+      static_duration_seconds: context.static_duration_seconds,
+      delay_seconds: context.delay_seconds,
+      polyline: route.polyline.encodedPolyline,
+      traffic_intervals: intervals,
+      traffic: context.traffic,
+      roads: matched.routeRoads,
+      warnings: (route.warnings || []).map(clean).filter(Boolean),
+      updated_at: new Date().toISOString(),
+    },
+    alerts: matched.alerts,
+    analysis: {
+      ...publicAnalysis,
+      ai_available: aiAllowed,
+    },
+    data_window_hours: 72,
+  });
+}
+
+async function handleNewsFeed(req, res) {
+  const account = await assertCanUse(req, "news_query");
+  const pkg = account.activePackage?.packages || null;
+  const monthlyNewsLimit = !account.authEnabled || account.isPrivileged ? 700 : Number(pkg?.monthly_news_limit || 0);
+  const canAccessMap = !account.authEnabled || account.isPrivileged || featureFlagEnabled(pkg, featureRule("map_access"));
+
+  const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+  const since30d = encodeURIComponent(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+  const cap = Math.max(1, Math.min(monthlyNewsLimit, 700));
+  const [latestNews, latestInmet, recentRows, mapRows, majorEvents, countResponse] = await Promise.all([
+    fetchRows(`&order=created_at.desc&limit=${Math.min(50, cap)}`),
+    fetchRows(`&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=${Math.min(20, cap)}`),
+    fetchRows(`&created_at=gte.${since24h}&order=created_at.desc&limit=${Math.min(300, cap)}`),
+    canAccessMap ? fetchRows(`&created_at=gte.${since30d}&order=created_at.desc&limit=${cap}`) : Promise.resolve([]),
+    fetchMajorEvents(),
+    supabaseFetch("/rest/v1/news?select=id", { method: "HEAD", headers: { Prefer: "count=exact" } }),
+  ]);
+
+  await recordUsage(account, "news_query", {
+    metadata: {
+      loaded_latest: latestNews.length,
+      loaded_recent: recentRows.length,
+      loaded_map: mapRows.length,
+    },
+  });
+
+  const total = Number((countResponse.headers.get("content-range") || "0/0").split("/")[1] || 0);
+  json(res, 200, { latestNews, latestInmet, recentRows, mapRows, majorEvents, total });
+}
+
+module.exports = async function handler(req, res) {
+  try {
+    if (req.method === "POST") {
+      await handleRouteAnalysis(req, res);
+      return;
+    }
+    if (req.method === "GET") {
+      await handleNewsFeed(req, res);
+      return;
+    }
+    json(res, 405, { error: "Method not allowed" });
   } catch (error) {
-    json(res, 403, { error: adminErrorMessage(error) || "Nao foi possivel carregar noticias." });
+    const message = req.method === "POST"
+      ? routePublicError(error)
+      : adminErrorMessage(error) || "Nao foi possivel carregar noticias.";
+    json(res, /origem|destino|diferentes/i.test(message) ? 400 : 403, { error: message });
   }
 };

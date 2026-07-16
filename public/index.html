@@ -882,6 +882,119 @@
       color: #03120d;
       font-weight: 950;
     }
+    .route-query-panel {
+      border: 1px solid rgba(32, 242, 155, .26);
+      border-top: 3px solid var(--color-primary);
+      border-radius: 8px;
+      background: linear-gradient(145deg, rgba(11, 42, 32, .96), rgba(3, 18, 13, .96));
+      box-shadow: var(--shadow-panel);
+      padding: 18px;
+    }
+    .route-query-head, .route-result-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .route-query-head h2, .route-result-head h2 {
+      margin: 0 0 5px;
+      color: var(--color-text);
+      font-size: 18px;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .route-query-head p, .route-result-head p { margin: 0; color: var(--color-muted); font-size: 13px; line-height: 1.45; }
+    .route-form-grid {
+      display: grid;
+      grid-template-columns: minmax(210px, 1fr) 42px minmax(210px, 1fr) minmax(150px, .52fr) auto;
+      gap: 10px;
+      align-items: end;
+      margin-top: 16px;
+    }
+    .route-swap-button {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      border: 1px solid rgba(32, 242, 155, .28);
+      background: rgba(32, 242, 155, .10);
+      color: var(--color-primary);
+      box-shadow: none;
+      font-size: 20px;
+    }
+    .route-submit { min-height: 42px; white-space: nowrap; }
+    .route-status {
+      margin-top: 12px;
+      border: 1px solid rgba(130, 170, 255, .32);
+      border-radius: 7px;
+      background: rgba(130, 170, 255, .10);
+      color: #dce6ff;
+      padding: 11px 12px;
+      font-size: 13px;
+    }
+    .route-status.error { border-color: rgba(255, 100, 100, .38); background: rgba(255, 100, 100, .11); color: #ffd2d2; }
+    .route-result { display: grid; gap: 14px; }
+    .route-result[hidden], .route-status[hidden] { display: none !important; }
+    .route-live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 28px;
+      padding: 5px 9px;
+      border: 1px solid rgba(32, 242, 155, .32);
+      border-radius: 999px;
+      background: rgba(32, 242, 155, .10);
+      color: #b6ffdd;
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .route-live-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--color-primary); box-shadow: 0 0 0 4px rgba(32, 242, 155, .10); }
+    .route-kpis {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      border: 1px solid var(--color-card-border);
+      border-radius: 8px;
+      background: rgba(255,255,255,.04);
+      overflow: hidden;
+    }
+    .route-kpi { min-width: 0; padding: 14px; border-right: 1px solid var(--color-border-soft); }
+    .route-kpi:last-child { border-right: 0; }
+    .route-kpi span { display: block; color: var(--color-muted); font-size: 9px; font-weight: 950; letter-spacing: .10em; text-transform: uppercase; }
+    .route-kpi strong { display: block; margin-top: 7px; color: var(--color-text); font-size: 22px; line-height: 1.05; overflow-wrap: anywhere; }
+    .route-kpi small { display: block; margin-top: 5px; color: var(--color-muted); font-size: 11px; }
+    .route-main-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(290px, .72fr); gap: 14px; align-items: stretch; }
+    .route-map-shell, .route-decision, .route-alerts-panel {
+      border: 1px solid var(--color-card-border);
+      border-radius: 8px;
+      background: rgba(255,255,255,.045);
+      overflow: hidden;
+    }
+    .route-map-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-bottom: 1px solid var(--color-border-soft); }
+    .route-map-head strong { color: var(--color-text); font-size: 13px; }
+    .route-legend { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--color-muted); font-size: 10px; font-weight: 800; }
+    .route-legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .route-legend i { width: 16px; height: 4px; border-radius: 999px; display: inline-block; }
+    #routeMap { width: 100%; height: 460px; min-height: 420px; background: #03120d; }
+    .route-decision { padding: 16px; display: grid; align-content: start; gap: 13px; }
+    .route-decision-label { color: var(--color-primary); font-size: 10px; font-weight: 950; letter-spacing: .12em; text-transform: uppercase; }
+    .route-decision h3 { margin: 0; color: var(--color-text); font-size: 21px; line-height: 1.18; }
+    .route-decision p { margin: 0; color: var(--color-muted-strong); font-size: 13px; line-height: 1.52; }
+    .route-decision-status { width: fit-content; border-radius: 999px; padding: 6px 9px; font-size: 10px; font-weight: 950; letter-spacing: .06em; text-transform: uppercase; }
+    .route-decision-status.ok { color: #b6ffdd; border: 1px solid rgba(32,242,155,.4); background: rgba(32,242,155,.12); }
+    .route-decision-status.attention { color: #ffe3a6; border: 1px solid rgba(245,184,75,.42); background: rgba(245,184,75,.12); }
+    .route-decision-status.critical { color: #ffd1d1; border: 1px solid rgba(255,100,100,.46); background: rgba(255,100,100,.13); }
+    .route-points { margin: 0; padding-left: 18px; display: grid; gap: 7px; }
+    .route-points li { color: var(--color-muted-strong); font-size: 12px; line-height: 1.42; }
+    .route-roads { display: flex; flex-wrap: wrap; gap: 6px; }
+    .route-roads span { border: 1px solid rgba(32,242,155,.28); border-radius: 999px; background: rgba(32,242,155,.09); color: #b6ffdd; padding: 5px 8px; font-size: 10px; font-weight: 900; }
+    .route-alerts-panel { padding: 16px; }
+    .route-alert-list { display: grid; gap: 9px; margin-top: 12px; }
+    .route-alert-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 11px; align-items: start; border-top: 1px solid var(--color-border-soft); padding-top: 11px; }
+    .route-alert-item:first-child { border-top: 0; padding-top: 0; }
+    .route-alert-item h3 { margin: 0 0 5px; color: var(--color-text); font-size: 14px; line-height: 1.35; }
+    .route-alert-item p { margin: 0; color: var(--color-muted); font-size: 12px; line-height: 1.42; }
+    .route-alert-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; color: var(--color-muted); font-size: 10px; font-weight: 800; }
+    .route-empty { border: 1px dashed rgba(32,242,155,.22); border-radius: 8px; padding: 18px; color: var(--color-muted-strong); text-align: center; }
     .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(1, 8, 6, .82); padding: 18px; z-index: 10; backdrop-filter: blur(8px); }
     .modal.open { display: flex; }
     .modal-card { width: min(100%, 980px); max-height: 94vh; overflow: auto; background: #071b14; border-radius: 8px; border: 1px solid rgba(32, 242, 155, .24); box-shadow: 0 24px 80px rgba(0,0,0,.48); }
@@ -892,6 +1005,7 @@
     .canvas-wrap { background: #03120d; padding: 16px; display: grid; place-items: center; }
     #shareCanvas { width: min(100%, 720px); height: auto; border-radius: 6px; box-shadow: 0 14px 42px rgba(0,0,0,.36); }
     .weekly-fab { position: fixed; right: 22px; bottom: 22px; z-index: 8; box-shadow: 0 16px 38px rgba(17, 217, 129, .22); }
+    .weekly-fab[hidden] { display: none !important; }
     .weekly-body { padding: 18px; display: grid; gap: 14px; }
     .modal-form-body { padding: 18px; display: grid; gap: 14px; }
     .modal-form-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
@@ -933,7 +1047,15 @@
     .weekly-footer { border-top: 1px solid var(--color-border-soft); padding-top: 10px; color: var(--color-muted); font-size: 12px; }
     .weekly-loading { padding: 26px; color: var(--color-muted); }
     @media (max-width: 920px) { .weekly-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 820px) { .stats, .alert-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout, .overview-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 1040px) {
+      .route-form-grid { grid-template-columns: minmax(190px, 1fr) 42px minmax(190px, 1fr); }
+      .route-form-grid .route-vehicle-field, .route-form-grid .route-submit { grid-column: auto; }
+      .route-submit { width: 100%; }
+      .route-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .route-kpi:nth-child(3) { border-right: 0; }
+      .route-kpi:nth-child(-n+3) { border-bottom: 1px solid var(--color-border-soft); }
+    }
+    @media (max-width: 820px) { .stats, .alert-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .layout, .overview-grid, .route-main-grid { grid-template-columns: 1fr; } }
     @media (max-width: 720px) {
       .weekly-kpis, .weekly-grid { grid-template-columns: 1fr; }
       .client-filter-grid { grid-template-columns: 1fr; }
@@ -970,6 +1092,15 @@
       .map-title-row { align-items: flex-start; }
       .map-controls, .map-select, .map-controls button { width: 100%; }
       #roadMap { min-height: 460px; height: 62vh; }
+      .route-form-grid { grid-template-columns: 1fr; }
+      .route-swap-button { transform: rotate(90deg); }
+      .route-form-grid .route-vehicle-field, .route-form-grid .route-submit { grid-column: 1; }
+      .route-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .route-kpi:nth-child(n) { border-right: 1px solid var(--color-border-soft); border-bottom: 1px solid var(--color-border-soft); }
+      .route-kpi:nth-child(2n) { border-right: 0; }
+      .route-kpi:last-child { border-bottom: 0; }
+      #routeMap { height: 430px; min-height: 390px; }
+      .route-alert-item { grid-template-columns: 1fr; }
     }
     @media (max-width: 640px) {
       .form-row { grid-template-columns: 1fr; }
@@ -991,6 +1122,9 @@
       .event-metrics { grid-template-columns: 1fr; }
       .event-metric:nth-child(n) { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.10); }
       .event-metric:last-child { border-bottom: 0; }
+      .route-kpis { grid-template-columns: 1fr; }
+      .route-kpi:nth-child(n) { border-right: 0; border-bottom: 1px solid var(--color-border-soft); }
+      .route-kpi:last-child { border-bottom: 0; }
     }
     @media print {
       @page { size: A4; margin: 8mm; }
@@ -1244,6 +1378,36 @@
           <div id="eventCenter" class="event-center">
             <div class="event-empty">Carregando eventos operacionais...</div>
           </div>
+        </section>
+
+        <section id="clientRoutePage" class="client-page" data-client-page="route">
+          <section class="route-query-panel">
+            <div class="route-query-head">
+              <div>
+                <h2>Analisar uma rota agora</h2>
+                <p>Combine condições de trânsito da rota com ocorrências monitoradas pelo Road News. O traçado não considera restrições específicas de peso, altura ou circulação do veículo.</p>
+              </div>
+              <span class="route-live-pill">Trânsito consultado na análise</span>
+            </div>
+            <form id="routeAnalysisForm" class="route-form-grid">
+              <div class="field">
+                <label for="routeOrigin">Origem</label>
+                <input id="routeOrigin" type="text" maxlength="160" placeholder="Ex.: Paulínia/SP" autocomplete="off" required>
+              </div>
+              <button id="routeSwapButton" class="route-swap-button" type="button" aria-label="Inverter origem e destino" title="Inverter origem e destino">↔</button>
+              <div class="field">
+                <label for="routeDestination">Destino</label>
+                <input id="routeDestination" type="text" maxlength="160" placeholder="Ex.: Cuiabá/MT" autocomplete="off" required>
+              </div>
+              <div class="field route-vehicle-field">
+                <label for="routeVehicle">Operação</label>
+                <select id="routeVehicle"><option value="truck">Caminhão</option></select>
+              </div>
+              <button id="routeSubmitButton" class="route-submit" type="submit">Analisar rota</button>
+            </form>
+            <div id="routeAnalysisStatus" class="route-status" role="status" aria-live="polite" hidden></div>
+          </section>
+          <div id="routeAnalysisResult" class="route-result" hidden></div>
         </section>
 
         <section id="clientSavedPage" class="client-page" data-client-page="saved">
@@ -1798,6 +1962,11 @@
         ufFilter: "",
         accessRecorded: false,
       },
+      route: {
+        instance: null,
+        layers: null,
+        data: null,
+      },
     };
 
     const VIEW_MODE_KEY = "roadnews_viewmode";
@@ -1808,13 +1977,14 @@
       news: { title: "Notícias", subtitle: "Busca, filtros e acompanhamento das notícias recentes." },
       alerts: { title: "Alertas", subtitle: "Ocorrências recentes com impacto operacional." },
       events: { title: "Central de Evento", subtitle: "Acompanhamento de eventos graves com impacto logístico confirmado." },
+      route: { title: "Minha Rota", subtitle: "Condição de trânsito, ocorrências relacionadas e recomendação para a liberação." },
       saved: { title: "Salvos", subtitle: "Notícias marcadas para acompanhar depois." },
       operational: { title: "Resumo operacional", subtitle: "Tendências, regiões, rodovias e riscos do período." },
       sources: { title: "Fontes", subtitle: "Fontes monitoradas pelo Road News." },
       reports: { title: "Relatórios", subtitle: "Resumo semanal e materiais executivos." },
       settings: { title: "Configurações", subtitle: "Preferências básicas do ambiente Cliente." },
     };
-    const CLIENT_ROUTES = new Set(["/dashboard", "/noticias", "/mapa", "/alertas", "/central-eventos", "/salvos", "/resumo-operacional", "/fontes", "/configuracoes"]);
+    const CLIENT_ROUTES = new Set(["/dashboard", "/noticias", "/mapa", "/minha-rota", "/alertas", "/central-eventos", "/salvos", "/resumo-operacional", "/fontes", "/configuracoes"]);
     const VIEW_MODES = {
       client: "Cliente",
       manager: "Gestor da plataforma",
@@ -1829,6 +1999,7 @@
       sparkles: '<path d="M12 3 9.5 8.5 4 11l5.5 2.5L12 19l2.5-5.5L20 11l-5.5-2.5L12 3Z"></path><path d="M5 3v4"></path><path d="M3 5h4"></path><path d="M19 17v4"></path><path d="M17 19h4"></path>',
       calendar: '<rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M3 10h18"></path><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path>',
       map: '<path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3-6-3Z"></path><path d="M9 3v15"></path><path d="M15 6v15"></path>',
+      route: '<circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="5" r="2"></circle><path d="M8 19h3a3 3 0 0 0 3-3v-1a3 3 0 0 0-3-3H9a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h7"></path>',
       settings: '<circle cx="12" cy="12" r="3"></circle><path d="M12 2v3"></path><path d="M12 19v3"></path><path d="M2 12h3"></path><path d="M19 12h3"></path><path d="m4.9 4.9 2.1 2.1"></path><path d="m17 17 2.1 2.1"></path><path d="m19.1 4.9-2.1 2.1"></path><path d="m7 17-2.1 2.1"></path>',
       building: '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18"></path><path d="M6 12H4a2 2 0 0 0-2 2v8"></path><path d="M18 9h2a2 2 0 0 1 2 2v11"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path>',
       users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>',
@@ -1848,6 +2019,7 @@
           { label: "Central de Evento", icon: "event", route: "/central-eventos", view: "occurrences", scroll: "clientEventsPage", countId: "activeEventSidebarCount" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
+          { label: "Minha Rota", icon: "route", route: "/minha-rota", view: "occurrences", scroll: "clientRoutePage", feature: "map" },
           { label: "Salvos", icon: "bookmark", route: "/salvos", view: "occurrences", scroll: "savedNews" },
           { label: "Fontes", icon: "rss", route: "/fontes", view: "occurrences", scroll: "clientSourcesSection" },
           { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
@@ -1859,6 +2031,7 @@
           { label: "Central de Evento", icon: "event", route: "/central-eventos", view: "occurrences", scroll: "clientEventsPage", countId: "activeEventSidebarCount" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
+          { label: "Minha Rota", icon: "route", route: "/minha-rota", view: "occurrences", scroll: "clientRoutePage", feature: "map" },
           { label: "Fontes", icon: "rss", route: "/fontes-gestor", view: "admin", scroll: "sourcesAdminSection" },
           { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
         ] },
@@ -1876,6 +2049,7 @@
           { label: "Central de Evento", icon: "event", route: "/central-eventos", view: "occurrences", scroll: "clientEventsPage", countId: "activeEventSidebarCount" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
+          { label: "Minha Rota", icon: "route", route: "/minha-rota", view: "occurrences", scroll: "clientRoutePage", feature: "map" },
           { label: "Fontes", icon: "rss", route: "/developer/fontes", view: "admin", scroll: "sourcesAdminSection" },
           { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
         ] },
@@ -2184,6 +2358,7 @@
       if (value === "news" || value === "clientNewsPage") return "news";
       if (value === "recentAlerts" || value === "clientAlertsPage") return "alerts";
       if (value === "clientEventsPage" || value === "eventCenter") return "events";
+      if (value === "clientRoutePage" || value === "routeAnalysisResult") return "route";
       if (value === "savedNews" || value === "clientSavedPage") return "saved";
       if (value === "trendsSection") return "operational";
       if (value === "clientSourcesSection") return "sources";
@@ -2211,6 +2386,7 @@
       if (settingsUser) settingsUser.textContent = `${getDisplayName()} · ${state.profile?.email || state.session?.user?.email || "e-mail não informado"}`;
       const settingsEnvironment = document.getElementById("settingsEnvironmentInfo");
       if (settingsEnvironment) settingsEnvironment.textContent = `${roleLabel()} · ${VIEW_MODES[state.viewMode] || "Cliente"}`;
+      if (page === "route" && state.route.data) setTimeout(() => renderRouteMap(state.route.data), 80);
     }
 
     function iconSvg(name) {
@@ -2340,7 +2516,7 @@
         weeklyButton.addEventListener("click", openWeeklySummary);
         document.body.appendChild(weeklyButton);
       }
-      weeklyButton.hidden = false;
+      weeklyButton.hidden = state.activeClientPage === "route";
     }
 
     function syncNavigationState() {
@@ -3693,12 +3869,248 @@ function showAuthView() {
       }
     }
 
+    function decodeRoutePolyline(encoded) {
+      const points = [];
+      let index = 0;
+      let latitude = 0;
+      let longitude = 0;
+      const value = String(encoded || "");
+      while (index < value.length) {
+        let result = 0;
+        let shift = 0;
+        let byte;
+        do {
+          byte = value.charCodeAt(index++) - 63;
+          result |= (byte & 0x1f) << shift;
+          shift += 5;
+        } while (byte >= 0x20 && index <= value.length);
+        latitude += result & 1 ? ~(result >> 1) : result >> 1;
+        result = 0;
+        shift = 0;
+        do {
+          byte = value.charCodeAt(index++) - 63;
+          result |= (byte & 0x1f) << shift;
+          shift += 5;
+        } while (byte >= 0x20 && index <= value.length);
+        longitude += result & 1 ? ~(result >> 1) : result >> 1;
+        points.push([latitude / 1e5, longitude / 1e5]);
+      }
+      return points;
+    }
+
+    function formatRouteDuration(seconds) {
+      const minutes = Math.max(0, Math.round(Number(seconds || 0) / 60));
+      const hours = Math.floor(minutes / 60);
+      const remainder = minutes % 60;
+      if (!hours) return `${remainder} min`;
+      return remainder ? `${hours}h ${remainder}min` : `${hours}h`;
+    }
+
+    function routeTrafficLabel(traffic = {}) {
+      if (Number(traffic.jam_percent || 0) > 0) return ["Congestionado", "critical"];
+      if (Number(traffic.slow_percent || 0) > 8) return ["Fluxo lento", "attention"];
+      return ["Fluxo normal", "ok"];
+    }
+
+    function routeStatusLabel(status) {
+      if (status === "validacao_obrigatoria") return ["Validação obrigatória", "critical"];
+      if (status === "atencao") return ["Atenção operacional", "attention"];
+      return ["Sem restrição confirmada", "ok"];
+    }
+
+    function routeRiskClass(value) {
+      const risk = normalizeText(value);
+      if (risk.includes("critico")) return "critical";
+      if (risk.includes("alto")) return "high";
+      if (risk.includes("medio")) return "medium";
+      return "";
+    }
+
+    function routeAlertMarkup(alert) {
+      const sourceUrl = /INMET/i.test(alert.source || "") ? "" : cleanDisplayText(alert.url);
+      const title = escapeHtml(alert.title || "Ocorrência monitorada");
+      return `
+        <article class="route-alert-item">
+          <span class="alert-badge ${routeRiskClass(alert.risk_level)}">${escapeHtml(alert.risk_level || "Monitorar")}</span>
+          <div>
+            <h3>${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${title}</a>` : title}</h3>
+            <p>${escapeHtml(shortText(alert.summary || alert.title, 220))}</p>
+            <div class="route-alert-meta">
+              ${alert.highway ? `<span>${escapeHtml(alert.highway)}</span>` : ""}
+              ${alert.region ? `<span>${escapeHtml(alert.region)}</span>` : ""}
+              <span>${escapeHtml(alert.category || "Monitoramento")}</span>
+              <span>${escapeHtml(alert.match_reason || "Relacionado à rota")}</span>
+            </div>
+          </div>
+          <div class="route-alert-meta"><span>${escapeHtml(formatDate(alert.published_at))}</span><span>${escapeHtml(alert.source || "Fonte monitorada")}</span></div>
+        </article>
+      `;
+    }
+
+    function renderRouteResult(data) {
+      const result = document.getElementById("routeAnalysisResult");
+      if (!result || !data?.route) return;
+      if (state.route.instance) {
+        state.route.instance.remove();
+        state.route.instance = null;
+        state.route.layers = null;
+      }
+      state.route.data = data;
+      const route = data.route;
+      const analysis = data.analysis || {};
+      const alerts = Array.isArray(data.alerts) ? data.alerts : [];
+      const blockages = alerts.filter((item) => /bloqueio|interdi|queda de barreira|manifestacao|protesto/i.test(`${item.title || ""} ${item.summary || ""}`)).length;
+      const [trafficLabel, trafficClass] = routeTrafficLabel(route.traffic);
+      const [statusLabel, statusClass] = routeStatusLabel(analysis.status);
+      const roads = Array.isArray(route.roads) ? route.roads : [];
+      const operationalPoints = Array.isArray(analysis.operational_points) ? analysis.operational_points : [];
+      const updatedAt = new Date(route.updated_at).toLocaleString("pt-BR", { timeZone: BRASILIA_TIME_ZONE });
+      result.innerHTML = `
+        <section class="route-result-head">
+          <div>
+            <p class="eyebrow">Análise concluída</p>
+            <h2>${escapeHtml(route.origin)} → ${escapeHtml(route.destination)}</h2>
+            <p>Trânsito consultado na API e ocorrências das últimas ${Number(data.data_window_hours || 72)}h nas fontes do Road News.</p>
+          </div>
+          <span class="route-live-pill">Atualizado em ${escapeHtml(updatedAt)}</span>
+        </section>
+        <section class="route-kpis" aria-label="Indicadores da rota">
+          <div class="route-kpi"><span>Distância</span><strong>${Math.round(Number(route.distance_meters || 0) / 1000).toLocaleString("pt-BR")} km</strong><small>trajeto calculado</small></div>
+          <div class="route-kpi"><span>Tempo estimado</span><strong>${escapeHtml(formatRouteDuration(route.duration_seconds))}</strong><small>com trânsito</small></div>
+          <div class="route-kpi"><span>Atraso estimado</span><strong>${escapeHtml(formatRouteDuration(route.delay_seconds))}</strong><small>comparado ao fluxo livre</small></div>
+          <div class="route-kpi"><span>Trânsito</span><strong>${escapeHtml(trafficLabel)}</strong><small>${Number(route.traffic?.slow_percent || 0)}% lento · ${Number(route.traffic?.jam_percent || 0)}% congestionado</small></div>
+          <div class="route-kpi"><span>Ocorrências</span><strong>${alerts.length}</strong><small>${blockages} possível(is) bloqueio(s)</small></div>
+        </section>
+        <section class="route-main-grid">
+          <div class="route-map-shell">
+            <div class="route-map-head">
+              <strong>Condição do trajeto</strong>
+              <div class="route-legend" aria-label="Legenda de trânsito">
+                <span><i style="background:#20f29b"></i>Normal</span>
+                <span><i style="background:#f5b84b"></i>Lento</span>
+                <span><i style="background:#ff6464"></i>Congestionado</span>
+              </div>
+            </div>
+            <div id="routeMap" aria-label="Mapa da rota analisada"></div>
+          </div>
+          <aside class="route-decision">
+            <span class="route-decision-label">Recomendação operacional</span>
+            <span class="route-decision-status ${statusClass}">${escapeHtml(statusLabel)}</span>
+            <h3>${escapeHtml(analysis.headline || "Análise operacional da rota")}</h3>
+            <p>${escapeHtml(analysis.recommendation || "Valide as condições antes da liberação do veículo.")}</p>
+            <ul class="route-points">${operationalPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}</ul>
+            <div>
+              <span class="route-decision-label">Rodovias identificadas</span>
+              <div class="route-roads" style="margin-top:8px;">${roads.length ? roads.map((road) => `<span>${escapeHtml(road)}</span>`).join("") : `<span>Traçado definido pela API</span>`}</div>
+            </div>
+            <p class="admin-note">Confiança da análise: ${escapeHtml(analysis.confidence || "Baixa")}. ${analysis.ai_used ? "Síntese inteligente aplicada aos dados encontrados." : "Síntese automática baseada nos dados disponíveis."} Valide restrições do caminhão com concessionárias e autoridades.</p>
+          </aside>
+        </section>
+        <section class="route-alerts-panel">
+          <div class="route-query-head">
+            <div><h2>Ocorrências relacionadas à rota</h2><p>Priorizadas por risco, proximidade do trajeto e recência.</p></div>
+            <span class="route-decision-status ${trafficClass}">${escapeHtml(trafficLabel)}</span>
+          </div>
+          <div class="route-alert-list">
+            ${alerts.length ? alerts.map(routeAlertMarkup).join("") : `<div class="route-empty">Nenhuma ocorrência diretamente relacionada foi encontrada nas últimas ${Number(data.data_window_hours || 72)}h. Isso não substitui a validação com concessionárias e autoridades antes da saída.</div>`}
+          </div>
+        </section>
+      `;
+      result.hidden = false;
+      setTimeout(() => renderRouteMap(data), 80);
+    }
+
+    function renderRouteMap(data) {
+      const container = document.getElementById("routeMap");
+      if (!container || !window.L || !data?.route?.polyline) return;
+      if (!state.route.instance) {
+        state.route.instance = L.map(container, { zoomControl: true, preferCanvas: true });
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+          maxZoom: 19,
+          attribution: "&copy; OpenStreetMap &copy; CARTO",
+        }).addTo(state.route.instance);
+        state.route.layers = L.layerGroup().addTo(state.route.instance);
+      }
+      const map = state.route.instance;
+      const layers = state.route.layers;
+      layers.clearLayers();
+      const points = decodeRoutePolyline(data.route.polyline);
+      if (points.length < 2) return;
+      L.polyline(points, { color: "#020907", weight: 9, opacity: .86, lineCap: "round" }).addTo(layers);
+      const intervals = Array.isArray(data.route.traffic_intervals) ? data.route.traffic_intervals : [];
+      const colors = { NORMAL: "#20f29b", SLOW: "#f5b84b", TRAFFIC_JAM: "#ff6464" };
+      if (intervals.length) {
+        intervals.forEach((interval) => {
+          const start = Math.max(0, Number(interval.startPolylinePointIndex || 0));
+          const end = Math.min(points.length - 1, Number(interval.endPolylinePointIndex || points.length - 1));
+          const segment = points.slice(start, Math.max(start + 2, end + 1));
+          if (segment.length > 1) L.polyline(segment, { color: colors[interval.speed] || colors.NORMAL, weight: 5, opacity: .96, lineCap: "round" }).addTo(layers);
+        });
+      } else {
+        L.polyline(points, { color: colors.NORMAL, weight: 5, opacity: .96, lineCap: "round" }).addTo(layers);
+      }
+      L.circleMarker(points[0], { radius: 7, color: "#f3f7f5", weight: 2, fillColor: "#20f29b", fillOpacity: 1 }).bindTooltip("Origem").addTo(layers);
+      L.circleMarker(points.at(-1), { radius: 7, color: "#f3f7f5", weight: 2, fillColor: "#82aaff", fillOpacity: 1 }).bindTooltip("Destino").addTo(layers);
+      (data.alerts || []).filter((item) => Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude))).forEach((item) => {
+        const color = routeRiskClass(item.risk_level) === "critical" ? "#ff6464" : routeRiskClass(item.risk_level) === "high" ? "#f5b84b" : "#82aaff";
+        L.circleMarker([Number(item.latitude), Number(item.longitude)], { radius: 6, color: "#f3f7f5", weight: 1, fillColor: color, fillOpacity: .94 })
+          .bindPopup(`<div class="map-popup"><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(shortText(item.summary || item.title, 150))}</p></div>`)
+          .addTo(layers);
+      });
+      map.fitBounds(L.latLngBounds(points).pad(.08), { maxZoom: 11 });
+      setTimeout(() => map.invalidateSize(), 50);
+    }
+
+    async function submitRouteAnalysis(event) {
+      event.preventDefault();
+      if (!canUseFeature("map")) return;
+      const origin = document.getElementById("routeOrigin").value.trim();
+      const destination = document.getElementById("routeDestination").value.trim();
+      const button = document.getElementById("routeSubmitButton");
+      const status = document.getElementById("routeAnalysisStatus");
+      const result = document.getElementById("routeAnalysisResult");
+      status.hidden = false;
+      status.classList.remove("error");
+      status.textContent = "Calculando o trajeto, consultando o trânsito e cruzando as ocorrências monitoradas...";
+      button.disabled = true;
+      button.textContent = "Analisando...";
+      if (result) result.hidden = true;
+      try {
+        const response = await fetch("/api/news-feed", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ origin, destination, vehicle: "truck" }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(getFriendlyErrorMessage(payload.error || payload, "Não foi possível analisar a rota agora."));
+        status.hidden = true;
+        renderRouteResult(payload);
+      } catch (error) {
+        status.hidden = false;
+        status.classList.add("error");
+        status.textContent = getFriendlyErrorMessage(error, "Não foi possível analisar a rota agora. Tente novamente.");
+      } finally {
+        button.disabled = false;
+        button.textContent = "Analisar rota";
+      }
+    }
+
+    function swapRouteEndpoints() {
+      const origin = document.getElementById("routeOrigin");
+      const destination = document.getElementById("routeDestination");
+      const current = origin.value;
+      origin.value = destination.value;
+      destination.value = current;
+      origin.focus();
+    }
+
     function routeTarget(path) {
       const route = normalizeRoute(path);
       const routes = {
         "/dashboard": { view: "occurrences", scroll: "top", page: "alerts" },
         "/alertas": { view: "occurrences", scroll: "top", page: "alerts" },
         "/central-eventos": { view: "occurrences", scroll: "clientEventsPage", page: "events" },
+        "/minha-rota": { view: "occurrences", scroll: "clientRoutePage", page: "route" },
         "/noticias": { view: "occurrences", scroll: "news", page: "news" },
         "/salvos": { view: "occurrences", scroll: "savedNews", page: "saved" },
         "/resumo-operacional": { view: "occurrences", scroll: "trendsSection", page: "operational" },
@@ -3794,7 +4206,7 @@ function showAuthView() {
         return;
       }
 
-      const knownRoutes = new Set(["/dashboard", "/alertas", "/central-eventos", "/noticias", "/salvos", "/resumo-operacional", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/developer/clientes", "/developer/fontes", "/developer/relatorios", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
+      const knownRoutes = new Set(["/dashboard", "/alertas", "/central-eventos", "/minha-rota", "/noticias", "/salvos", "/resumo-operacional", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/developer/clientes", "/developer/fontes", "/developer/relatorios", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
       const target = routeTarget(route);
       if (target.mode && !availableViewModes().includes(target.mode)) {
         setNotice("");
@@ -5938,6 +6350,8 @@ function showAuthView() {
     document.getElementById("sidebar").addEventListener("click", handleSidebarClick);
     document.getElementById("appShell").addEventListener("click", handleAppShellClick);
     document.getElementById("appShell").addEventListener("change", handleAppShellChange);
+    document.getElementById("routeAnalysisForm").addEventListener("submit", submitRouteAnalysis);
+    document.getElementById("routeSwapButton").addEventListener("click", swapRouteEndpoints);
     window.addEventListener("popstate", () => applyRoute(window.location.pathname, { replace: true }));
     window.addEventListener("resize", () => {
       loadSidebarPreference();

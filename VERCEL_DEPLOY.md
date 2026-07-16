@@ -63,6 +63,18 @@ Vercel deve publicar apenas o frontend estatico e a rota JavaScript em `api/`.
 Nao configure `DATABASE_URL` na Vercel. Esse segredo fica apenas no GitHub
 Actions.
 
+### Variável da tela Minha Rota
+
+Para liberar o cálculo com trânsito, adicione no projeto da Vercel:
+
+```text
+GOOGLE_ROUTES_API_KEY=chave_completa_criada_no_google_cloud
+```
+
+Marque **Production and Preview**, salve e faça um novo deploy. A chave deve ter
+a **Routes API** habilitada e restrição de API aplicada no Google Cloud. Não
+coloque essa chave no `public/index.html`.
+
 ## 4. GitHub Actions
 
 No GitHub, mantenha o secret `SUPABASE` com a connection string do banco. O
