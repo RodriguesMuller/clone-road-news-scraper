@@ -222,6 +222,19 @@ test("event center presents the complete lifecycle and opens closed events", () 
   assert.match(html, /const otherClosed = closed\.filter/);
 });
 
+test("event management controls require a privileged profile and management environment", () => {
+  const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
+  assert.match(html, /const privilegedProfile = isAdminProfile\(\) \|\| isManagerProfile\(\)/);
+  assert.match(html, /return privilegedProfile && canAccessManagementView\(\)/);
+  assert.match(html, /Ação disponível apenas para gestores e administradores/);
+});
+
+test("client cannot call manager-only event actions", async () => {
+  const { auth } = loadAuthWithUsage(0, 10, { role: "client", withPackage: true });
+  const req = { headers: { authorization: "Bearer session-test" } };
+  await assert.rejects(() => auth.requireManager(req), /Acesso negado/);
+});
+
 test("manager can close a major event through the existing secure summary endpoint", async () => {
   process.env.SUPABASE_URL = "https://example.supabase.co";
   process.env.SUPABASE_ANON_KEY = "anon-test";

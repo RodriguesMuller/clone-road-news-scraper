@@ -3101,7 +3101,8 @@ function showAuthView() {
     }
 
     function canManageMajorEvents() {
-      return ["admin", "manager"].includes(state.profile?.role);
+      const privilegedProfile = isAdminProfile() || isManagerProfile();
+      return privilegedProfile && canAccessManagementView();
     }
 
     function renderPrimaryMajorEvent(event) {
@@ -3236,6 +3237,10 @@ function showAuthView() {
     }
 
     async function updateMajorEventStatus(eventId, operationalStatus) {
+      if (!canManageMajorEvents()) {
+        setNotice("Ação disponível apenas para gestores e administradores.");
+        return;
+      }
       const actionLabel = operationalStatus === "encerrado" ? "encerrar" : "reabrir";
       const confirmed = await confirmActionModal(
         `Deseja ${actionLabel} este evento? A alteração ficará visível para todos os usuários.`,
