@@ -1,6 +1,15 @@
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://vdyilgbqxnrwqgoairat.supabase.co";
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const SUPABASE_URL = String(process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "");
+const SUPABASE_ANON_KEY = String(process.env.SUPABASE_ANON_KEY || "").trim();
+const SERVICE_ROLE_KEY = String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+
+function assertSupabaseConfigured({ serviceRole = false } = {}) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error("Supabase nao configurado neste ambiente.");
+  }
+  if (serviceRole && !SERVICE_ROLE_KEY) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY nao configurada no servidor.");
+  }
+}
 
 function authSettingValue() {
   return process.env.AUTH_ENABLED ?? process.env.NEXT_PUBLIC_AUTH_ENABLED ?? "";
@@ -41,10 +50,8 @@ function bearerToken(req) {
 }
 
 async function supabaseFetch(path, options = {}, useServiceRole = true) {
+  assertSupabaseConfigured({ serviceRole: useServiceRole });
   const key = useServiceRole ? SERVICE_ROLE_KEY : SUPABASE_ANON_KEY;
-  if (useServiceRole && !SERVICE_ROLE_KEY) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY nao configurada no servidor.");
-  }
   const response = await fetch(`${SUPABASE_URL}${path}`, {
     ...options,
     headers: {
@@ -62,6 +69,7 @@ async function supabaseFetch(path, options = {}, useServiceRole = true) {
 }
 
 async function getAuthUser(req) {
+  assertSupabaseConfigured();
   const token = bearerToken(req);
   if (!token) throw new Error("Login necessario.");
   const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
@@ -77,7 +85,7 @@ async function getAuthUser(req) {
 }
 
 async function listAuthUsers() {
-  if (!SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY nao configurada no servidor.");
+  assertSupabaseConfigured({ serviceRole: true });
   const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1000`, {
     headers: {
       apikey: SERVICE_ROLE_KEY,
@@ -234,6 +242,7 @@ module.exports = {
   isAuthEnabled,
   appEnvironment,
   isReadOnlyEnvironment,
+  assertSupabaseConfigured,
   assertWritableEnvironment,
   json,
   supabaseFetch,

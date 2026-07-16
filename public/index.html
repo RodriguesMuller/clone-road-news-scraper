@@ -1565,8 +1565,8 @@
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
-    const SUPABASE_URL = "https://vdyilgbqxnrwqgoairat.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
+    let SUPABASE_URL = "";
+    let SUPABASE_ANON_KEY = "";
     const TABLE = "news";
     const BRASILIA_TIME_ZONE = "America/Sao_Paulo";
     let confirmResolver = null;
@@ -1832,6 +1832,7 @@
 
     function authClient() {
       if (!window.supabase) throw new Error("Supabase Auth não carregou. Recarregue a página.");
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) throw new Error("Ambiente nao configurado. Contate o administrador.");
       if (!state.authClient) {
         state.authClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       }
@@ -1843,6 +1844,13 @@
         const response = await fetch("/api/auth-config");
         if (!response.ok) throw new Error("auth-config indisponÃ­vel");
         const data = await response.json();
+        const supabaseUrl = String(data.supabaseUrl || "").trim().replace(/\/+$/, "");
+        const supabaseAnonKey = String(data.supabaseAnonKey || "").trim();
+        if (!data.supabaseConfigured || !supabaseUrl || !supabaseAnonKey) {
+          throw new Error("Supabase indisponivel neste ambiente");
+        }
+        SUPABASE_URL = supabaseUrl;
+        SUPABASE_ANON_KEY = supabaseAnonKey;
         state.authEnabled = Boolean(data.authEnabled);
         state.environment = String(data.environment || "production").toLowerCase();
         state.readOnly = Boolean(data.readOnly);
@@ -1850,6 +1858,8 @@
         applyEnvironmentMode();
       } catch {
         // Falha fechada: se a config nao carregar, nao abrimos o dashboard em modo demo por acidente.
+        SUPABASE_URL = "";
+        SUPABASE_ANON_KEY = "";
         state.authEnabled = true;
         state.authConfigError = true;
       }
@@ -2382,6 +2392,11 @@ function showAuthView() {
 
     async function initAuth(options = {}) {
       if (!options.configLoaded) await loadAuthConfig();
+      if (state.authConfigError) {
+        showAuthView();
+        setAuthError("Ambiente temporariamente indisponivel. Contate o administrador.");
+        return false;
+      }
       if (!state.authEnabled) {
         state.session = null;
         state.profile = { role: "demo", status: "active" };
@@ -2449,6 +2464,10 @@ function showAuthView() {
     async function prepareAcceptInvite() {
       await loadAuthConfig();
       showAcceptInviteView("");
+      if (state.authConfigError) {
+        setAcceptInviteError("Ambiente temporariamente indisponivel. Contate o administrador.");
+        return false;
+      }
       if (state.readOnly) {
         setAcceptInviteError("Convites devem ser aceitos no ambiente de produção. Este ambiente de testes é somente leitura.");
         return false;
@@ -2672,8 +2691,8 @@ function showAuthView() {
     }
 
     async function loadNews() {
-      if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("COLE_AQUI")) {
-        throw new Error("Configure SUPABASE_ANON_KEY no arquivo public/index.html antes do deploy.");
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        throw new Error("Ambiente nao configurado. Contate o administrador.");
       }
 
       if (state.authEnabled) {

@@ -1,8 +1,6 @@
-const SUPABASE_URL = "https://vdyilgbqxnrwqgoairat.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
-const { assertCanUse, json, recordUsage } = require("./_auth");
+const { SUPABASE_URL, SUPABASE_ANON_KEY, assertCanUse, json, recordUsage } = require("./_auth");
 
 function clean(value) {
   return String(value || "")
@@ -132,6 +130,9 @@ function fallbackSummary(context) {
 }
 
 async function fetchWeeklyItems() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error("Supabase nao configurado neste ambiente.");
+  }
   const since = encodeURIComponent(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
   const columns = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
   const url = `${SUPABASE_URL}/rest/v1/news?select=${columns}&created_at=gte.${since}&order=created_at.desc&limit=220`;
