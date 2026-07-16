@@ -3455,15 +3455,6 @@ function showAuthView() {
       }
 
       const knownRoutes = new Set(["/dashboard", "/alertas", "/noticias", "/salvos", "/resumo-operacional", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/developer/clientes", "/developer/fontes", "/developer/relatorios", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
-      if (state.viewMode === "client" && !CLIENT_ROUTES.has(route)) {
-        setNotice("");
-        state.activeRoute = "/dashboard";
-        state.activeScrollTarget = "top";
-        state.activeClientPage = "alerts";
-        setBrowserPath("/dashboard", true);
-        setActiveView("occurrences", { skipRoute: true, scroll: "top", page: "alerts" });
-        return;
-      }
       const target = routeTarget(route);
       if (target.mode && !availableViewModes().includes(target.mode)) {
         setNotice("");
@@ -3475,6 +3466,15 @@ function showAuthView() {
       }
       if (target.mode && state.viewMode !== target.mode) {
         setViewMode(target.mode, { silent: true });
+      }
+      if (state.viewMode === "client" && !CLIENT_ROUTES.has(route)) {
+        setNotice("");
+        state.activeRoute = "/dashboard";
+        state.activeScrollTarget = "top";
+        state.activeClientPage = "alerts";
+        setBrowserPath("/dashboard", true);
+        setActiveView("occurrences", { skipRoute: true, scroll: "top", page: "alerts" });
+        return;
       }
       if (target.view === "admin" && !canAccessAdminView()) {
         setNotice("");
