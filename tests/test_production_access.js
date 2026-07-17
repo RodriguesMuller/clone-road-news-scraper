@@ -300,6 +300,10 @@ test("Minha Rota is rendered only inside the authenticated app and keeps the API
   assert.match(html, /\/minha-rota/);
   assert.match(html, /fetch\("\/api\/news-feed"/);
   assert.match(html, /weeklyButton\.hidden = state\.activeClientPage === "route"/);
+  assert.match(html, /Tráfego consultado agora/);
+  assert.match(html, /Lento \/ pare e siga/);
+  assert.match(html, /routeMapAlertPresentation/);
+  assert.match(html, /route-event-marker/);
   assert.doesNotMatch(html, /GOOGLE_ROUTES_API_KEY|GOOGLE_MAPS_API_KEY/);
   assert.equal(fs.existsSync(path.join(ROOT, "api", "route-analysis.js")), false);
   const inlineScripts = [...html.matchAll(/<script(?![^>]*src)[^>]*>([\s\S]*?)<\/script>/g)];

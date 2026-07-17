@@ -962,19 +962,31 @@
     .route-kpi span { display: block; color: var(--color-muted); font-size: 9px; font-weight: 950; letter-spacing: .10em; text-transform: uppercase; }
     .route-kpi strong { display: block; margin-top: 7px; color: var(--color-text); font-size: 22px; line-height: 1.05; overflow-wrap: anywhere; }
     .route-kpi small { display: block; margin-top: 5px; color: var(--color-muted); font-size: 11px; }
-    .route-main-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(290px, .72fr); gap: 14px; align-items: stretch; }
+    .route-main-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(290px, .72fr); gap: 14px; align-items: start; }
     .route-map-shell, .route-decision, .route-alerts-panel {
       border: 1px solid var(--color-card-border);
       border-radius: 8px;
       background: rgba(255,255,255,.045);
       overflow: hidden;
     }
+    .route-map-shell { align-self: start; }
     .route-map-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-bottom: 1px solid var(--color-border-soft); }
     .route-map-head strong { color: var(--color-text); font-size: 13px; }
     .route-legend { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: var(--color-muted); font-size: 10px; font-weight: 800; }
     .route-legend span { display: inline-flex; align-items: center; gap: 5px; }
     .route-legend i { width: 16px; height: 4px; border-radius: 999px; display: inline-block; }
-    #routeMap { width: 100%; height: 460px; min-height: 420px; background: #03120d; }
+    #routeMap { width: 100%; height: clamp(360px, 52vh, 520px); min-height: 0; background: #03120d; }
+    .route-map-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--color-border-soft); background: rgba(2, 18, 13, .74); }
+    .route-map-meta span { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; border: 1px solid rgba(32, 242, 155, .24); border-radius: 999px; padding: 4px 8px; color: var(--color-muted-strong); font-size: 9px; font-weight: 850; }
+    .route-map-meta i { width: 6px; height: 6px; border-radius: 50%; background: var(--color-primary); box-shadow: 0 0 0 3px rgba(32, 242, 155, .10); }
+    .route-event-icon { width: auto !important; height: auto !important; border: 0 !important; background: transparent !important; }
+    .route-event-marker { position: relative; display: flex; align-items: center; gap: 6px; width: max-content; max-width: 190px; transform: translate(-8px, -8px); pointer-events: auto; }
+    .route-event-dot { flex: 0 0 15px; width: 15px; height: 15px; border: 2px solid #f3f7f5; border-radius: 50%; background: #82aaff; box-shadow: 0 0 0 5px rgba(130, 170, 255, .14), 0 4px 14px rgba(0,0,0,.5); }
+    .route-event-label { overflow: hidden; max-width: 165px; border: 1px solid rgba(130, 170, 255, .42); border-radius: 4px; background: rgba(5, 19, 15, .94); padding: 4px 6px; color: #dce6ff; font-size: 9px; font-weight: 900; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 7px 20px rgba(0,0,0,.34); }
+    .route-event-marker.attention .route-event-dot { background: #f5b84b; box-shadow: 0 0 0 5px rgba(245, 184, 75, .14), 0 4px 14px rgba(0,0,0,.5); }
+    .route-event-marker.attention .route-event-label { border-color: rgba(245, 184, 75, .48); color: #ffe3a6; }
+    .route-event-marker.critical .route-event-dot { background: #ff6464; box-shadow: 0 0 0 5px rgba(255, 100, 100, .16), 0 4px 14px rgba(0,0,0,.5); }
+    .route-event-marker.critical .route-event-label { border-color: rgba(255, 100, 100, .5); color: #ffd1d1; }
     .route-decision { padding: 16px; display: grid; align-content: start; gap: 13px; }
     .route-decision-label { color: var(--color-primary); font-size: 10px; font-weight: 950; letter-spacing: .12em; text-transform: uppercase; }
     .route-decision h3 { margin: 0; color: var(--color-text); font-size: 21px; line-height: 1.18; }
@@ -1099,7 +1111,7 @@
       .route-kpi:nth-child(n) { border-right: 1px solid var(--color-border-soft); border-bottom: 1px solid var(--color-border-soft); }
       .route-kpi:nth-child(2n) { border-right: 0; }
       .route-kpi:last-child { border-bottom: 0; }
-      #routeMap { height: 430px; min-height: 390px; }
+      #routeMap { height: 360px; min-height: 0; }
       .route-alert-item { grid-template-columns: 1fr; }
     }
     @media (max-width: 640px) {
@@ -1118,6 +1130,8 @@
       .admin-card-actions .mini-button { flex: 1 1 130px; }
       .value { font-size: 30px; }
       .brand-copy strong { font-size: 22px; }
+      #routeMap { height: 320px; }
+      .route-event-label { max-width: 120px; }
       .event-hero-main { padding: 18px; }
       .event-metrics { grid-template-columns: 1fr; }
       .event-metric:nth-child(n) { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.10); }
@@ -3926,6 +3940,21 @@ function showAuthView() {
       return "";
     }
 
+    function routeMapAlertPresentation(item) {
+      const text = normalizeText(`${item?.title || ""} ${item?.summary || ""} ${item?.category || ""}`);
+      const risk = normalizeText(item?.risk_level || "");
+      const hasSlowTraffic = /lentidao|congestionamento|fila/.test(text);
+      const hasWeather = /chuva|tempestade|alagamento|neblina|granizo/.test(text);
+      if (/pare e siga|pare-e-siga/.test(text)) return { tone: "attention", label: "Pare e siga" };
+      if (/bloqueio|interdicao|queda de barreira|manifestacao|protesto/.test(text)) return { tone: "critical", label: "Bloqueio / interdição" };
+      if (hasSlowTraffic && hasWeather) return { tone: "critical", label: "Lentidão + clima" };
+      if (hasSlowTraffic) return { tone: "critical", label: "Lentidão" };
+      if (/acidente|colisao|tombamento|capotamento/.test(text)) return { tone: "critical", label: "Acidente" };
+      if (hasWeather) return { tone: risk.includes("alto") || risk.includes("critico") ? "critical" : "attention", label: "Clima severo" };
+      if (/obra|manutencao|recuperacao/.test(text)) return { tone: "attention", label: "Obra na rota" };
+      return { tone: risk.includes("alto") || risk.includes("critico") ? "critical" : "info", label: item?.category || "Ocorrência" };
+    }
+
     function routeAlertMarkup(alert) {
       const sourceUrl = /INMET/i.test(alert.source || "") ? "" : cleanDisplayText(alert.url);
       const title = escapeHtml(alert.title || "Ocorrência monitorada");
@@ -3986,12 +4015,17 @@ function showAuthView() {
             <div class="route-map-head">
               <strong>Condição do trajeto</strong>
               <div class="route-legend" aria-label="Legenda de trânsito">
-                <span><i style="background:#20f29b"></i>Normal</span>
-                <span><i style="background:#f5b84b"></i>Lento</span>
-                <span><i style="background:#ff6464"></i>Congestionado</span>
+                <span><i style="background:#20f29b"></i>Fluxo normal</span>
+                <span><i style="background:#f5b84b"></i>Lento / pare e siga</span>
+                <span><i style="background:#ff6464"></i>Congestionado / bloqueio</span>
               </div>
             </div>
             <div id="routeMap" aria-label="Mapa da rota analisada"></div>
+            <div class="route-map-meta" aria-label="Recência dos dados da rota">
+              <span><i></i>Tráfego consultado agora</span>
+              <span>Notícias analisadas: últimas ${Number(data.data_window_hours || 72)}h</span>
+              <span>${alerts.length} ocorrência(s) cruzada(s)</span>
+            </div>
           </div>
           <aside class="route-decision">
             <span class="route-decision-label">Recomendação operacional</span>
@@ -4052,8 +4086,14 @@ function showAuthView() {
       L.circleMarker(points[0], { radius: 7, color: "#f3f7f5", weight: 2, fillColor: "#20f29b", fillOpacity: 1 }).bindTooltip("Origem").addTo(layers);
       L.circleMarker(points.at(-1), { radius: 7, color: "#f3f7f5", weight: 2, fillColor: "#82aaff", fillOpacity: 1 }).bindTooltip("Destino").addTo(layers);
       (data.alerts || []).filter((item) => Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude))).forEach((item) => {
-        const color = routeRiskClass(item.risk_level) === "critical" ? "#ff6464" : routeRiskClass(item.risk_level) === "high" ? "#f5b84b" : "#82aaff";
-        L.circleMarker([Number(item.latitude), Number(item.longitude)], { radius: 6, color: "#f3f7f5", weight: 1, fillColor: color, fillOpacity: .94 })
+        const presentation = routeMapAlertPresentation(item);
+        const icon = L.divIcon({
+          className: "route-event-icon",
+          html: `<div class="route-event-marker ${presentation.tone}"><span class="route-event-dot"></span><span class="route-event-label">${escapeHtml(presentation.label)}</span></div>`,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+        });
+        L.marker([Number(item.latitude), Number(item.longitude)], { icon })
           .bindPopup(`<div class="map-popup"><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(shortText(item.summary || item.title, 150))}</p></div>`)
           .addTo(layers);
       });
