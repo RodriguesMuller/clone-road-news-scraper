@@ -10,7 +10,8 @@ alter table if exists public.usage_events
   add column if not exists package_id uuid references public.packages(id) on delete set null;
 
 alter table if exists public.packages
-  add column if not exists max_users integer not null default 0;
+  add column if not exists max_users integer not null default 0,
+  add column if not exists monthly_route_limit integer not null default 30;
 
 create index if not exists usage_events_package_month_idx on public.usage_events(package_id, created_at);
 
@@ -111,6 +112,8 @@ begin
 
   if feature_name = 'map' then
     return pkg.can_access_map;
+  elsif feature_name = 'route_analysis' then
+    return pkg.monthly_route_limit > public.get_monthly_usage(check_user_id, 'route_analysis');
   elsif feature_name = 'image_generation' then
     return pkg.can_generate_image
       and pkg.monthly_ai_summary_limit > (

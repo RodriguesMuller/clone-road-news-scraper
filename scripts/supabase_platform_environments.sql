@@ -1,6 +1,9 @@
 -- Complemento para os ambientes client, manager e developer.
 -- Execute scripts/supabase_auth_access.sql primeiro se as tabelas base ainda nao existirem.
 
+alter table if exists public.packages
+  add column if not exists monthly_route_limit integer not null default 30;
+
 do $$
 declare
   constraint_name text;
@@ -69,6 +72,8 @@ begin
 
   if feature_name = 'map' then
     return pkg.can_access_map;
+  elsif feature_name = 'route_analysis' then
+    return pkg.monthly_route_limit > public.get_monthly_usage(check_user_id, 'route_analysis');
   elsif feature_name = 'image_generation' then
     return pkg.can_generate_image;
   elsif feature_name = 'weekly_summary' then

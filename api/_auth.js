@@ -45,6 +45,13 @@ const FEATURE_RULES = {
     blockedEvent: "blocked_map_disabled",
     disabledMessage: "Mapa rodoviario nao esta disponivel no seu pacote.",
   },
+  route_analysis: {
+    events: ["route_analysis"],
+    limit: "monthly_route_limit",
+    blockedEvent: "blocked_route_analysis_limit",
+    disabledMessage: "Minha Rota nao esta disponivel no seu pacote.",
+    limitMessage: "Limite mensal de consultas do Minha Rota atingido. Contate o gestor da plataforma para alterar seu pacote.",
+  },
 };
 
 const FEATURE_ALIASES = {
@@ -54,6 +61,7 @@ const FEATURE_ALIASES = {
   weekly_summary: "ai_summary_weekly",
   pdf_generation: "pdf_generated",
   map: "map_access",
+  route: "route_analysis",
 };
 
 function assertSupabaseConfigured({ serviceRole = false } = {}) {

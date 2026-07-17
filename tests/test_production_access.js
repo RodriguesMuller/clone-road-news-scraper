@@ -19,12 +19,18 @@ test("package limits reject negative values", () => {
     () => admin.packagePayload({ name: "Teste", monthly_news_limit: -1 }),
     /nao podem ser negativos/i,
   );
+  assert.throws(
+    () => admin.packagePayload({ name: "Teste", monthly_route_limit: -1 }),
+    /nao podem ser negativos/i,
+  );
+  assert.equal(admin.packagePayload({ name: "Teste", monthly_route_limit: 25 }).monthly_route_limit, 25);
 });
 
 test("production migration is non-seeding and keeps self profile writes closed", () => {
   const sql = fs.readFileSync(path.join(ROOT, "scripts", "supabase_production_clients_users_limits.sql"), "utf8");
   assert.doesNotMatch(sql, /insert\s+into\s+public\.(clients|packages|profiles|user_packages)/i);
   assert.match(sql, /alter table public\.profiles add column if not exists client_id/i);
+  assert.match(sql, /monthly_route_limit integer not null default 30/i);
   assert.match(sql, /alter table public\.clients enable row level security/i);
   assert.match(sql, /using \(public\.can_manage_target_user\(id\)\)/i);
   assert.doesNotMatch(sql, /using \(id = auth\.uid\(\) or public\.can_manage_target_user/i);
@@ -59,6 +65,7 @@ function loadAuthWithUsage(usageCount, limit = 2, options = {}) {
       if (!withPackage) return Response.json([]);
       return Response.json([{ package_id: "package-1", packages: {
         monthly_news_limit: limit,
+        monthly_route_limit: limit,
         monthly_ai_summary_limit: limit,
         monthly_pdf_limit: limit,
         can_access_map: true,
@@ -96,11 +103,19 @@ test("an individual user below the limit remains authorized", async () => {
   assert.equal(writes.length, 0);
 });
 
+test("Minha Rota has an independent monthly package limit", async () => {
+  const { auth, writes } = loadAuthWithUsage(2, 2);
+  const req = { headers: { authorization: "Bearer session-test" } };
+  await assert.rejects(() => auth.assertCanUse(req, "route_analysis"), /Minha Rota atingido/i);
+  assert.equal(writes.at(-1).event_type, "blocked_route_analysis_limit");
+  assert.equal(writes.at(-1).metadata.feature, "route_analysis");
+});
+
 for (const role of ["admin", "manager"]) {
   test(`${role} remains unlimited without a package`, async () => {
     const { auth, writes } = loadAuthWithUsage(9999, 0, { role, withPackage: false });
     const req = { headers: { authorization: "Bearer session-test" } };
-    for (const feature of ["news_query", "ai_summary_individual", "ai_summary_weekly", "pdf_generated", "map_access"]) {
+    for (const feature of ["news_query", "route_analysis", "ai_summary_individual", "ai_summary_weekly", "pdf_generated", "map_access"]) {
       const account = await auth.assertCanUse(req, feature);
       assert.equal(account.profile.role, role);
       assert.equal(account.isPrivileged, true);
@@ -123,6 +138,7 @@ test("access response exposes unlimited resources to privileged profiles", async
   assert.equal(payload.has_active_package, false);
   assert.equal(payload.can_query_news, true);
   assert.equal(payload.can_access_map, true);
+  assert.equal(payload.can_analyze_route, true);
   assert.equal(payload.can_generate_individual_summary, true);
   assert.equal(payload.can_generate_weekly_summary, true);
   assert.equal(payload.can_generate_pdf, true);
@@ -328,6 +344,7 @@ test("route analysis combines traffic, route news and the server-side AI without
       return Response.json([{ package_id: "package-1", packages: {
         is_active: true,
         monthly_news_limit: 100,
+        monthly_route_limit: 30,
         monthly_ai_summary_limit: 20,
         can_access_map: true,
         can_generate_individual_summary: true,
@@ -406,6 +423,6 @@ test("route analysis combines traffic, route news and the server-side AI without
   assert.equal(JSON.stringify(payload).includes("google-routes-test"), false);
   assert.equal(JSON.stringify(payload).includes("sk-route-test"), false);
   assert.ok(usageWrites.some((event) => event.event_type === "route_analysis"));
-  assert.ok(usageWrites.some((event) => event.event_type === "news_query"));
+  assert.ok(!usageWrites.some((event) => event.event_type === "news_query"));
   assert.ok(usageWrites.some((event) => event.event_type === "ai_summary_individual"));
 });

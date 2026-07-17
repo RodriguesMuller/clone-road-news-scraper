@@ -1575,17 +1575,18 @@
               <div class="field"><label for="packageDescription">Descrição</label><textarea id="packageDescription"></textarea></div>
               <div class="form-row">
                 <div class="field"><label for="packageNewsLimit">Consultas/mês</label><input id="packageNewsLimit" type="number" min="0" value="200"></div>
+                <div class="field"><label for="packageRouteLimit">Minha Rota/mês</label><input id="packageRouteLimit" type="number" min="0" value="30"></div>
+              </div>
+              <div class="form-row">
                 <div class="field"><label for="packageAiLimit">IA/mês</label><input id="packageAiLimit" type="number" min="0" value="50"></div>
-              </div>
-              <div class="form-row">
                 <div class="field"><label for="packagePdfLimit">PDF/mês</label><input id="packagePdfLimit" type="number" min="0" value="20"></div>
+              </div>
+              <div class="form-row">
                 <div class="field"><label for="packageUserLimit">Usuários</label><input id="packageUserLimit" type="number" min="0" value="0"></div>
-              </div>
-              <div class="form-row">
                 <div class="field"><label for="packageMap">Mapa</label><select id="packageMap"><option value="true">Habilitado</option><option value="false">Bloqueado</option></select></div>
-                <div class="field"><label for="packageImage">Resumo individual</label><select id="packageImage"><option value="true">Habilitado</option><option value="false">Bloqueado</option></select></div>
               </div>
               <div class="form-row">
+                <div class="field"><label for="packageImage">Resumo individual</label><select id="packageImage"><option value="true">Habilitado</option><option value="false">Bloqueado</option></select></div>
                 <div class="field"><label for="packageWeekly">Resumo semanal</label><select id="packageWeekly"><option value="true">Habilitado</option><option value="false">Bloqueado</option></select></div>
               </div>
               <div class="admin-actions">
@@ -2033,7 +2034,7 @@
           { label: "Central de Evento", icon: "event", route: "/central-eventos", view: "occurrences", scroll: "clientEventsPage", countId: "activeEventSidebarCount" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
-          { label: "Minha Rota", icon: "route", route: "/minha-rota", view: "occurrences", scroll: "clientRoutePage", feature: "map" },
+          { label: "Minha Rota", icon: "route", route: "/minha-rota", view: "occurrences", scroll: "clientRoutePage", feature: "route_analysis" },
           { label: "Salvos", icon: "bookmark", route: "/salvos", view: "occurrences", scroll: "savedNews" },
           { label: "Fontes", icon: "rss", route: "/fontes", view: "occurrences", scroll: "clientSourcesSection" },
           { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
@@ -2045,7 +2046,7 @@
           { label: "Central de Evento", icon: "event", route: "/central-eventos", view: "occurrences", scroll: "clientEventsPage", countId: "activeEventSidebarCount" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
-          { label: "Minha Rota", icon: "route", route: "/minha-rota", view: "occurrences", scroll: "clientRoutePage", feature: "map" },
+          { label: "Minha Rota", icon: "route", route: "/minha-rota", view: "occurrences", scroll: "clientRoutePage", feature: "route_analysis" },
           { label: "Fontes", icon: "rss", route: "/fontes-gestor", view: "admin", scroll: "sourcesAdminSection" },
           { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
         ] },
@@ -2063,7 +2064,7 @@
           { label: "Central de Evento", icon: "event", route: "/central-eventos", view: "occurrences", scroll: "clientEventsPage", countId: "activeEventSidebarCount" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
           { label: "Mapa rodoviário", icon: "map", route: "/mapa", view: "map", scroll: "top", feature: "map", countId: "mapSidebarDynamicCount" },
-          { label: "Minha Rota", icon: "route", route: "/minha-rota", view: "occurrences", scroll: "clientRoutePage", feature: "map" },
+          { label: "Minha Rota", icon: "route", route: "/minha-rota", view: "occurrences", scroll: "clientRoutePage", feature: "route_analysis" },
           { label: "Fontes", icon: "rss", route: "/developer/fontes", view: "admin", scroll: "sourcesAdminSection" },
           { label: "Resumo operacional", icon: "trending", route: "/resumo-operacional", view: "occurrences", scroll: "trendsSection" },
         ] },
@@ -2660,6 +2661,7 @@ function showAuthView() {
       const usage = state.access?.usage_this_month || {};
       const ratios = [
         [Number(usage.news || 0), Number(limits.monthly_news_limit || 0)],
+        [Number(usage.route || 0), Number(limits.monthly_route_limit || 0)],
         [Number(usage.ai || 0), Number(limits.monthly_ai_summary_limit || 0)],
         [Number(usage.pdf || 0), Number(limits.monthly_pdf_limit || 0)],
       ].filter(([, limit]) => limit > 0).map(([used, limit]) => used / limit);
@@ -2675,7 +2677,7 @@ function showAuthView() {
       if (!state.authEnabled) {
         state.session = null;
         state.profile = { role: "demo", status: "active" };
-        state.access = { can_access_map: true, can_generate_image: true, can_generate_weekly_summary: true, can_generate_pdf: true };
+        state.access = { can_access_map: true, can_analyze_route: true, can_generate_image: true, can_generate_weekly_summary: true, can_generate_pdf: true };
         if (normalizeRoute(window.location.pathname) === "/admin") setBrowserPath("/dashboard", true);
         showAppView();
         return true;
@@ -2761,12 +2763,14 @@ function showAuthView() {
       if (state.access?.is_unlimited || ["admin", "manager"].includes(state.profile?.role)) return true;
       const allowed = {
         map: Boolean(state.access?.can_access_map),
+        route_analysis: Boolean(state.access?.can_analyze_route),
         image_generation: Boolean(state.access?.can_generate_individual_summary ?? state.access?.can_generate_image),
         weekly_summary: Boolean(state.access?.can_generate_weekly_summary),
         pdf_generation: Boolean(state.access?.can_generate_pdf),
       }[feature];
       const messages = {
         map: "Mapa rodoviário não está disponível no seu pacote.",
+        route_analysis: "Minha Rota não está disponível no seu pacote ou o limite mensal de consultas foi atingido.",
         image_generation: "Resumo individual não está disponível no seu pacote ou o limite mensal de IA foi atingido.",
         weekly_summary: "Resumo semanal não está disponível no seu pacote ou o limite mensal de IA foi atingido.",
         pdf_generation: "Você atingiu o limite mensal de PDFs.",
@@ -4103,7 +4107,7 @@ function showAuthView() {
 
     async function submitRouteAnalysis(event) {
       event.preventDefault();
-      if (!canUseFeature("map")) return;
+      if (!canUseFeature("route_analysis")) return;
       const origin = document.getElementById("routeOrigin").value.trim();
       const destination = document.getElementById("routeDestination").value.trim();
       const button = document.getElementById("routeSubmitButton");
@@ -4405,6 +4409,7 @@ function showAuthView() {
       return `
         <div class="admin-limit-list">
           <div><span>Consultas/mês</span><strong>${Number(pkg.monthly_news_limit || 0)}</strong></div>
+          <div><span>Minha Rota/mês</span><strong>${Number(pkg.monthly_route_limit || 0)}</strong></div>
           <div><span>IA/mês</span><strong>${Number(pkg.monthly_ai_summary_limit || 0)}</strong></div>
           <div><span>PDFs/mês</span><strong>${Number(pkg.monthly_pdf_limit || 0)}</strong></div>
           <div><span>Usuários</span><strong>${Number(pkg.max_users || 0) || "Ilimitado"}</strong></div>
@@ -4417,6 +4422,7 @@ function showAuthView() {
       return `
         <div class="admin-resource-row">
           ${pkg.can_access_map ? adminBadge("Mapa") : adminBadge("Mapa off", "neutral")}
+          ${Number(pkg.monthly_route_limit || 0) > 0 ? adminBadge("Minha Rota") : adminBadge("Minha Rota off", "neutral")}
           ${individualSummary ? adminBadge("Resumo individual") : adminBadge("Resumo off", "neutral")}
           ${pkg.can_generate_weekly_summary ? adminBadge("Resumo semanal") : adminBadge("Semanal off", "neutral")}
           ${Number(pkg.monthly_ai_summary_limit || 0) > 0 ? adminBadge("IA") : adminBadge("IA off", "neutral")}
@@ -4435,6 +4441,7 @@ function showAuthView() {
       return `
         <div class="admin-consumption-list">
           <div><span>Consultas</span><strong>${usageLimitLabel(info.news, info.limits.news)}</strong></div>
+          <div><span>Minha Rota</span><strong>${usageLimitLabel(info.route, info.limits.route)}</strong></div>
           <div><span>IA</span><strong>${usageLimitLabel(info.ai, info.limits.ai)}</strong></div>
           <div><span>PDFs</span><strong>${usageLimitLabel(info.pdf, info.limits.pdf)}</strong></div>
         </div>
@@ -4583,20 +4590,22 @@ function showAuthView() {
       const pkg = packageById(current?.package_id);
       const unlimited = ["admin", "manager"].includes(user.role);
       const news = usageCount(user.id, ["news_query", "news_view"]);
+      const route = usageCount(user.id, ["route_analysis"]);
       const ai = usageCount(user.id, ["ai_summary_individual", "ai_summary_weekly", "ai_summary", "image_generation", "weekly_summary"]);
       const pdf = usageCount(user.id, ["pdf_generated", "pdf_generation"]);
       const images = usageCount(user.id, ["ai_summary_individual", "ai_summary", "image_generation"]);
       const weekly = usageCount(user.id, ["ai_summary_weekly", "weekly_summary"]);
       const limits = {
         news: Number(pkg?.monthly_news_limit || 0),
+        route: Number(pkg?.monthly_route_limit || 0),
         ai: Number(pkg?.monthly_ai_summary_limit || 0),
         pdf: Number(pkg?.monthly_pdf_limit || 0),
       };
-      const percentages = unlimited ? [0] : [limits.news > 0 ? news / limits.news : 1, limits.ai > 0 ? ai / limits.ai : 1, limits.pdf > 0 ? pdf / limits.pdf : 1];
+      const percentages = unlimited ? [0] : [limits.news > 0 ? news / limits.news : 1, limits.route > 0 ? route / limits.route : 1, limits.ai > 0 ? ai / limits.ai : 1, limits.pdf > 0 ? pdf / limits.pdf : 1];
       const percent = unlimited ? 0 : Math.min(100, Math.round(Math.max(...percentages, 0) * 100));
-      const total = news + ai + pdf;
-      const limitReached = !unlimited && (limits.news <= 0 || limits.ai <= 0 || limits.pdf <= 0 || news >= limits.news || ai >= limits.ai || pdf >= limits.pdf);
-      return { current, pkg, unlimited, news, ai, pdf, images, weekly, limits, percent, total, limitReached };
+      const total = news + route + ai + pdf;
+      const limitReached = !unlimited && (limits.news <= 0 || limits.route <= 0 || limits.ai <= 0 || limits.pdf <= 0 || news >= limits.news || route >= limits.route || ai >= limits.ai || pdf >= limits.pdf);
+      return { current, pkg, unlimited, news, route, ai, pdf, images, weekly, limits, percent, total, limitReached };
     }
 
     function usageLimitLabel(used, limit) {
@@ -4765,6 +4774,7 @@ function showAuthView() {
               <div class="admin-record-field"><span>Cliente / Empresa</span><strong>${escapeHtml(user.company_name || "-")}</strong></div>
               <div class="admin-record-field"><span>Pacote</span><strong>${escapeHtml(info.unlimited ? "Ilimitado por perfil" : info.pkg?.name || "Sem pacote")}</strong></div>
               <div class="admin-record-field"><span>Consultas</span><strong>${info.unlimited ? `${info.news} / Ilimitado` : info.pkg ? usageLimitLabel(info.news, info.limits.news) : "Sem pacote"}</strong></div>
+              <div class="admin-record-field"><span>Minha Rota</span><strong>${info.unlimited ? `${info.route} / Ilimitado` : info.pkg ? usageLimitLabel(info.route, info.limits.route) : "Sem pacote"}</strong></div>
               <div class="admin-record-field"><span>IA</span><strong>${info.unlimited ? `${info.ai} / Ilimitado` : info.pkg ? usageLimitLabel(info.ai, info.limits.ai) : "Sem pacote"}</strong></div>
               <div class="admin-record-field"><span>PDFs</span><strong>${info.unlimited ? `${info.pdf} / Ilimitado` : info.pkg ? usageLimitLabel(info.pdf, info.limits.pdf) : "Sem pacote"}</strong></div>
               <div class="admin-record-field"><span>Mapa</span><strong>${info.unlimited || info.pkg?.can_access_map ? "Habilitado" : "Bloqueado"}</strong></div>
@@ -5040,6 +5050,7 @@ function showAuthView() {
       document.getElementById("packageName").value = pkg?.name || "";
       document.getElementById("packageDescription").value = pkg?.description || "";
       document.getElementById("packageNewsLimit").value = pkg?.monthly_news_limit ?? 200;
+      document.getElementById("packageRouteLimit").value = pkg?.monthly_route_limit ?? 30;
       document.getElementById("packageAiLimit").value = pkg?.monthly_ai_summary_limit ?? 50;
       document.getElementById("packagePdfLimit").value = pkg?.monthly_pdf_limit ?? 20;
       document.getElementById("packageUserLimit").value = pkg?.max_users ?? 0;
@@ -5057,6 +5068,7 @@ function showAuthView() {
         name: document.getElementById("packageName").value.trim(),
         description: document.getElementById("packageDescription").value.trim(),
         monthly_news_limit: Number(document.getElementById("packageNewsLimit").value || 0),
+        monthly_route_limit: Number(document.getElementById("packageRouteLimit").value || 0),
         monthly_ai_summary_limit: Number(document.getElementById("packageAiLimit").value || 0),
         monthly_pdf_limit: Number(document.getElementById("packagePdfLimit").value || 0),
         max_users: Number(document.getElementById("packageUserLimit").value || 0),

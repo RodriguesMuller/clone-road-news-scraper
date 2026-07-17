@@ -392,8 +392,8 @@ function routePublicError(error) {
 }
 
 async function handleRouteAnalysis(req, res) {
-  await assertCanUse(req, "map_access");
-  const account = await assertCanUse(req, "news_query");
+  // Minha Rota possui franquia propria e e validada antes de chamar a API do Google.
+  const account = await assertCanUse(req, "route_analysis");
   const body = await readBody(req);
   const origin = clean(body.origin);
   const destination = clean(body.destination);
@@ -440,9 +440,6 @@ async function handleRouteAnalysis(req, res) {
       alerts: matched.alerts.length,
       ai_used: Boolean(analysis.ai_used),
     },
-  });
-  await recordUsage(account, "news_query", {
-    metadata: { source: "route-analysis", origin, destination },
   });
   if (analysis.ai_used) {
     await recordUsage(account, "ai_summary_individual", {

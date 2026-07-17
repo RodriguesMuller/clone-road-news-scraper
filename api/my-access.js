@@ -12,18 +12,21 @@ module.exports = async function handler(req, res) {
     const profile = account.profile || {};
     const pkg = account.activePackage?.packages || null;
     const usage = !account.authEnabled
-      ? { news: 0, ai: 0, pdf: 0 }
+      ? { news: 0, route: 0, ai: 0, pdf: 0 }
       : {
           news: await featureUsage(account.user.id, "news_query"),
+          route: await featureUsage(account.user.id, "route_analysis"),
           ai: await featureUsage(account.user.id, "ai_summary_individual"),
           pdf: await featureUsage(account.user.id, "pdf_generated"),
         };
     const limits = {
       monthly_news_limit: Number(pkg?.monthly_news_limit || 0),
+      monthly_route_limit: Number(pkg?.monthly_route_limit || 0),
       monthly_ai_summary_limit: Number(pkg?.monthly_ai_summary_limit || 0),
       monthly_pdf_limit: Number(pkg?.monthly_pdf_limit || 0),
     };
     const hasNewsQuota = limits.monthly_news_limit > usage.news && limits.monthly_news_limit > 0;
+    const hasRouteQuota = limits.monthly_route_limit > usage.route && limits.monthly_route_limit > 0;
     const hasAiQuota = limits.monthly_ai_summary_limit > usage.ai && limits.monthly_ai_summary_limit > 0;
     const hasPdfQuota = limits.monthly_pdf_limit > usage.pdf && limits.monthly_pdf_limit > 0;
     const individualRule = featureRule("ai_summary_individual");
@@ -44,6 +47,7 @@ module.exports = async function handler(req, res) {
       is_unlimited: unlimited,
       can_query_news: unlimited || (Boolean(pkg) && hasNewsQuota),
       can_access_map: unlimited || (Boolean(pkg) && featureFlagEnabled(pkg, mapRule)),
+      can_analyze_route: unlimited || (Boolean(pkg) && hasRouteQuota),
       can_generate_individual_summary: unlimited || (Boolean(pkg) && featureFlagEnabled(pkg, individualRule) && hasAiQuota),
       can_generate_image: unlimited || (Boolean(pkg) && featureFlagEnabled(pkg, individualRule) && hasAiQuota),
       can_generate_weekly_summary: unlimited || (Boolean(pkg) && featureFlagEnabled(pkg, weeklyRule) && hasAiQuota),

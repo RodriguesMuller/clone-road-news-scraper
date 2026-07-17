@@ -26,6 +26,7 @@ alter table public.profiles add column if not exists cpf text;
 alter table public.profiles add column if not exists client_id uuid;
 
 alter table public.packages add column if not exists max_users integer not null default 0;
+alter table public.packages add column if not exists monthly_route_limit integer not null default 30;
 alter table public.packages add column if not exists can_generate_individual_summary boolean;
 update public.packages
 set can_generate_individual_summary = coalesce(can_generate_individual_summary, can_generate_image, false)
@@ -39,6 +40,13 @@ alter table public.audit_logs add column if not exists client_id uuid;
 
 do $$
 begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.packages'::regclass and conname = 'packages_route_limit_nonnegative_check'
+  ) then
+    alter table public.packages add constraint packages_route_limit_nonnegative_check
+      check (monthly_route_limit >= 0) not valid;
+  end if;
   if not exists (
     select 1 from pg_constraint
     where conrelid = 'public.profiles'::regclass and conname = 'profiles_client_id_fkey'

@@ -16,6 +16,7 @@ create table if not exists public.packages (
   name text not null,
   description text,
   monthly_news_limit integer not null default 200,
+  monthly_route_limit integer not null default 30,
   monthly_ai_summary_limit integer not null default 50,
   monthly_pdf_limit integer not null default 20,
   max_users integer not null default 0,
@@ -59,7 +60,8 @@ alter table if exists public.usage_events
   add column if not exists package_id uuid references public.packages(id) on delete set null;
 
 alter table if exists public.packages
-  add column if not exists max_users integer not null default 0;
+  add column if not exists max_users integer not null default 0,
+  add column if not exists monthly_route_limit integer not null default 30;
 
 create table if not exists public.audit_logs (
   id uuid primary key default gen_random_uuid(),
@@ -72,6 +74,7 @@ create table if not exists public.audit_logs (
 );
 
 comment on column public.packages.monthly_news_limit is 'Limite mensal de consultas/carregamentos do painel de noticias.';
+comment on column public.packages.monthly_route_limit is 'Limite mensal individual de consultas do Minha Rota.';
 comment on column public.packages.monthly_ai_summary_limit is 'Limite mensal somado para resumo semanal, resumo de noticia e geracao de imagem com IA.';
 comment on column public.packages.monthly_pdf_limit is 'Limite mensal de exportacoes de PDF.';
 comment on column public.packages.max_users is 'Limite de usuarios vinculados ao pacote. Zero significa ilimitado.';
@@ -212,6 +215,8 @@ begin
 
   if feature_name = 'map' then
     return pkg.can_access_map;
+  elsif feature_name = 'route_analysis' then
+    return pkg.monthly_route_limit > public.get_monthly_usage(check_user_id, 'route_analysis');
   elsif feature_name = 'image_generation' then
     return pkg.can_generate_image
       and pkg.monthly_ai_summary_limit > (

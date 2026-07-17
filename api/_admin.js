@@ -64,6 +64,7 @@ function packagePayload(body = {}) {
     name,
     description: String(body.description || "").trim(),
     monthly_news_limit: toLimit(body.monthly_news_limit, 0),
+    monthly_route_limit: toLimit(body.monthly_route_limit, 0),
     monthly_ai_summary_limit: toLimit(body.monthly_ai_summary_limit, 0),
     monthly_pdf_limit: toLimit(body.monthly_pdf_limit, 0),
     max_users: toLimit(body.max_users, 0),
