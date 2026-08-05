@@ -2117,6 +2117,13 @@
       return div.innerHTML;
     }
 
+    // Garante que contadores/KPIs mostrem "0" explicitamente em vez de vazio
+    // quando o valor real for zero (0 é falsy em JS, mas é um dado válido aqui).
+    function statValue(value) {
+      if (value === 0) return "0";
+      return value === undefined || value === null || value === "" ? "0" : value;
+    }
+
     function rawErrorMessage(error) {
       if (!error) return "";
       if (typeof error === "string") return error;
@@ -2912,22 +2919,31 @@ function showAuthView() {
       return match ? match[1].replace(/\s+/g, "-").toUpperCase() : "";
     }
 
-    const RISK_FATALITY_PATTERN = /\bmort[eosa]s?\b|\bmorr(?:eu|em|eram)\b|\bfatal\b|\bobito\b/;
-    const RISK_INJURY_PATTERN = /\bferid[oa]s?\b|\bhospitalizad[oa]s?\b|\bestado grave\b/;
-    const RISK_TOTAL_BLOCK_PATTERN = /bloqueio total|interdicao total|interditada.{0,40}(sem previsao|24 horas|\d+\s*dias)|sem previsao de liberacao/;
-    const RISK_CARGO_THEFT_PATTERN = /roubo de carga|\bsaque\b|carga saqueada/;
+    // Cobre tanto formas nominais (morto/ferido) quanto os verbos no presente/passado
+    // que os títulos de notícia usam o tempo todo ("acidente mata 2 e fere 3", "motorista morre").
+    const RISK_FATALITY_PATTERN = /\bmort[eosa]s?\b|\bmorr(?:e|eu|em|eram|endo)\b|\bmat(?:a|ou|aram|ando)\b|\bfatal\b|\bobito\b/;
+    const RISK_INJURY_PATTERN = /\bferid[oa]s?\b|\bhospitalizad[oa]s?\b|\bestado grave\b|\bfer(?:e|em|iu|iram|indo)\b/;
+    const RISK_TOTAL_BLOCK_PATTERN = /bloqueio total|interdicao total/;
+    const RISK_LONG_DURATION_PATTERN = /sem previsao|mais de \d+\s*horas|\d+\s*dias/;
+    const RISK_CARGO_THEFT_PATTERN = /roubo de carga|\bsaque|assalto.*carga/;
     const RISK_CIVIL_UNREST_PATTERN = /manifestacao|protesto|greve geral/;
     const RISK_MAJOR_INCIDENT_PATTERN = /acidente|tombamento|colisao|capotamento|choque/;
     const RISK_INFRASTRUCTURE_PATTERN = /bloqueio|interdicao|interdita|queda de barreira|desabamento|incendio/;
     const RISK_WEATHER_SEVERE_PATTERN = /tempestade|temporal|alagamento|enchente|granizo/;
     const RISK_HAZARDOUS_CARGO_PATTERN = /produtos? perigosos?|inflamavel|combustivel|toxico|quimico|explosivo/;
     const RISK_MINOR_DISRUPTION_PATTERN = /lentidao|chuva forte|obra|interdicao parcial|congestionamento|pare-e-siga|fila/;
+    // Evita falso-positivo quando a notícia nega vítimas explicitamente (ex.: "sem feridos").
+    const RISK_NO_CASUALTIES_PATTERN = /sem feridos?\b|sem vitimas?\b|sem mortos?\b|nenhuma vitima|nao houve (?:ferido|morte|vitima)/;
 
     function operationalRisk(item) {
       const text = textForItem(item);
+      const noCasualties = RISK_NO_CASUALTIES_PATTERN.test(text);
 
-      // Crítico: mortes confirmadas, roubo/saque de carga, ou bloqueio total sem previsão de liberação.
-      if (RISK_FATALITY_PATTERN.test(text) || RISK_CARGO_THEFT_PATTERN.test(text) || RISK_TOTAL_BLOCK_PATTERN.test(text)) {
+      // Crítico: mortes confirmadas, roubo/saque de carga, ou bloqueio total/prolongado sem previsão de liberação.
+      if ((RISK_FATALITY_PATTERN.test(text) && !noCasualties) || RISK_CARGO_THEFT_PATTERN.test(text) || RISK_TOTAL_BLOCK_PATTERN.test(text)) {
+        return ["critical", "Crítico"];
+      }
+      if (RISK_INFRASTRUCTURE_PATTERN.test(text) && RISK_LONG_DURATION_PATTERN.test(text)) {
         return ["critical", "Crítico"];
       }
       if (RISK_CIVIL_UNREST_PATTERN.test(text) && RISK_INFRASTRUCTURE_PATTERN.test(text)) {
@@ -2935,7 +2951,7 @@ function showAuthView() {
       }
 
       // Alto: feridos, acidente com bloqueio/interdição real, carga perigosa envolvida, ou clima severo.
-      if (RISK_INJURY_PATTERN.test(text)) return ["high", "Alto"];
+      if (RISK_INJURY_PATTERN.test(text) && !noCasualties) return ["high", "Alto"];
       if (RISK_MAJOR_INCIDENT_PATTERN.test(text) && (RISK_INFRASTRUCTURE_PATTERN.test(text) || RISK_HAZARDOUS_CARGO_PATTERN.test(text))) {
         return ["high", "Alto"];
       }
@@ -3067,7 +3083,7 @@ function showAuthView() {
       document.getElementById("stats").innerHTML = cards.map(([label, value, hint]) => `
         <article class="stat">
           <div class="label">${label}</div>
-          <div class="value">${value}</div>
+          <div class="value">${statValue(value)}</div>
           ${hint ? `<div class="hint">${hint}</div>` : ""}
         </article>
       `).join("");
@@ -4735,7 +4751,7 @@ function showAuthView() {
         ["Usuários perto do limite", usersNearLimit.length, "acima de 80%"],
         ["Usuários bloqueados", blockedUsers, "sem acesso ativo"],
       ].map(([label, value, hint]) => `
-        <article class="stat"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div><div class="hint">${escapeHtml(hint)}</div></article>
+        <article class="stat"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(statValue(value))}</div><div class="hint">${escapeHtml(hint)}</div></article>
       `).join("");
 
       document.getElementById("adminOverviewDetails").innerHTML = [
@@ -4949,7 +4965,7 @@ function showAuthView() {
           ["Registros carregados", state.items.length, "amostra atual"],
         ["Ciclo do scraper", "2h", "frequência esperada"],
           ["Erros criticos", logs.filter((log) => /error|erro|failed/i.test(`${log.action} ${JSON.stringify(log.metadata || {})}`)).length, "logs recentes"],
-        ].map(([label, value, hint]) => `<article class="stat"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div><div class="hint">${escapeHtml(hint)}</div></article>`).join("");
+        ].map(([label, value, hint]) => `<article class="stat"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(statValue(value))}</div><div class="hint">${escapeHtml(hint)}</div></article>`).join("");
       }
 
       const platformEvents = document.getElementById("platformEventsList");
