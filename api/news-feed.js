@@ -70,14 +70,46 @@ function haversineKm(a, b) {
   return 2 * earthRadius * Math.asin(Math.sqrt(value));
 }
 
-function distanceToRouteKm(point, routePoints) {
-  if (!routePoints.length) return Infinity;
+function nearestRoutePoint(point, routePoints) {
+  if (!routePoints.length) return { distanceKm: Infinity, pointIndex: -1 };
   const stride = Math.max(1, Math.floor(routePoints.length / 500));
   let shortest = Infinity;
+  let nearestIndex = -1;
   for (let index = 0; index < routePoints.length; index += stride) {
-    shortest = Math.min(shortest, haversineKm(point, routePoints[index]));
+    const distance = haversineKm(point, routePoints[index]);
+    if (distance < shortest) {
+      shortest = distance;
+      nearestIndex = index;
+    }
   }
-  return shortest;
+  return { distanceKm: shortest, pointIndex: nearestIndex };
+}
+
+function extractKm(text) {
+  const match = clean(text).match(/\bkm\s*[-:]?\s*(\d{1,4}(?:[.,]\d{1,2})?)\b/i);
+  return match ? match[1].replace(",", ".") : "";
+}
+
+function occurrenceTypeLabel(normalizedText) {
+  if (/bloqueio total|interdicao total/.test(normalizedText)) return "Rodovia totalmente bloqueada";
+  if (/manifestacao|protesto/.test(normalizedText)) return "Rodovia interditada por manifestação";
+  if (/queda de barreira|desabamento/.test(normalizedText)) return "Rodovia interditada por queda de barreira";
+  if (/bloqueio|interdi/.test(normalizedText)) return "Rodovia bloqueada";
+  if (/acidente|colisao|tombamento|capotamento/.test(normalizedText)) return "Acidente na rodovia";
+  if (/obra|manutencao/.test(normalizedText)) return "Obra na rodovia";
+  if (/lentidao|congestionamento|pare-e-siga|fila/.test(normalizedText)) return "Lentidão na rodovia";
+  if (/tempestade|temporal|alagamento|enchente|granizo/.test(normalizedText)) return "Risco climático na rodovia";
+  return "Ocorrência na rodovia";
+}
+
+function blockDescription(item, highway, region) {
+  const normalizedText = normalize(`${item.title} ${item.summary} ${item.category}`);
+  const km = extractKm(`${item.title} ${item.summary}`);
+  const parts = [occurrenceTypeLabel(normalizedText)];
+  if (highway) parts.push(highway);
+  if (km) parts.push(`km ${km}`);
+  const base = parts.join(" ");
+  return region ? `${base} na região de ${region}` : base;
 }
 
 function extractRoads(value) {
@@ -227,6 +259,8 @@ function routeKeywords(origin, destination) {
   return [...new Set(normalize(`${origin} ${destination}`).split(/[^a-z0-9]+/).filter((token) => token.length >= 4 && !ignored.has(token)))];
 }
 
+const ROUTE_SEGMENT_ANCHOR_RADIUS_KM = 15;
+
 function matchRouteNews(items, route, origin, destination) {
   const instructions = (route.legs || []).flatMap((leg) => (leg.steps || []).map((step) => clean(step.navigationInstruction?.instructions)));
   const routeRoads = extractRoads(`${route.description || ""} ${instructions.join(" ")}`);
@@ -245,26 +279,34 @@ function matchRouteNews(items, route, origin, destination) {
     const lng = Number(item.longitude);
     const precision = normalize(item.geo_precision);
     const preciseGeo = Number.isFinite(lat) && Number.isFinite(lng) && !/state|estado|approximate_state/.test(precision);
-    const corridorDistanceKm = preciseGeo ? distanceToRouteKm([lat, lng], routePoints) : Infinity;
+    const nearest = preciseGeo ? nearestRoutePoint([lat, lng], routePoints) : { distanceKm: Infinity, pointIndex: -1 };
+    const corridorDistanceKm = nearest.distanceKm;
     const corridorMatch = corridorDistanceKm <= 45;
     if (!roadMatch && !corridorMatch && !endpointMatch) return null;
     const [riskRank, riskLevel] = riskForItem(item);
     const publishedAt = clean(item.published_at || item.scraped_at || item.created_at);
     const ageHours = publishedAt ? Math.max(0, (now - new Date(publishedAt).getTime()) / 36e5) : 999;
+    const highway = roadMatch || clean(item.highway) || itemRoads[0] || "";
+    const region = clean(item.city || item.region || item.state);
+    const segmentTone = riskRank >= 4 ? "critical" : riskRank === 3 ? "attention" : null;
+    const anchorable = Boolean(segmentTone) && preciseGeo && corridorDistanceKm <= ROUTE_SEGMENT_ANCHOR_RADIUS_KM;
     return {
       title: clean(item.title),
       summary: clean(item.ai_summary || item.summary).slice(0, 360),
       source: clean(item.source),
       category: categoryForItem(item),
       risk_level: riskLevel,
-      highway: roadMatch || clean(item.highway) || itemRoads[0] || "",
-      region: clean(item.city || item.region || item.state),
+      highway,
+      region,
       published_at: publishedAt,
       age_hours: Math.round(ageHours * 10) / 10,
       url: clean(item.url),
       latitude: preciseGeo ? lat : null,
       longitude: preciseGeo ? lng : null,
       match_reason: roadMatch ? `Rodovia ${roadMatch}` : corridorMatch ? `A ${Math.round(corridorDistanceKm)} km do trajeto` : `Localidade ${endpointMatch}`,
+      block_description: blockDescription(item, highway, region),
+      segment_tone: anchorable ? segmentTone : null,
+      route_point_index: anchorable ? nearest.pointIndex : null,
       _riskRank: riskRank,
     };
   }).filter(Boolean);

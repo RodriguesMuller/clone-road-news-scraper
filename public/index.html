@@ -1068,6 +1068,10 @@
     .route-alert-item:first-child { border-top: 0; padding-top: 0; }
     .route-alert-item h3 { margin: 0 0 5px; color: var(--color-text); font-size: 14px; line-height: 1.35; }
     .route-alert-item p { margin: 0; color: var(--color-muted); font-size: 12px; line-height: 1.42; }
+    .route-alert-block { margin: 4px 0 6px !important; font-size: 12px; font-weight: 900; }
+    .route-alert-block.critical { color: #ff9c9c; }
+    .route-alert-block.attention { color: #e8b042; }
+    .route-legend .dashed { width: 16px; height: 0; border-top: 3px dashed currentColor; background: none !important; }
     .route-alert-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; color: var(--color-muted); font-size: 10px; font-weight: 800; }
     .route-empty { border: 1px dashed rgba(30, 255, 149, .22); border-radius: 8px; padding: 18px; color: var(--color-muted-strong); text-align: center; }
     .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(1, 8, 6, .82); padding: 18px; z-index: 10; backdrop-filter: blur(8px); }
@@ -4067,6 +4071,7 @@ function showAuthView() {
           <span class="alert-badge ${routeRiskClass(alert.risk_level)}">${escapeHtml(alert.risk_level || "Monitorar")}</span>
           <div>
             <h3>${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${title}</a>` : title}</h3>
+            ${alert.segment_tone ? `<p class="route-alert-block ${escapeHtml(alert.segment_tone)}">${escapeHtml(alert.block_description || "")}</p>` : ""}
             <p>${escapeHtml(shortText(alert.summary || alert.title, 220))}</p>
             <div class="route-alert-meta">
               ${alert.highway ? `<span>${escapeHtml(alert.highway)}</span>` : ""}
@@ -4121,7 +4126,9 @@ function showAuthView() {
               <div class="route-legend" aria-label="Legenda de trânsito">
                 <span><i style="background:#1eff95"></i>Fluxo normal</span>
                 <span><i style="background:#e8b042"></i>Lento / pare e siga</span>
-                <span><i style="background:#d65f5f"></i>Congestionado / bloqueio</span>
+                <span><i style="background:#d65f5f"></i>Congestionado (trânsito)</span>
+                <span><i class="dashed" style="color:#e8b042"></i>Ocorrência - atenção</span>
+                <span><i class="dashed" style="color:#d65f5f"></i>Ocorrência - crítica</span>
               </div>
             </div>
             <div id="routeMap" aria-label="Mapa da rota analisada"></div>
@@ -4187,6 +4194,24 @@ function showAuthView() {
       } else {
         L.polyline(points, { color: colors.NORMAL, weight: 5, opacity: .96, lineCap: "round" }).addTo(layers);
       }
+      const segmentColors = { critical: "#d65f5f", attention: "#e8b042" };
+      (data.alerts || []).filter((item) => item.segment_tone && Number.isInteger(item.route_point_index)).forEach((item) => {
+        const half = Math.max(3, Math.round(points.length * .015));
+        const start = Math.max(0, item.route_point_index - half);
+        const end = Math.min(points.length - 1, item.route_point_index + half);
+        const segment = points.slice(start, Math.max(start + 2, end + 1));
+        if (segment.length < 2) return;
+        L.polyline(segment, {
+          color: segmentColors[item.segment_tone] || segmentColors.attention,
+          weight: 7,
+          opacity: .95,
+          lineCap: "round",
+          dashArray: "8, 7",
+        })
+          .bindTooltip(item.block_description || item.title, { sticky: true })
+          .bindPopup(`<div class="map-popup"><h3>${escapeHtml(item.block_description || item.title)}</h3><p>${escapeHtml(shortText(item.summary || item.title, 150))}</p></div>`)
+          .addTo(layers);
+      });
       L.circleMarker(points[0], { radius: 7, color: "#d8dad6", weight: 2, fillColor: "#1eff95", fillOpacity: 1 }).bindTooltip("Origem").addTo(layers);
       L.circleMarker(points.at(-1), { radius: 7, color: "#d8dad6", weight: 2, fillColor: "#6b9ec7", fillOpacity: 1 }).bindTooltip("Destino").addTo(layers);
       (Array.isArray(data.route.stop_points) ? data.route.stop_points : []).forEach((point, index) => {
