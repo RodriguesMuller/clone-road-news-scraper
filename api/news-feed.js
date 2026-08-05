@@ -235,6 +235,7 @@ async function computeRoute(origin, destination, stops) {
         "routes.legs.startLocation",
         "routes.legs.endLocation",
         "routes.legs.steps.navigationInstruction.instructions",
+        "routes.legs.steps.startLocation",
         "routes.warnings",
         "routes.description",
       ].join(","),
@@ -283,9 +284,18 @@ function routeKeywords(origin, destination) {
 
 const ROUTE_SEGMENT_ANCHOR_RADIUS_KM = 15;
 
+function anchorByRoad(road, stepEntries, routePoints) {
+  const match = stepEntries.find((entry) => entry.location && entry.roads.includes(road));
+  return match ? nearestRoutePoint(match.location, routePoints) : null;
+}
+
 function matchRouteNews(items, route, origin, destination) {
-  const instructions = (route.legs || []).flatMap((leg) => (leg.steps || []).map((step) => clean(step.navigationInstruction?.instructions)));
-  const routeRoads = extractRoads(`${route.description || ""} ${instructions.join(" ")}`);
+  const stepEntries = (route.legs || []).flatMap((leg) => (leg.steps || []).map((step) => {
+    const text = clean(step.navigationInstruction?.instructions);
+    const latLng = step.startLocation?.latLng;
+    return { text, roads: extractRoads(text), location: latLng ? [latLng.latitude, latLng.longitude] : null };
+  }));
+  const routeRoads = extractRoads(`${route.description || ""} ${stepEntries.map((entry) => entry.text).join(" ")}`);
   const routeRoadSet = new Set(routeRoads);
   const keywords = routeKeywords(origin, destination);
   const routePoints = decodePolyline(route.polyline?.encodedPolyline);
@@ -311,7 +321,13 @@ function matchRouteNews(items, route, origin, destination) {
     const highway = roadMatch || clean(item.highway) || itemRoads[0] || "";
     const region = clean(item.city || item.region || item.state);
     const segmentTone = riskRank >= 4 ? "critical" : riskRank === 3 ? "attention" : null;
-    const anchorable = Boolean(segmentTone) && preciseGeo && corridorDistanceKm <= ROUTE_SEGMENT_ANCHOR_RADIUS_KM;
+    const geoAnchorable = preciseGeo && corridorDistanceKm <= ROUTE_SEGMENT_ANCHOR_RADIUS_KM;
+    // Sem geolocalizacao precisa o suficiente, mas com rodovia em comum com a rota: ancora no ponto
+    // onde essa rodovia aparece nas instrucoes do trajeto, para nao deixar de marcar no mapa uma
+    // ocorrencia que a analise textual ja cita pelo codigo da rodovia.
+    const roadAnchor = !geoAnchorable && roadMatch ? anchorByRoad(roadMatch, stepEntries, routePoints) : null;
+    const anchorPointIndex = geoAnchorable ? nearest.pointIndex : roadAnchor ? roadAnchor.pointIndex : -1;
+    const anchorable = Boolean(segmentTone) && anchorPointIndex >= 0;
     return {
       title: clean(item.title),
       summary: clean(item.ai_summary || item.summary).slice(0, 360),
@@ -329,7 +345,7 @@ function matchRouteNews(items, route, origin, destination) {
       block_description: blockDescription(item, highway, region),
       map_label: mapLabel(item, highway, extractKm(`${item.title} ${item.summary}`)),
       segment_tone: anchorable ? segmentTone : null,
-      route_point_index: anchorable ? nearest.pointIndex : null,
+      route_point_index: anchorable ? anchorPointIndex : null,
       _riskRank: riskRank,
     };
   }).filter(Boolean);
