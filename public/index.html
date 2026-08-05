@@ -276,9 +276,9 @@
     .field input, .field select, .field textarea {
       width: 100%;
       min-height: 40px;
-      border: 1px solid var(--color-border-soft);
+      border: 1px solid var(--color-border);
       border-radius: 6px;
-      background: #0d0e0e;
+      background: var(--color-surface-alt);
       color: var(--color-text);
       padding: 9px 11px;
       font: inherit;
@@ -289,7 +289,7 @@
     .admin-filterbar select option,
     .map-select option,
     .sidebar-env select option {
-      background: #0d0e0e;
+      background: var(--color-surface-alt);
       color: #d8dad6;
     }
     .field select option:checked,
@@ -300,7 +300,7 @@
       color: #1e0d43;
     }
     .field textarea { min-height: 78px; resize: vertical; }
-    .field input:focus, .field select:focus, .field textarea:focus { outline: 3px solid rgba(30, 255, 149, .24); border-color: rgba(30, 255, 149, .46); }
+    .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--color-brand); box-shadow: 0 0 0 3px var(--color-brand-soft); }
     .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .link-button {
       border: 0;
@@ -328,9 +328,9 @@
     .admin-filterbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .admin-filterbar input, .admin-filterbar select {
       min-height: 36px;
-      border: 1px solid var(--color-border-soft);
+      border: 1px solid var(--color-border);
       border-radius: 8px;
-      background: #0d0e0e;
+      background: var(--color-surface-alt);
       color: var(--color-text);
       padding: 8px 10px;
       font: inherit;
@@ -691,9 +691,9 @@
     .sidebar-env select {
       width: 100%;
       min-height: 36px;
-      border: 1px solid rgba(30, 255, 149, .20);
+      border: 1px solid var(--color-border);
       border-radius: 8px;
-      background: #0d0e0e;
+      background: var(--color-surface-alt);
       color: var(--color-text);
       padding: 8px 10px;
       font: inherit;
@@ -701,9 +701,9 @@
       cursor: pointer;
       color-scheme: dark;
     }
-    .sidebar-env select:focus { outline: 2px solid rgba(30, 255, 149, .45); outline-offset: 2px; }
+    .sidebar-env select:focus { outline: none; border-color: var(--color-brand); box-shadow: 0 0 0 3px var(--color-brand-soft); }
     .sidebar-env select option {
-      background: #0d0e0e;
+      background: var(--color-surface-alt);
       color: #d8dad6;
     }
     .sidebar-env select option:checked {
@@ -833,7 +833,7 @@
       border-radius: 999px;
       box-shadow: 0 0 0 3px rgba(255,255,255,.05);
     }
-    .risk-dot.risk-critical { background: #d65f5f; }
+    .risk-dot.risk-critical { background: #a33d3d; }
     .risk-dot.risk-high { background: #d65f5f; }
     .risk-dot.risk-medium { background: #e8b042; }
     .risk-dot.risk-low { background: #7caa6f; }
@@ -1890,7 +1890,7 @@
       ["low", "Baixa"],
     ];
     const MAP_CATEGORIES = ["Acidente", "Interdição", "Obra", "Paralisação", "Trânsito", "Clima", "Roubo de carga", "Manifestação", "Outros"];
-    const MAP_RISK_COLORS = { critical: "#d65f5f", high: "#d65f5f", medium: "#e8b042", low: "#7caa6f" };
+    const MAP_RISK_COLORS = { critical: "#a33d3d", high: "#d65f5f", medium: "#e8b042", low: "#7caa6f" };
     const STATE_COORDS = {
       AC: { name: "Acre", lat: -8.77, lng: -70.55 },
       AL: { name: "Alagoas", lat: -9.57, lng: -36.78 },
