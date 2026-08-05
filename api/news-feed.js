@@ -165,7 +165,8 @@ function brazilianAddress(value) {
   return /\bbrasil\b/i.test(address) ? address : `${address}, Brasil`;
 }
 
-async function computeRoute(origin, destination) {
+async function computeRoute(origin, destination, stops) {
+  const intermediates = (stops || []).map((stop) => ({ address: brazilianAddress(stop) }));
   const response = await fetch(GOOGLE_ROUTES_URL, {
     method: "POST",
     headers: {
@@ -177,6 +178,8 @@ async function computeRoute(origin, destination) {
         "routes.staticDuration",
         "routes.polyline.encodedPolyline",
         "routes.travelAdvisory.speedReadingIntervals",
+        "routes.legs.startLocation",
+        "routes.legs.endLocation",
         "routes.legs.steps.navigationInstruction.instructions",
         "routes.warnings",
         "routes.description",
@@ -185,10 +188,12 @@ async function computeRoute(origin, destination) {
     body: JSON.stringify({
       origin: { address: brazilianAddress(origin) },
       destination: { address: brazilianAddress(destination) },
+      ...(intermediates.length ? { intermediates } : {}),
       travelMode: "DRIVE",
       routingPreference: "TRAFFIC_AWARE_OPTIMAL",
       trafficModel: "BEST_GUESS",
       computeAlternativeRoutes: false,
+      optimizeWaypointOrder: false,
       routeModifiers: { avoidTolls: false, avoidHighways: false, avoidFerries: true },
       languageCode: "pt-BR",
       units: "METRIC",
@@ -206,6 +211,15 @@ async function computeRoute(origin, destination) {
   const route = payload.routes?.[0];
   if (!route?.polyline?.encodedPolyline) throw new Error("GOOGLE_ROUTES_NOT_FOUND");
   return route;
+}
+
+function routeStopCoordinates(route) {
+  const legs = route.legs || [];
+  if (legs.length < 2) return [];
+  return legs.slice(0, -1).map((leg) => {
+    const latLng = leg.endLocation?.latLng;
+    return latLng ? { latitude: latLng.latitude, longitude: latLng.longitude } : null;
+  }).filter(Boolean);
 }
 
 function routeKeywords(origin, destination) {
@@ -397,8 +411,13 @@ async function handleRouteAnalysis(req, res) {
   const body = await readBody(req);
   const origin = clean(body.origin);
   const destination = clean(body.destination);
+  const stops = (Array.isArray(body.stops) ? body.stops : []).map(clean).filter(Boolean).slice(0, 8);
   if (origin.length < 3 || destination.length < 3 || origin.length > 160 || destination.length > 160) {
     json(res, 400, { error: "Informe uma origem e um destino válidos." });
+    return;
+  }
+  if (stops.some((stop) => stop.length < 3 || stop.length > 160)) {
+    json(res, 400, { error: "Informe paradas válidas ou remova os campos vazios." });
     return;
   }
   if (normalize(origin) === normalize(destination)) {
@@ -406,7 +425,7 @@ async function handleRouteAnalysis(req, res) {
     return;
   }
 
-  const route = await computeRoute(origin, destination);
+  const route = await computeRoute(origin, destination, stops);
   const since72h = encodeURIComponent(new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString());
   const recentRows = await fetchRows(`&created_at=gte.${since72h}&order=created_at.desc&limit=350`);
   const matched = matchRouteNews(recentRows, route, origin, destination);
@@ -437,6 +456,7 @@ async function handleRouteAnalysis(req, res) {
     metadata: {
       origin,
       destination,
+      stops,
       alerts: matched.alerts.length,
       ai_used: Boolean(analysis.ai_used),
     },
@@ -456,6 +476,8 @@ async function handleRouteAnalysis(req, res) {
       provider: "Google Routes",
       origin,
       destination,
+      stops,
+      stop_points: routeStopCoordinates(route),
       distance_meters: context.distance_meters,
       duration_seconds: context.duration_seconds,
       static_duration_seconds: context.static_duration_seconds,

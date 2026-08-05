@@ -949,6 +949,43 @@
       font-size: 20px;
     }
     .route-submit { min-height: 42px; white-space: nowrap; }
+    .route-stops-wrap { grid-column: 1 / -1; display: grid; gap: 8px; }
+    .route-stops-list { display: grid; gap: 8px; }
+    .route-stop-row { display: grid; grid-template-columns: minmax(0, 1fr) 34px; gap: 8px; align-items: center; }
+    .route-stop-row input {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--color-border-soft);
+      border-radius: 6px;
+      background: rgba(255,255,255,.04);
+      color: var(--color-text);
+      padding: 0 11px;
+      font-size: 13px;
+    }
+    .route-stop-row input:focus { outline: none; border-color: var(--color-brand); box-shadow: 0 0 0 3px var(--color-brand-soft); }
+    .route-stop-remove {
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border: 1px solid rgba(214, 95, 95, .34);
+      background: rgba(214, 95, 95, .08);
+      color: #d65f5f;
+      box-shadow: none;
+      font-size: 15px;
+      line-height: 1;
+    }
+    .route-add-stop {
+      justify-self: start;
+      border: 1px dashed rgba(30, 255, 149, .32);
+      background: transparent;
+      color: var(--color-primary);
+      box-shadow: none;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 8px 12px;
+      min-height: 0;
+    }
+    .route-add-stop[disabled] { opacity: .5; cursor: not-allowed; }
     .route-status {
       margin-top: 12px;
       border: 1px solid rgba(107, 158, 199, .32);
@@ -1444,6 +1481,10 @@
                 <select id="routeVehicle"><option value="truck">Caminhão</option></select>
               </div>
               <button id="routeSubmitButton" class="route-submit" type="submit">Analisar rota</button>
+              <div class="route-stops-wrap">
+                <div id="routeStopsList" class="route-stops-list"></div>
+                <button id="routeAddStopButton" class="route-add-stop" type="button">+ Adicionar parada</button>
+              </div>
             </form>
             <div id="routeAnalysisStatus" class="route-status" role="status" aria-live="polite" hidden></div>
           </section>
@@ -2009,6 +2050,7 @@
         data: null,
       },
     };
+    const ROUTE_MAX_STOPS = 8;
 
     const VIEW_MODE_KEY = "roadnews_viewmode";
     const NOTIFICATION_RULES_KEY = "roadnews_notification_rules";
@@ -4060,7 +4102,7 @@ function showAuthView() {
         <section class="route-result-head">
           <div>
             <p class="eyebrow">Análise concluída</p>
-            <h2>${escapeHtml(route.origin)} → ${escapeHtml(route.destination)}</h2>
+            <h2>${[route.origin, ...(Array.isArray(route.stops) ? route.stops : []), route.destination].map(escapeHtml).join(" → ")}</h2>
             <p>Trânsito consultado na API e ocorrências das últimas ${Number(data.data_window_hours || 72)}h nas fontes do Road News.</p>
           </div>
           <span class="route-live-pill">Atualizado em ${escapeHtml(updatedAt)}</span>
@@ -4147,6 +4189,12 @@ function showAuthView() {
       }
       L.circleMarker(points[0], { radius: 7, color: "#d8dad6", weight: 2, fillColor: "#1eff95", fillOpacity: 1 }).bindTooltip("Origem").addTo(layers);
       L.circleMarker(points.at(-1), { radius: 7, color: "#d8dad6", weight: 2, fillColor: "#6b9ec7", fillOpacity: 1 }).bindTooltip("Destino").addTo(layers);
+      (Array.isArray(data.route.stop_points) ? data.route.stop_points : []).forEach((point, index) => {
+        if (!Number.isFinite(Number(point.latitude)) || !Number.isFinite(Number(point.longitude))) return;
+        L.circleMarker([Number(point.latitude), Number(point.longitude)], { radius: 6, color: "#d8dad6", weight: 2, fillColor: "#e8b042", fillOpacity: 1 })
+          .bindTooltip(`Parada ${index + 1}`)
+          .addTo(layers);
+      });
       (data.alerts || []).filter((item) => Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude))).forEach((item) => {
         const presentation = routeMapAlertPresentation(item);
         const icon = L.divIcon({
@@ -4163,11 +4211,49 @@ function showAuthView() {
       setTimeout(() => map.invalidateSize(), 50);
     }
 
+    function routeStopRow(value) {
+      const row = document.createElement("div");
+      row.className = "route-stop-row";
+      row.innerHTML = `
+        <input type="text" class="route-stop-input" maxlength="160" placeholder="Ex.: Araçatuba/SP" autocomplete="off">
+        <button type="button" class="route-stop-remove" aria-label="Remover parada" title="Remover parada">×</button>
+      `;
+      row.querySelector(".route-stop-input").value = value || "";
+      row.querySelector(".route-stop-remove").addEventListener("click", () => {
+        row.remove();
+        updateRouteAddStopState();
+      });
+      return row;
+    }
+
+    function updateRouteAddStopState() {
+      const list = document.getElementById("routeStopsList");
+      const addButton = document.getElementById("routeAddStopButton");
+      if (!list || !addButton) return;
+      const atLimit = list.children.length >= ROUTE_MAX_STOPS;
+      addButton.disabled = atLimit;
+      addButton.textContent = atLimit ? `Limite de ${ROUTE_MAX_STOPS} paradas atingido` : "+ Adicionar parada";
+    }
+
+    function addRouteStop(value) {
+      const list = document.getElementById("routeStopsList");
+      if (!list || list.children.length >= ROUTE_MAX_STOPS) return;
+      list.appendChild(routeStopRow(value));
+      updateRouteAddStopState();
+    }
+
+    function collectRouteStops() {
+      return Array.from(document.querySelectorAll("#routeStopsList .route-stop-input"))
+        .map((input) => input.value.trim())
+        .filter(Boolean);
+    }
+
     async function submitRouteAnalysis(event) {
       event.preventDefault();
       if (!canUseFeature("route_analysis")) return;
       const origin = document.getElementById("routeOrigin").value.trim();
       const destination = document.getElementById("routeDestination").value.trim();
+      const stops = collectRouteStops();
       const button = document.getElementById("routeSubmitButton");
       const status = document.getElementById("routeAnalysisStatus");
       const result = document.getElementById("routeAnalysisResult");
@@ -4181,7 +4267,7 @@ function showAuthView() {
         const response = await fetch("/api/news-feed", {
           method: "POST",
           headers: { "Content-Type": "application/json", ...authHeaders() },
-          body: JSON.stringify({ origin, destination, vehicle: "truck" }),
+          body: JSON.stringify({ origin, destination, stops, vehicle: "truck" }),
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(getFriendlyErrorMessage(payload.error || payload, "Não foi possível analisar a rota agora."));
@@ -4203,6 +4289,12 @@ function showAuthView() {
       const current = origin.value;
       origin.value = destination.value;
       destination.value = current;
+      const list = document.getElementById("routeStopsList");
+      if (list) {
+        const stopValues = Array.from(list.querySelectorAll(".route-stop-input")).map((input) => input.value).reverse();
+        list.innerHTML = "";
+        stopValues.forEach((value) => addRouteStop(value));
+      }
       origin.focus();
     }
 
@@ -6462,6 +6554,7 @@ function showAuthView() {
     document.getElementById("appShell").addEventListener("change", handleAppShellChange);
     document.getElementById("routeAnalysisForm").addEventListener("submit", submitRouteAnalysis);
     document.getElementById("routeSwapButton").addEventListener("click", swapRouteEndpoints);
+    document.getElementById("routeAddStopButton").addEventListener("click", () => addRouteStop());
     window.addEventListener("popstate", () => applyRoute(window.location.pathname, { replace: true }));
     window.addEventListener("resize", () => {
       loadSidebarPreference();
