@@ -1093,6 +1093,8 @@
     }
     .route-risk-label.attention { border-color: rgba(232, 176, 66, .48); color: #e8b042; }
     .route-risk-label.critical { border-color: rgba(214, 95, 95, .5); color: #ffd1d1; }
+    .route-risk-group-list { margin: 0; padding-left: 16px; display: grid; gap: 6px; }
+    .route-risk-group-list li { color: var(--color-muted-strong); font-size: 12px; line-height: 1.4; }
     .route-decision { padding: 16px; display: grid; align-content: start; gap: 13px; }
     .route-decision-label { color: var(--color-primary); font-size: 10px; font-weight: 950; letter-spacing: .12em; text-transform: uppercase; }
     .route-decision h3 { margin: 0; color: var(--color-text); font-size: 21px; line-height: 1.18; }
@@ -2094,6 +2096,8 @@
       route: {
         instance: null,
         layers: null,
+        markerLayer: null,
+        riskPoints: null,
         data: null,
         haloInterval: null,
       },
@@ -4123,6 +4127,8 @@ function showAuthView() {
         state.route.instance.remove();
         state.route.instance = null;
         state.route.layers = null;
+        state.route.markerLayer = null;
+        state.route.riskPoints = null;
       }
       state.route.data = data;
       const route = data.route;
@@ -4206,6 +4212,8 @@ function showAuthView() {
           attribution: "&copy; OpenStreetMap &copy; CARTO",
         }).addTo(state.route.instance);
         state.route.layers = L.layerGroup().addTo(state.route.instance);
+        state.route.markerLayer = L.layerGroup().addTo(state.route.instance);
+        state.route.instance.on("zoomend moveend", renderRiskMarkers);
       }
       const map = state.route.instance;
       const layers = state.route.layers;
@@ -4272,26 +4280,66 @@ function showAuthView() {
       });
       // Ancorado no ponto da propria rota (route_point_index), nao na lat/lng bruta da noticia,
       // para o marcador sempre cair exatamente sobre a linha desenhada, em qualquer zoom.
-      (data.alerts || []).filter((item) => item.segment_tone && Number.isInteger(item.route_point_index) && points[item.route_point_index]).forEach((item) => {
-        const labelText = escapeHtml(item.map_label || item.block_description || item.title);
-        const icon = L.divIcon({
-          className: "route-risk-icon",
-          html: `
-            <div class="route-risk-marker-wrap">
-              <div class="route-risk-marker ${item.segment_tone}"><span class="route-risk-marker-glyph">!</span></div>
-              <span class="route-risk-label ${item.segment_tone}">${labelText}</span>
-            </div>
-          `,
-          iconSize: [22, 22],
-          iconAnchor: [11, 11],
-        });
-        L.marker(points[item.route_point_index], { icon, zIndexOffset: item.segment_tone === "critical" ? 200 : 100 })
-          .bindTooltip(item.block_description || item.title, { direction: "top", offset: [0, -10] })
-          .bindPopup(`<div class="map-popup"><h3>${escapeHtml(item.block_description || item.title)}</h3><p>${escapeHtml(shortText(item.summary || item.title, 150))}</p></div>`)
-          .addTo(layers);
-      });
+      state.route.riskPoints = (data.alerts || [])
+        .filter((item) => item.segment_tone && Number.isInteger(item.route_point_index) && points[item.route_point_index])
+        .map((item) => ({ item, latlng: points[item.route_point_index] }));
       map.fitBounds(L.latLngBounds(points).pad(.08), { maxZoom: 11 });
-      setTimeout(() => map.invalidateSize(), 50);
+      setTimeout(() => { map.invalidateSize(); renderRiskMarkers(); }, 50);
+    }
+
+    function riskMarkerIcon(tone, glyph, labelText) {
+      return L.divIcon({
+        className: "route-risk-icon",
+        html: `
+          <div class="route-risk-marker-wrap">
+            <div class="route-risk-marker ${tone}"><span class="route-risk-marker-glyph">${glyph}</span></div>
+            <span class="route-risk-label ${tone}">${labelText}</span>
+          </div>
+        `,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      });
+    }
+
+    // Agrupa marcadores que ficariam sobrepostos na tela (nao geograficamente) no zoom atual,
+    // recalculado a cada zoom/pan para desagrupar automaticamente ao aproximar.
+    function renderRiskMarkers() {
+      const map = state.route.instance;
+      const markerLayer = state.route.markerLayer;
+      const riskPoints = state.route.riskPoints;
+      if (!map || !markerLayer || !riskPoints) return;
+      markerLayer.clearLayers();
+      const CLUSTER_PIXEL_RADIUS = 42;
+      const clusters = [];
+      riskPoints.forEach((entry) => {
+        const screenPoint = map.latLngToContainerPoint(entry.latlng);
+        const cluster = clusters.find((candidate) => screenPoint.distanceTo(candidate.screenPoint) <= CLUSTER_PIXEL_RADIUS);
+        if (cluster) cluster.entries.push(entry);
+        else clusters.push({ screenPoint, entries: [entry] });
+      });
+      clusters.forEach((cluster) => {
+        if (cluster.entries.length === 1) {
+          const { item, latlng } = cluster.entries[0];
+          const labelText = escapeHtml(item.map_label || item.block_description || item.title);
+          L.marker(latlng, { icon: riskMarkerIcon(item.segment_tone, "!", labelText), zIndexOffset: item.segment_tone === "critical" ? 200 : 100 })
+            .bindTooltip(item.block_description || item.title, { direction: "top", offset: [0, -10] })
+            .bindPopup(`<div class="map-popup"><h3>${escapeHtml(item.block_description || item.title)}</h3><p>${escapeHtml(shortText(item.summary || item.title, 150))}</p></div>`)
+            .addTo(markerLayer);
+          return;
+        }
+        const tone = cluster.entries.some((entry) => entry.item.segment_tone === "critical") ? "critical" : "attention";
+        const centroid = [
+          cluster.entries.reduce((sum, entry) => sum + entry.latlng[0], 0) / cluster.entries.length,
+          cluster.entries.reduce((sum, entry) => sum + entry.latlng[1], 0) / cluster.entries.length,
+        ];
+        const groupLabel = `${cluster.entries.length} ocorrências nesta região`;
+        const popupList = cluster.entries
+          .map(({ item }) => `<li><strong>${escapeHtml(item.map_label || item.block_description || item.title)}</strong></li>`)
+          .join("");
+        L.marker(centroid, { icon: riskMarkerIcon(tone, String(cluster.entries.length), escapeHtml(groupLabel)), zIndexOffset: tone === "critical" ? 200 : 100 })
+          .bindPopup(`<div class="map-popup"><h3>${escapeHtml(groupLabel)}</h3><ul class="route-risk-group-list">${popupList}</ul></div>`)
+          .addTo(markerLayer);
+      });
     }
 
     function routeStopRow(value) {
