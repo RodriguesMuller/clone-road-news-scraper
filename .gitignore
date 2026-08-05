@@ -6,6 +6,8 @@ env/
 
 # Variáveis de ambiente locais — nunca commitar
 .env
+.env.*
+!.env.example
 
 # Python
 __pycache__/
@@ -19,3 +21,5 @@ build/
 
 # macOS
 .DS_Store
+
+.vercel
