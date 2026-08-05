@@ -2199,27 +2199,6 @@
       return "Usuário";
     }
 
-    function setViewMode(mode) {
-      if (mode !== "admin" && mode !== "client") return;
-      // only allow admin mode if real role is admin
-      if (mode === "admin" && state.profile?.role !== "admin") return;
-      state.viewMode = mode;
-      try { localStorage.setItem("roadnews_viewmode", mode); } catch (e) { /* ignore */ }
-      syncNavigationState();
-      // if currently on admin view but switched to client, revert to dashboard
-      if (mode === "client" && state.activeRoute === "/admin") {
-        setNotice("Visão cliente ativa — acesso administrativo ocultado.");
-        setActiveView("occurrences", { skipRoute: false, scroll: "top" });
-      }
-    }
-
-    function toggleViewMode() {
-      const realAdmin = state.profile?.role === "admin";
-      if (!realAdmin) return;
-      const next = state.viewMode === "admin" ? "client" : "admin";
-      setViewMode(next);
-    }
-
     function authHeaders(headers = {}) {
       const token = state.session?.access_token;
       return token ? { ...headers, Authorization: `Bearer ${token}` } : headers;
@@ -2584,7 +2563,17 @@
       sidebarUser.innerHTML = `<div class="sidebar-user-row"><span class="sidebar-avatar">${escapeHtml(initials)}</span><span><strong>${escapeHtml(displayName)}</strong><span style="display:block;color:var(--color-muted);font-size:12px;margin-top:4px;">${escapeHtml(roleLabel())} · ${escapeHtml(viewLabel)}</span></span></div>`;
       applyClientPageVisibility();
       renderPlatformActions();
+      hardenAdminMarkupForNonPrivileged();
+    }
 
+    // Defesa em profundidade: os dados administrativos ja sao bloqueados no
+    // backend (requireAdmin/requireManager), mas o markup estatico do painel
+    // admin (campos, tabelas, modal de edicao de usuario) nao precisa ficar
+    // no DOM de uma sessao que nunca vai poder usa-lo.
+    function hardenAdminMarkupForNonPrivileged() {
+      if (["admin", "manager"].includes(realRole())) return;
+      const adminView = document.getElementById("adminView");
+      if (adminView && adminView.childElementCount) adminView.innerHTML = "";
     }
 
 function showAuthView() {
