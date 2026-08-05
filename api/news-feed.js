@@ -297,7 +297,7 @@ function fallbackRouteAnalysis(context) {
         : "Não há bloqueio confirmado nos dados analisados. Mantenha a checagem operacional antes da saída, pois as fontes podem ter atraso de atualização.";
   const points = [
     `${context.traffic.normal_percent}% do traçado com fluxo normal, ${context.traffic.slow_percent}% lento e ${context.traffic.jam_percent}% congestionado.`,
-    context.alerts.length ? `${context.alerts.length} ocorrência(s) relacionada(s) encontrada(s) nas últimas 72h.` : "Nenhuma ocorrência diretamente relacionada foi encontrada nas últimas 72h.",
+    context.alerts.length ? `${context.alerts.length} ocorrência(s) relacionada(s) encontrada(s) nas últimas 24h.` : "Nenhuma ocorrência diretamente relacionada foi encontrada nas últimas 24h.",
     blocking.length ? `${blocking.length} registro(s) com possível bloqueio ou interdição exigem validação.` : "Nenhum bloqueio foi confirmado pelas fontes monitoradas.",
   ];
   if (works.length) points.push(`${works.length} registro(s) de obra, manutenção ou pare-e-siga na rota.`);
@@ -426,8 +426,8 @@ async function handleRouteAnalysis(req, res) {
   }
 
   const route = await computeRoute(origin, destination, stops);
-  const since72h = encodeURIComponent(new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString());
-  const recentRows = await fetchRows(`&created_at=gte.${since72h}&order=created_at.desc&limit=350`);
+  const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+  const recentRows = await fetchRows(`&created_at=gte.${since24h}&order=created_at.desc&limit=350`);
   const matched = matchRouteNews(recentRows, route, origin, destination);
   const intervals = route.travelAdvisory?.speedReadingIntervals || [];
   const durationSeconds = readDuration(route.duration);
@@ -494,7 +494,7 @@ async function handleRouteAnalysis(req, res) {
       ...publicAnalysis,
       ai_available: aiAllowed,
     },
-    data_window_hours: 72,
+    data_window_hours: 24,
   });
 }
 

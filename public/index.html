@@ -4103,7 +4103,7 @@ function showAuthView() {
           <div>
             <p class="eyebrow">Análise concluída</p>
             <h2>${[route.origin, ...(Array.isArray(route.stops) ? route.stops : []), route.destination].map(escapeHtml).join(" → ")}</h2>
-            <p>Trânsito consultado na API e ocorrências das últimas ${Number(data.data_window_hours || 72)}h nas fontes do Road News.</p>
+            <p>Trânsito consultado na API e ocorrências das últimas ${Number(data.data_window_hours || 24)}h nas fontes do Road News.</p>
           </div>
           <span class="route-live-pill">Atualizado em ${escapeHtml(updatedAt)}</span>
         </section>
@@ -4127,7 +4127,7 @@ function showAuthView() {
             <div id="routeMap" aria-label="Mapa da rota analisada"></div>
             <div class="route-map-meta" aria-label="Recência dos dados da rota">
               <span><i></i>Tráfego consultado agora</span>
-              <span>Notícias analisadas: últimas ${Number(data.data_window_hours || 72)}h</span>
+              <span>Notícias analisadas: últimas ${Number(data.data_window_hours || 24)}h</span>
               <span>${alerts.length} ocorrência(s) cruzada(s)</span>
             </div>
           </div>
@@ -4150,7 +4150,7 @@ function showAuthView() {
             <span class="route-decision-status ${trafficClass}">${escapeHtml(trafficLabel)}</span>
           </div>
           <div class="route-alert-list">
-            ${alerts.length ? alerts.map(routeAlertMarkup).join("") : `<div class="route-empty">Nenhuma ocorrência diretamente relacionada foi encontrada nas últimas ${Number(data.data_window_hours || 72)}h. Isso não substitui a validação com concessionárias e autoridades antes da saída.</div>`}
+            ${alerts.length ? alerts.map(routeAlertMarkup).join("") : `<div class="route-empty">Nenhuma ocorrência diretamente relacionada foi encontrada nas últimas ${Number(data.data_window_hours || 24)}h. Isso não substitui a validação com concessionárias e autoridades antes da saída.</div>`}
           </div>
         </section>
       `;
