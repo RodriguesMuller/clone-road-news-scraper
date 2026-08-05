@@ -102,6 +102,28 @@ function occurrenceTypeLabel(normalizedText) {
   return "Ocorrência na rodovia";
 }
 
+function occurrenceShortLabel(normalizedText) {
+  const hasFatality = /\bmort[eosa]s?\b|\bfatal\b|\bobito\b/.test(normalizedText);
+  if (/bloqueio total|interdicao total/.test(normalizedText)) return "Bloqueio total";
+  if (/manifestacao|protesto/.test(normalizedText)) return "Interdição por manifestação";
+  if (/queda de barreira|desabamento/.test(normalizedText)) return "Queda de barreira";
+  if (/bloqueio|interdi/.test(normalizedText)) return "Via bloqueada";
+  if (/acidente|colisao|tombamento|capotamento/.test(normalizedText)) return hasFatality ? "Acidente com vítima fatal" : "Acidente";
+  if (/obra|manutencao/.test(normalizedText)) return "Obra na via";
+  if (/lentidao|congestionamento|pare-e-siga|fila/.test(normalizedText)) return "Congestionamento";
+  if (/tempestade|temporal|alagamento|enchente|granizo/.test(normalizedText)) return "Risco climático";
+  return "Ocorrência";
+}
+
+function mapLabel(item, highway, km) {
+  const shortLabel = occurrenceShortLabel(normalize(`${item.title} ${item.summary} ${item.category}`));
+  const prefixParts = [];
+  if (km) prefixParts.push(`KM ${km}`);
+  if (highway) prefixParts.push(highway);
+  const prefix = prefixParts.join(" · ");
+  return prefix ? `${prefix} — ${shortLabel}` : shortLabel;
+}
+
 function blockDescription(item, highway, region) {
   const normalizedText = normalize(`${item.title} ${item.summary} ${item.category}`);
   const km = extractKm(`${item.title} ${item.summary}`);
@@ -305,6 +327,7 @@ function matchRouteNews(items, route, origin, destination) {
       longitude: preciseGeo ? lng : null,
       match_reason: roadMatch ? `Rodovia ${roadMatch}` : corridorMatch ? `A ${Math.round(corridorDistanceKm)} km do trajeto` : `Localidade ${endpointMatch}`,
       block_description: blockDescription(item, highway, region),
+      map_label: mapLabel(item, highway, extractKm(`${item.title} ${item.summary}`)),
       segment_tone: anchorable ? segmentTone : null,
       route_point_index: anchorable ? nearest.pointIndex : null,
       _riskRank: riskRank,

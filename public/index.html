@@ -1076,6 +1076,23 @@
       0% { transform: scale(.75); opacity: .6; }
       100% { transform: scale(1.7); opacity: 0; }
     }
+    .route-risk-marker-wrap { display: flex; align-items: center; gap: 6px; width: max-content; max-width: 230px; pointer-events: auto; }
+    .route-risk-label {
+      overflow: hidden;
+      max-width: 195px;
+      border: 1px solid;
+      border-radius: 4px;
+      background: rgba(5, 19, 15, .94);
+      padding: 4px 6px;
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      box-shadow: 0 7px 20px rgba(0,0,0,.34);
+    }
+    .route-risk-label.attention { border-color: rgba(232, 176, 66, .48); color: #e8b042; }
+    .route-risk-label.critical { border-color: rgba(214, 95, 95, .5); color: #ffd1d1; }
     .route-decision { padding: 16px; display: grid; align-content: start; gap: 13px; }
     .route-decision-label { color: var(--color-primary); font-size: 10px; font-weight: 950; letter-spacing: .12em; text-transform: uppercase; }
     .route-decision h3 { margin: 0; color: var(--color-text); font-size: 21px; line-height: 1.18; }
@@ -1224,6 +1241,7 @@
       .value { font-size: 30px; }
       .brand-copy strong { font-size: 22px; }
       #routeMap { height: 320px; }
+      .route-risk-label { max-width: 120px; }
       .event-hero-main { padding: 18px; }
       .event-metrics { grid-template-columns: 1fr; }
       .event-metric:nth-child(n) { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.10); }
@@ -4255,9 +4273,15 @@ function showAuthView() {
       // Ancorado no ponto da propria rota (route_point_index), nao na lat/lng bruta da noticia,
       // para o marcador sempre cair exatamente sobre a linha desenhada, em qualquer zoom.
       (data.alerts || []).filter((item) => item.segment_tone && Number.isInteger(item.route_point_index) && points[item.route_point_index]).forEach((item) => {
+        const labelText = escapeHtml(item.map_label || item.block_description || item.title);
         const icon = L.divIcon({
           className: "route-risk-icon",
-          html: `<div class="route-risk-marker ${item.segment_tone}"><span class="route-risk-marker-glyph">!</span></div>`,
+          html: `
+            <div class="route-risk-marker-wrap">
+              <div class="route-risk-marker ${item.segment_tone}"><span class="route-risk-marker-glyph">!</span></div>
+              <span class="route-risk-label ${item.segment_tone}">${labelText}</span>
+            </div>
+          `,
           iconSize: [22, 22],
           iconAnchor: [11, 11],
         });
