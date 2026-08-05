@@ -2912,11 +2912,38 @@ function showAuthView() {
       return match ? match[1].replace(/\s+/g, "-").toUpperCase() : "";
     }
 
+    const RISK_FATALITY_PATTERN = /\bmort[eosa]s?\b|\bmorr(?:eu|em|eram)\b|\bfatal\b|\bobito\b/;
+    const RISK_INJURY_PATTERN = /\bferid[oa]s?\b|\bhospitalizad[oa]s?\b|\bestado grave\b/;
+    const RISK_TOTAL_BLOCK_PATTERN = /bloqueio total|interdicao total|interditada.{0,40}(sem previsao|24 horas|\d+\s*dias)|sem previsao de liberacao/;
+    const RISK_CARGO_THEFT_PATTERN = /roubo de carga|\bsaque\b|carga saqueada/;
+    const RISK_CIVIL_UNREST_PATTERN = /manifestacao|protesto|greve geral/;
+    const RISK_MAJOR_INCIDENT_PATTERN = /acidente|tombamento|colisao|capotamento|choque/;
+    const RISK_INFRASTRUCTURE_PATTERN = /bloqueio|interdicao|interdita|queda de barreira|desabamento|incendio/;
+    const RISK_WEATHER_SEVERE_PATTERN = /tempestade|temporal|alagamento|enchente|granizo/;
+    const RISK_HAZARDOUS_CARGO_PATTERN = /produtos? perigosos?|inflamavel|combustivel|toxico|quimico|explosivo/;
+    const RISK_MINOR_DISRUPTION_PATTERN = /lentidao|chuva forte|obra|interdicao parcial|congestionamento|pare-e-siga|fila/;
+
     function operationalRisk(item) {
       const text = textForItem(item);
-      if (/roubo de carga|saque|bloqueio total|interdicao total|manifestacao|protesto/.test(text)) return ["critical", "Crítico"];
-      if (/acidente|bloqueio|interdicao|interdita|tempestade|perigo|queda de barreira|tombamento|alagamento/.test(text)) return ["high", "Alto"];
-      if (/lentidao|chuva forte|obra|interdicao parcial|congestionamento|pare-e-siga|fila/.test(text)) return ["medium", "Médio"];
+
+      // Crítico: mortes confirmadas, roubo/saque de carga, ou bloqueio total sem previsão de liberação.
+      if (RISK_FATALITY_PATTERN.test(text) || RISK_CARGO_THEFT_PATTERN.test(text) || RISK_TOTAL_BLOCK_PATTERN.test(text)) {
+        return ["critical", "Crítico"];
+      }
+      if (RISK_CIVIL_UNREST_PATTERN.test(text) && RISK_INFRASTRUCTURE_PATTERN.test(text)) {
+        return ["critical", "Crítico"];
+      }
+
+      // Alto: feridos, acidente com bloqueio/interdição real, carga perigosa envolvida, ou clima severo.
+      if (RISK_INJURY_PATTERN.test(text)) return ["high", "Alto"];
+      if (RISK_MAJOR_INCIDENT_PATTERN.test(text) && (RISK_INFRASTRUCTURE_PATTERN.test(text) || RISK_HAZARDOUS_CARGO_PATTERN.test(text))) {
+        return ["high", "Alto"];
+      }
+      if (RISK_WEATHER_SEVERE_PATTERN.test(text) || RISK_INFRASTRUCTURE_PATTERN.test(text)) return ["high", "Alto"];
+
+      // Médio: acidente sem sinal de bloqueio/ferido, obras, lentidão, chuva.
+      if (RISK_MAJOR_INCIDENT_PATTERN.test(text) || RISK_MINOR_DISRUPTION_PATTERN.test(text)) return ["medium", "Médio"];
+
       return ["", "Monitorar"];
     }
 
