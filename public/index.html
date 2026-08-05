@@ -1042,14 +1042,40 @@
     .route-map-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--color-border-soft); background: rgba(2, 18, 13, .74); }
     .route-map-meta span { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; border: 1px solid rgba(30, 255, 149, .24); border-radius: 999px; padding: 4px 8px; color: var(--color-muted-strong); font-size: 9px; font-weight: 850; }
     .route-map-meta i { width: 6px; height: 6px; border-radius: 50%; background: var(--color-primary); box-shadow: 0 0 0 3px rgba(30, 255, 149, .10); }
-    .route-event-icon { width: auto !important; height: auto !important; border: 0 !important; background: transparent !important; }
-    .route-event-marker { position: relative; display: flex; align-items: center; gap: 6px; width: max-content; max-width: 190px; transform: translate(-8px, -8px); pointer-events: auto; }
-    .route-event-dot { flex: 0 0 15px; width: 15px; height: 15px; border: 2px solid #d8dad6; border-radius: 50%; background: #6b9ec7; box-shadow: 0 0 0 5px rgba(107, 158, 199, .14), 0 4px 14px rgba(0,0,0,.5); }
-    .route-event-label { overflow: hidden; max-width: 165px; border: 1px solid rgba(107, 158, 199, .42); border-radius: 4px; background: rgba(5, 19, 15, .94); padding: 4px 6px; color: #6b9ec7; font-size: 9px; font-weight: 900; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 7px 20px rgba(0,0,0,.34); }
-    .route-event-marker.attention .route-event-dot { background: #e8b042; box-shadow: 0 0 0 5px rgba(232, 176, 66, .14), 0 4px 14px rgba(0,0,0,.5); }
-    .route-event-marker.attention .route-event-label { border-color: rgba(232, 176, 66, .48); color: #e8b042; }
-    .route-event-marker.critical .route-event-dot { background: #d65f5f; box-shadow: 0 0 0 5px rgba(214, 95, 95, .16), 0 4px 14px rgba(0,0,0,.5); }
-    .route-event-marker.critical .route-event-label { border-color: rgba(214, 95, 95, .5); color: #ffd1d1; }
+    .route-risk-icon { width: auto !important; height: auto !important; border: 0 !important; background: transparent !important; }
+    .route-risk-marker {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #0a0a0a;
+      color: #241c05;
+      font-weight: 950;
+      font-size: 13px;
+      line-height: 1;
+      box-shadow: 0 4px 12px rgba(0,0,0,.5);
+    }
+    .route-risk-marker.attention { background: #e8b042; }
+    .route-risk-marker.critical { background: #d65f5f; color: #2b0a0a; }
+    .route-risk-marker::after {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 2px solid;
+      opacity: .55;
+      pointer-events: none;
+      animation: route-risk-marker-ring 1.6s ease-out infinite;
+    }
+    .route-risk-marker.attention::after { border-color: #e8b042; }
+    .route-risk-marker.critical::after { border-color: #d65f5f; animation-duration: 1.1s; }
+    @keyframes route-risk-marker-ring {
+      0% { transform: scale(.75); opacity: .6; }
+      100% { transform: scale(1.7); opacity: 0; }
+    }
     .route-decision { padding: 16px; display: grid; align-content: start; gap: 13px; }
     .route-decision-label { color: var(--color-primary); font-size: 10px; font-weight: 950; letter-spacing: .12em; text-transform: uppercase; }
     .route-decision h3 { margin: 0; color: var(--color-text); font-size: 21px; line-height: 1.18; }
@@ -1198,7 +1224,6 @@
       .value { font-size: 30px; }
       .brand-copy strong { font-size: 22px; }
       #routeMap { height: 320px; }
-      .route-event-label { max-width: 120px; }
       .event-hero-main { padding: 18px; }
       .event-metrics { grid-template-columns: 1fr; }
       .event-metric:nth-child(n) { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.10); }
@@ -2052,6 +2077,7 @@
         instance: null,
         layers: null,
         data: null,
+        haloInterval: null,
       },
     };
     const ROUTE_MAX_STOPS = 8;
@@ -4048,20 +4074,6 @@ function showAuthView() {
       return "";
     }
 
-    function routeMapAlertPresentation(item) {
-      const text = normalizeText(`${item?.title || ""} ${item?.summary || ""} ${item?.category || ""}`);
-      const risk = normalizeText(item?.risk_level || "");
-      const hasSlowTraffic = /lentidao|congestionamento|fila/.test(text);
-      const hasWeather = /chuva|tempestade|alagamento|neblina|granizo/.test(text);
-      if (/pare e siga|pare-e-siga/.test(text)) return { tone: "attention", label: "Pare e siga" };
-      if (/bloqueio|interdicao|queda de barreira|manifestacao|protesto/.test(text)) return { tone: "critical", label: "Bloqueio / interdição" };
-      if (hasSlowTraffic && hasWeather) return { tone: "critical", label: "Lentidão + clima" };
-      if (hasSlowTraffic) return { tone: "critical", label: "Lentidão" };
-      if (/acidente|colisao|tombamento|capotamento/.test(text)) return { tone: "critical", label: "Acidente" };
-      if (hasWeather) return { tone: risk.includes("alto") || risk.includes("critico") ? "critical" : "attention", label: "Clima severo" };
-      if (/obra|manutencao|recuperacao/.test(text)) return { tone: "attention", label: "Obra na rota" };
-      return { tone: risk.includes("alto") || risk.includes("critico") ? "critical" : "info", label: item?.category || "Ocorrência" };
-    }
 
     function routeAlertMarkup(alert) {
       const sourceUrl = /INMET/i.test(alert.source || "") ? "" : cleanDisplayText(alert.url);
@@ -4088,6 +4100,7 @@ function showAuthView() {
     function renderRouteResult(data) {
       const result = document.getElementById("routeAnalysisResult");
       if (!result || !data?.route) return;
+      if (state.route.haloInterval) { clearInterval(state.route.haloInterval); state.route.haloInterval = null; }
       if (state.route.instance) {
         state.route.instance.remove();
         state.route.instance = null;
@@ -4184,26 +4197,37 @@ function showAuthView() {
       L.polyline(points, { color: "#020907", weight: 9, opacity: .86, lineCap: "round" }).addTo(layers);
       const intervals = Array.isArray(data.route.traffic_intervals) ? data.route.traffic_intervals : [];
       const colors = { NORMAL: "#1eff95", SLOW: "#e8b042", TRAFFIC_JAM: "#d65f5f" };
+      const trafficWeights = { NORMAL: 5, SLOW: 7, TRAFFIC_JAM: 9 };
       if (intervals.length) {
         intervals.forEach((interval) => {
           const start = Math.max(0, Number(interval.startPolylinePointIndex || 0));
           const end = Math.min(points.length - 1, Number(interval.endPolylinePointIndex || points.length - 1));
           const segment = points.slice(start, Math.max(start + 2, end + 1));
-          if (segment.length > 1) L.polyline(segment, { color: colors[interval.speed] || colors.NORMAL, weight: 5, opacity: .96, lineCap: "round" }).addTo(layers);
+          if (segment.length > 1) L.polyline(segment, { color: colors[interval.speed] || colors.NORMAL, weight: trafficWeights[interval.speed] || trafficWeights.NORMAL, opacity: .96, lineCap: "round" }).addTo(layers);
         });
       } else {
-        L.polyline(points, { color: colors.NORMAL, weight: 5, opacity: .96, lineCap: "round" }).addTo(layers);
+        L.polyline(points, { color: colors.NORMAL, weight: trafficWeights.NORMAL, opacity: .96, lineCap: "round" }).addTo(layers);
       }
+      if (state.route.haloInterval) { clearInterval(state.route.haloInterval); state.route.haloInterval = null; }
       const segmentColors = { critical: "#d65f5f", attention: "#e8b042" };
+      const segmentWeights = { critical: 10, attention: 8 };
+      const haloLayers = [];
+      // Espessura em pixels de tela ja e constante em qualquer zoom (Leaflet nao escala weight);
+      // o span minimo em pontos da polyline evita que trechos curtos fiquem imperceptiveis quando afastado.
       (data.alerts || []).filter((item) => item.segment_tone && Number.isInteger(item.route_point_index)).forEach((item) => {
-        const half = Math.max(3, Math.round(points.length * .015));
+        const half = Math.max(4, Math.round(points.length * .022));
         const start = Math.max(0, item.route_point_index - half);
         const end = Math.min(points.length - 1, item.route_point_index + half);
         const segment = points.slice(start, Math.max(start + 2, end + 1));
         if (segment.length < 2) return;
+        const tone = item.segment_tone;
+        const color = segmentColors[tone] || segmentColors.attention;
+        if (tone === "critical") {
+          haloLayers.push(L.polyline(segment, { color, weight: 22, opacity: .2, lineCap: "round" }).addTo(layers));
+        }
         L.polyline(segment, {
-          color: segmentColors[item.segment_tone] || segmentColors.attention,
-          weight: 7,
+          color,
+          weight: segmentWeights[tone] || segmentWeights.attention,
           opacity: .95,
           lineCap: "round",
           dashArray: "8, 7",
@@ -4212,6 +4236,14 @@ function showAuthView() {
           .bindPopup(`<div class="map-popup"><h3>${escapeHtml(item.block_description || item.title)}</h3><p>${escapeHtml(shortText(item.summary || item.title, 150))}</p></div>`)
           .addTo(layers);
       });
+      if (haloLayers.length) {
+        let phase = 0;
+        state.route.haloInterval = setInterval(() => {
+          phase += 1;
+          const opacity = .16 + Math.abs(Math.sin(phase * .35)) * .24;
+          haloLayers.forEach((layer) => layer.setStyle({ opacity }));
+        }, 120);
+      }
       L.circleMarker(points[0], { radius: 7, color: "#d8dad6", weight: 2, fillColor: "#1eff95", fillOpacity: 1 }).bindTooltip("Origem").addTo(layers);
       L.circleMarker(points.at(-1), { radius: 7, color: "#d8dad6", weight: 2, fillColor: "#6b9ec7", fillOpacity: 1 }).bindTooltip("Destino").addTo(layers);
       (Array.isArray(data.route.stop_points) ? data.route.stop_points : []).forEach((point, index) => {
@@ -4220,16 +4252,18 @@ function showAuthView() {
           .bindTooltip(`Parada ${index + 1}`)
           .addTo(layers);
       });
-      (data.alerts || []).filter((item) => Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude))).forEach((item) => {
-        const presentation = routeMapAlertPresentation(item);
+      // Ancorado no ponto da propria rota (route_point_index), nao na lat/lng bruta da noticia,
+      // para o marcador sempre cair exatamente sobre a linha desenhada, em qualquer zoom.
+      (data.alerts || []).filter((item) => item.segment_tone && Number.isInteger(item.route_point_index) && points[item.route_point_index]).forEach((item) => {
         const icon = L.divIcon({
-          className: "route-event-icon",
-          html: `<div class="route-event-marker ${presentation.tone}"><span class="route-event-dot"></span><span class="route-event-label">${escapeHtml(presentation.label)}</span></div>`,
-          iconSize: [18, 18],
-          iconAnchor: [9, 9],
+          className: "route-risk-icon",
+          html: `<div class="route-risk-marker ${item.segment_tone}"><span class="route-risk-marker-glyph">!</span></div>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
         });
-        L.marker([Number(item.latitude), Number(item.longitude)], { icon })
-          .bindPopup(`<div class="map-popup"><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(shortText(item.summary || item.title, 150))}</p></div>`)
+        L.marker(points[item.route_point_index], { icon, zIndexOffset: item.segment_tone === "critical" ? 200 : 100 })
+          .bindTooltip(item.block_description || item.title, { direction: "top", offset: [0, -10] })
+          .bindPopup(`<div class="map-popup"><h3>${escapeHtml(item.block_description || item.title)}</h3><p>${escapeHtml(shortText(item.summary || item.title, 150))}</p></div>`)
           .addTo(layers);
       });
       map.fitBounds(L.latLngBounds(points).pad(.08), { maxZoom: 11 });
