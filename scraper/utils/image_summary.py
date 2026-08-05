@@ -108,6 +108,21 @@ def build_image_summary_fallback(item: dict) -> dict:
     }
 
 
+def _sanitize_region(region: str | None, source: str, fallback_region: str) -> str:
+    """Evita que o campo region receba o nome da fonte ou um pedaco de frase
+    que deveria estar no resumo (bug observado: "SC - ND Mais", onde "ND Mais"
+    e o nome de um portal de noticias, nao um lugar)."""
+    value = clean_html_text(region)
+    if not value:
+        return fallback_region
+    source_clean = clean_html_text(source)
+    if source_clean and len(source_clean) > 2 and source_clean.lower() in value.lower():
+        return fallback_region
+    if len(value) > 60 or re.search(r"\bna regi[aã]o\b|\bno trecho\b", value, re.IGNORECASE):
+        return fallback_region
+    return value
+
+
 def should_use_ai_for_image_summary(item: dict) -> bool:
     text = clean_html_text(
         f"{item.get('title', '')} {item.get('summary', '')} {item.get('category', '')} {item.get('source', '')}"
@@ -181,6 +196,7 @@ def generate_image_summary(item: dict, api_key: str | None = None, model: str | 
         return fallback
 
     result = {**fallback, **{key: parsed.get(key) for key in fallback.keys() if parsed.get(key) is not None}}
+    result["region"] = _sanitize_region(result.get("region"), item.get("source"), fallback["region"])
     result["image_summary"] = _complete_sentence(result.get("image_summary"), 280)
     result["ai_processed_at"] = datetime.utcnow().isoformat() + "Z"
     result["ai_model"] = model or os.environ.get("OPENAI_IMAGE_MODEL") or os.environ.get("OPENAI_MODEL", DEFAULT_MODEL)

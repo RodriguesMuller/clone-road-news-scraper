@@ -97,6 +97,22 @@ function regionPrefix(region) {
   return `Na região ${articles[value] || "de"} ${value}`;
 }
 
+function sanitizeRegion(region, source, fallbackRegion) {
+  // Evita que o campo region receba o nome da fonte ou um pedaco de frase que
+  // deveria estar no resumo (bug observado: "SC - ND Mais", onde "ND Mais" e
+  // o nome de um portal de noticias, nao um lugar).
+  const value = clean(region);
+  if (!value) return fallbackRegion;
+  const sourceClean = clean(source);
+  if (sourceClean && sourceClean.length > 2 && value.toLowerCase().includes(sourceClean.toLowerCase())) {
+    return fallbackRegion;
+  }
+  if (value.length > 60 || /\bna regi[aã]o\b|\bno trecho\b/i.test(value)) {
+    return fallbackRegion;
+  }
+  return value;
+}
+
 function lowerFirstForPrefix(text) {
   const value = clean(text);
   if (!value) return "";
@@ -294,6 +310,7 @@ async function generateAiSummary(item) {
   const responseData = await response.json();
   const parsed = parseAiJson(extractText(responseData));
   const result = { ...fallback, ...parsed };
+  result.region = sanitizeRegion(result.region, item.source, fallback.region);
   result.image_summary = completeSentence(result.image_summary || result.ai_summary || fallback.image_summary);
   result.ai_summary = completeSentence(result.ai_summary || result.image_summary);
   result.ai_used = true;
