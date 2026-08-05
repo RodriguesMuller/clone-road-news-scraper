@@ -285,7 +285,7 @@ async function generateAiSummary(item) {
           role: "developer",
           content: [{
             type: "input_text",
-            text: "Você é um analista de inteligência operacional para transporte rodoviário de cargas no Brasil. Gere resumo individual para card visual do Road News. Responda somente com JSON válido, sem markdown. Campos obrigatórios: image_summary, ai_summary, region, country, state, city, highway, category, risk_level, operational_relevance, operational_impact. Use português do Brasil, 1 a 2 frases completas, máximo 300 caracteres no image_summary. Priorize rodovia, km, cidade, estado, região, bloqueio, lentidão, acidente, clima severo, desvio, obra e impacto operacional. Não invente fatos. Se não houver impacto confirmado, deixe claro.",
+            text: "Você é um analista de inteligência operacional para transporte rodoviário de cargas no Brasil. Gere resumo individual para card visual do Road News. Responda somente com JSON válido, sem markdown. Campos obrigatórios: image_summary, ai_summary, region, country, state, city, highway, category, risk_level, operational_relevance, operational_impact. Use português do Brasil, 1 a 2 frases completas, máximo 300 caracteres no image_summary. Priorize rodovia, km, cidade, estado, região, bloqueio, lentidão, acidente, clima severo, desvio, obra e impacto operacional. Não repita apenas o título reformulado: se o texto original mencionar causa, status da via, previsão de liberação ou desvio, inclua essa informação no resumo; se não houver nada além do título, mantenha o resumo curto em vez de repeti-lo. Não invente fatos. Se não houver impacto confirmado, deixe claro.",
           }],
         },
         {
