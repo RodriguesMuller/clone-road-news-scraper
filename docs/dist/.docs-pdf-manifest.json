@@ -1,0 +1,38 @@
+{
+  "last_built_at": "2026-08-06T19:47:55.383Z",
+  "source_hash": "sha256:fd1188033d64a21464bd6598924e173c4c92a9d4bc04d25b777310c94e7eef26",
+  "source_files": [
+    "product/VISION.md",
+    "product/PITCH.md",
+    "product/BUSINESS_MODEL.md",
+    "product/PRICING.md",
+    "product/PERSONAS.md",
+    "product/VALUE_PROPOSITION.md",
+    "product/MARKET.md",
+    "product/FEATURES.md",
+    "product/COMPETITORS.md",
+    "product/FAQ.md",
+    "product/ONBOARDING.md",
+    "product/SALES.md",
+    "README.md",
+    "docs/ARCHITECTURE.md",
+    "docs/DATABASE.md",
+    "docs/API.md",
+    "docs/SCRAPERS.md",
+    "docs/AI_PIPELINE.md",
+    "docs/DEPLOY.md",
+    "docs/ENVIRONMENT.md",
+    "docs/SECURITY.md",
+    "docs/CONTRIBUTING.md",
+    "docs/ROADMAP.md",
+    "docs/CHANGELOG.md",
+    "docs/AGENTS.md",
+    "docs/adr/0001-arquitetura-de-subagents.md"
+  ],
+  "changelog": [
+    {
+      "date": "2026-08-06",
+      "summary": "Publicação inicial da documentação consolidada."
+    }
+  ]
+}

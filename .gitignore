@@ -13,8 +13,8 @@ env/
 __pycache__/
 *.py[cod]
 *.egg-info/
-dist/
-build/
+/dist/
+/build/
 
 # VS Code
 .vscode/
@@ -24,3 +24,9 @@ build/
 
 .vercel
 .env*
+
+# docs-publisher (scripts/build-docs-pdf.js)
+# docs/dist/ guarda o PDF publicado + manifest — são versionados de propósito.
+# Só o HTML intermediário de build e node_modules do publisher são ignorados.
+docs/dist/.build-tmp.html
+scripts/node_modules/

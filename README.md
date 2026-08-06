@@ -1,18 +1,20 @@
 # Road News Scraper
 
 Rotina de web scraping de **notícias rodoviárias** e **avisos meteorológicos**
-que afetam as estradas. Coleta de 4 fontes, filtra o conteúdo relevante e
-persiste em um banco **PostgreSQL (Supabase)**. Roda automaticamente a cada 2h
-via **GitHub Actions**.
+que afetam as estradas. Coleta de múltiplas fontes, filtra o conteúdo relevante
+e persiste em um banco **PostgreSQL (Supabase)**. Roda automaticamente a cada
+hora via **GitHub Actions** (`.github/workflows/scraper.yml`).
+
+## Documentação completa
+
+Este README cobre o essencial para rodar o projeto. Para arquitetura, banco de
+dados, API, pipeline de IA e a arquitetura de subagents que mantém tudo isso
+atualizado, ver [`CLAUDE.md`](CLAUDE.md) e [`docs/AGENTS.md`](docs/AGENTS.md)
+— ou o PDF consolidado em `docs/dist/road-news-documentation.pdf`.
 
 ## Fontes
 
-| Fonte | Tipo | Filtro |
-|-------|------|--------|
-| G1 | RSS | keywords rodoviárias |
-| CNN Brasil | RSS | keywords rodoviárias |
-| Band | HTML | keywords rodoviárias |
-| INMET (avisos) | RSS | severidade (`Perigo` / `Grande Perigo`) |
+11 fontes ativas hoje: RSS (G1, CNN Brasil, 4 buscas do Google News, Estradas.com.br, Blog do Caminhoneiro), HTML (Band), API JSON em tempo real (Arteris Fluminense) e avisos meteorológicos do INMET (filtrados por severidade, não por keyword). Lista completa e semântica exata do filtro de keyword em [`docs/SCRAPERS.md`](docs/SCRAPERS.md).
 
 Tudo configurável em [`config/sources.yaml`](config/sources.yaml).
 
