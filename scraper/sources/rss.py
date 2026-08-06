@@ -37,10 +37,28 @@ def scrape_rss(source: dict, keywords: list) -> list:
         if feed.bozo:
             print(f"    ⚠ Feed malformado em '{source['name']}' — tentando mesmo assim")
 
+        is_google_news_aggregator = source["name"].startswith("Google News")
+
         for entry in feed.entries:
             title = clean_text(entry.get("title", ""))
             summary = clean_text(entry.get("summary", entry.get("description", "")))
             link = entry.get("link", "")
+
+            # Google News RSS expõe o veículo real via entry.source.title (e o
+            # título original vem sufixado com "- Veículo"). Sem isso, o card
+            # do cliente mostra "Google News - <query de busca>" como se fosse
+            # a fonte editorial, o que derruba a credibilidade do dado.
+            outlet_name = source["name"]
+            if is_google_news_aggregator:
+                google_source = getattr(entry, "source", None) or entry.get("source")
+                outlet_title = (
+                    google_source.get("title") if isinstance(google_source, dict) else getattr(google_source, "title", None)
+                )
+                if outlet_title:
+                    outlet_name = clean_text(outlet_title)
+                elif " - " in title:
+                    title, _, suffix = title.rpartition(" - ")
+                    outlet_name = clean_text(suffix) or outlet_name
 
             if is_blocked_url(link):
                 continue
@@ -65,7 +83,7 @@ def scrape_rss(source: dict, keywords: list) -> list:
                 {
                     "title": title,
                     "url": entry.get("link", ""),
-                    "source": source["name"],
+                    "source": outlet_name,
                     "category": source.get("category", ""),
                     "published_at": pub_dt,
                     "summary": build_summary(title, summary),

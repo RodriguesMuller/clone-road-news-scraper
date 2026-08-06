@@ -38,6 +38,17 @@ Aplicado só a **título e subtítulo/resumo** (nunca ao texto completo do artig
 
 Mudar essa semântica afeta recall retroativamente — qualquer alteração aqui precisa de aviso a `data-analyst` (para medir o impacto) e atualização do comentário em `config/sources.yaml`.
 
+## Atribuição de fonte nas queries "Google News"
+
+As 4 fontes `Google News — ...` são buscas agregadas (`news.google.com/rss/search?q=...`), não veículos editoriais. Até esta revisão, `scraper/sources/rss.py` gravava o campo `source` da notícia com o nome literal da query (ex. `"Google News - Caminhão/carreta"`), o que aparecia no card do cliente como se fosse a fonte da notícia — problema de credibilidade sinalizado por `compliance-advisor`.
+
+Correção: `scrape_rss()` agora resolve o veículo real por trás do redirect, nesta ordem:
+1. `entry.source.title` do feed do Google News (quando o feed expõe o elemento `<source>`).
+2. Fallback: sufixo `"Título - Veículo"` do próprio `entry.title` (padrão do Google News quando `<source>` não vem preenchido).
+3. Só cai de volta no nome da query (`"Google News - ..."`) se nenhum dos dois acima existir.
+
+Isso só se aplica às fontes cujo `name` em `config/sources.yaml` começa com `"Google News"` — as demais fontes (G1, CNN Brasil, Estradas.com.br, etc.) já gravam o próprio nome do veículo.
+
 ## Adicionar uma fonte nova
 
 Sem editar código Python: adicione um bloco em `rss_sources`/`html_sources`/`inmet_sources` de `config/sources.yaml`, salve, `git push` — o GitHub Actions usa a versão do repositório na próxima execução (até 1h de defasagem). Editar código só é necessário para um **tipo** de fonte novo (ex. um segundo scraper HTML) — nesse caso, o `type` em `html_sources` precisa de um raspador correspondente em `scraper/sources/html.py`.

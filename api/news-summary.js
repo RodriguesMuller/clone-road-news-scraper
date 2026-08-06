@@ -139,6 +139,8 @@ function fallbackSummary(item) {
 
   const risk = clean(item.risk_level) || riskFromText({ ...item, category });
   const relevance = ["Alto", "Critico"].includes(risk) ? "Alta" : "Baixa";
+  const highway = clean(item.highway) || roadFromText(`${title} ${rawSummary}`);
+  const insufficientData = !highway && !region && category === "Monitoramento";
   return {
     image_summary: completeSentence(base),
     ai_summary: completeSentence(base),
@@ -146,13 +148,17 @@ function fallbackSummary(item) {
     country: clean(item.country) || "Brasil",
     state: clean(item.state),
     city: clean(item.city),
-    highway: clean(item.highway) || roadFromText(`${title} ${rawSummary}`),
+    highway,
+    km: "",
+    direction: "",
+    status: "",
     category,
     risk_level: risk,
     operational_relevance: relevance,
     operational_impact: relevance === "Alta"
       ? "Pode afetar segurança, prazo ou planejamento de rotas no transporte rodoviário."
-      : "Sem impacto operacional direto confirmado para rotas no Brasil.",
+      : "Sem status de liberação ou impacto confirmado pela fonte original.",
+    insufficient_data: insufficientData,
   };
 }
 
@@ -285,7 +291,7 @@ async function generateAiSummary(item) {
           role: "developer",
           content: [{
             type: "input_text",
-            text: "Você é um analista de inteligência operacional para transporte rodoviário de cargas no Brasil. Gere resumo individual para card visual do Road News. Responda somente com JSON válido, sem markdown. Campos obrigatórios: image_summary, ai_summary, region, country, state, city, highway, category, risk_level, operational_relevance, operational_impact. Use português do Brasil, 1 a 2 frases completas, máximo 300 caracteres no image_summary. Priorize rodovia, km, cidade, estado, região, bloqueio, lentidão, acidente, clima severo, desvio, obra e impacto operacional. Não repita apenas o título reformulado: se o texto original mencionar causa, status da via, previsão de liberação ou desvio, inclua essa informação no resumo; se não houver nada além do título, mantenha o resumo curto em vez de repeti-lo. Não invente fatos. Se não houver impacto confirmado, deixe claro.",
+            text: "Você é um analista de inteligência operacional para transporte rodoviário de cargas no Brasil. Gere resumo individual para card visual do Road News. Responda somente com JSON válido, sem markdown. Campos obrigatórios: image_summary, ai_summary, region, country, state, city, highway, km, direction, status, category, risk_level, operational_relevance, operational_impact, insufficient_data. Use português do Brasil, 1 a 2 frases completas, máximo 300 caracteres no image_summary. Extraia do texto original, quando existirem: rodovia, km/trecho, sentido (crescente/decrescente ou norte-sul/leste-oeste), município/UF e status da via (ativo/controlado/encerrado) — preencha 'km', 'direction' e 'status' com string vazia quando o texto não informar, nunca invente esses valores. No texto do resumo, cite os campos que existirem; nunca escreva uma frase vaga do tipo 'impacto ainda não confirmado' sem dizer explicitamente o que falta (ex.: 'sem status de liberação informado pela fonte'). Se a notícia não tiver localização identificável (rodovia/km/UF) nem categoria operacional clara, marque insufficient_data: true e mantenha o resumo curto em vez de preencher com texto genérico. Não repita apenas o título reformulado. Não invente fatos.",
           }],
         },
         {

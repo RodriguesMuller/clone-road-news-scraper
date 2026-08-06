@@ -19,6 +19,14 @@ O padrão-ouro do projeto: roda a cada execução do scraper (se `EVENT_INTELLIG
 ### 2. Enriquecimento por item (`scraper/utils/image_summary.py`)
 Roda por notícia individual na coleta, **desligado em produção hoje** (`SCRAPER_AI_SUMMARIES_ENABLED=false` no cron — decisão de custo, ver [`finops-agent`](AGENTS.md)). Quando habilitado, preenche `ai_summary`, `operational_relevance`, `operational_impact`, `region`/`country`/`state`/`city`/`highway`, `risk_level`. Tem fallback determinístico (`build_image_summary_fallback`) para quando a IA está desabilitada ou indisponível.
 
+### 2.1. Resumo do botão "Gerar Resumo" (`api/news-summary.js` → `generateAiSummary`)
+Gera o resumo individual mostrado no card compartilhável (canvas em `public/index.html`, `drawShareImage`). Campos obrigatórios do JSON: `image_summary`, `ai_summary`, `region`, `country`, `state`, `city`, `highway`, `km`, `direction`, `status`, `category`, `risk_level`, `operational_relevance`, `operational_impact`, `insufficient_data`.
+
+- **Regra de corte mínimo**: quando não há rodovia/km/UF identificável nem categoria operacional clara, o modelo marca `insufficient_data: true` em vez de gerar uma frase vaga tipo "impacto ainda não confirmado" sem dizer o motivo — o frontend decide como exibir isso, não é responsabilidade do texto "empurrar" a incerteza.
+- `km`, `direction` (sentido) e `status` (ativo/controlado/encerrado) vêm vazios (`""`) quando a fonte não informa — nunca inventados.
+- `fallbackSummary()` (sem `OPENAI_API_KEY`) preenche a mesma forma de dado, com `km`/`direction`/`status` sempre vazios (a extração determinística por regex ainda não infere esses três campos).
+- O card de imagem (`drawShareImage`) agora renderiza um badge de rota (rodovia + região) além dos badges de risco/relevância, e a cor do badge de risco varia por severidade (crítico/alto/médio/baixo) em vez de usar sempre a cor de marca.
+
 ### 3. Resumo semanal por e-mail (`scraper/weekly_news.py`)
 Gera o resumo operacional enviado toda segunda-feira (ver [`docs/DEPLOY.md`](DEPLOY.md) para o agendamento). Também acionável sob demanda via `api/weekly-summary.js`.
 

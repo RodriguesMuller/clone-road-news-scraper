@@ -190,7 +190,7 @@
     .alert-badge.critical, .weekly-badge.risk-critico, .info-badge.risk-critical { background: rgba(214, 95, 95, .14); border-color: rgba(214, 95, 95, .34); color: #d65f5f; }
     .alert-badge.high, .weekly-badge.risk-alto, .info-badge.risk-high { background: rgba(232, 176, 66, .14); border-color: rgba(232, 176, 66, .38); color: #e8b042; }
     .alert-badge.medium, .weekly-badge.risk-medio, .info-badge.risk-medium { background: rgba(107, 158, 199, .14); border-color: rgba(107, 158, 199, .35); color: #6b9ec7; }
-    .weekly-badge.risk-baixo, .info-badge.risk-low { background: rgba(30, 255, 149, .12); border-color: rgba(30, 255, 149, .28); color: #1eff95; }
+    .weekly-badge.risk-baixo, .info-badge.risk-low { background: var(--color-success-soft); border-color: rgba(124, 170, 111, .4); color: var(--color-success); }
     .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 9px; color: var(--color-muted); font-size: 12px; font-weight: 700; }
     .tag { border-radius: 999px; background: var(--color-primary-soft); color: #1eff95; border: 1px solid rgba(30, 255, 149, .28); padding: 4px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; display: inline-flex; align-items: center; gap: 8px; font-weight: 900; }
     .tag.weather { background: rgba(107, 158, 199, .13); border-color: rgba(107, 158, 199, .32); color: #6b9ec7; }
@@ -5696,17 +5696,25 @@ function showAuthView() {
     function completeCardSummary(text, maxLength = 285) {
       let clean = decodeHtmlText(text || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
       if (!clean) return "";
+      let wasCut = false;
       if (clean.length > maxLength) {
         const slice = clean.slice(0, maxLength + 1);
         const sentenceEnd = Math.max(slice.lastIndexOf(". "), slice.lastIndexOf("! "), slice.lastIndexOf("? "));
-        clean = sentenceEnd > 80 ? slice.slice(0, sentenceEnd + 1) : slice.slice(0, maxLength).replace(/\s+\S*$/, "");
+        if (sentenceEnd > 80) {
+          clean = slice.slice(0, sentenceEnd + 1);
+        } else {
+          clean = slice.slice(0, maxLength).replace(/\s+\S*$/, "");
+          wasCut = true;
+        }
       }
       clean = clean.replace(/\s+,/g, ",").replace(/\s+\./g, ".").replace(/\s+/g, " ").trim();
       const forbidden = new Set(["de", "do", "da", "dos", "das", "em", "para", "com", "e"]);
       while (clean.split(" ").length > 4 && forbidden.has(clean.split(" ").at(-1).toLowerCase().replace(/[.,;:]$/, ""))) {
         clean = clean.split(" ").slice(0, -1).join(" ").trim();
+        wasCut = true;
       }
       clean = clean.replace(/[,:; ]+$/, "");
+      if (wasCut) return /[.!?]$/.test(clean) ? clean.replace(/[.!?]$/, "...") : `${clean}...`;
       return /[.!?]$/.test(clean) ? clean : `${clean}.`;
     }
 
@@ -5897,18 +5905,28 @@ function showAuthView() {
       return `${clean}...`;
     }
 
+    function severityCanvasColor(compactLabel) {
+      const normalized = normalizeText(compactLabel);
+      if (/critico/.test(normalized)) return { fill: "rgba(214, 95, 95, .18)", stroke: "rgba(214, 95, 95, .5)", text: "#d65f5f" };
+      if (/alto/.test(normalized)) return { fill: "rgba(232, 176, 66, .18)", stroke: "rgba(232, 176, 66, .5)", text: "#e8b042" };
+      if (/medio/.test(normalized)) return { fill: "rgba(107, 158, 199, .18)", stroke: "rgba(107, 158, 199, .5)", text: "#6b9ec7" };
+      if (/baixo/.test(normalized)) return { fill: "rgba(124, 170, 111, .18)", stroke: "rgba(124, 170, 111, .5)", text: "#7caa6f" };
+      return { fill: "rgba(30, 255, 149, .16)", stroke: "rgba(30, 255, 149, .42)", text: "#1eff95" };
+    }
+
     function drawCanvasBadges(ctx, badges, x, y, maxWidth) {
       ctx.font = "800 20px Segoe UI, Arial, sans-serif";
       let badgeX = x;
-      for (const rawBadge of badges.slice(0, 2)) {
-        const label = fitCanvasText(ctx, rawBadge, Math.min(310, maxWidth - 28));
+      for (const badge of badges.slice(0, 3)) {
+        const label = fitCanvasText(ctx, badge.text, Math.min(310, maxWidth - 28));
         const badgeW = Math.min(ctx.measureText(label).width + 28, maxWidth);
         if (badgeX + badgeW > x + maxWidth) break;
-        ctx.fillStyle = "rgba(30, 255, 149, .16)";
+        const color = badge.color || { fill: "rgba(30, 255, 149, .16)", stroke: "rgba(30, 255, 149, .42)", text: "#1eff95" };
+        ctx.fillStyle = color.fill;
         ctx.fillRect(badgeX, y, badgeW, 36);
-        ctx.strokeStyle = "rgba(30, 255, 149, .42)";
+        ctx.strokeStyle = color.stroke;
         ctx.strokeRect(badgeX, y, badgeW, 36);
-        ctx.fillStyle = "#1eff95";
+        ctx.fillStyle = color.text;
         ctx.fillText(label, badgeX + 14, y + 25);
         badgeX += badgeW + 10;
       }
@@ -5923,9 +5941,14 @@ function showAuthView() {
       const imageTitle = buildImageTitle(item);
       const source = [item.source, item.category].filter(Boolean).join(" · ");
       const published = formatDate(item.published_at || item.scraped_at || item.created_at);
+      const road = cleanDisplayText(item.highway) || roadFromText(`${item.title || ""} ${item.summary || ""}`);
+      const region = cleanDisplayText(item.region || item.city || item.state || "");
+      const routeLabel = [road, region].filter(Boolean).join(" · ");
+      const riskLabel = item.risk_level && compactRiskValue(item.risk_level);
       const badges = [
-        item.risk_level && `Risco ${compactRiskValue(item.risk_level)}`,
-        item.operational_relevance && `Relevância ${compactRelevanceValue(item.operational_relevance)}`,
+        riskLabel && { text: `Risco ${riskLabel}`, color: severityCanvasColor(riskLabel) },
+        routeLabel && { text: routeLabel, color: null },
+        item.operational_relevance && { text: `Relevância ${compactRelevanceValue(item.operational_relevance)}`, color: null },
       ].filter(Boolean);
 
       ctx.clearRect(0, 0, w, h);
