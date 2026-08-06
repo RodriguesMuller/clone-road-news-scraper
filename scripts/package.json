@@ -5,10 +5,17 @@
   "description": "Consolida /product e /docs num PDF único (docs/dist/road-news-documentation.pdf). Isolado do resto do projeto — não afeta api/ nem o scraper Python.",
   "type": "commonjs",
   "scripts": {
+    "postinstall": "npx puppeteer browsers install chrome",
     "build:docs-pdf": "node build-docs-pdf.js"
   },
   "dependencies": {
     "markdown-it": "^14.1.0",
-    "puppeteer": "^23.9.0"
+    "puppeteer": "^24.15.0"
+  },
+  "puppeteer": {
+    "skipDownload": true
+  },
+  "allowScripts": {
+    "puppeteer@24.43.1": true
   }
 }

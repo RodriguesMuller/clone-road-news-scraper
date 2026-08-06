@@ -1,0 +1,23 @@
+# Normaliza terminação de linha para LF no repositório, independente do
+# core.autocrlf de quem clona (Windows/Mac/Linux) — silencia os avisos do git
+# e evita shebang/script quebrando em CI (Linux) por causa de CRLF.
+* text=auto eol=lf
+
+*.py text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.sql text eol=lf
+*.sh text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+
+# Binários — nunca converter terminação de linha.
+*.pdf binary
+*.woff2 binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
