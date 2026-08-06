@@ -22,7 +22,7 @@ A stack "de referência" mais ampla (framework web, headless browser, containeri
 
 ## Arquitetura de subagents
 
-Este projeto usa 22 subagents especializados (`.claude/agents/*.md`), documentados por completo em **[`docs/AGENTS.md`](docs/AGENTS.md)** (roster, matriz de propriedade de arquivo, grafo de dependências, sobreposições resolvidas, 5 workflows oficiais, e o guia de uso de cada agente). Este arquivo traz só o mapa rápido de roteamento — para qualquer dúvida de fronteira entre agentes, `docs/AGENTS.md` é a fonte completa.
+Este projeto usa 23 subagents especializados (`.claude/agents/*.md`), documentados por completo em **[`docs/AGENTS.md`](docs/AGENTS.md)** (roster, matriz de propriedade de arquivo, grafo de dependências, sobreposições resolvidas, 5 workflows oficiais, e o guia de uso de cada agente). Este arquivo traz só o mapa rápido de roteamento — para qualquer dúvida de fronteira entre agentes, `docs/AGENTS.md` é a fonte completa.
 
 ### Mapa rápido: qual agente chamar
 
@@ -50,16 +50,18 @@ Este projeto usa 22 subagents especializados (`.claude/agents/*.md`), documentad
 | Pricing, persona, posicionamento, `/product` | `product-docs-agent` |
 | README, `/docs`, arquitetura documentada, API documentada | `tech-docs-agent` |
 | Registro de mudança em `docs/HISTORY.md` | `project-historian` |
+| PDF único consolidado de `/product` + `/docs` (`docs/dist/road-news-documentation.pdf`) | `docs-publisher` |
 
 ## Definition of Done
 
-Nenhuma alteração é considerada concluída enquanto os agentes de documentação aplicáveis não tiverem validado e atualizado suas respectivas áreas:
+Nenhuma alteração é considerada concluída enquanto os agentes de documentação aplicáveis não tiverem validado e atualizado suas respectivas áreas, **nesta ordem**:
 
-- **`tech-docs-agent`** — obrigatório em **toda** mudança de código, schema, endpoint, variável de ambiente ou dependência.
-- **`product-docs-agent`** — obrigatório quando a mudança altera **capacidade percebida pelo cliente**, precificação, posicionamento ou material de venda. Em mudança puramente interna, ele mesmo registra "sem impacto de produto" e encerra — é decisão dele, não do agente que implementou.
-- **`project-historian`** — obrigatório em **toda** mudança, sempre por último, registrando também as alternativas descartadas.
+1. **`tech-docs-agent`** — obrigatório em **toda** mudança de código, schema, endpoint, variável de ambiente ou dependência.
+2. **`product-docs-agent`** — obrigatório quando a mudança altera **capacidade percebida pelo cliente**, precificação, posicionamento ou material de venda. Em mudança puramente interna, ele mesmo registra "sem impacto de produto" e encerra — é decisão dele, não do agente que implementou.
+3. **`project-historian`** — obrigatório em **toda** mudança, registrando também as alternativas descartadas.
+4. **`docs-publisher`** — regenera `docs/dist/road-news-documentation.pdf` **se e somente se** o hash de `/product` ou `/docs` mudou desde a última publicação (idempotente: sem mudança de conteúdo, não roda de novo). Nunca cria um segundo PDF nem sufixa por data/versão — sempre sobrescreve o mesmo arquivo.
 
-**Gate de qualidade antes do merge:** `qa-test-engineer` verde → `security-reviewer` sem achado `[BLOQUEANTE]` → trio de documentação acima.
+**Gate de qualidade antes do merge:** `qa-test-engineer` verde → `security-reviewer` sem achado `[BLOQUEANTE]` → os 4 passos de documentação acima.
 
 Os 5 workflows oficiais (nova feature, correção de bug, novo scraper, deploy em produção, ciclo mensal de otimização de IA) estão detalhados em `docs/AGENTS.md`.
 

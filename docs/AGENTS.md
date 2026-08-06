@@ -1,6 +1,6 @@
 # Arquitetura de Subagents — Road News
 
-Este documento é o guia de uso, para humanos, do roster de 22 subagents do Road News. Os agentes em si vivem como arquivos executáveis em [`.claude/agents/*.md`](../.claude/agents) — o frontmatter (`description`) é o que o Claude Code usa para rotear automaticamente; este documento explica quando cada um é acionado, o que cada um nunca faz, como se relacionam, e os workflows que orquestram vários agentes numa mudança real. O racional da decisão está em [`docs/adr/0001-arquitetura-de-subagents.md`](adr/0001-arquitetura-de-subagents.md).
+Este documento é o guia de uso, para humanos, do roster de 23 subagents do Road News. Os agentes em si vivem como arquivos executáveis em [`.claude/agents/*.md`](../.claude/agents) — o frontmatter (`description`) é o que o Claude Code usa para rotear automaticamente; este documento explica quando cada um é acionado, o que cada um nunca faz, como se relacionam, e os workflows que orquestram vários agentes numa mudança real. O racional da decisão está em [`docs/adr/0001-arquitetura-de-subagents.md`](adr/0001-arquitetura-de-subagents.md).
 
 **Premissa estrutural, válida para todo este documento**: os agentes descrevem e defendem o stack real do Road News hoje — scraper Python sem browser headless (feedparser/BeautifulSoup), API em Vercel Serverless Functions com Node vanilla sem dependências (sem package.json), frontend em arquivo único (public/index.html, sem build step), Supabase Postgres com RLS, deploy só Vercel + GitHub Actions, testes com `unittest`/`node:test`. A stack "de referência" mais ampla (Next.js/NestJS, Playwright/Crawl4AI/Firecrawl, Docker/Coolify/Railway/Azure, Jest/Vitest) é uma **caixa de ferramentas futura**: `system-architect` e o agente dono de cada artefato a habilitam sob demanda, via ADR, quando um caso concreto justificar — nunca por padrão.
 
@@ -49,6 +49,7 @@ Este documento é o guia de uso, para humanos, do roster de 22 subagents do Road
 | `product-docs-agent` | sonnet | `/product`: posicionamento, pricing, personas, mercado |
 | `tech-docs-agent` | sonnet | README + `/docs`: arquitetura, API, banco, deploy |
 | `project-historian` | haiku | `docs/HISTORY.md`: registro fiel de toda mudança |
+| `docs-publisher` | haiku | Consolida `/product` + `/docs` em um PDF único, sempre no mesmo caminho |
 
 ---
 
@@ -77,6 +78,7 @@ Princípio inegociável: nenhum caminho abaixo tem dois agentes com `Write`/`Edi
 | `/product/**` | product-docs-agent |
 | `README.md`, `docs/*.md` (raiz), `docs/diagramas/**`, `docs/AGENTS.md` | tech-docs-agent |
 | `docs/HISTORY.md` | project-historian |
+| `docs/dist/road-news-documentation.pdf`, `docs/dist/.docs-pdf-manifest.json`, `scripts/build-docs-pdf.js`, `scripts/package.json` | docs-publisher |
 | — (sem propriedade de arquivo, só leitura) | security-reviewer, compliance-advisor, finops-agent |
 
 ---
@@ -117,6 +119,7 @@ graph TD
     D1[product-docs-agent]
     D2[tech-docs-agent]
     D3[project-historian]
+    D4[docs-publisher]
   end
 
   B2 -- aprova fonte --> A2
@@ -152,6 +155,9 @@ graph TD
   A1 -. arbitra limites .-> A9
   A1 -- ADR --> D2
   D2 --> D3
+  D1 -. se hash mudou .-> D4
+  D2 -. se hash mudou .-> D4
+  D3 -- resumo p/ changelog --> D4
   D1 -. quando aplicável .-> D3
 ```
 
@@ -178,6 +184,8 @@ graph TD
 12. **`scraper/weekly_news.py` toca três agentes ao mesmo tempo.** É um único arquivo que gera texto com IA, usa um prompt, e envia e-mail. Resolvido por sub-responsabilidade dentro do mesmo arquivo: chamada de IA = `ai-engineer`; texto do prompt = `prompt-engineer`; template/destinatário/disparo = `notification-engineer`. Nenhum edita a parte dos outros sem coordenação explícita — é a única exceção deliberada a "um dono por arquivo", justificada por ser um arquivo pequeno com responsabilidades genuinamente ortogonais em faixas de linha diferentes.
 13. **Carve-out de `/docs` para C1/C2/C3.** A especificação original não detalhava onde `ux-product-designer`, `data-analyst` e `seo-content-agent` escrevem, o que colidiria com `tech-docs-agent`. Resolvido: subpastas próprias — `docs/ux/`, `docs/metrics/`, `docs/seo/`.
 14. **`public/index.html` entre `frontend-engineer` e `seo-content-agent`.** A landing pública e o painel logado são o mesmo arquivo (SPA de arquivo único) — um cenário que a especificação original, pensada para uma landing separada de Next.js, não previa. Resolvido: `frontend-engineer` mantém `Write` exclusivo sobre `public/index.html`; `seo-content-agent` entrega brief/diff textual de meta tag e copy, nunca edita o arquivo diretamente. `seo-content-agent` só tem `Write` direto sobre artefatos que genuinamente não colidem (`public/robots.txt`, `public/sitemap.xml`, futuro `public/blog/**`).
+15. **`docs-publisher` (adicionado depois do roster inicial de 22) introduziu a primeira dependência npm do projeto.** `scripts/build-docs-pdf.js` usa `markdown-it` + `puppeteer`, isolados num `scripts/package.json` próprio — não afeta `api/` (que continua zero-dependência) nem o scraper Python. Essa decisão foi validada explicitamente com o usuário antes da implementação, diante da alternativa de escrever em Python (mais consistente com o resto do projeto, mas não executável na máquina de desenvolvimento usada na sessão, que não tinha Python instalado). Registrada aqui, não em ADR à parte, por ser uma decisão pontual de ferramenta de build, não uma mudança de arquitetura de produto.
+16. **`.gitignore` tinha uma regra `dist/` genérica que ignoraria `docs/dist/` por engano.** As linhas `dist/`/`build/` do `.gitignore` (pensadas para artefatos de empacotamento Python na raiz) não tinham `/` inicial, então também casavam com `docs/dist/`, onde `docs-publisher` precisa versionar o PDF e o manifest. Corrigido para `/dist/`/`/build/` (ancorado à raiz do repositório), preservando a intenção original sem bloquear o novo agente.
 
 ---
 
@@ -196,7 +204,7 @@ saas-platform-engineer  → isolamento por tenant, quota, plano
 qa-test-engineer        → testes antes ou junto da implementação
 security-reviewer       → revisão bloqueante
 finops-agent            → custo marginal por notícia e por tenant (se tocar IA/infra)
-tech-docs → product-docs → project-historian   [Definition of Done]
+tech-docs → product-docs → project-historian → docs-publisher   [Definition of Done]
 ```
 
 ### 2. Correção de bug
@@ -207,7 +215,7 @@ qa-test-engineer        → teste que reproduz o bug (falha primeiro)
 system-architect        → só se a causa raiz for estrutural
 security-reviewer       → se o bug tocar auth, dado de tenant, input externo ou dependência
 qa-test-engineer        → regressão verde
-tech-docs (se mudou comportamento público) → project-historian   [Definition of Done]
+tech-docs (se mudou comportamento público) → project-historian → docs-publisher   [Definition of Done]
 ```
 
 ### 3. Novo scraper / novo portal
@@ -220,7 +228,7 @@ logistics-intelligence  → a fonte agrega cobertura de qual categoria? amostra 
 qa-test-engineer        → fixtures de HTML/RSS congelado + teste de contrato do parser
 finops-agent            → custo incremental (páginas × IA × storage)
 data-analyst            → mede ganho real de cobertura após 7 dias
-tech-docs (SCRAPERS.md) → product-docs (se ampliar cobertura vendável) → project-historian
+tech-docs (SCRAPERS.md) → product-docs (se ampliar cobertura vendável) → project-historian → docs-publisher
 ```
 
 ### 4. Deploy em produção
@@ -232,7 +240,7 @@ devops-engineer          → deploy via push na main (Vercel), plano de rollback
 saas-platform-engineer   → smoke test de isolamento entre dois tenants reais
 data-analyst             → baseline pré-deploy das métricas-chave
 devops-engineer          → observação pós-deploy: erro, latência fonte→alerta, custo/hora
-tech-docs (DEPLOY.md, CHANGELOG.md) → product-docs (se release para cliente) → project-historian
+tech-docs (DEPLOY.md, CHANGELOG.md) → product-docs (se release para cliente) → project-historian → docs-publisher
 ```
 
 ### 5. Ciclo de otimização de IA (recorrente, mensal)
@@ -243,7 +251,7 @@ finops-agent             → custo por notícia e projeção mensal
 prompt-engineer          → hipótese + teste A/B contra dataset dourado
 ai-engineer               → roteamento, cache, pré-filtro, batching
 logistics-intelligence    → valida que a qualidade de domínio não regrediu  [BLOQUEANTE]
-tech-docs (AI_PIPELINE.md) → project-historian
+tech-docs (AI_PIPELINE.md) → project-historian → docs-publisher
 ```
 
 ---
@@ -580,4 +588,19 @@ Cada seção cobre: objetivo, responsabilidades, gatilhos de uso, casos de não-
 3. *"Uma fonte foi desativada por reprovação de compliance"* → registra o motivo real, não genérico → entrada citando o risco identificado.
 **Critérios de sucesso:** toda entrada com os 6 campos completos · nova entrada sempre no topo · alternativa descartada sempre com motivo.
 **Critérios de falha:** reescrever entrada antiga em vez de adicionar nova · registrar mudança não concluída · usar linguagem de valor sobre a decisão.
-**Relação com outros subagents:** Upstream: tech-docs-agent e product-docs-agent (entram antes no fluxo). Downstream: nenhum — é o fim de toda Definition of Done. Conflito: com tech-docs-agent e system-architect sobre `docs/adr` (resolvido, ver sobreposições residuais #8 e #9).
+**Relação com outros subagents:** Upstream: tech-docs-agent e product-docs-agent (entram antes no fluxo). Downstream: `docs-publisher` (usa o resumo mais recente de `docs/HISTORY.md` para popular o changelog interno do PDF). Conflito: com tech-docs-agent e system-architect sobre `docs/adr` (resolvido, ver sobreposições residuais #8 e #9).
+
+### docs-publisher
+
+**Objetivo:** garante que exista sempre um único PDF navegável, atualizado, consolidando `/product` + `/docs` — o formato que se compartilha com investidor, cliente ou dev novo, sem depender de ninguém lembrar de gerá-lo.
+**Responsabilidades:** ler `/product/*.md` e `/docs/**/*.md` (+ `/docs/adr/*.md`) na ordem definida; rodar `node scripts/build-docs-pdf.js`; sobrescrever sempre `docs/dist/road-news-documentation.pdf`; manter `docs/dist/.docs-pdf-manifest.json` (hash de origem + changelog interno); remover qualquer PDF solto encontrado fora do caminho fixo.
+**Quando usar:** último passo da Definition of Done, sempre que `tech-docs-agent` ou `product-docs-agent` tiverem alterado algo · comando `/publish-docs` ou pedido explícito ("gera o PDF da documentação", "atualiza o PDF").
+**Quando NÃO usar:** decidir conteúdo técnico ou de produto (→ `tech-docs-agent`/`product-docs-agent`, eu só consolido) · rodar a cada commit pequeno isolado (o hash decide se regenera, não o gatilho) · criar um PDF por feature/data/versão (sempre o mesmo arquivo).
+**Ferramentas e conhecimentos:** Read, Write, Bash, Glob; `markdown-it` + `puppeteer` (as únicas dependências npm do projeto, isoladas em `scripts/package.json`), geração de PDF via Chromium headless, renderização de Mermaid no navegador.
+**Exemplos de uso:**
+1. *"tech-docs-agent acabou de criar ARCHITECTURE.md"* → hash de `/docs` mudou → regenera o PDF, log confirma 1 arquivo lido a mais e novo número de páginas.
+2. *"Roda de novo sem eu ter mudado nada"* → hash idêntico ao manifest anterior → "documentação sem alterações desde a última publicação", nenhum commit de binário novo.
+3. *"Achei um PDF antigo solto em /docs/relatorio-2025.pdf"* → deleta na próxima execução, registra a limpeza no changelog interno do PDF.
+**Critérios de sucesso:** existe exatamente 1 PDF de documentação no repositório · rodar 2x sem mudança não gera novo binário · nenhuma seção inventada para arquivo inexistente em `/product`/`/docs`.
+**Critérios de falha:** criar `road-news-documentation-v2.pdf` ou com sufixo de data · deixar HTML intermediário versionado · renderizar diagrama Mermaid como bloco de código cru quando a renderização tinha condição de funcionar.
+**Relação com outros subagents:** Upstream: `tech-docs-agent`, `product-docs-agent` (fonte do conteúdo), `project-historian` (resumo para o changelog interno). Downstream: nenhum — é o fim de toda Definition of Done. Conflito: nenhum residual — é o único agente com `Write` em `docs/dist/**` e em `scripts/build-docs-pdf.js`/`scripts/package.json`.
