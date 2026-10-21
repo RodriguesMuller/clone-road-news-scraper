@@ -11,14 +11,11 @@ module.exports = async function handler(req, res) {
     const account = await requireAccount(req);
     const profile = account.profile || {};
     const pkg = account.activePackage?.packages || null;
-    const usage = !account.authEnabled
-      ? { news: 0, route: 0, ai: 0, pdf: 0 }
-      : {
-          news: await featureUsage(account.user.id, "news_query"),
-          route: await featureUsage(account.user.id, "route_analysis"),
-          ai: await featureUsage(account.user.id, "ai_summary_individual"),
-          pdf: await featureUsage(account.user.id, "pdf_generated"),
-        };
+    const [news, route, ai, pdf] = !account.authEnabled
+      ? [0, 0, 0, 0]
+      : await Promise.all(["news_query", "route_analysis", "ai_summary_individual", "pdf_generated"]
+        .map((feature) => featureUsage(account.user.id, feature)));
+    const usage = { news, route, ai, pdf };
     const limits = {
       monthly_news_limit: Number(pkg?.monthly_news_limit || 0),
       monthly_route_limit: Number(pkg?.monthly_route_limit || 0),

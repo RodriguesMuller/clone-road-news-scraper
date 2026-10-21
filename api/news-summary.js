@@ -69,8 +69,13 @@ function regionFromText(item) {
     "Distrito Federal", "Para", "Pará", "Parana", "Paraná", "Ceara", "Ceará", "Maranhao", "Maranhão",
     "Amazonas", "Bahia", "Goias", "Goiás", "Pernambuco", "Rondonia", "Rondônia", "Tocantins",
   ];
+  // Nome inteiro, mais longo primeiro e "Pará" so com acento: antes a preposicao "para" virava Pará.
+  if (/(^|[^\p{L}])Pará(?!\p{L})/iu.test(text)) return "Pará";
   const normalized = normalize(text);
-  return states.find((state) => normalized.includes(normalize(state))) || roadFromText(text) || "";
+  const state = [...states]
+    .sort((a, b) => b.length - a.length)
+    .find((name) => normalize(name) !== "para" && new RegExp(`\\b${normalize(name)}\\b`).test(normalized));
+  return state || roadFromText(text) || "";
 }
 
 function regionPrefix(region) {
@@ -314,7 +319,13 @@ async function generateAiSummary(item) {
   }
 
   const responseData = await response.json();
-  const parsed = parseAiJson(extractText(responseData));
+  let parsed;
+  try {
+    parsed = parseAiJson(extractText(responseData));
+  } catch {
+    // IA fora do formato: entrega o resumo deterministico em vez de erro 500 (e nao debita a quota).
+    return { ...fallback, ai_used: false };
+  }
   const result = { ...fallback, ...parsed };
   result.region = sanitizeRegion(result.region, item.source, fallback.region);
   result.image_summary = completeSentence(result.image_summary || result.ai_summary || fallback.image_summary);

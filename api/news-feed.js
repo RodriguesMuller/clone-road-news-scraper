@@ -1,7 +1,7 @@
 const GOOGLE_ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
-const { assertCanUse, featureFlagEnabled, featureRule, json, recordUsage, supabaseFetch } = require("./_auth");
+const { assertCanUse, featureFlagEnabled, featureRule, featureUsage, json, recordUsage, supabaseFetch } = require("./_auth");
 const { adminErrorMessage } = require("./_admin");
 
 const BASE_COLUMNS = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
@@ -486,6 +486,17 @@ function routePublicError(error) {
   return "Não foi possível analisar a rota agora. Tente novamente.";
 }
 
+// Mesma regra de assertCanUse("ai_summary_individual"), mas reaproveita a conta ja carregada e nao
+// grava evento "blocked_*": a IA aqui e opcional (cai no fallback), nao uma tentativa bloqueada.
+async function canUseRouteAi(account) {
+  if (!account.authEnabled || account.isPrivileged) return true;
+  const pkg = account.activePackage?.packages;
+  const rule = featureRule("ai_summary_individual");
+  if (!pkg || !featureFlagEnabled(pkg, rule)) return false;
+  const limit = Number(pkg[rule.limit] || 0);
+  return limit > 0 && (await featureUsage(account.user.id, "ai_summary_individual")) < limit;
+}
+
 async function handleRouteAnalysis(req, res) {
   // Minha Rota possui franquia propria e e validada antes de chamar a API do Google.
   const account = await assertCanUse(req, "route_analysis");
@@ -525,12 +536,7 @@ async function handleRouteAnalysis(req, res) {
     alerts: matched.alerts,
   };
 
-  let aiAllowed = true;
-  try {
-    await assertCanUse(req, "ai_summary_individual");
-  } catch {
-    aiAllowed = false;
-  }
+  const aiAllowed = await canUseRouteAi(account);
   const analysis = aiAllowed ? await generateRouteAnalysis(context) : fallbackRouteAnalysis(context);
 
   await recordUsage(account, "route_analysis", {
@@ -624,6 +630,10 @@ module.exports = async function handler(req, res) {
     const message = req.method === "POST"
       ? routePublicError(error)
       : adminErrorMessage(error) || "Nao foi possivel carregar noticias.";
-    json(res, /origem|destino|diferentes/i.test(message) ? 400 : 403, { error: message });
+    // Falha de Google/OpenAI/Supabase nao e "acesso negado": so erros de conta/pacote viram 403.
+    const status = /origem|destino|diferentes|paradas/i.test(message) ? 400
+      : /login|sess|perfil|inativo|pacote|limite|mapa|acesso|permiss/i.test(message) ? 403
+        : 500;
+    json(res, status, { error: message });
   }
 };

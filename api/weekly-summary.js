@@ -26,6 +26,7 @@ const STATES = [
   ["Rio Grande do Sul", "RS"], ["Rondonia", "RO"], ["Roraima", "RR"], ["Santa Catarina", "SC"],
   ["Sao Paulo", "SP"], ["Sergipe", "SE"], ["Tocantins", "TO"],
 ];
+const STATES_BY_LENGTH = [...STATES].sort((a, b) => b[0].length - a[0].length);
 
 function normalizeForMatch(value) {
   return clean(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -36,18 +37,19 @@ function regionFromText(text) {
   const normalized = normalizeForMatch(raw);
   const cityUf = raw.match(/\b([A-ZÁÂÃÉÊÍÓÔÕÚÇ][\wÁÂÃÉÊÍÓÔÕÚÇáâãéêíóôõúç.'-]+(?:\s+[A-ZÁÂÃÉÊÍÓÔÕÚÇ][\wÁÂÃÉÊÍÓÔÕÚÇáâãéêíóôõúç.'-]+){0,3})\/([A-Z]{2})\b/);
   if (cityUf) return `${cityUf[1]}/${cityUf[2]}`;
-  for (const [name, uf] of STATES) {
-    if (normalized.includes(normalizeForMatch(name))) return name;
-    if (new RegExp(`\\b${uf}\\b`, "i").test(raw)) return uf;
-  }
-  return "";
+  // Mesma regra de scraper/utils/filters.py: nome inteiro, mais longo primeiro e "Pará" so com acento.
+  // Antes "para" (preposicao) virava Pará, "Mato Grosso do Sul" virava Mato Grosso e "se" virava SE.
+  if (/(^|[^\p{L}])Pará(?!\p{L})/iu.test(raw)) return "Para";
+  const state = STATES_BY_LENGTH.find(([name]) => name !== "Para" && new RegExp(`\\b${normalizeForMatch(name)}\\b`).test(normalized));
+  if (state) return state[0];
+  return STATES.find(([, uf]) => new RegExp(`\\b${uf}\\b`).test(raw))?.[1] || "";
 }
 
 function categoryFromText(item) {
   const explicit = clean(item.category);
   if (explicit && !/^noticia$/i.test(explicit)) return explicit;
   const text = normalizeForMatch(`${item.title} ${item.summary}`);
-  if (/roubo|saque|assalto|carga/.test(text)) return "Roubo de carga";
+  if (/roubo|saque|assalto.*carga/.test(text)) return "Roubo de carga";
   if (/manifestacao|protesto|bloqueio por manifestantes/.test(text)) return "Manifestacao";
   if (/acidente|colisao|batida|tombamento|capotamento/.test(text)) return "Acidente";
   if (/bloqueio|interdicao|interdita|pista bloqueada|pare-e-siga/.test(text)) return "Interdicao";

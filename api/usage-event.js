@@ -1,5 +1,5 @@
 const { assertCanUse, json, recordUsage } = require("./_auth");
-const { adminErrorMessage } = require("./_admin");
+const { adminErrorMessage, readJson } = require("./_admin");
 
 const FEATURE_BY_EVENT = {
   pdf_generated: "pdf_generated",
@@ -23,9 +23,7 @@ module.exports = async function handler(req, res) {
     return;
   }
   try {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
-    const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {};
+    const body = await readJson(req);
     const eventType = String(body.event_type || "").trim();
     const feature = FEATURE_BY_EVENT[eventType];
     if (!feature) throw new Error("Evento de uso invalido.");

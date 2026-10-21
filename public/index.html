@@ -2205,10 +2205,16 @@
       ],
     };
 
+    // Escapa tambem aspas: o retorno e interpolado dentro de atributos (href, title, data-*).
+    const HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
     function escapeHtml(value) {
-      const div = document.createElement("div");
-      div.textContent = value == null ? "" : String(value);
-      return div.innerHTML;
+      return (value == null ? "" : String(value)).replace(/[&<>"']/g, (char) => HTML_ESCAPES[char]);
+    }
+
+    // So aceita links http(s): bloqueia javascript:/data: vindos de fonte raspada ou de resposta de IA.
+    function safeUrl(value) {
+      const url = cleanDisplayText(value);
+      return /^https?:\/\//i.test(url) ? url : "";
     }
 
     // Garante que contadores/KPIs mostrem "0" explicitamente em vez de vazio
@@ -3072,7 +3078,7 @@ function showAuthView() {
     }
 
     function externalNewsUrl(item) {
-      return isInmetItem(item) ? "" : cleanDisplayText(item.url);
+      return isInmetItem(item) ? "" : safeUrl(item.url);
     }
 
     async function supabaseFetch(path, options = {}) {
@@ -3141,11 +3147,13 @@ function showAuthView() {
       const recentColumns = columns;
       const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
       const since30d = encodeURIComponent(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-      const latestNews = await fetchRowsWithOptionalAi(columns, "&order=created_at.desc&limit=50");
-      const latestInmet = await fetchRowsWithOptionalAi(columns, "&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=20");
-      const recentRows = await fetchRowsWithOptionalAi(recentColumns, `&created_at=gte.${since24h}&order=created_at.desc&limit=300`);
-      const mapRows = await fetchRowsWithOptionalAi(columns, `&created_at=gte.${since30d}&order=created_at.desc&limit=700`);
-      const countResponse = await supabaseFetch(`${TABLE}?select=id`, { method: "HEAD" });
+      const [latestNews, latestInmet, recentRows, mapRows, countResponse] = await Promise.all([
+        fetchRowsWithOptionalAi(columns, "&order=created_at.desc&limit=50"),
+        fetchRowsWithOptionalAi(columns, "&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=20"),
+        fetchRowsWithOptionalAi(recentColumns, `&created_at=gte.${since24h}&order=created_at.desc&limit=300`),
+        fetchRowsWithOptionalAi(columns, `&created_at=gte.${since30d}&order=created_at.desc&limit=700`),
+        supabaseFetch(`${TABLE}?select=id`, { method: "HEAD" }),
+      ]);
       state.recentItems = recentRows;
       state.mapItems = mapRows;
       state.majorEvents = [];
@@ -3435,7 +3443,7 @@ function showAuthView() {
       const evidence = Array.isArray(meta.evidence) ? meta.evidence.slice(0, 8) : [];
       if (!evidence.length) return `<p>As fontes relacionadas ainda estão sendo consolidadas.</p>`;
       return `<div class="event-evidence-list">${evidence.map((item) => {
-        const url = cleanDisplayText(item.url);
+        const url = safeUrl(item.url);
         const title = escapeHtml(item.title || "Atualização relacionada");
         return `
           <article class="event-evidence">
@@ -4098,7 +4106,7 @@ function showAuthView() {
 
 
     function routeAlertMarkup(alert) {
-      const sourceUrl = /INMET/i.test(alert.source || "") ? "" : cleanDisplayText(alert.url);
+      const sourceUrl = /INMET/i.test(alert.source || "") ? "" : safeUrl(alert.url);
       const title = escapeHtml(alert.title || "Ocorrência monitorada");
       return `
         <article class="route-alert-item">
@@ -6165,7 +6173,8 @@ function showAuthView() {
         const title = item.title || "Ocorrência monitorada";
         const risk = item.risk || item.risk_level || "Baixo";
         const regionRoad = [item.road, item.region].filter(Boolean).join(" - ");
-        const link = item.url ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Abrir fonte</a>` : "";
+        const url = safeUrl(item.url);
+        const link = url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">Abrir fonte</a>` : "";
         return `
           <article class="weekly-occurrence">
             <div class="weekly-meta">
@@ -6799,13 +6808,12 @@ function showAuthView() {
       if (event.target.id === "confirmModal") resolveConfirmModal(false);
     });
     document.getElementById("blockedLoginButton")?.addEventListener("click", logout);
+    // "input" ja dispara em <select> e <input>; ouvir "change" tambem renderizava tudo duas vezes.
     ["globalSearch", "periodFilter", "regionFilter", "categoryFilter", "sortFilter"].forEach((id) => {
       document.getElementById(id)?.addEventListener("input", syncClientFilters);
-      document.getElementById(id)?.addEventListener("change", syncClientFilters);
     });
     ["userFilter", "userSearch", "usageClientFilter", "usageRoleFilter", "usageUserStatusFilter", "usagePackageFilter", "usageStatusFilter", "usageSearch", "logSearch"].forEach((id) => {
       document.getElementById(id)?.addEventListener("input", renderAdmin);
-      document.getElementById(id)?.addEventListener("change", renderAdmin);
     });
     document.getElementById("reloadAdmin").addEventListener("click", loadAdminData);
     document.getElementById("packageForm").addEventListener("submit", savePackage);

@@ -318,8 +318,8 @@ test("Minha Rota is rendered only inside the authenticated app and keeps the API
   assert.match(html, /weeklyButton\.hidden = state\.activeClientPage === "route"/);
   assert.match(html, /Tráfego consultado agora/);
   assert.match(html, /Lento \/ pare e siga/);
-  assert.match(html, /routeMapAlertPresentation/);
-  assert.match(html, /route-event-marker/);
+  assert.match(html, /function renderRiskMarkers/);
+  assert.match(html, /route-risk-marker/);
   assert.doesNotMatch(html, /GOOGLE_ROUTES_API_KEY|GOOGLE_MAPS_API_KEY/);
   assert.equal(fs.existsSync(path.join(ROOT, "api", "route-analysis.js")), false);
   const inlineScripts = [...html.matchAll(/<script(?![^>]*src)[^>]*>([\s\S]*?)<\/script>/g)];
@@ -425,4 +425,34 @@ test("route analysis combines traffic, route news and the server-side AI without
   assert.ok(usageWrites.some((event) => event.event_type === "route_analysis"));
   assert.ok(!usageWrites.some((event) => event.event_type === "news_query"));
   assert.ok(usageWrites.some((event) => event.event_type === "ai_summary_individual"));
+});
+
+test("weekly summary classifies region and category without false positives", async () => {
+  process.env.AUTH_ENABLED = "false";
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "service-test";
+  process.env.OPENAI_API_KEY = "";
+  const rows = [
+    "Caminhão de carga tomba e motorista se fere a caminho para o porto",
+    "Acidente na BR-163 em Mato Grosso do Sul",
+    "Chuva forte no Paraná",
+    "Bloqueio de rodovia no Pará",
+  ].map((title) => ({ title, summary: "", source: "Fonte", created_at: new Date().toISOString() }));
+  global.fetch = async (url) => {
+    if (String(url).includes("/rest/v1/news?select=")) return Response.json(rows);
+    throw new Error(`Unexpected fetch: ${url}`);
+  };
+  for (const moduleName of ["_auth.js", "weekly-summary.js"]) {
+    delete require.cache[require.resolve(path.join(ROOT, "api", moduleName))];
+  }
+  const handler = require(path.join(ROOT, "api", "weekly-summary.js"));
+  const response = { statusCode: 0, headers: {}, setHeader(key, value) { this.headers[key] = value; }, end(value) { this.body = value; } };
+  try {
+    await handler({ method: "GET", headers: {} }, response);
+  } finally {
+    delete process.env.AUTH_ENABLED;
+  }
+  const items = JSON.parse(response.body).context.items;
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(items.map((item) => item.region), ["", "Mato Grosso do Sul", "Parana", "Para"]);
+  assert.notEqual(items[0].category, "Roubo de carga");
 });

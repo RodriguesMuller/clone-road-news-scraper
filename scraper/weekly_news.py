@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import psycopg
 import requests
 
+from scraper.utils.filters import _state_from_text
 from scraper.utils.timezone import BRASILIA_TZ, brasilia_now
 
 OPENAI_URL = "https://api.openai.com/v1/responses"
@@ -80,10 +81,11 @@ def _region_from_text(text: str) -> str:
     city_uf = re.search(r"\b([A-ZÁÂÃÉÊÍÓÔÕÚÇ][\wÁÂÃÉÊÍÓÔÕÚÇáâãéêíóôõúç.'-]+(?:\s+[A-ZÁÂÃÉÊÍÓÔÕÚÇ][\wÁÂÃÉÊÍÓÔÕÚÇáâãéêíóôõúç.'-]+){0,3})/([A-Z]{2})\b", raw)
     if city_uf:
         return f"{city_uf.group(1)}/{city_uf.group(2)}"
-    normalized = _match_text(raw)
-    for name, uf in STATES:
-        if _match_text(name) in normalized:
-            return name
+    # Nome inteiro, mais longo primeiro e "Pará" so com acento (nao casa "para"/"Paraná"/"MS" como "MT").
+    state = _state_from_text(raw)
+    if state:
+        return state
+    for _name, uf in STATES:
         if re.search(rf"\b{uf}\b", raw):
             return uf
     return ""
@@ -94,7 +96,7 @@ def _category_from_item(item: dict) -> str:
     if explicit and explicit.lower() != "noticia":
         return explicit
     text = _match_text(f"{item.get('title', '')} {item.get('summary', '')}")
-    if re.search(r"roubo|saque|assalto|carga", text):
+    if re.search(r"roubo|saque|assalto.*carga", text):
         return "Roubo de carga"
     if re.search(r"manifestacao|protesto|bloqueio por manifestantes", text):
         return "Manifestacao"
