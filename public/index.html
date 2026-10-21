@@ -2806,7 +2806,11 @@ function showAuthView() {
       }
 
       const client = authClient();
-      const { data } = await client.auth.getSession();
+      // Com o Supabase inacessivel, renovar uma sessao salva fica tentando indefinidamente.
+      const { data } = await Promise.race([
+        client.auth.getSession(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Não foi possível conectar ao servidor de autenticação.")), 10000)),
+      ]);
       state.session = data.session;
       if (!state.session?.user) {
         state.profile = null;
@@ -6866,7 +6870,12 @@ function showAuthView() {
       if (button.classList.contains("view-user-logs")) focusAdminLogs(button.dataset.userId);
       if (button.classList.contains("delete-user")) deleteUser(button.dataset.userId);
     });
-    bootstrap();
+    // Falha no bootstrap (Supabase fora do ar, lib nao carregou) nao pode deixar a tela em branco:
+    // cai na tela de login com o motivo, sem abrir o painel.
+    bootstrap().catch((error) => {
+      showAuthView();
+      setAuthError(getFriendlyErrorMessage(error, "Não foi possível conectar ao servidor. Tente novamente em instantes."));
+    });
   </script>
 </body>
 </html>
