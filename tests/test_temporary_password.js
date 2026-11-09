@@ -91,23 +91,23 @@ test("my-access still answers and tells the UI the password must change", async 
   assert.equal(JSON.parse(res.body).must_change_password, true);
 });
 
-test("change-password enforces the policy server-side and clears the flag", async () => {
+test("POST /api/my-access (password change) enforces the policy server-side and clears the flag", async () => {
   setEnv();
   const calls = mockSupabase({ mustChange: true });
-  fresh(["_auth.js", "_admin.js", "change-password.js"]);
-  const handler = require(path.join(ROOT, "api", "change-password.js"));
+  fresh(["_auth.js", "_admin.js", "_password.js", "my-access.js"]);
+  const handler = require(path.join(ROOT, "api", "my-access.js"));
 
   const weak = fakeRes();
-  await handler(fakeReq("POST", "/api/change-password", { password: "fraca123", password_confirmation: "fraca123" }), weak);
+  await handler(fakeReq("POST", "/api/my-access", { password: "fraca123", password_confirmation: "fraca123" }), weak);
   assert.equal(weak.statusCode, 400);
   assert.equal(calls.some((call) => call.method === "PUT"), false, "senha fraca nao chega ao Supabase");
 
   const mismatch = fakeRes();
-  await handler(fakeReq("POST", "/api/change-password", { password: "Nova@Senha1", password_confirmation: "Outra@Senha1" }), mismatch);
+  await handler(fakeReq("POST", "/api/my-access", { password: "Nova@Senha1", password_confirmation: "Outra@Senha1" }), mismatch);
   assert.equal(mismatch.statusCode, 400);
 
   const ok = fakeRes();
-  await handler(fakeReq("POST", "/api/change-password", { password: "Nova@Senha1", password_confirmation: "Nova@Senha1" }), ok);
+  await handler(fakeReq("POST", "/api/my-access", { password: "Nova@Senha1", password_confirmation: "Nova@Senha1" }), ok);
   assert.equal(ok.statusCode, 200);
   const put = calls.find((call) => call.method === "PUT");
   assert.match(put.url, /\/auth\/v1\/admin\/users\/user-1$/, "so altera o proprio usuario");
@@ -192,4 +192,9 @@ test("admin can reset a temporary password; it re-flags the user and is never au
   const auditCall = calls.filter((call) => call.url.endsWith("/rest/v1/audit_logs")).at(-1);
   assert.equal(JSON.stringify(auditCall.body).includes("Reset@2026"), false);
   assert.equal(auditCall.body.metadata.temporary_password_reset, true);
+});
+
+test("deploy stays within the Vercel Hobby limit of 12 serverless functions", () => {
+  const routes = fs.readdirSync(path.join(ROOT, "api")).filter((name) => name.endsWith(".js") && !name.startsWith("_"));
+  assert.ok(routes.length <= 12, `api/ tem ${routes.length} funcoes: ${routes.join(", ")}`);
 });

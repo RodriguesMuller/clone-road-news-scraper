@@ -180,7 +180,7 @@ async function monthlyUsage(userId, eventTypes) {
 const PASSWORD_CHANGE_REQUIRED = "Troque sua senha temporaria para continuar.";
 
 // Marcado pelo servidor (app_metadata, que o usuario nao consegue editar) quando o admin cria o
-// acesso ou redefine a senha. Enquanto estiver true, so my-access e change-password respondem.
+// acesso ou redefine a senha. Enquanto estiver true, so /api/my-access (GET acesso, POST troca de senha) responde.
 function mustChangePassword(user) {
   return user?.app_metadata?.must_change_password === true;
 }

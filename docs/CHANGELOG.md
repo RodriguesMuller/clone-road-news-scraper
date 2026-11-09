@@ -3,7 +3,7 @@
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
 ## 2026-11-09 — acesso por senha temporária
-- **Alterado**: o convite por e-mail e a recuperação de senha por e-mail foram removidos. O admin/gestor cria o acesso com **senha temporária** e o usuário é obrigado a trocá-la no primeiro login (`/api/change-password`); enquanto não troca, toda a API responde 403. Política única de senha: mínimo 8 caracteres, 1 minúscula, 1 maiúscula, 1 caractere especial (validada no navegador e no servidor). O admin pode redefinir uma senha temporária pela edição do usuário.
+- **Alterado**: o convite por e-mail e a recuperação de senha por e-mail foram removidos. O admin/gestor cria o acesso com **senha temporária** e o usuário é obrigado a trocá-la no primeiro login (`POST /api/my-access`); enquanto não troca, toda a API responde 403. Política única de senha: mínimo 8 caracteres, 1 minúscula, 1 maiúscula, 1 caractere especial (validada no navegador e no servidor). O admin pode redefinir uma senha temporária pela edição do usuário.
 - **Aplicado em produção**: `scripts/supabase_security_hardening.sql` — leitura anônima de `news` e RPC anônimo bloqueados (retestado: 401/42501); consultas do feed de 11–17 ms para 0,2–0,8 ms com `news_created_at_idx`.
 
 ## 2026-11-09 (auditoria QA)

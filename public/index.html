@@ -6392,7 +6392,7 @@ function showAuthView() {
       button.disabled = true;
       button.textContent = "Salvando...";
       try {
-        const response = await fetch("/api/change-password", {
+        const response = await fetch("/api/my-access", {
           method: "POST",
           headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ password, password_confirmation: confirmation }),

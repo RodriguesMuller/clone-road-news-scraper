@@ -1,7 +1,13 @@
 const { featureFlagEnabled, featureRule, featureUsage, json, requireAccount } = require("./_auth");
 const { adminErrorMessage } = require("./_admin");
 
+const changeOwnPassword = require("./_password");
+
 module.exports = async function handler(req, res) {
+  if (req.method === "POST") {
+    await changeOwnPassword(req, res);
+    return;
+  }
   if (req.method !== "GET") {
     json(res, 405, { error: "Method not allowed" });
     return;
