@@ -363,7 +363,7 @@ function publicErrorMessage(error) {
   if (/noticias suficientes|notícias suficientes/i.test(message)) {
     return "Nao ha noticias suficientes para gerar o resumo semanal.";
   }
-  if (/login|sessao|sessão|perfil|inativo|pacote|recurso|limite|acesso/i.test(message)) {
+  if (/login|sessao|sessão|perfil|inativo|pacote|recurso|limite|acesso|senha temporaria/i.test(message)) {
     return message;
   }
   return "Nao foi possivel gerar o resumo semanal. Tente novamente.";
@@ -397,7 +397,7 @@ module.exports = async function handler(req, res) {
     json(res, 200, { summary: publicSummary, context });
   } catch (error) {
     const safeMessage = publicErrorMessage(error);
-    res.statusCode = /limite|pacote|login|sessao|sessão|acesso|recurso|perfil|inativo/i.test(safeMessage) ? 403 : 500;
+    res.statusCode = /limite|pacote|login|sessao|sessão|acesso|recurso|perfil|inativo|senha temporaria/i.test(safeMessage) ? 403 : 500;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ error: safeMessage }));
   }

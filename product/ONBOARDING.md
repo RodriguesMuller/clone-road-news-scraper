@@ -7,7 +7,7 @@
 1. **Gestor da plataforma** (`manager`/`admin`) cria o cliente (`clients`) pelo painel — `/gestor` ou `/admin` → tela Clientes.
 2. Cria o(s) usuário(s) (`profiles`) vinculados a esse cliente (`/usuarios`), com CPF, e-mail, telefone.
 3. Vincula um pacote ativo (`/pacotes` → `user_packages`) definindo os limites mensais e as features habilitadas para aquele usuário/cliente.
-4. Usuário recebe convite/acesso via Supabase Auth (template de convite em `scripts/supabase_invite_email_template.html`) e faz login.
+4. O admin/gestor informa ao usuário o e-mail e uma **senha temporária** (não há convite por e-mail). No primeiro login o usuário é obrigado a definir uma senha própria (mínimo 8 caracteres, 1 minúscula, 1 maiúscula e 1 caractere especial). Se esquecer a senha, o admin define uma nova senha temporária na edição do usuário.
 5. Primeira experiência do usuário: dashboard, sem necessariamente nenhum alerta crítico ativo no momento — isso é esperado, não é um sinal de sistema quebrado (ver nota de design abaixo).
 
 ## Não existe hoje

@@ -8,7 +8,7 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const account = await requireAccount(req);
+    const account = await requireAccount(req, { allowPasswordChange: true });
     const profile = account.profile || {};
     const pkg = account.activePackage?.packages || null;
     const [news, route, ai, pdf] = !account.authEnabled
@@ -42,6 +42,7 @@ module.exports = async function handler(req, res) {
       package_name: pkg?.name || null,
       has_active_package: Boolean(pkg),
       is_unlimited: unlimited,
+      must_change_password: Boolean(account.passwordChangeRequired),
       can_query_news: unlimited || (Boolean(pkg) && hasNewsQuota),
       can_access_map: unlimited || (Boolean(pkg) && featureFlagEnabled(pkg, mapRule)),
       can_analyze_route: unlimited || (Boolean(pkg) && hasRouteQuota),

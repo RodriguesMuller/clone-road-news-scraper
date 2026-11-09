@@ -51,7 +51,6 @@ RLS: todas com `enable row level security`. Autorização resolvida por funçõe
 | `supabase_major_events.sql` | Suporte a `platform_events` |
 | `supabase_secure_news_optional.sql` | Ajustes de segurança em colunas opcionais |
 | `reactivate_admin_user.sql` | Script pontual de correção |
-| `supabase_invite_email_template.html` | Template de e-mail de convite do Supabase Auth |
 
 ## Convenções para migration nova
 

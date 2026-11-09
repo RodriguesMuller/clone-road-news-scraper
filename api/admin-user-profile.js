@@ -1,6 +1,7 @@
-const { json, requireManager, supabaseFetch } = require("./_auth");
+const { SERVICE_ROLE_KEY, SUPABASE_URL, json, requireManager, supabaseFetch } = require("./_auth");
 const {
   adminErrorMessage,
+  assertPasswordPolicy,
   audit,
   fetchJson,
   isValidCpf,
@@ -32,6 +33,21 @@ async function targetProfile(account, userId) {
     throw new Error("Voce nao tem permissao para acessar usuarios Admin.");
   }
   return profile;
+}
+
+// Admin/gestor define uma nova senha temporaria (usuario esqueceu a senha): o usuario volta a
+// ser obrigado a troca-la no proximo login.
+async function resetTemporaryPassword(userId, password) {
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
+    method: "PUT",
+    headers: {
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ password, app_metadata: { must_change_password: true } }),
+  });
+  if (!response.ok) throw new Error(await response.text());
 }
 
 async function activeClient(clientId) {
@@ -73,6 +89,12 @@ module.exports = async function handler(req, res) {
       throw new Error("Voce nao pode alterar seu proprio perfil de acesso.");
     }
 
+    const temporaryPassword = String(body.temporary_password || "");
+    if (temporaryPassword) {
+      if (userId === account.user.id) throw new Error("Para trocar a sua propria senha use a opcao Trocar senha.");
+      assertPasswordPolicy(temporaryPassword);
+    }
+
     if (!fullName) throw new Error("Informe o nome completo.");
     if (!isValidCpf(cpf)) throw new Error("Informe um CPF valido.");
     if (!clientId) throw new Error("Selecione o cliente ou empresa.");
@@ -93,10 +115,12 @@ module.exports = async function handler(req, res) {
       headers: { Prefer: "return=minimal" },
       body: JSON.stringify(payload),
     });
+    if (temporaryPassword) await resetTemporaryPassword(userId, temporaryPassword);
     await audit(account, "update_user", "profile", userId, {
       role,
       status,
       client_id: client.id,
+      temporary_password_reset: Boolean(temporaryPassword),
     });
     json(res, 200, { ok: true });
   } catch (error) {

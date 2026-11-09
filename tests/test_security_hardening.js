@@ -181,11 +181,12 @@ test("scraper workflow cannot run two collections at once", () => {
   assert.doesNotMatch(workflow, /actions\/checkout@v4|actions\/setup-python@v5/);
 });
 
-test("invite and password-recovery landing routes are served by the SPA", () => {
-  const config = JSON.parse(read("vercel.json"));
-  const sources = config.rewrites.map((rule) => rule.source);
-  // resetPasswordForEmail usa redirectTo=/accept-invite; sem rewrite a Vercel devolvia 404.
-  assert.ok(sources.includes("/accept-invite"));
-  assert.ok(sources.includes("/auth/callback"));
-  assert.match(read("public", "index.html"), /route === "\/accept-invite" \|\| route === "\/auth\/callback"/);
+test("email invite and email password recovery are gone", () => {
+  const html = read("public", "index.html");
+  const users = read("api", "admin-users.js");
+  assert.doesNotMatch(html, /resetPasswordForEmail|exchangeCodeForSession|auth\.updateUser\(/);
+  assert.doesNotMatch(users, /\/auth\/v1\/invite|invite_user/);
+  const sources = JSON.parse(read("vercel.json")).rewrites.map((rule) => rule.source);
+  assert.ok(!sources.includes("/accept-invite"));
+  assert.ok(!fs.existsSync(path.join(ROOT, "scripts", "supabase_invite_email_template.html")));
 });

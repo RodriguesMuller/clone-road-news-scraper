@@ -177,7 +177,15 @@ async function monthlyUsage(userId, eventTypes) {
   return Number(range.split("/")[1] || 0);
 }
 
-async function requireAccount(req) {
+const PASSWORD_CHANGE_REQUIRED = "Troque sua senha temporaria para continuar.";
+
+// Marcado pelo servidor (app_metadata, que o usuario nao consegue editar) quando o admin cria o
+// acesso ou redefine a senha. Enquanto estiver true, so my-access e change-password respondem.
+function mustChangePassword(user) {
+  return user?.app_metadata?.must_change_password === true;
+}
+
+async function requireAccount(req, { allowPasswordChange = false } = {}) {
   if (!isAuthEnabled()) {
     return {
       authEnabled: false,
@@ -187,6 +195,7 @@ async function requireAccount(req) {
       isAdmin: false,
       isManager: false,
       isPrivileged: false,
+      passwordChangeRequired: false,
     };
   }
   const { user, token } = await getAuthUser(req);
@@ -200,8 +209,10 @@ async function requireAccount(req) {
   const isAdmin = profile.role === "admin";
   const isManager = profile.role === "manager";
   const isPrivileged = isManagerRole(profile.role);
+  const passwordChangeRequired = mustChangePassword(user);
+  if (passwordChangeRequired && !allowPasswordChange) throw new Error(PASSWORD_CHANGE_REQUIRED);
   const activePackage = await getActivePackage(user.id);
-  return { authEnabled: true, user, token, profile, client, activePackage, isAdmin, isManager, isPrivileged };
+  return { authEnabled: true, user, token, profile, client, activePackage, isAdmin, isManager, isPrivileged, passwordChangeRequired };
 }
 
 function packageFor(account) {
@@ -307,6 +318,8 @@ async function requireManager(req) {
 }
 
 module.exports = {
+  PASSWORD_CHANGE_REQUIRED,
+  mustChangePassword,
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   SERVICE_ROLE_KEY,

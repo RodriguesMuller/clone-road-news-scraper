@@ -3,6 +3,7 @@ const {
   adminErrorMessage,
   audit,
   fetchJson,
+  assertPasswordPolicy,
   isValidCpf,
   normalizeCpf,
   normalizePhone,
@@ -77,7 +78,7 @@ function normalizeRole(account, value) {
   return role;
 }
 
-async function normalizedUser(account, body, requirePassword) {
+async function normalizedUser(account, body) {
   const fullName = String(body.full_name || "").trim();
   const email = String(body.email || "").trim().toLowerCase();
   const password = String(body.password || "");
@@ -90,7 +91,7 @@ async function normalizedUser(account, body, requirePassword) {
 
   if (!fullName) throw new Error("Informe o nome completo.");
   if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error("Informe um e-mail valido.");
-  if (requirePassword && password.length < 8) throw new Error("A senha inicial deve ter pelo menos 8 caracteres.");
+  assertPasswordPolicy(password);
   if (!isValidCpf(cpf)) throw new Error("Informe um CPF valido.");
   if (!clientId) throw new Error("Selecione o cliente ou empresa.");
   if (!packageId) throw new Error("Selecione um pacote para o usuario.");
@@ -124,29 +125,9 @@ async function createAuthUser(user) {
       email: user.email,
       password: user.password,
       email_confirm: true,
+      // Senha temporaria: o usuario e obrigado a troca-la no primeiro login (ver _auth.requireAccount).
+      app_metadata: { must_change_password: true },
       user_metadata: {
-        full_name: user.fullName,
-        client_id: user.client.id,
-        company_name: user.client.company_name,
-        role: user.role,
-      },
-    }),
-  });
-  if (!response.ok) throw new Error(await response.text());
-  return response.json();
-}
-
-async function inviteAuthUser(user) {
-  const response = await fetch(`${SUPABASE_URL}/auth/v1/invite`, {
-    method: "POST",
-    headers: {
-      apikey: SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: user.email,
-      data: {
         full_name: user.fullName,
         client_id: user.client.id,
         company_name: user.client.company_name,
@@ -197,13 +178,13 @@ async function saveUser(account, authUser, user, action) {
   }
 }
 
-async function createOrInvite(req, account) {
+// Acesso so e criado pelo admin/gestor com senha temporaria (o convite por e-mail foi removido).
+async function createUser(req, account) {
   const body = await readJson(req);
-  const isInvite = body.action === "invite_user";
-  const user = await normalizedUser(account, body, !isInvite);
-  const authUser = isInvite ? await inviteAuthUser(user) : await createAuthUser(user);
-  const userId = await saveUser(account, authUser, user, isInvite ? "invite_user" : "create_user");
-  return { ok: true, user_id: userId, mode: isInvite ? "invite" : "manual" };
+  const user = await normalizedUser(account, body);
+  const authUser = await createAuthUser(user);
+  const userId = await saveUser(account, authUser, user, "create_user");
+  return { ok: true, user_id: userId, mode: "temporary" };
 }
 
 async function deleteUser(req) {
@@ -248,7 +229,7 @@ module.exports = async function handler(req, res) {
       return;
     }
     const account = await requireManager(req);
-    json(res, 200, await createOrInvite(req, account));
+    json(res, 200, await createUser(req, account));
   } catch (error) {
     json(res, 403, { error: adminErrorMessage(error) });
   }

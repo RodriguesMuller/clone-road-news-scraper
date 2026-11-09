@@ -205,7 +205,7 @@ function openAiApiKey() {
 
 function publicErrorMessage(error) {
   const message = String(error?.message || "");
-  if (/login|sessao|sessão|perfil|inativo|pacote|recurso|limite|acesso|evento|status operacional|requisicao/i.test(message)) return message;
+  if (/login|sessao|sessão|perfil|inativo|pacote|recurso|limite|acesso|evento|status operacional|requisicao|senha temporaria/i.test(message)) return message;
   if (/openai_api_key|invalid_api_key|incorrect api key/i.test(message)) {
     return "A IA ainda nao esta configurada corretamente. Verifique a chave da OpenAI na Vercel.";
   }
@@ -374,7 +374,7 @@ module.exports = async function handler(req, res) {
   } catch (error) {
     const safeMessage = publicErrorMessage(error);
     res.statusCode = /^requisicao/i.test(safeMessage) ? 400
-      : /limite|pacote|login|sessao|acesso|recurso|perfil|inativo/i.test(safeMessage) ? 403 : 500;
+      : /limite|pacote|login|sessao|acesso|recurso|perfil|inativo|senha temporaria/i.test(safeMessage) ? 403 : 500;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ error: safeMessage }));
   }

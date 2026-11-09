@@ -485,7 +485,7 @@ function routePublicError(error) {
   if (/GOOGLE_ROUTES_API_KEY_INVALID|GOOGLE_ROUTES_API_KEY_DENIED/.test(message)) return "A chave da API de rotas não foi aceita. Revise a configuração na Vercel e faça um novo deploy.";
   if (/GOOGLE_ROUTES_QUOTA/.test(message)) return "A API de rotas atingiu o limite de uso. Tente novamente mais tarde.";
   if (/GOOGLE_ROUTES_ADDRESS|GOOGLE_ROUTES_NOT_FOUND/.test(message)) return "Não foi possível localizar uma rota rodoviária entre a origem e o destino informados.";
-  if (/login|sessao|sessão|perfil|inativo|pacote|limite|mapa|acesso|requisicao/i.test(message)) return message;
+  if (/login|sessao|sessão|perfil|inativo|pacote|limite|mapa|acesso|requisicao|senha temporaria/i.test(message)) return message;
   return "Não foi possível analisar a rota agora. Tente novamente.";
 }
 
@@ -635,7 +635,7 @@ module.exports = async function handler(req, res) {
       : adminErrorMessage(error) || "Nao foi possivel carregar noticias.";
     // Falha de Google/OpenAI/Supabase nao e "acesso negado": so erros de conta/pacote viram 403.
     const status = /origem|destino|diferentes|paradas|requisicao/i.test(message) ? 400
-      : /login|sess|perfil|inativo|pacote|limite|mapa|acesso|permiss/i.test(message) ? 403
+      : /login|sess|perfil|inativo|pacote|limite|mapa|acesso|permiss|senha temporaria/i.test(message) ? 403
         : 500;
     json(res, status, { error: message });
   }

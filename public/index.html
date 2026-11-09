@@ -302,6 +302,7 @@
     .field textarea { min-height: 78px; resize: vertical; }
     .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--color-brand); box-shadow: 0 0 0 3px var(--color-brand-soft); }
     .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .field-hint { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.4; }
     .link-button {
       border: 0;
       background: transparent;
@@ -1383,7 +1384,7 @@
             <input id="loginPassword" type="password" autocomplete="current-password" required>
           </div>
           <button id="loginButton" type="submit">Entrar</button>
-          <button id="resetPasswordButton" class="link-button" type="button">Recuperar senha</button>
+          <button id="resetPasswordButton" class="link-button" type="button">Esqueci minha senha</button>
           <div class="auth-links">
             <a href="/privacidade" target="_blank" rel="noopener">Privacidade</a>
             <a href="/termos" target="_blank" rel="noopener">Termos</a>
@@ -1407,19 +1408,21 @@
     <section id="acceptInviteView" class="accept-invite-view" hidden>
       <form id="acceptInviteForm" class="auth-card" aria-describedby="acceptInviteError">
         <div class="weekly-logo">ROAD NEWS</div>
-        <h1>Aceitar convite</h1>
-        <p id="acceptInviteIntro">Crie sua senha para acessar a plataforma.</p>
+        <h1>Defina sua nova senha</h1>
+        <p id="acceptInviteIntro">Sua senha atual é temporária. Crie uma nova senha para acessar a plataforma.</p>
+        <p class="field-hint">Mínimo de 8 caracteres, com 1 letra minúscula, 1 maiúscula e 1 caractere especial.</p>
         <div id="acceptInviteError" class="auth-error"></div>
         <div class="form-grid">
           <div class="field">
             <label for="acceptPassword">Nova senha</label>
-            <input id="acceptPassword" type="password" autocomplete="new-password" minlength="8" required>
+            <input id="acceptPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
           </div>
           <div class="field">
             <label for="acceptPasswordConfirm">Confirmar senha</label>
-            <input id="acceptPasswordConfirm" type="password" autocomplete="new-password" minlength="8" required>
+            <input id="acceptPasswordConfirm" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
           </div>
-          <button id="acceptInviteButton" type="submit">Criar senha e acessar</button>
+          <button id="acceptInviteButton" type="submit">Salvar nova senha e acessar</button>
+          <button id="acceptInviteLogout" class="link-button" type="button">Sair</button>
           <div class="auth-links">
             <a href="/privacidade" target="_blank" rel="noopener">Privacidade</a>
             <a href="/termos" target="_blank" rel="noopener">Termos</a>
@@ -1661,7 +1664,7 @@
                 <div class="field"><label for="inviteEmail">E-mail</label><input id="inviteEmail" type="email" required></div>
               </div>
               <div class="form-row">
-                <div class="field"><label for="invitePassword">Senha inicial</label><input id="invitePassword" type="password" minlength="8" autocomplete="new-password" required></div>
+                <div class="field"><label for="invitePassword">Senha temporária</label><input id="invitePassword" type="password" minlength="8" maxlength="72" autocomplete="new-password" required><small class="field-hint">Mínimo de 8 caracteres, com 1 letra minúscula, 1 maiúscula e 1 caractere especial. O usuário troca no primeiro acesso.</small></div>
                 <div class="field"><label for="inviteCpf">CPF</label><input id="inviteCpf" inputmode="numeric" autocomplete="off" required></div>
               </div>
               <div class="form-row">
@@ -1937,6 +1940,11 @@
           <div class="field">
             <label for="editUserPackage">Pacote atual</label>
             <select id="editUserPackage"></select>
+          </div>
+          <div class="field">
+            <label for="editUserTempPassword">Nova senha temporária (opcional)</label>
+            <input id="editUserTempPassword" type="password" minlength="8" maxlength="72" autocomplete="new-password">
+            <small class="field-hint">Preencha só se o usuário esqueceu a senha. Mínimo de 8 caracteres, com 1 letra minúscula, 1 maiúscula e 1 caractere especial. Ele será obrigado a trocá-la no próximo acesso.</small>
           </div>
         </div>
         <div class="modal-form-actions">
@@ -2262,7 +2270,7 @@
       if (/cliente.*(inativo|inactive)|cliente nao encontrado|cliente não encontrado/.test(haystack)) return "Cliente não encontrado ou inativo.";
       if (/pacote.*(inativo|inactive)|pacote nao encontrado|pacote não encontrado/.test(haystack)) return "Pacote não encontrado ou inativo.";
       if (/seu (usuario|usuário|acesso).*(inativo|inactive|blocked|bloqueado)|profile.*inactive/.test(haystack)) return "Seu acesso está inativo. Contate o administrador.";
-      if (/expired|token.*invalid|invalid.*token|link.*expir|refresh token/.test(haystack)) return "Este link expirou. Solicite um novo convite.";
+      if (/expired|token.*invalid|invalid.*token|link.*expir|refresh token/.test(haystack)) return "Sua sessão expirou. Entre novamente.";
       if (/failed to fetch|network|timeout|econn|connection|fetch failed|servidor/.test(haystack)) return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
       if (/service_role|database_url|supabase_service_role_key|postgres|pgrst|schema|column|stack|trace|^\s*[{[]/.test(haystack)) return fallback;
       return message || fallback;
@@ -2589,15 +2597,21 @@
       return normalizeRoute(window.location.pathname) === "/login";
     }
 
-    function isInvitePage(path = window.location.pathname) {
-      const route = normalizeRoute(path);
-      return route === "/accept-invite" || route === "/auth/callback";
+    // Mesma politica de api/_admin.js passwordPolicyError (o servidor sempre valida de novo).
+    function passwordPolicyError(value) {
+      const password = String(value || "");
+      if (password.length < 8) return "A senha deve ter pelo menos 8 caracteres.";
+      if (password.length > 72) return "A senha deve ter no máximo 72 caracteres.";
+      if (!/[a-z]/.test(password)) return "A senha deve ter pelo menos 1 letra minúscula.";
+      if (!/[A-Z]/.test(password)) return "A senha deve ter pelo menos 1 letra maiúscula.";
+      if (!/[^A-Za-z0-9]/.test(password)) return "A senha deve ter pelo menos 1 caractere especial.";
+      return "";
     }
 
     function canRenderPlatformActions() {
       const hasAccess = state.authEnabled ? Boolean(state.session && state.profile) : Boolean(state.profile);
       const appShell = document.getElementById("appShell");
-      return hasAccess && !isLoginPage() && !isInvitePage() && Boolean(appShell && !appShell.hidden);
+      return hasAccess && !isLoginPage() && Boolean(appShell && !appShell.hidden);
     }
 
     function destroyPlatformActions() {
@@ -2742,7 +2756,7 @@ function showAuthView() {
     function setAcceptInviteError(message = "") {
       const target = document.getElementById("acceptInviteError");
       if (!target) return;
-      target.textContent = message ? getFriendlyErrorMessage(message, "Não foi possível validar o convite.") : "";
+      target.textContent = message ? getFriendlyErrorMessage(message, "Não foi possível salvar a nova senha.") : "";
       target.classList.toggle("show", Boolean(message));
     }
 
@@ -2830,6 +2844,10 @@ function showAuthView() {
         showBlockedView(error.message);
         return false;
       }
+      if (state.access?.must_change_password) {
+        showAcceptInviteView("");
+        return false;
+      }
       const stored = localStorage.getItem(VIEW_MODE_KEY);
       state.viewMode = normalizeViewMode(stored || "client");
       showAppView();
@@ -2844,43 +2862,6 @@ function showAuthView() {
         || hash.get("error")
         || query.get("error")
         || "";
-    }
-
-    async function prepareAcceptInvite() {
-      await loadAuthConfig();
-      showAcceptInviteView("");
-      if (!state.authEnabled) {
-        setAcceptInviteError("A autenticação não está ativa neste ambiente.");
-        return false;
-      }
-
-      const routeError = authRouteMessage();
-      if (routeError) {
-        setAcceptInviteError("Este convite não pôde ser validado. Solicite um novo convite ao administrador.");
-        return false;
-      }
-
-      const client = authClient();
-      const code = new URLSearchParams(window.location.search || "").get("code");
-      if (code) {
-        const { error } = await client.auth.exchangeCodeForSession(code);
-        if (error) {
-          setAcceptInviteError("Este convite expirou ou já foi utilizado. Solicite um novo convite ao administrador.");
-          return false;
-        }
-      }
-
-      const { data } = await client.auth.getSession();
-      state.session = data.session;
-      if (!state.session?.user) {
-        setAcceptInviteError("Não foi possível confirmar o convite. Abra novamente o link recebido por e-mail.");
-        return false;
-      }
-
-      setBrowserPath("/accept-invite", true);
-      const intro = document.getElementById("acceptInviteIntro");
-      if (intro) intro.textContent = `Convite confirmado para ${state.session.user.email || "seu e-mail"}. Crie sua senha para acessar.`;
-      return true;
     }
 
     function canUseFeature(feature, silent = false) {
@@ -4454,10 +4435,6 @@ function showAuthView() {
 
     async function applyRoute(path = window.location.pathname, options = {}) {
       const route = normalizeRoute(path);
-      if (isInvitePage(route)) {
-        await prepareAcceptInvite();
-        return;
-      }
       if (state.authEnabled && !state.session && route !== "/login") {
         state.pendingPath = route;
         showAuthView();
@@ -5522,6 +5499,15 @@ function showAuthView() {
         role,
         status: document.getElementById("editUserStatus").value,
       };
+      const temporaryPassword = document.getElementById("editUserTempPassword").value;
+      if (temporaryPassword) {
+        const passwordError = passwordPolicyError(temporaryPassword);
+        if (passwordError) {
+          setUserEditError(passwordError);
+          return;
+        }
+        payload.temporary_password = temporaryPassword;
+      }
       try {
         button.disabled = true;
         button.textContent = "Salvando...";
@@ -5532,8 +5518,9 @@ function showAuthView() {
         const nextPackage = document.getElementById("editUserPackage").value;
         const originalPackage = document.getElementById("editUserPackageOriginal").value;
         if (nextPackage !== originalPackage) await assignPackage(userId, nextPackage);
+        document.getElementById("editUserTempPassword").value = "";
         closeUserEditModal();
-        setNotice("Usuário atualizado com sucesso.");
+        setNotice(temporaryPassword ? "Usuário atualizado. A nova senha temporária deverá ser trocada no próximo acesso." : "Usuário atualizado com sucesso.");
         await loadAdminData();
       } catch (error) {
         setUserEditError(error.message);
@@ -5559,6 +5546,11 @@ function showAuthView() {
         package_id: document.getElementById("invitePackage").value,
         status: document.getElementById("inviteStatus").value,
       };
+      const passwordError = passwordPolicyError(payload.password);
+      if (passwordError) {
+        setNotice(passwordError);
+        return;
+      }
       if (!payload.client_id || !payload.package_id) {
         updateInvitePackageWarning();
         setNotice(!payload.client_id ? "Cadastre e selecione um cliente antes de criar usuários." : "Cadastre e selecione um pacote antes de criar usuários.");
@@ -5578,7 +5570,7 @@ function showAuthView() {
         if (!response.ok) throw new Error(getFriendlyErrorMessage(data.error || data, "Não foi possível cadastrar o usuário."));
         form.reset();
         document.getElementById("invitePassword").value = "";
-        setNotice("Usuário cadastrado com sucesso. Ele já pode acessar com a senha inicial definida.");
+        setNotice("Usuário cadastrado. Informe o e-mail e a senha temporária a ele: no primeiro acesso será obrigatório definir uma nova senha.");
         await loadAdminData();
       } catch (error) {
         setNotice(error.message || "Não foi possível cadastrar o usuário. Confira os dados e tente novamente.");
@@ -6376,10 +6368,6 @@ function showAuthView() {
       renderMapFilterButtons();
       state.savedNewsKeys = loadSavedNewsKeys();
       await loadAuthConfig();
-      if (isInvitePage()) {
-        await prepareAcceptInvite();
-        return;
-      }
       const allowed = await initAuth({ configLoaded: true });
       if (!allowed) return;
       await refresh();
@@ -6392,8 +6380,9 @@ function showAuthView() {
       const confirmation = document.getElementById("acceptPasswordConfirm").value;
       const button = document.getElementById("acceptInviteButton");
       setAcceptInviteError("");
-      if (password.length < 8) {
-        setAcceptInviteError("Use uma senha com pelo menos 8 caracteres.");
+      const policyError = passwordPolicyError(password);
+      if (policyError) {
+        setAcceptInviteError(policyError);
         return;
       }
       if (password !== confirmation) {
@@ -6401,24 +6390,28 @@ function showAuthView() {
         return;
       }
       button.disabled = true;
-      button.textContent = "Criando acesso...";
+      button.textContent = "Salvando...";
       try {
-        if (!state.session?.user) {
-          const valid = await prepareAcceptInvite();
-          if (!valid) return;
+        const response = await fetch("/api/change-password", {
+          method: "POST",
+          headers: authHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ password, password_confirmation: confirmation }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Não foi possível salvar a nova senha.");
+        document.getElementById("acceptInviteForm").reset();
+        // Renova a sessao para o token seguinte ja vir sem a marca must_change_password.
+        await authClient().auth.refreshSession().catch(() => null);
+        const allowed = await initAuth();
+        if (allowed) {
+          await refresh();
+          await applyRoute(state.pendingPath || "/dashboard", { replace: true });
         }
-        const { error } = await authClient().auth.updateUser({ password });
-        if (error) throw error;
-        await loadMyAccess();
-        state.pendingPath = "/dashboard";
-        await refresh();
-        showAppView();
-        await applyRoute("/dashboard", { replace: true });
       } catch (error) {
-        setAcceptInviteError(error.message || "Não foi possível criar a senha. Solicite um novo convite.");
+        setAcceptInviteError(error.message || "Não foi possível salvar a nova senha.");
       } finally {
         button.disabled = false;
-        button.textContent = "Criar senha e acessar";
+        button.textContent = "Salvar nova senha e acessar";
       }
     }
 
@@ -6448,14 +6441,8 @@ function showAuthView() {
       }
     }
 
-    async function resetPassword() {
-      const email = document.getElementById("loginEmail").value.trim();
-      if (!email) {
-        setAuthError("Informe o e-mail para recuperar a senha.");
-        return;
-      }
-      const { error } = await authClient().auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/accept-invite` });
-      setAuthError(error ? error.message : "Enviamos as instruções de recuperação para o e-mail informado.");
+    function resetPassword() {
+      setAuthError("Solicite ao administrador da plataforma uma nova senha temporária. Você vai definir uma senha nova no primeiro acesso.");
     }
 
     async function logout() {
@@ -6765,6 +6752,7 @@ function showAuthView() {
     document.getElementById("inviteCpf").addEventListener("input", (event) => formatCpfInput(event.target));
     document.getElementById("editUserCpf").addEventListener("input", (event) => formatCpfInput(event.target));
     document.getElementById("acceptInviteForm").addEventListener("submit", submitAcceptInvite);
+    document.getElementById("acceptInviteLogout").addEventListener("click", logout);
     document.getElementById("packagesAdminList").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-id]");
       if (!button) return;

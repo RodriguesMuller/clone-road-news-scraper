@@ -66,6 +66,23 @@ function maskCpf(value) {
   return normalizeCpf(value).length === 11 ? "***.***.***-**" : "";
 }
 
+// Politica unica de senha (senha temporaria criada pelo admin e senha definitiva do usuario):
+// minimo 8 caracteres, 1 minuscula, 1 maiuscula e 1 caractere especial.
+function passwordPolicyError(value) {
+  const password = String(value || "");
+  if (password.length < 8) return "A senha deve ter pelo menos 8 caracteres.";
+  if (password.length > 72) return "A senha deve ter no maximo 72 caracteres.";
+  if (!/[a-z]/.test(password)) return "A senha deve ter pelo menos 1 letra minuscula.";
+  if (!/[A-Z]/.test(password)) return "A senha deve ter pelo menos 1 letra maiuscula.";
+  if (!/[^A-Za-z0-9]/.test(password)) return "A senha deve ter pelo menos 1 caractere especial.";
+  return "";
+}
+
+function assertPasswordPolicy(value) {
+  const error = passwordPolicyError(value);
+  if (error) throw new Error(error);
+}
+
 function normalizePhone(value) {
   const phone = String(value || "").replace(/\D/g, "");
   return phone || null;
@@ -151,6 +168,15 @@ function adminErrorMessage(error) {
   if (/expired|token.*invalid|invalid.*token|link.*expir/i.test(message)) {
     return "Este link expirou. Solicite um novo convite.";
   }
+  if (/same_password|different from the old password/i.test(message)) {
+    return "A nova senha deve ser diferente da senha atual.";
+  }
+  if (/weak_password|password should/i.test(message)) {
+    return "A senha nao atende aos requisitos de seguranca.";
+  }
+  if (/^a senha (deve|nao|e a)|senha temporaria/i.test(message)) {
+    return message;
+  }
   if (/usuario sem pacote|sem pacote ativo|vincule um pacote/i.test(message)) {
     return "Vincule um pacote para liberar os recursos da plataforma.";
   }
@@ -165,6 +191,8 @@ function adminErrorMessage(error) {
 
 module.exports = {
   adminErrorMessage,
+  assertPasswordPolicy,
+  passwordPolicyError,
   audit,
   fetchJson,
   isValidCpf,

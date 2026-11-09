@@ -2,9 +2,12 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
-## 2026-11-09 (branch `qa-audit`, aguardando deploy)
+## 2026-11-09 — acesso por senha temporária
+- **Alterado**: o convite por e-mail e a recuperação de senha por e-mail foram removidos. O admin/gestor cria o acesso com **senha temporária** e o usuário é obrigado a trocá-la no primeiro login (`/api/change-password`); enquanto não troca, toda a API responde 403. Política única de senha: mínimo 8 caracteres, 1 minúscula, 1 maiúscula, 1 caractere especial (validada no navegador e no servidor). O admin pode redefinir uma senha temporária pela edição do usuário.
+- **Aplicado em produção**: `scripts/supabase_security_hardening.sql` — leitura anônima de `news` e RPC anônimo bloqueados (retestado: 401/42501); consultas do feed de 11–17 ms para 0,2–0,8 ms com `news_created_at_idx`.
+
+## 2026-11-09 (auditoria QA)
 - **Segurança**: a tabela `news` deixa de ser legível sem login pela chave pública; o frontend lê notícias só via `/api/news-feed` (também no modo demo) e o scraper não recria mais a policy anônima. Migration `scripts/supabase_security_hardening.sql`.
-- **Corrigido**: links de convite e recuperação de senha (`/accept-invite`, `/auth/callback`) retornavam 404 na Vercel.
 - **Corrigido**: fonte "Band - Notícias" retornava 0 itens após mudança no formato de URL do portal.
 - **Segurança**: teto de tamanho no texto enviado à IA (`/api/news-summary`) e no corpo de todas as requisições (400 para JSON inválido); exclusão de usuário por e-mail com correspondência exata; `supabase-js` fixado em 2.118.0 com SRI; headers de segurança.
 - **Atualizado**: `requests` 2.33.1 e `python-dotenv` 1.2.2 (CVEs).
