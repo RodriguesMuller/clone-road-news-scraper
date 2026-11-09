@@ -42,7 +42,10 @@ def _build_item(title: str, url: str, summary: str, source: dict,
 # O site é uma SPA Next.js renderizada no servidor: o HTML inicial já
 # contém os links de notícia. Cada URL termina em um timestamp de 12
 # dígitos (AAAAMMDDHHMM), de onde extraímos a data de publicação.
-_BAND_URL_RE = re.compile(r"/noticias/.+-(\d{12})$")
+# Formato antigo: /noticias/<slug>-AAAAMMDDHHMM. Desde ~out/2026 a Band publica so
+# /noticias/<slug> (sem timestamp), o que zerava a coleta silenciosamente. Exige slug
+# com 4+ palavras para nao pegar paginas de editoria (/noticias/brasil).
+_BAND_URL_RE = re.compile(r"/noticias/(?:[a-z0-9]+-){3,}?[a-z0-9]+?(?:-(\d{12}))?/?$")
 
 
 def _extract_band_summary(url: str) -> str:
@@ -127,15 +130,17 @@ def scrape_band(source: dict, keywords: list) -> list:
             continue
 
         # Data de publicação a partir do timestamp na URL (AAAAMMDDHHMM)
+        # Sem timestamp na URL (formato novo): fica vazio em vez de inventar uma data.
         ts = match.group(1)
-        try:
-            published_at = datetime(
-                int(ts[0:4]), int(ts[4:6]), int(ts[6:8]),
-                int(ts[8:10]), int(ts[10:12]),
-            )
-            published_at = brasilia_iso_from_datetime(published_at)
-        except ValueError:
-            published_at = ""
+        published_at = ""
+        if ts:
+            try:
+                published_at = brasilia_iso_from_datetime(datetime(
+                    int(ts[0:4]), int(ts[4:6]), int(ts[6:8]),
+                    int(ts[8:10]), int(ts[10:12]),
+                ))
+            except ValueError:
+                published_at = ""
 
         # Filtrar apenas pelo título (não pelo resumo) conforme solicitado
         if matches_keywords(title, keywords):

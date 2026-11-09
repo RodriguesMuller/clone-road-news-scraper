@@ -2,7 +2,7 @@ const GOOGLE_ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRo
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
 const { assertCanUse, featureFlagEnabled, featureRule, featureUsage, json, recordUsage, supabaseFetch } = require("./_auth");
-const { adminErrorMessage } = require("./_admin");
+const { adminErrorMessage, readJson } = require("./_admin");
 
 const BASE_COLUMNS = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
 const OPTIONAL_SETS = [
@@ -178,12 +178,19 @@ function trafficBreakdown(intervals) {
   };
 }
 
+// Indice do primeiro conjunto de colunas aceito pelo schema. Fica em memoria enquanto a funcao
+// estiver quente: sem isso, cada carga do feed em um banco sem as colunas de IA fazia 2 consultas
+// falhas antes da valida, em cada uma das 4 consultas paralelas.
+let workingOptionalSet = 0;
+
 async function fetchRows(suffix) {
   let lastError = null;
-  for (const optional of OPTIONAL_SETS) {
+  for (let index = workingOptionalSet; index < OPTIONAL_SETS.length; index += 1) {
+    const optional = OPTIONAL_SETS[index];
     const columns = optional ? `${BASE_COLUMNS},${optional}` : BASE_COLUMNS;
     try {
       const response = await supabaseFetch(`/rest/v1/news?select=${columns}${suffix}`);
+      workingOptionalSet = index;
       return response.json();
     } catch (error) {
       lastError = error;
@@ -470,11 +477,7 @@ async function generateRouteAnalysis(context) {
   }
 }
 
-async function readBody(req) {
-  const chunks = [];
-  for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
-  return chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {};
-}
+const readBody = readJson;
 
 function routePublicError(error) {
   const message = String(error?.message || "");
@@ -482,7 +485,7 @@ function routePublicError(error) {
   if (/GOOGLE_ROUTES_API_KEY_INVALID|GOOGLE_ROUTES_API_KEY_DENIED/.test(message)) return "A chave da API de rotas não foi aceita. Revise a configuração na Vercel e faça um novo deploy.";
   if (/GOOGLE_ROUTES_QUOTA/.test(message)) return "A API de rotas atingiu o limite de uso. Tente novamente mais tarde.";
   if (/GOOGLE_ROUTES_ADDRESS|GOOGLE_ROUTES_NOT_FOUND/.test(message)) return "Não foi possível localizar uma rota rodoviária entre a origem e o destino informados.";
-  if (/login|sessao|sessão|perfil|inativo|pacote|limite|mapa|acesso/i.test(message)) return message;
+  if (/login|sessao|sessão|perfil|inativo|pacote|limite|mapa|acesso|requisicao/i.test(message)) return message;
   return "Não foi possível analisar a rota agora. Tente novamente.";
 }
 
@@ -631,7 +634,7 @@ module.exports = async function handler(req, res) {
       ? routePublicError(error)
       : adminErrorMessage(error) || "Nao foi possivel carregar noticias.";
     // Falha de Google/OpenAI/Supabase nao e "acesso negado": so erros de conta/pacote viram 403.
-    const status = /origem|destino|diferentes|paradas/i.test(message) ? 400
+    const status = /origem|destino|diferentes|paradas|requisicao/i.test(message) ? 400
       : /login|sess|perfil|inativo|pacote|limite|mapa|acesso|permiss/i.test(message) ? 403
         : 500;
     json(res, status, { error: message });

@@ -1,6 +1,7 @@
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
 const { assertCanUse, json, recordUsage, requireManager, supabaseFetch } = require("./_auth");
+const { readJson } = require("./_admin");
 
 function clean(value) {
   return String(value || "")
@@ -204,7 +205,7 @@ function openAiApiKey() {
 
 function publicErrorMessage(error) {
   const message = String(error?.message || "");
-  if (/login|sessao|sessão|perfil|inativo|pacote|recurso|limite|acesso|evento|status operacional/i.test(message)) return message;
+  if (/login|sessao|sessão|perfil|inativo|pacote|recurso|limite|acesso|evento|status operacional|requisicao/i.test(message)) return message;
   if (/openai_api_key|invalid_api_key|incorrect api key/i.test(message)) {
     return "A IA ainda nao esta configurada corretamente. Verifique a chave da OpenAI na Vercel.";
   }
@@ -214,11 +215,7 @@ function publicErrorMessage(error) {
   return "Nao foi possivel gerar o resumo da noticia. Tente novamente.";
 }
 
-async function readBody(req) {
-  const chunks = [];
-  for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
-  return chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {};
-}
+const readBody = readJson;
 
 async function updateMajorEventStatus(req, body) {
   await requireManager(req);
@@ -269,13 +266,15 @@ async function generateAiSummary(item) {
   if (!apiKey) return { ...fallback, ai_used: false };
   const model = process.env.OPENAI_IMAGE_MODEL || process.env.OPENAI_MODEL || DEFAULT_MODEL;
 
+  // O item vem do navegador: os tetos limitam tokens por chamada (custo de IA) mesmo para
+  // perfis ilimitados, e impedem usar o endpoint como proxy generico de LLM.
   const payload = {
-    title: clean(item.title),
-    raw_summary: clean(item.summary),
-    source: clean(item.source),
-    url: clean(item.url),
-    published_at: clean(item.published_at || item.created_at || item.scraped_at),
-    type: clean(item.type),
+    title: clean(item.title).slice(0, 300),
+    raw_summary: clean(item.summary).slice(0, 2000),
+    source: clean(item.source).slice(0, 120),
+    url: clean(item.url).slice(0, 500),
+    published_at: clean(item.published_at || item.created_at || item.scraped_at).slice(0, 40),
+    type: clean(item.type).slice(0, 40),
     current_region: fallback.region,
     current_highway: fallback.highway,
     current_category: fallback.category,
@@ -367,14 +366,15 @@ module.exports = async function handler(req, res) {
         tokens_input: summary._usage?.input_tokens ?? null,
         tokens_output: summary._usage?.output_tokens ?? null,
         model: summary._model,
-        metadata: { source: "news-summary", title: item.title || "" },
+        metadata: { source: "news-summary", title: clean(item.title).slice(0, 300) },
       });
     }
     const { _usage, _model, ...publicSummary } = summary;
     json(res, 200, publicSummary);
   } catch (error) {
     const safeMessage = publicErrorMessage(error);
-    res.statusCode = /limite|pacote|login|sessao|acesso|recurso|perfil|inativo/i.test(safeMessage) ? 403 : 500;
+    res.statusCode = /^requisicao/i.test(safeMessage) ? 400
+      : /limite|pacote|login|sessao|acesso|recurso|perfil|inativo/i.test(safeMessage) ? 403 : 500;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ error: safeMessage }));
   }

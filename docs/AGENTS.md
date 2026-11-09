@@ -234,7 +234,7 @@ tech-docs (SCRAPERS.md) → product-docs (se ampliar cobertura vendável) → pr
 ### 4. Deploy em produção
 
 ```
-qa-test-engineer        → suíte completa verde (unittest + node:test, local — CI ainda não roda a suíte)
+qa-test-engineer        → suíte completa verde (unittest + node:test, local e no CI `.github/workflows/tests.yml`)
 security-reviewer        → sem [BLOQUEANTE] em aberto
 devops-engineer          → deploy via push na main (Vercel), plano de rollback identificado
 saas-platform-engineer   → smoke test de isolamento entre dois tenants reais

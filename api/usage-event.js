@@ -17,6 +17,12 @@ const CANONICAL_EVENT = {
   weekly_summary: "ai_summary_weekly",
 };
 
+// metadata vem do navegador e vai para usage_events: so objeto simples e pequeno.
+function safeMetadata(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return JSON.stringify(value).length <= 2000 ? value : { truncated: true };
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     json(res, 405, { error: "Method not allowed" });
@@ -28,7 +34,7 @@ module.exports = async function handler(req, res) {
     const feature = FEATURE_BY_EVENT[eventType];
     if (!feature) throw new Error("Evento de uso invalido.");
     const account = await assertCanUse(req, feature);
-    await recordUsage(account, CANONICAL_EVENT[eventType] || eventType, { metadata: body.metadata || {} });
+    await recordUsage(account, CANONICAL_EVENT[eventType] || eventType, { metadata: safeMetadata(body.metadata) });
     json(res, 200, { ok: true });
   } catch (error) {
     json(res, 403, { error: adminErrorMessage(error) || "Uso nao autorizado." });

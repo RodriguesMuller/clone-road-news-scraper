@@ -18,7 +18,7 @@ Criada em runtime pelo próprio scraper (`scraper/storage/postgres.py`), não po
 | `image_summary`, `ai_summary`, `operational_relevance`, `operational_impact`, `ai_processed_at`, `ai_model`, `region`, `country`, `state`, `city`, `highway`, `risk_level` | — | **Opcionais**: adicionadas por migration posterior. O código consumidor (`api/news-feed.js`) tenta múltiplos conjuntos de colunas (`OPTIONAL_SETS`) para tolerar ambiente onde a migration ainda não rodou — nunca assuma que essas colunas existem sem checar. |
 | `latitude`, `longitude`, `geo_precision` | — | Adicionadas por `scripts/supabase_geo_fields.sql` |
 
-RLS: `Allow public read news` (leitura pública, `anon`+`authenticated`) — a tabela de notícias em si não é segregada por tenant; o que é segregado por tenant é o **acesso** a ela via quota/pacote (ver `usage_events`).
+RLS: **sem policy de leitura** depois de `scripts/supabase_security_hardening.sql` — a antiga `Allow public read news` (`anon`, `USING true`) expunha a tabela inteira a qualquer pessoa com a chave pública, contornando login e cota. Toda leitura passa por `api/news-feed.js` com service role; o scraper grava com o usuário `postgres`. A tabela não é segregada por tenant: o que é segregado é o **acesso** via quota/pacote (ver `usage_events`). Em produção (2026-11-09) as colunas opcionais de IA/geo **não existem** — ver `docs/qa-audit/database-audit.md` (DB-02).
 
 ### `platform_events` + `event_intelligence_runs`
 Criadas por `scraper/event_intelligence.py` em runtime (não por script em `scripts/`). `platform_events` guarda eventos logísticos críticos (`event_type = 'major_logistics_event'`), com `metadata` jsonb contendo `event_key`, `operational_status`, `history` (linha do tempo), `confidence`, `affected_infrastructure` etc. `event_intelligence_runs` é só controle de idempotência (fingerprint sha256 do lote analisado → não reanalisa o mesmo lote duas vezes). RLS habilitada; `event_intelligence_runs` é revogada de `anon`/`authenticated` (só acesso via service role).
@@ -47,6 +47,7 @@ RLS: todas com `enable row level security`. Autorização resolvida por funçõe
 | `supabase_route_package_limit.sql` | Limite de análise de rota por pacote |
 | `supabase_geo_fields.sql` | Campos de geolocalização em `news` |
 | `supabase_image_summary_fields.sql` | Campos de enriquecimento por IA em `news` |
+| `supabase_security_hardening.sql` (+ `_rollback.sql`) | Remove leitura anônima de `news`, revoga RPC anônimo das funções SECURITY DEFINER, aceita papel `manager` no check de `profiles`, índices de `news.created_at` e de FKs. Aplicar **depois** do deploy do código correspondente. |
 | `supabase_major_events.sql` | Suporte a `platform_events` |
 | `supabase_secure_news_optional.sql` | Ajustes de segurança em colunas opcionais |
 | `reactivate_admin_user.sql` | Script pontual de correção |

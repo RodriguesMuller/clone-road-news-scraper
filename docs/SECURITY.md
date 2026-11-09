@@ -16,6 +16,15 @@
 4. **Exposição de segredo** — `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `DATABASE_URL`, `RESEND_API_KEY`. Nenhuma dessas chaves aparece em `public/**` nem em log de execução (GitHub Actions loga host/porta da conexão, nunca a connection string inteira).
 5. **LGPD** — duas frentes distintas: dado do usuário da plataforma (CPF mascarado em listagem, `api/_admin.js`) e dado pessoal de terceiro citado em notícia raspada (nome de vítima de acidente, por exemplo) — segunda frente é responsabilidade de `compliance-advisor`, não do código.
 
+## Regras derivadas da auditoria de 2026-11-09 ([`docs/qa-audit/`](qa-audit/final-report.md))
+
+- **Nenhuma tabela legível por `anon`.** O navegador só usa o Supabase para Auth; dados sempre via `api/*` com service role. O scraper não executa DDL de RLS/policy.
+- Funções `SECURITY DEFINER` novas: `REVOKE EXECUTE ... FROM public, anon` na mesma migration.
+- Filtros PostgREST montados com entrada do usuário usam `eq.`, nunca `ilike.`/`like.` (curinga `*`).
+- Corpo de requisição sempre via `_admin.readJson` (teto de 256 KB, 400 em JSON inválido); texto do navegador enviado à IA sempre com teto de tamanho.
+- Script/CSS de CDN só com versão exata + `integrity` (SRI). Headers de segurança ficam em `vercel.json`.
+- Leaflet `bindTooltip`/`bindPopup` com string renderizam HTML: escapar como `innerHTML`.
+
 ## O que NÃO é prioridade de revisão aqui
 
 CSRF (modelo Bearer-token, não cookie) — não gaste ciclo de revisão nisso a menos que um fluxo novo introduza cookie de sessão.

@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Road News</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha384-pmjIAcz2bAn0xukfxADbZIb3t8oRT9Sv0rvO+BR5Csr6Dhqq+nZs59P0pPKQJkEV" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" integrity="sha384-wgw+aLYNQ7dlhK47ZPK7FRACiq7ROZwgFNg0m04avm4CaXS+Z9Y7nMu8yNjBKYC+" crossorigin="anonymous">
   <style>
 
     @font-face {
@@ -1962,13 +1962,12 @@
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" integrity="sha384-eXVCORTRlv4FUUgS/xmOyr66XBVraen8ATNLMESp92FKXLAMiKkerixTiBvXriZr" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
   <script>
     const SUPABASE_URL = "https://vdyilgbqxnrwqgoairat.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_de-5vYgBsDImP6s8Y-Sc9Q_xqhcZsnn";
-    const TABLE = "news";
     const BRASILIA_TIME_ZONE = "America/Sao_Paulo";
     let confirmResolver = null;
 
@@ -3085,90 +3084,25 @@ function showAuthView() {
       return isInmetItem(item) ? "" : safeUrl(item.url);
     }
 
-    async function supabaseFetch(path, options = {}) {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-        ...options,
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-          Prefer: "count=exact",
-          ...(options.headers || {}),
-        },
-      });
-      if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(detail || `Supabase HTTP ${response.status}`);
-      }
-      return response;
-    }
-
-    async function fetchRowsWithOptionalAi(columns, suffix) {
-      const optionalSets = [
-        "image_summary,ai_summary,operational_relevance,operational_impact,risk_level,region,country,state,city,highway,latitude,longitude,geo_precision",
-        "image_summary,ai_summary,operational_relevance,operational_impact,risk_level,region,country,state,city,highway",
-        "",
-      ];
-      let lastError = null;
-      for (const optionalColumns of optionalSets) {
-        const selectedColumns = optionalColumns ? `${columns},${optionalColumns}` : columns;
-        try {
-          return await (await supabaseFetch(`${TABLE}?select=${selectedColumns}${suffix}`)).json();
-        } catch (error) {
-          lastError = error;
-          if (!/image_summary|ai_summary|operational_relevance|risk_level|latitude|longitude|geo_precision|column|schema|PGRST/i.test(error.message || "")) {
-            throw error;
-          }
-        }
-      }
-      throw lastError;
-    }
-
+    // Toda leitura de noticias passa por /api/news-feed (service role no servidor), inclusive no
+    // modo demo: o navegador nao le mais a tabela news direto com a chave publica, entao a policy
+    // anonima pode ser removida sem quebrar nenhum modo de operacao.
     async function loadNews() {
-      if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes("COLE_AQUI")) {
-        throw new Error("Configure SUPABASE_ANON_KEY no arquivo public/index.html antes do deploy.");
-      }
+      const response = await fetch("/api/news-feed", { headers: authHeaders() });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(getFriendlyErrorMessage(payload.error || payload, "Não foi possível carregar notícias."));
 
-      if (state.authEnabled) {
-        const response = await fetch("/api/news-feed", { headers: authHeaders() });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(getFriendlyErrorMessage(payload.error || payload, "Não foi possível carregar notícias."));
-
-        state.recentItems = payload.recentRows || [];
-        state.mapItems = payload.mapRows || [];
-        state.majorEvents = payload.majorEvents || [];
-
-        const merged = new Map();
-        for (const item of [...(payload.latestNews || []), ...(payload.latestInmet || [])]) {
-          const key = item.url || `${item.title}|${item.published_at}|${item.source}`;
-          merged.set(key, item);
-        }
-        state.items = [...merged.values()].sort((a, b) => displayDateValue(b) - displayDateValue(a));
-        state.total = Number(payload.total || state.items.length);
-        return;
-      }
-
-      const columns = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
-      const recentColumns = columns;
-      const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-      const since30d = encodeURIComponent(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-      const [latestNews, latestInmet, recentRows, mapRows, countResponse] = await Promise.all([
-        fetchRowsWithOptionalAi(columns, "&order=created_at.desc&limit=50"),
-        fetchRowsWithOptionalAi(columns, "&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=20"),
-        fetchRowsWithOptionalAi(recentColumns, `&created_at=gte.${since24h}&order=created_at.desc&limit=300`),
-        fetchRowsWithOptionalAi(columns, `&created_at=gte.${since30d}&order=created_at.desc&limit=700`),
-        supabaseFetch(`${TABLE}?select=id`, { method: "HEAD" }),
-      ]);
-      state.recentItems = recentRows;
-      state.mapItems = mapRows;
-      state.majorEvents = [];
+      state.recentItems = payload.recentRows || [];
+      state.mapItems = payload.mapRows || [];
+      state.majorEvents = payload.majorEvents || [];
 
       const merged = new Map();
-      for (const item of [...latestNews, ...latestInmet]) {
+      for (const item of [...(payload.latestNews || []), ...(payload.latestInmet || [])]) {
         const key = item.url || `${item.title}|${item.published_at}|${item.source}`;
         merged.set(key, item);
       }
       state.items = [...merged.values()].sort((a, b) => displayDateValue(b) - displayDateValue(a));
-      state.total = Number(countResponse.headers.get("content-range")?.split("/")?.[1] || state.items.length);
+      state.total = Number(payload.total || state.items.length);
     }
 
     function renderStats() {
@@ -4270,7 +4204,7 @@ function showAuthView() {
           lineCap: "round",
           dashArray: "8, 7",
         })
-          .bindTooltip(item.block_description || item.title, { sticky: true })
+          .bindTooltip(escapeHtml(item.block_description || item.title), { sticky: true })
           .bindPopup(`<div class="map-popup"><h3>${escapeHtml(item.block_description || item.title)}</h3><p>${escapeHtml(shortText(item.summary || item.title, 150))}</p></div>`)
           .addTo(layers);
       });
@@ -4334,7 +4268,7 @@ function showAuthView() {
           const { item, latlng } = cluster.entries[0];
           const labelText = escapeHtml(item.map_label || item.block_description || item.title);
           L.marker(latlng, { icon: riskMarkerIcon(item.segment_tone, "!", labelText), zIndexOffset: item.segment_tone === "critical" ? 200 : 100 })
-            .bindTooltip(item.block_description || item.title, { direction: "top", offset: [0, -10] })
+            .bindTooltip(escapeHtml(item.block_description || item.title), { direction: "top", offset: [0, -10] })
             .bindPopup(`<div class="map-popup"><h3>${escapeHtml(item.block_description || item.title)}</h3><p>${escapeHtml(shortText(item.summary || item.title, 150))}</p></div>`)
             .addTo(markerLayer);
           return;

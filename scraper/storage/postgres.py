@@ -51,15 +51,10 @@ CREATE TABLE IF NOT EXISTS news (
 );
 """
 
-PUBLIC_READ_POLICY = """
-ALTER TABLE news ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Allow public read news" ON news;
-CREATE POLICY "Allow public read news"
-ON news
-FOR SELECT
-TO anon, authenticated
-USING (true);
-"""
+# Leitura da tabela news e feita so pelo backend (service role, em api/news-feed.js).
+# O scraper NAO recria mais a policy "Allow public read news": ela expunha a tabela
+# inteira a qualquer pessoa com a chave publica do frontend, sem login nem cota.
+# Ver scripts/supabase_security_hardening.sql.
 
 
 def _table_columns(cur) -> set[str]:
@@ -126,7 +121,6 @@ def save_to_postgres(news_items: list, database_url: str) -> int:
     with psycopg.connect(database_url, prepare_threshold=None) as conn:
         with conn.cursor() as cur:
             cur.execute(CREATE_TABLE)
-            cur.execute(PUBLIC_READ_POLICY)
             available_columns = _table_columns(cur)
             insert_columns = [column for column in COLUMNS + AI_COLUMNS if column in available_columns]
             insert_sql = _insert_sql(insert_columns)

@@ -157,7 +157,7 @@ test("manual user endpoint creates Auth, profile and package link without leakin
     if (value.includes("/rest/v1/user_packages?user_id=eq.admin-1")) return Response.json([]);
     if (value.includes("/rest/v1/clients?id=eq.client-1")) return Response.json([{ id: "client-1", company_name: "Transportador A", status: "active" }]);
     if (value.includes("/rest/v1/packages?id=eq.package-1")) return Response.json([{ id: "package-1", is_active: true, max_users: 10 }]);
-    if (value.includes("/rest/v1/profiles?email=ilike.")) return Response.json([]);
+    if (value.includes("/rest/v1/profiles?email=eq.")) return Response.json([]);
     if (value.includes("/auth/v1/admin/users?page=")) return Response.json({ users: [] });
     if (value.includes("/rest/v1/user_packages?package_id=eq.package-1") && method === "HEAD") {
       return new Response(null, { status: 200, headers: { "content-range": "0/0" } });

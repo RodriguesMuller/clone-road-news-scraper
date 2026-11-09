@@ -16,7 +16,7 @@ Este projeto usa deliberadamente uma stack enxuta. Antes de sugerir Next.js, Nes
 | Dados | Supabase Postgres gerenciado, RLS via funções SECURITY DEFINER. Migrations = SQL idempotente manual em `scripts/*.sql`. |
 | IA | OpenAI Responses API (`gpt-4.1-mini` padrão), 4 pontos de uso. Sem roteamento multi-provedor. |
 | Deploy | Vercel + GitHub Actions. **Sem** Docker/Coolify/Railway/Azure. |
-| Testes | `unittest` (Python) + `node:test` (JS) nativos. **Sem** Jest/Vitest/Playwright. CI ainda não roda a suíte automaticamente. |
+| Testes | `unittest` (Python) + `node:test` (JS) nativos. **Sem** Jest/Vitest/Playwright. CI roda as duas suítes em push/PR via `.github/workflows/tests.yml`. |
 
 A stack "de referência" mais ampla (framework web, headless browser, containerização) é uma **caixa de ferramentas futura**: só entra via ADR de `system-architect`, quando um caso concreto justificar — nunca por padrão. Ver [`docs/adr/0001-arquitetura-de-subagents.md`](docs/adr/0001-arquitetura-de-subagents.md) para o histórico dessa decisão.
 

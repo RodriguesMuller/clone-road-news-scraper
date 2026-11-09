@@ -66,7 +66,7 @@ async function activeClient(clientId) {
 }
 
 async function profileByEmail(email) {
-  const rows = await fetchJson(`/rest/v1/profiles?email=ilike.${encodeURIComponent(email)}&select=id,email,role,client_id&limit=1`);
+  const rows = await fetchJson(`/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id,email,role,client_id&limit=1`);
   return rows?.[0] || null;
 }
 
@@ -218,11 +218,13 @@ async function deleteUser(req) {
 
   const profilePath = userId
     ? `/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=id,email,role,client_id&limit=1`
-    : `/rest/v1/profiles?email=ilike.${encodeURIComponent(email)}&select=id,email,role,client_id&limit=1`;
+    : `/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=id,email,role,client_id&limit=1`;
   const profile = (await fetchJson(profilePath))?.[0] || null;
   const authUser = profile?.id ? { id: profile.id, email: profile.email } : await authUserByEmail(email);
   const targetId = profile?.id || authUser?.id || userId;
   if (!targetId) throw new Error("Usuario nao encontrado.");
+  // Revalida depois de resolver o alvo: a checagem acima so compara o que veio na requisicao.
+  if (targetId === account.user.id) throw new Error("Voce nao pode excluir seu proprio usuario Admin.");
 
   await audit(account, "delete_user", "profile", targetId, {
     role: profile?.role || null,

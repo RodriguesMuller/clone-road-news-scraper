@@ -31,8 +31,13 @@ def scrape_rss(source: dict, keywords: list) -> list:
             resp.raise_for_status()
             feed = feedparser.parse(resp.content)
         except Exception as fetch_err:
-            print(f"    ⚠ Falha ao buscar via requests ({fetch_err}); tentando feedparser direto")
-            feed = feedparser.parse(source["url"])
+            # Segunda tentativa com o User-Agent padrao do feedparser, mas ainda via requests
+            # para ter timeout: feedparser.parse(url) usa urllib sem timeout e podia prender o
+            # job ate o limite de 15 min do GitHub Actions.
+            print(f"    ⚠ Falha ao buscar via requests ({fetch_err}); tentando com User-Agent do feedparser")
+            fallback = requests.get(source["url"], headers={"User-Agent": feedparser.USER_AGENT}, timeout=20)
+            fallback.raise_for_status()
+            feed = feedparser.parse(fallback.content)
 
         if feed.bozo:
             print(f"    ⚠ Feed malformado em '{source['name']}' — tentando mesmo assim")

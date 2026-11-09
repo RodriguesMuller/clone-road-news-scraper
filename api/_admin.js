@@ -1,12 +1,26 @@
 const { supabaseFetch } = require("./_auth");
 
+// Nenhum endpoint precisa de corpo grande; o teto evita que um payload de MB vire custo de IA
+// (news-summary) ou consumo de memoria na funcao.
+const MAX_BODY_BYTES = 256 * 1024;
+
 async function readJson(req) {
   const chunks = [];
+  let size = 0;
   for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
+    size += buffer.length;
+    if (size > MAX_BODY_BYTES) throw new Error("Requisicao muito grande.");
+    chunks.push(buffer);
   }
   if (!chunks.length) return {};
-  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  let parsed;
+  try {
+    parsed = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    throw new Error("Requisicao invalida.");
+  }
+  return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
 }
 
 async function fetchJson(path, options = {}) {
