@@ -3,7 +3,7 @@ import requests
 from datetime import datetime, timezone
 
 from scraper.sources import HEADERS
-from scraper.utils.filters import build_summary, matches_keywords, clean_text, is_blocked_url, is_fleet_relevant, safe_image_url, first_image_in_html
+from scraper.utils.filters import build_summary, matches_keywords, clean_text, is_blocked_url, is_fleet_relevant, safe_image_url, first_image_in_html, strip_section_prefix
 
 
 def extract_image_url(entry) -> str:
@@ -89,6 +89,8 @@ def scrape_rss(source: dict, keywords: list) -> list:
                 elif " - " in title:
                     title, _, suffix = title.rpartition(" - ")
                     outlet_name = clean_text(suffix) or outlet_name
+
+            title = strip_section_prefix(title)
 
             if is_blocked_url(link):
                 continue

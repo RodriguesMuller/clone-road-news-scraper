@@ -20,7 +20,7 @@ OPENAI_URL = "https://api.openai.com/v1/responses"
 DEFAULT_MODEL = "gpt-4.1-mini"
 EVENT_TYPE = "major_logistics_event"
 MIN_CONFIDENCE = 0.82
-CLASSIFICATION_VERSION = "major-events-v2"
+CLASSIFICATION_VERSION = "major-events-v3"
 
 EVENT_RESPONSE_SCHEMA = {
     "type": "object",
@@ -50,6 +50,7 @@ EVENT_RESPONSE_SCHEMA = {
                     "detour": {"type": "string"},
                     "estimated_duration": {"type": "string"},
                     "timeline_note": {"type": "string"},
+                    "dispatch_decision": {"type": "string", "enum": ["segurar", "liberar_com_desvio", "liberar_com_atencao"]},
                     "evidence": {
                         "type": "array",
                         "items": {
@@ -69,7 +70,7 @@ EVENT_RESPONSE_SCHEMA = {
                     "is_major_event", "event_key", "title", "category", "scope", "severity", "status",
                     "confidence", "country", "location", "affected_infrastructure", "operational_impact",
                     "summary", "why_major", "recommended_actions", "detour", "estimated_duration",
-                    "timeline_note", "evidence",
+                    "timeline_note", "dispatch_decision", "evidence",
                 ],
             },
         },
@@ -162,10 +163,13 @@ def candidate_reasons(item: dict) -> list[str]:
     strategic = bool(STRATEGIC_INFRA_PATTERN.search(text))
     resolution = bool(RESOLUTION_PATTERN.search(text))
     unrelated = bool(UNRELATED_STRIKE_PATTERN.search(text))
+    # Acidente só segura o despacho quando fecha a via de vez ou por tempo indeterminado. "Grave acidente"
+    # sem bloqueio total, ou com interdição parcial, é ocorrência de Alertas. Notícia de liberação passa,
+    # para a IA poder encerrar um evento já publicado.
     routine_accident = (
         bool(ROUTINE_ACCIDENT_PATTERN.search(text))
-        and bool(PARTIAL_PATTERN.search(text))
         and not TOTAL_PATTERN.search(text)
+        and (bool(PARTIAL_PATTERN.search(text)) or not resolution)
     )
 
     if unrelated and not (logistics and impact):
@@ -186,6 +190,10 @@ def candidate_reasons(item: dict) -> list[str]:
             ("impacto operacional", impact),
             ("possível encerramento", resolution),
         ) if enabled]
+    # Liberação de via ("BR-282 é liberada após acidente") vai à IA para encerrar um evento publicado;
+    # sozinha não cria evento (_valid_events descarta evento novo já encerrado).
+    if logistics and resolution:
+        return ["contexto logístico", "possível encerramento"]
     return []
 
 
@@ -323,33 +331,40 @@ def _call_openai(candidates: list[dict], current_events: list[dict], api_key: st
     } for event in current_events]
 
     prompt = (
-        "Você é o motor de inteligência de eventos graves do Road News. Analise somente as notícias fornecidas e "
-        "agrupe as que descrevem a mesma ocorrência logística. Publique apenas eventos CRÍTICOS com impacto concreto "
-        "sobre transporte rodoviário de cargas, portos, fronteiras, corredores logísticos ou infraestrutura marítima "
-        "estratégica. Uma palavra isolada como 'greve' não basta. Greves de categorias sem impacto logístico direto devem "
-        "ser ignoradas. NÃO são eventos graves: acidente pontual (tombamento, colisão, incêndio de veículo) com "
-        "interdição parcial ou de faixas, congestionamento comum, e impactos só em ônibus, metrô ou transporte de "
-        "passageiros — essas ocorrências já aparecem em Alertas. Evento grave é o que obriga o gestor de frota de carga "
-        "a replanejar rotas ou janelas: bloqueio total ou prolongado de corredor rodoviário, greve ou paralisação de "
-        "caminhoneiros, porto, terminal ou fronteira parados, queda de ponte, desastre natural que fecha rodovias. "
-        "Eventos internacionais podem entrar quando afetarem rotas, portos, estreitos, canais, frete, "
-        "combustível ou cadeia de suprimentos, incluindo Estreito de Ormuz, Suez, Mar Vermelho e Canal do Panamá. "
-        "Não invente fatos, locais, desvios, duração ou encerramento. Preserve event_key de evento existente quando a "
-        "notícia for continuação dele. Use status em_andamento somente com evidência atual de impacto; monitoramento quando "
-        "o impacto grave está confirmado mas a situação atual é incerta; encerrado somente quando uma notícia afirmar "
-        "explicitamente liberação, retomada, normalização ou fim. Retorne apenas JSON válido com a chave events. Cada item "
-        "deve conter: is_major_event boolean, event_key string, title string, category string, scope nacional ou internacional, "
-        "severity critical, status em_andamento ou monitoramento ou encerrado, confidence número 0 a 1, country string, "
-        "location string, affected_infrastructure array, operational_impact string, summary string, why_major array, "
-        "recommended_actions array, detour string vazio se não confirmado, estimated_duration string vazio se não confirmada, "
-        "timeline_note string e evidence array com title, url, source e published_at copiados das notícias fornecidas."
+        "Você é o analista de eventos graves do Road News. O leitor é o gestor de frota de uma transportadora de cargas "
+        "que, antes de liberar cada caminhão para sair até o cliente, precisa saber: alguma coisa no caminho impede ou "
+        "atrasa a viagem? Analise somente as notícias fornecidas e agrupe as que descrevem a mesma ocorrência. "
+        "Publique um evento SOMENTE quando a resposta mudar a decisão de despacho, ou seja, quando o gestor precisar "
+        "segurar veículos, trocar a rota ou avisar o cliente de atraso. Exemplos que ENTRAM: rodovia ou trecho com "
+        "bloqueio total ou interditado nos dois sentidos, sem previsão ou por muitas horas; queda de ponte, cratera, "
+        "deslizamento ou enchente que fecha a via; greve, paralisação ou bloqueio de caminhoneiros; porto, terminal, "
+        "aduana ou fronteira parados ou com filas de caminhões; desabastecimento de diesel; onda de roubos de carga num "
+        "corredor específico com orientação de não trafegar; eventos internacionais que afetem rotas, portos, estreitos, "
+        "canais, frete ou combustível (Ormuz, Suez, Mar Vermelho, Canal do Panamá). Exemplos que NÃO ENTRAM (ficam em "
+        "Alertas): acidente, mesmo grave ou com vítimas, sem bloqueio total da via; tombamento, colisão ou incêndio de "
+        "veículo com interdição parcial ou de faixas; congestionamento comum; obra com pare e siga; impacto só em ônibus, "
+        "metrô ou passageiros; greve de categorias sem efeito no transporte de cargas. Não invente fatos, locais, "
+        "desvios, duração ou encerramento. Preserve event_key de evento existente quando a notícia for continuação "
+        "dele. Use status em_andamento somente com evidência atual de impacto; monitoramento quando o impacto grave está "
+        "confirmado mas a situação atual é incerta; encerrado somente quando uma notícia afirmar explicitamente "
+        "liberação, retomada, normalização ou fim. dispatch_decision: segurar (não liberar veículos para o trecho até nova "
+        "atualização), liberar_com_desvio (há alternativa viável; cite-a em detour somente se a fonte informar) ou "
+        "liberar_com_atencao (trafegável, mas com risco ou atraso). recommended_actions: ações práticas para o despacho "
+        "(ex.: segurar saídas para o trecho X, reprogramar janela de entrega, avisar o cliente), sem inventar desvios. "
+        "Retorne apenas JSON válido com a chave events. Cada item deve conter: is_major_event boolean, event_key string, "
+        "title string, category string, scope nacional ou internacional, severity critical, status em_andamento ou "
+        "monitoramento ou encerrado, confidence número 0 a 1, country string, location string, affected_infrastructure "
+        "array, operational_impact string, summary string, why_major array, recommended_actions array, detour string "
+        "vazio se não confirmado, estimated_duration string vazio se não confirmada, timeline_note string, "
+        "dispatch_decision e evidence array com title, url, source e published_at copiados das notícias fornecidas."
     )
     response = requests.post(
         OPENAI_URL,
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
         json={
             "model": model,
-            "max_output_tokens": 3000,
+            # Folga para lotes grandes: com 3000 a resposta era cortada no meio do JSON.
+            "max_output_tokens": 8000,
             "text": {
                 "format": {
                     "type": "json_schema",
@@ -372,7 +387,11 @@ def _call_openai(candidates: list[dict], current_events: list[dict], api_key: st
         timeout=60,
     )
     response.raise_for_status()
-    return _parse_json(_extract_text(response.json()))
+    data = response.json()
+    if data.get("status") == "incomplete":
+        reason = (data.get("incomplete_details") or {}).get("reason") or "desconhecido"
+        raise RuntimeError(f"resposta da IA incompleta ({reason})")
+    return _parse_json(_extract_text(data))
 
 
 def _slug(value: str) -> str:
@@ -417,6 +436,9 @@ def _valid_events(data: dict, candidates: list[dict], current_events: list[dict]
             continue
         if status == "encerrado" and not RESOLUTION_PATTERN.search(evidence_text):
             continue
+        dispatch = _clean(event.get("dispatch_decision")).lower()
+        if dispatch not in {"segurar", "liberar_com_desvio", "liberar_com_atencao"}:
+            dispatch = "liberar_com_atencao" if status == "encerrado" else "segurar"
 
         event_key = _slug(event.get("event_key"))
         if not event_key or (event_key not in existing_keys and len(event_key) < 8):
@@ -424,6 +446,10 @@ def _valid_events(data: dict, candidates: list[dict], current_events: list[dict]
                 f"{event.get('category')} {event.get('location')} {' '.join(infrastructure)}"
             )
         if not event_key:
+            continue
+        # Evento novo já encerrado não ajuda o despacho (só poluiria a Central): encerramento só
+        # atualiza um evento que já estava publicado.
+        if status == "encerrado" and event_key not in existing_keys:
             continue
 
         valid.append({
@@ -443,6 +469,7 @@ def _valid_events(data: dict, candidates: list[dict], current_events: list[dict]
             "recommended_actions": [_clean(value) for value in event.get("recommended_actions", []) if _clean(value)][:5],
             "detour": _clean(event.get("detour"))[:320],
             "estimated_duration": _clean(event.get("estimated_duration"))[:160],
+            "dispatch_decision": dispatch,
             "timeline_note": _clean(event.get("timeline_note"))[:420],
             "evidence": [{
                 "title": item["title"],
@@ -615,5 +642,7 @@ def process_major_events(news_items: list[dict], database_url: str) -> int:
         return changed
     except Exception as error:
         # A inteligência de eventos não pode interromper a coleta principal.
-        print(f"[Eventos] Falha na triagem inteligente: {error.__class__.__name__}")
+        # Só a classe e uma mensagem curta: nunca o corpo da resposta nem cabeçalhos (chave).
+        detail = str(error).splitlines()[0][:160] if isinstance(error, (RuntimeError, ValueError)) else ""
+        print(f"[Eventos] Falha na triagem inteligente: {error.__class__.__name__} {detail}".rstrip())
         return 0

@@ -3,6 +3,7 @@ const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
 const { assertCanUse, featureFlagEnabled, featureRule, featureUsage, finalizeReservation, json, releaseUsage, reserveUsage, supabaseFetch } = require("./_auth");
 const { adminErrorMessage, readJson } = require("./_admin");
+const { repairNewsItem } = require("./_text_repair");
 
 const BASE_COLUMNS = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
 const OPTIONAL_SETS = [
@@ -194,7 +195,8 @@ async function fetchRows(suffix) {
     try {
       const response = await supabaseFetch(`/rest/v1/news?select=${columns}${suffix}`);
       workingOptionalSet = index;
-      return response.json();
+      // Acento corrompido na fonte (ex.: "Notícias" com o acento perdido) é consertado na exibição.
+      return (await response.json()).map(repairNewsItem);
     } catch (error) {
       lastError = error;
       if (!/image_url|image_summary|ai_summary|operational_relevance|risk_level|latitude|longitude|geo_precision|column|schema|PGRST/i.test(error.message || "")) {
