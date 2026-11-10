@@ -176,5 +176,43 @@ class MergeEventTests(unittest.TestCase):
         self.assertEqual(merged["metadata"]["started_at"], "2026-11-10T00:30:00+00:00")
 
 
+class CargoRelevanceTests(unittest.TestCase):
+    """A Central é para eventos que obrigam o gestor de frota de CARGA a replanejar."""
+
+    def test_partial_accident_affecting_only_buses_is_not_major(self):
+        # Caso real de produção (10/11/2026): virou evento "Crítico" na Central.
+        item = {
+            "title": "Caminhão carregado de legumes tomba na Raposo Tavares e provoca congestionamento e paralisação de linhas de ônibus",
+            "summary": "Um caminhão carregado de legumes tombou na madrugada desta terça-feira no km 24,5 da Rodovia Raposo Tavares, "
+                       "provocando interdição parcial da via, congestionamento e paralisação de linhas de ônibus metropolitanos.",
+            "source": "G1 - SP",
+            "url": "https://example.com/raposo",
+        }
+        self.assertEqual(candidate_reasons(item), [])
+        self.assertEqual(select_event_candidates([item]), [])
+
+    def test_bus_strike_is_not_cargo_event(self):
+        item = {"title": "Greve de ônibus paralisa linhas e congestiona avenidas de São Paulo",
+                "summary": "Trânsito intenso nas rodovias de acesso à capital.", "source": "Portal"}
+        self.assertEqual(candidate_reasons(item), [])
+
+    def test_accident_with_total_block_without_forecast_is_still_candidate(self):
+        item = {"title": "Carreta tomba e bloqueio total interdita a BR-116 nos dois sentidos",
+                "summary": "Via segue fechada sem previsão de liberação; filas de caminhões passam de 10 km.",
+                "source": "PRF", "url": "https://example.com/br116"}
+        self.assertTrue(candidate_reasons(item))
+
+    def test_trucker_strike_is_still_candidate(self):
+        item = {"title": "Greve de caminhoneiros bloqueia rodovias e paralisa o transporte de cargas no Sul",
+                "summary": "Pontos de bloqueio em três estados; filas e desabastecimento.", "source": "Portal"}
+        self.assertTrue(candidate_reasons(item))
+
+    def test_manager_dismissed_event_is_never_republished(self):
+        previous = {"id": "e1", "resolved_at": "2026-11-10T18:00:00+00:00", "metadata": {
+            "operational_status": "descartado", "status_confirmed_by": "platform_manager",
+            "last_update_at": "2026-11-10T18:00:00+00:00", "history": []}}
+        self.assertIsNone(merge_event(_classified(published_at="2026-11-11T10:00:00-03:00"), previous, "m", "2026-11-11T14:00:00+00:00"))
+
+
 if __name__ == "__main__":
     unittest.main()

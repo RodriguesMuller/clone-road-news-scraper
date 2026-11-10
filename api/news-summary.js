@@ -221,7 +221,7 @@ async function updateMajorEventStatus(req, body) {
   await requireManager(req);
   const eventId = clean(body.event_id);
   const operationalStatus = clean(body.operational_status).toLowerCase();
-  if (!eventId || !["em_andamento", "monitoramento", "encerrado"].includes(operationalStatus)) {
+  if (!eventId || !["em_andamento", "monitoramento", "encerrado", "descartado"].includes(operationalStatus)) {
     throw new Error("Status operacional inválido para o evento.");
   }
 
@@ -238,9 +238,12 @@ async function updateMajorEventStatus(req, body) {
     em_andamento: "Evento confirmado em andamento por um responsável da plataforma.",
     monitoramento: "Evento mantido em monitoramento por um responsável da plataforma.",
     encerrado: "Evento encerrado por um responsável da plataforma.",
+    descartado: "Descartado por um responsável da plataforma: não é evento grave para frota de carga.",
   };
   history.push({ at: now, status: operationalStatus, note: notes[operationalStatus] });
-  const dbStatus = operationalStatus === "encerrado" ? "resolved" : "open";
+  // Descartado: fica "resolved" no banco (compatível com o CHECK de status) e marcado no metadata;
+  // sai da Central e a triagem por IA não o republica (scraper/event_intelligence.py).
+  const dbStatus = operationalStatus === "encerrado" || operationalStatus === "descartado" ? "resolved" : "open";
   // Reabrir apaga a data de encerramento antiga; encerrar grava a de agora.
   const { ended_on, ended_at, ...rest } = metadata;
   const payload = {
@@ -248,7 +251,7 @@ async function updateMajorEventStatus(req, body) {
     resolved_at: dbStatus === "resolved" ? now : null,
     metadata: {
       ...rest,
-      ...(dbStatus === "resolved" ? { ended_at: now } : {}),
+      ...(operationalStatus === "encerrado" ? { ended_at: now } : {}),
       operational_status: operationalStatus,
       last_update_at: now,
       history,

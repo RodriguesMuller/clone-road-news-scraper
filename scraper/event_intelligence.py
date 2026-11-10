@@ -20,7 +20,7 @@ OPENAI_URL = "https://api.openai.com/v1/responses"
 DEFAULT_MODEL = "gpt-4.1-mini"
 EVENT_TYPE = "major_logistics_event"
 MIN_CONFIDENCE = 0.82
-CLASSIFICATION_VERSION = "major-events-v1"
+CLASSIFICATION_VERSION = "major-events-v2"
 
 EVENT_RESPONSE_SCHEMA = {
     "type": "object",
@@ -117,6 +117,23 @@ STRATEGIC_INFRA_PATTERN = re.compile(
 )
 
 
+# Impacto só em transporte de passageiros ("paralisação de linhas de ônibus") não é gravidade para
+# frota de carga: o trecho é removido antes de medir gravidade.
+PASSENGER_CONTEXT_PATTERN = re.compile(
+    r"(?:paralis\w*|suspens\w*|interromp\w*|interrup\w*|greve|desvio)\s+(?:d[aeo]s?\s+|em\s+)?(?:\S+\s+){0,3}?"
+    r"(?:linhas?\s+de\s+[oô]nibus|linhas\b|[oô]nibus|metr[oô]|trens?|transporte p[uú]blico|passageiros)",
+    re.IGNORECASE,
+)
+# Acidente pontual com interdição parcial é ocorrência comum (Alertas), não evento grave da Central.
+ROUTINE_ACCIDENT_PATTERN = re.compile(r"tomb|capot|colis|batida|acidente|engavet|incendi", re.IGNORECASE)
+PARTIAL_PATTERN = re.compile(r"parcial|uma das faixas|duas faixas|\bfaixas?\b|acostamento|pare e siga|meia pista", re.IGNORECASE)
+TOTAL_PATTERN = re.compile(
+    r"bloqueio total|interdi[cç][aã]o total|totalmente (?:bloquead|interditad|fechad)|nos dois sentidos|"
+    r"ambos os sentidos|sem previs[aã]o|por tempo indeterminado|queda de ponte|desabamento|cratera",
+    re.IGNORECASE,
+)
+
+
 def _clean(value: Any) -> str:
     text = html.unescape(str(value or "").replace("&nbsp&nbsp", " "))
     text = re.sub(r"<[^>]+>", " ", text)
@@ -138,14 +155,22 @@ def _event_text(item: dict) -> str:
 def candidate_reasons(item: dict) -> list[str]:
     """Aplica a trava determinística antes de enviar qualquer notícia para a IA."""
     text = _event_text(item)
+    cargo_text = PASSENGER_CONTEXT_PATTERN.sub(" ", text)
     logistics = bool(LOGISTICS_PATTERN.search(text))
-    severe = bool(SEVERE_PATTERN.search(text))
-    impact = bool(IMPACT_PATTERN.search(text))
+    severe = bool(SEVERE_PATTERN.search(cargo_text))
+    impact = bool(IMPACT_PATTERN.search(cargo_text))
     strategic = bool(STRATEGIC_INFRA_PATTERN.search(text))
     resolution = bool(RESOLUTION_PATTERN.search(text))
     unrelated = bool(UNRELATED_STRIKE_PATTERN.search(text))
+    routine_accident = (
+        bool(ROUTINE_ACCIDENT_PATTERN.search(text))
+        and bool(PARTIAL_PATTERN.search(text))
+        and not TOTAL_PATTERN.search(text)
+    )
 
     if unrelated and not (logistics and impact):
+        return []
+    if routine_accident and not strategic:
         return []
     if strategic and (severe or impact or resolution):
         return [name for name, enabled in (
@@ -246,7 +271,8 @@ def _load_current_events(cur) -> list[dict]:
         SELECT id, message, status, metadata, created_at, resolved_at
         FROM public.platform_events
         WHERE event_type = %s
-          AND (status = 'open' OR resolved_at >= now() - interval '7 days')
+          AND (status = 'open' OR resolved_at >= now() - interval '7 days'
+               OR (metadata ->> 'operational_status' = 'descartado' AND resolved_at >= now() - interval '30 days'))
         ORDER BY created_at DESC
         LIMIT 20;
         """,
@@ -301,7 +327,12 @@ def _call_openai(candidates: list[dict], current_events: list[dict], api_key: st
         "agrupe as que descrevem a mesma ocorrência logística. Publique apenas eventos CRÍTICOS com impacto concreto "
         "sobre transporte rodoviário de cargas, portos, fronteiras, corredores logísticos ou infraestrutura marítima "
         "estratégica. Uma palavra isolada como 'greve' não basta. Greves de categorias sem impacto logístico direto devem "
-        "ser ignoradas. Eventos internacionais podem entrar quando afetarem rotas, portos, estreitos, canais, frete, "
+        "ser ignoradas. NÃO são eventos graves: acidente pontual (tombamento, colisão, incêndio de veículo) com "
+        "interdição parcial ou de faixas, congestionamento comum, e impactos só em ônibus, metrô ou transporte de "
+        "passageiros — essas ocorrências já aparecem em Alertas. Evento grave é o que obriga o gestor de frota de carga "
+        "a replanejar rotas ou janelas: bloqueio total ou prolongado de corredor rodoviário, greve ou paralisação de "
+        "caminhoneiros, porto, terminal ou fronteira parados, queda de ponte, desastre natural que fecha rodovias. "
+        "Eventos internacionais podem entrar quando afetarem rotas, portos, estreitos, canais, frete, "
         "combustível ou cadeia de suprimentos, incluindo Estreito de Ormuz, Suez, Mar Vermelho e Canal do Panamá. "
         "Não invente fatos, locais, desvios, duração ou encerramento. Preserve event_key de evento existente quando a "
         "notícia for continuação dele. Use status em_andamento somente com evidência atual de impacto; monitoramento quando "
@@ -456,6 +487,9 @@ def merge_event(event: dict, previous: dict | None, model: str, now: str) -> dic
     previous_meta = previous["metadata"] if previous else {}
     previous_status = previous_meta.get("operational_status")
     new_status = event["operational_status"]
+    # Descartado pelo gestor (não era evento grave): a IA nunca o republica.
+    if previous_status == "descartado":
+        return None
     closing = new_status == "encerrado"
 
     if previous_status == "encerrado" and not closing and previous_meta.get("status_confirmed_by") == "platform_manager":
@@ -511,7 +545,7 @@ def _upsert_events(cur, events: list[dict], current_events: list[dict], model: s
         previous = existing.get(event["event_key"])
         merged = merge_event(event, previous, model, now)
         if not merged:
-            print(f"[Eventos] '{event['title'][:60]}' foi encerrado por gestor; sem notícia nova, segue encerrado.")
+            print(f"[Eventos] '{event['title'][:60]}' mantido como o gestor definiu (encerrado ou descartado).")
             continue
         metadata, db_status, resolved_at = merged["metadata"], merged["db_status"], merged["resolved_at"]
 

@@ -2,6 +2,10 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — Central de Evento só com o que afeta frota de carga
+- **Corrigido**: acidente pontual com interdição parcial (ex.: tombamento na Raposo Tavares que parou linhas de ônibus) virava evento "Crítico" na Central. Agora a triagem descarta acidente com interdição parcial sem bloqueio total, e impacto só em ônibus, metrô ou passageiros não conta como gravidade. Essas ocorrências continuam em Alertas e Notícias. O prompt da IA define evento grave como o que obriga o gestor de frota de carga a replanejar rotas ou janelas.
+- **Adicionado**: botão "Descartar: não é evento grave" para Admin/Gestor. O evento sai da Central para todos e a triagem automática não o republica.
+
 ## 2026-11-10 — QA da Central de Evento
 - **Corrigido**: sem evento ativo, a Central não promove mais um evento antigo encerrado a destaque; "Eventos encerrados" mostra só os últimos 30 dias.
 - **Corrigido**: a IA não reabre um evento encerrado pelo gestor sem notícia publicada depois do encerramento; reabrir apaga a data de encerramento antiga; a data de encerramento não muda mais a cada coleta; o início do evento usa a data real da notícia mais antiga.

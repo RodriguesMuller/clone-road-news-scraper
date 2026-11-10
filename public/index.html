@@ -4305,7 +4305,8 @@ function showAuthView() {
         <div class="event-actions">
           ${meta.operational_status === "encerrado"
             ? `<button class="mini-button" type="button" data-event-id="${escapeHtml(event.id)}" data-event-status="em_andamento">Reabrir evento</button>`
-            : `<button class="mini-button danger" type="button" data-event-id="${escapeHtml(event.id)}" data-event-status="encerrado">Encerrar evento</button>`}
+            : `<button class="mini-button danger" type="button" data-event-id="${escapeHtml(event.id)}" data-event-status="encerrado">Encerrar evento</button>
+               <button class="mini-button" type="button" data-event-id="${escapeHtml(event.id)}" data-event-status="descartado" title="Remove da Central um evento que não afeta frota de carga. A IA não o publica de novo.">Descartar: não é evento grave</button>`}
         </div>
       ` : "";
       return `
@@ -4435,11 +4436,17 @@ function showAuthView() {
         setNotice("Ação disponível apenas para gestores e administradores.");
         return;
       }
-      const actionLabel = operationalStatus === "encerrado" ? "encerrar" : "reabrir";
+      const labels = {
+        encerrado: ["encerrar", "Encerrar evento", "Encerrar", "Evento encerrado."],
+        descartado: ["descartar", "Descartar evento", "Descartar", "Evento descartado. Ele sai da Central e não será publicado de novo."],
+      };
+      const [actionLabel, modalTitle, confirmLabel, doneMessage] = labels[operationalStatus] || ["reabrir", "Reabrir evento", "Reabrir", "Evento reaberto."];
       const confirmed = await confirmActionModal(
-        `Deseja ${actionLabel} este evento? A alteração ficará visível para todos os usuários.`,
-        operationalStatus === "encerrado" ? "Encerrar evento" : "Reabrir evento",
-        operationalStatus === "encerrado" ? "Encerrar" : "Reabrir"
+        operationalStatus === "descartado"
+          ? "Descartar este evento? Ele sai da Central para todos os usuários e a triagem automática não o publica de novo. Use quando a ocorrência não afeta frota de carga."
+          : `Deseja ${actionLabel} este evento? A alteração ficará visível para todos os usuários.`,
+        modalTitle,
+        confirmLabel
       );
       if (!confirmed) return;
       try {
@@ -4450,7 +4457,7 @@ function showAuthView() {
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || "Não foi possível atualizar o evento.");
-        setNotice(operationalStatus === "encerrado" ? "Evento encerrado." : "Evento reaberto.");
+        setNotice(doneMessage);
         await refresh();
       } catch (error) {
         setNotice(getFriendlyErrorMessage(error, "Não foi possível atualizar o evento."));
