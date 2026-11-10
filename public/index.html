@@ -2802,7 +2802,7 @@
       dashboard: { title: "Dashboard", subtitle: "Visão executiva das rodovias e do impacto na frota." },
       news: { title: "Notícias", subtitle: "Busca, filtros e acompanhamento das notícias recentes." },
       alerts: { title: "Alertas", subtitle: "Ocorrências recentes com impacto operacional." },
-      events: { title: "Central de Evento", subtitle: "Eventos que sua empresa escolheu acompanhar, atualizados a cada notícia relacionada." },
+      events: { title: "Central de Evento", subtitle: "Eventos que sua empresa escolheu acompanhar, atualizados pela IA a cada nova notícia até o encerramento." },
       route: { title: "Minha Rota", subtitle: "Condição de trânsito, ocorrências relacionadas e recomendação para a liberação." },
       saved: { title: "Salvos", subtitle: "Notícias marcadas para acompanhar depois." },
       operational: { title: "Resumo operacional", subtitle: "Tendências, regiões, rodovias e riscos do período." },
@@ -4217,9 +4217,9 @@ function showAuthView() {
         : `<div class="hint">Nenhum alerta operacional acionável nas últimas ${state.alertHours}h.</div>`;
     }
 
-    // Central de Evento: eventos que a EMPRESA escolheu acompanhar ("Acompanhar evento" numa
-    // notícia). A API reúne as notícias seguintes sobre o mesmo evento (rodovia, nomes próprios e
-    // palavras-chave em comum), sem IA. Encerrados ficam visíveis por 30 dias.
+    // Central de Evento: o CLIENTE escolhe o evento ("Acompanhar evento" numa notícia) e a IA o
+    // atualiza a cada coleta até o encerramento (scraper/followed_events.py). Visível para toda a
+    // empresa. Encerrados ficam visíveis por 30 dias.
     const FOLLOWED_STALE_MS = 72 * 3600 * 1000;
 
     function followedEventUpdatedValue(event) {
@@ -4257,7 +4257,38 @@ function showAuthView() {
     }
 
     function followedEventStatus(event) {
-      return isActiveFollowedEvent(event) ? ["Em acompanhamento", "active"] : ["Encerrado", ""];
+      if (!isActiveFollowedEvent(event)) return [event.ai?.status === "encerrado" ? "Encerrado pela IA" : "Encerrado", ""];
+      const labels = { em_andamento: ["Em andamento", "active"], monitoramento: ["Em monitoramento", "monitoring"] };
+      return labels[event.ai?.status] || ["Em acompanhamento", "active"];
+    }
+
+    // Decisão de despacho mantida pela IA: o que o gestor faz com os caminhões que iriam pelo trecho.
+    function followedDispatch(event) {
+      if (!isActiveFollowedEvent(event)) return ["Trecho liberado: despacho normal", ""];
+      const labels = {
+        segurar: ["Segurar veículos para o trecho", "critical"],
+        liberar_com_desvio: ["Liberar com desvio", "monitoring"],
+        liberar_com_atencao: ["Liberar com atenção", ""],
+      };
+      return labels[event.ai?.dispatch_decision] || null;
+    }
+
+    function followedAiNote(event) {
+      return event.ai?.analyzed_at
+        ? `Atualizado pela IA em ${formatDate(event.ai.analyzed_at)}. A IA revisa o evento a cada coleta de notícias (de hora em hora).`
+        : "Aguardando a primeira análise da IA, que acontece na próxima coleta (de hora em hora). Até lá, a lista abaixo mostra as notícias candidatas pela rodovia e pelo local.";
+    }
+
+    function renderFollowedTimeline(event) {
+      const history = Array.isArray(event.ai?.history) ? [...event.ai.history].reverse().slice(0, 8) : [];
+      if (!history.length) return `<p>A linha do tempo começa na primeira análise da IA.</p>`;
+      const labels = { em_andamento: "Em andamento", monitoramento: "Em monitoramento", encerrado: "Encerrado" };
+      return `<div class="event-timeline">${history.map((item) => `
+        <div class="event-timeline-item">
+          <strong>${escapeHtml(labels[item.status] || "Atualização")} · ${escapeHtml(formatDate(item.at))}</strong>
+          <span>${escapeHtml(item.note || "Situação atualizada.")}</span>
+        </div>
+      `).join("")}</div>`;
     }
 
     function renderFollowedUpdates(event) {
@@ -4279,12 +4310,15 @@ function showAuthView() {
 
     function renderPrimaryFollowedEvent(event) {
       const seed = event.seed || {};
+      const ai = event.ai || {};
       const [statusLabel, statusClass] = followedEventStatus(event);
+      const dispatch = followedDispatch(event);
       const [riskClassName, riskLabel] = operationalRisk(seed);
       const road = seed.road || roadFromText(`${seed.title || ""} ${seed.summary || ""}`);
       const region = cleanDisplayText(seed.region || findPlace(`${seed.title || ""} ${seed.summary || ""}`));
       const updates = (event.related || []).length;
-      const actions = isActiveFollowedEvent(event)
+      const actions = Array.isArray(ai.recommended_actions) ? ai.recommended_actions.filter(Boolean) : [];
+      const controls = isActiveFollowedEvent(event)
         ? `<button class="mini-button danger" type="button" data-followed-id="${escapeHtml(event.id)}" data-followed-action="close">Encerrar evento</button>`
         : `<button class="mini-button" type="button" data-followed-id="${escapeHtml(event.id)}" data-followed-action="reopen">Reabrir evento</button>`;
       return `
@@ -4293,41 +4327,60 @@ function showAuthView() {
             <div class="event-badges">
               <span class="event-badge ${riskClassName === "critical" ? "critical" : ""}" title="${escapeHtml(riskReason(seed))}">Risco ${escapeHtml(riskLabel)}</span>
               <span class="event-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
+              ${dispatch ? `<span class="event-badge ${dispatch[1]}">Despacho: ${escapeHtml(dispatch[0])}</span>` : ""}
               ${followedStaleBadge(event)}
               ${road ? `<span class="event-badge">Rodovia ${escapeHtml(road)}</span>` : ""}
               ${region ? `<span class="event-badge">${escapeHtml(region)}</span>` : ""}
             </div>
             <h2>${escapeHtml(event.title || seed.title || "Evento acompanhado")}</h2>
-            <p class="event-lead">${escapeHtml(shortText(seed.summary, 320) || "Acompanhando as próximas notícias sobre este evento.")}</p>
+            <p class="event-lead">${escapeHtml(shortText(ai.summary || seed.summary, 360) || "Acompanhando as próximas notícias sobre este evento.")}</p>
+            <p class="admin-note" style="margin-top:10px;">${escapeHtml(followedAiNote(event))}</p>
           </div>
           <div class="event-metrics">
             <div class="event-metric"><span>Status</span><strong>${escapeHtml(statusLabel)}</strong></div>
+            <div class="event-metric"><span>Decisão de despacho</span><strong>${escapeHtml(dispatch?.[0] || "Avaliar antes de liberar")}</strong></div>
             <div class="event-metric"><span>Início</span><strong>${escapeHtml(formatCalendarDate(seed.published_at || event.created_at))}</strong></div>
             <div class="event-metric"><span>Encerramento</span><strong>${escapeHtml(!isActiveFollowedEvent(event) && event.closed_at ? formatCalendarDate(event.closed_at) : "Em andamento")}</strong></div>
             <div class="event-metric"><span>Última notícia</span><strong>${escapeHtml(formatDate(event.last_update_at))}</strong></div>
-            <div class="event-metric"><span>Atualizações</span><strong>${updates ? `${updates} notícia${updates > 1 ? "s" : ""} relacionada${updates > 1 ? "s" : ""}` : "Nenhuma ainda"}</strong></div>
             <div class="event-metric"><span>Acompanhado por</span><strong>${escapeHtml(event.created_by_name || "Sua empresa")}</strong></div>
           </div>
         </article>
-        <section class="event-section">
-          <h3>Atualizações do evento</h3>
-          <p class="admin-note">Notícias sobre a mesma ocorrência (mesma rodovia ou local e termos em comum), da mais recente para a mais antiga. A lista é atualizada a cada coleta.</p>
-          ${renderFollowedUpdates(event)}
-          <div class="event-actions" style="margin-top:14px;">
-            ${actions}
-            <button class="mini-button" type="button" data-followed-id="${escapeHtml(event.id)}" data-followed-action="unfollow">Parar de acompanhar</button>
+        <div class="event-detail-grid">
+          <div class="event-center">
+            <section class="event-section">
+              <h3>Impacto para a frota</h3>
+              <p>${escapeHtml(ai.operational_impact || "A IA descreve o impacto para caminhões de carga na primeira análise.")}</p>
+              ${ai.detour ? `<h4>Alternativa informada pela fonte</h4><p>${escapeHtml(ai.detour)}</p>` : ""}
+              <h4>Ações recomendadas</h4>
+              ${actions.length ? `<ul class="event-list">${actions.map((value) => `<li>${escapeHtml(value)}</li>`).join("")}</ul>` : `<p>Confirme a situação do trecho antes de liberar os veículos.</p>`}
+            </section>
+            <section class="event-section">
+              <h3>Notícias do evento (${updates})</h3>
+              ${renderFollowedUpdates(event)}
+            </section>
           </div>
-        </section>
+          <aside class="event-section">
+            <h3>Linha do tempo</h3>
+            ${renderFollowedTimeline(event)}
+            <div class="event-analysis-row"><span>Duração estimada</span><strong>${escapeHtml(ai.estimated_duration || "Sem previsão confirmada")}</strong></div>
+            <div class="event-actions" style="margin-top:14px;">
+              ${controls}
+              <button class="mini-button" type="button" data-followed-id="${escapeHtml(event.id)}" data-followed-action="unfollow">Parar de acompanhar</button>
+            </div>
+          </aside>
+        </div>
       `;
     }
 
     function followedEventCard(event) {
       const [statusLabel, statusClass] = followedEventStatus(event);
+      const dispatch = followedDispatch(event);
       const updates = (event.related || []).length;
       return `
         <article class="event-evidence">
-          <div class="event-badges"><span class="event-badge ${statusClass}">${escapeHtml(statusLabel)}</span>${followedStaleBadge(event)}<span class="event-badge">${updates} atualizaç${updates === 1 ? "ão" : "ões"}</span></div>
+          <div class="event-badges"><span class="event-badge ${statusClass}">${escapeHtml(statusLabel)}</span>${dispatch ? `<span class="event-badge ${dispatch[1]}">Despacho: ${escapeHtml(dispatch[0])}</span>` : ""}${followedStaleBadge(event)}<span class="event-badge">${updates} notícia${updates === 1 ? "" : "s"}</span></div>
           <h3 style="margin:10px 0 6px;">${escapeHtml(event.title || "Evento acompanhado")}</h3>
+          ${event.ai?.summary ? `<p>${escapeHtml(shortText(event.ai.summary, 200))}</p>` : ""}
           <div class="event-evidence-meta"><span>Última notícia</span><span>${escapeHtml(formatDate(event.last_update_at))}</span></div>
           <div class="event-actions" style="margin-top:10px;"><button class="mini-button" type="button" data-event-open="${escapeHtml(event.id)}">Abrir evento</button></div>
         </article>
@@ -4345,7 +4398,7 @@ function showAuthView() {
 
       const target = document.getElementById("eventCenter");
       if (!target) return;
-      const emptyMessage = `<div class="event-empty"><strong>Nenhum evento em acompanhamento.</strong><br>Em Notícias ou Alertas, clique em "Acompanhar evento" numa notícia: ela vem para cá e as próximas notícias sobre o mesmo evento são reunidas aqui para toda a sua empresa.</div>`;
+      const emptyMessage = `<div class="event-empty"><strong>Nenhum evento em acompanhamento.</strong><br>Em Notícias ou Alertas, clique em "Acompanhar evento" numa notícia: ela vem para cá e a IA passa a atualizar o evento a cada nova notícia, até o encerramento. Toda a sua empresa vê.</div>`;
       const primary = events.find((event) => event.id === state.selectedMajorEventId) || active[0] || null;
       if (!primary) {
         target.innerHTML = emptyMessage + (closed.length ? `
@@ -4402,7 +4455,7 @@ function showAuthView() {
           },
         });
         state.followedEvents = [event, ...(state.followedEvents || []).filter((current) => current.id !== event.id)];
-        setNotice(created ? "Evento adicionado à Central de Evento. As próximas notícias sobre ele aparecem lá." : "Este evento já está sendo acompanhado pela sua empresa.");
+        setNotice(created ? "Evento adicionado à Central de Evento. A IA faz a primeira análise na próxima coleta e segue atualizando até o encerramento." : "Este evento já está sendo acompanhado pela sua empresa.");
         rerenderFollowButtons();
         openMajorEvent(event.id);
       } catch (error) {
@@ -4413,8 +4466,8 @@ function showAuthView() {
 
     async function updateFollowedEvent(eventId, action) {
       const texts = {
-        close: ["Encerrar este evento? Ele vai para os encerrados e para de receber novas notícias. Vale para toda a sua empresa.", "Encerrar evento", "Encerrar", "Evento encerrado."],
-        reopen: ["Reabrir este evento? Ele volta a receber as novas notícias relacionadas.", "Reabrir evento", "Reabrir", "Evento reaberto."],
+        close: ["Encerrar este evento? Ele vai para os encerrados e a IA para de atualizá-lo. Vale para toda a sua empresa.", "Encerrar evento", "Encerrar", "Evento encerrado."],
+        reopen: ["Reabrir este evento? A IA volta a atualizá-lo com as novas notícias.", "Reabrir evento", "Reabrir", "Evento reaberto."],
         unfollow: ["Parar de acompanhar este evento? Ele sai da Central de Evento para toda a sua empresa.", "Parar de acompanhar", "Parar de acompanhar", "Evento removido da Central."],
       };
       const [question, title, confirmLabel, doneMessage] = texts[action] || texts.close;

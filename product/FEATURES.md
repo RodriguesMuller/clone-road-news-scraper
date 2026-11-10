@@ -17,7 +17,7 @@ O pacote é contratado pelo **cliente (empresa)**: todos os usuários dela herda
 
 ## Telas do painel (cliente)
 
-Dashboard · Alertas · Central de Evento · Notícias · Mapa rodoviário · Minha Rota · Salvos · Resumo operacional · Relatórios (resumo semanal). (Fontes e Configurações ficam só para Gestor/Admin.) Tema claro ou escuro à escolha do usuário.
+Dashboard · Alertas · Central de Evento (o cliente escolhe a notícia com "Acompanhar evento" e a IA atualiza o evento a cada coleta até o encerramento, com a decisão de despacho) · Notícias · Mapa rodoviário · Minha Rota · Salvos · Resumo operacional · Relatórios (resumo semanal). (Fontes e Configurações ficam só para Gestor/Admin.) Tema claro ou escuro à escolha do usuário.
 
 **Dashboard executivo:** indicadores do período com comparativo (notícias coletadas, com impacto na frota, alertas importantes, críticas, rodovias afetadas, fontes ativas), ocorrência em destaque com a ação recomendada, tendência, principais temas, panorama no mapa do Brasil e últimas notícias com filtros, além de busca global e alertas das últimas 24h no cabeçalho.
 

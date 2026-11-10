@@ -96,3 +96,20 @@ test("notícia sem link válido não pode ser acompanhada", async () => {
   assert.equal(res.status, 403);
   assert.match(res.data.error, /inválida para acompanhar/);
 });
+
+test("depois da análise da IA, a Central mostra a situação e as notícias que a IA confirmou", async () => {
+  const { fake, action, feed } = setup();
+  const { data } = await action("a1", { action: "follow-event", item: SEED });
+  Object.assign(fake.db.followed_events.find((row) => row.id === data.event.id), {
+    ai_state: {
+      analyzed_at: hoursAgo(1), status: "em_andamento", dispatch_decision: "segurar", summary: "Pista segue com duas faixas interditadas.",
+      related: [{ title: "Carga de legumes é retirada da pista na Raposo Tavares", url: "https://example.com/raposo-limpeza", published_at: hoursAgo(4) }],
+      rejected_urls: ["https://example.com/raposo-liberada"],
+    },
+  });
+  const [event] = (await feed("a2")).data.followedEvents;
+  assert.equal(event.ai.dispatch_decision, "segurar");
+  assert.deepEqual(event.related.map((item) => item.url), ["https://example.com/raposo-limpeza"], "vale a lista confirmada pela IA, não a regra fixa");
+  assert.equal(event.ai.rejected_urls, undefined, "controle interno da IA não vai para o navegador");
+  assert.equal(event.ai_state, undefined);
+});

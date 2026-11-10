@@ -1,5 +1,6 @@
-// Eventos acompanhados: o usuário escolhe uma notícia ("Acompanhar evento") e a Central de Evento
-// passa a reunir as notícias seguintes sobre o mesmo evento. Sem IA: a correspondência é por regra
+// Eventos acompanhados: o CLIENTE escolhe a notícia ("Acompanhar evento") e a IA mantém o evento
+// atualizado a cada coleta até o encerramento (scraper/followed_events.py grava em ai_state).
+// Enquanto a IA não analisou o evento, a API mostra as notícias candidatas pela regra fixa
 // (rodovia, nomes próprios e palavras-chave em comum com a notícia de origem).
 // O evento é da EMPRESA (client_id): todos os usuários do cliente veem e atualizam.
 const { supabaseFetch } = require("./_auth");
@@ -119,9 +120,13 @@ function relatedNews(event, news) {
 }
 
 function withRelated(event, news) {
-  const related = relatedNews(event, news);
+  const ai = event.ai_state && typeof event.ai_state === "object" ? event.ai_state : {};
+  const analyzed = Boolean(ai.analyzed_at);
+  // Com análise da IA, valem as notícias que ela confirmou; antes disso, a regra fixa.
+  const related = analyzed ? (Array.isArray(ai.related) ? ai.related : []) : relatedNews(event, news);
   const latest = related[0]?.published_at || event.seed?.published_at || event.created_at;
-  return { ...event, related, last_update_at: latest };
+  const { rejected_urls: _rejected, ...publicAi } = ai;
+  return { ...event, ai_state: undefined, ai: analyzed ? publicAi : null, related, last_update_at: latest };
 }
 
 function scopeFilter(account) {

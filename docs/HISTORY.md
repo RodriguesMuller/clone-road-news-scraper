@@ -2,6 +2,25 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — Central de Evento: o cliente escolhe, a IA acompanha
+**O que mudou:**
+- Reaproveitado o commit do PR #21 (botão "Acompanhar evento", tabela `followed_events`, ações em `news-summary.js`, Central reescrita).
+- Novo `scraper/followed_events.py` (`update_followed_events`, chamado em `main.py` a cada coleta): pré-filtro `select_candidates`, chamada à IA com schema estrito e validação `apply_update` (só cita notícias enviadas, só encerra com notícia de liberação). Grava em `ai_state`/`last_checked_at`.
+- `api/_followed_events.js` usa `ai_state` quando analisado, sem expor `rejected_urls`.
+- Na Central: status, decisão de despacho, impacto, ações, linha do tempo e aviso "Aguardando a primeira análise da IA".
+- Testes: `tests/test_followed_events_ai.py`, mais um caso em `tests/test_followed_events.js`.
+
+**Por quê:** o usuário definiu o modelo: o cliente escolhe o evento e a IA faz toda a atualização com as notícias recebidas até o encerramento. Isso substitui tanto a triagem automática (falsos positivos: Raposo Tavares e outros 8 eventos de uma vez) quanto o acompanhamento só por regra do PR #21.
+
+**Impacto medido:** JS 80/80, Python 62/62. Central renderizada em 4 estados: vazia, ativa sem análise, ativa com análise, só encerrada.
+
+**Alternativas descartadas:**
+- Análise da IA na API, na hora do clique ou a cada abertura da Central: latência no painel, custo por visualização e chamadas concorrentes. A coleta horária centraliza a chamada.
+- Gravar só a regra fixa, sem IA: decisão do usuário.
+- Contar a atualização no saldo de IA do pacote: não pedido. O custo é por evento ativo com notícia nova, no máximo 50 eventos por coleta.
+
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — Hotfix: feed fora do ar por arquivo excluído do deploy
 **O que mudou:** `config/accented_words.json` → `public/accented_words.json`; `api/_text_repair.js` carrega o vocabulário com `try/catch`; `scraper/utils/filters.py` lê o novo caminho. Teste novo `tests/test_deploy_bundle.js`: nenhum `require` em `api/` pode apontar para pasta listada no `.vercelignore`.
 **Por quê:** o usuário viu o painel zerado logo após o merge do PR #22. O `require("../config/accented_words.json")` falhava no carregamento da função, porque `config` está no `.vercelignore`. Os testes locais não pegaram porque rodam com o repositório inteiro.
