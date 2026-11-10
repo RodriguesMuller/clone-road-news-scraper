@@ -15,6 +15,38 @@ test("ambiente Cliente não mostra Fontes nem Configurações", () => {
   assert.match(html, /settingsButton\.hidden = mode === "client"/);
 });
 
+test("dashboard executivo é a página inicial e carrega antes do script principal", () => {
+  const risk = html.indexOf('<script src="/risk.js">');
+  const brief = html.indexOf('<script src="/brief.js">');
+  const dash = html.indexOf('<script src="/dashboard.js">');
+  assert.ok(risk > 0 && risk < brief && brief < dash, "ordem: risk → brief → dashboard");
+  assert.match(html, /data-client-page="dashboard"/);
+  assert.match(html, /"\/dashboard": \{ view: "occurrences", scroll: "top", page: "dashboard" \}/);
+  assert.match(html, /"\/alertas": \{ view: "occurrences", scroll: "clientAlertsPage", page: "alerts" \}/);
+  // Tema aplicado no <head>, antes da primeira pintura, com fallback para escuro.
+  const head = html.slice(0, html.indexOf("<style>"));
+  assert.match(head, /localStorage\.getItem\("roadnews\.theme"\)/);
+  assert.match(html, /:root\[data-theme="light"\] \{/);
+  const dashboard = fs.readFileSync(path.join(ROOT, "public", "dashboard.js"), "utf8");
+  assert.match(dashboard, /window\.RoadDashboard = \{ render, renderChrome, onShow, applyTheme \}/);
+  assert.doesNotMatch(dashboard, /Math\.random\(\) \* \d|fake|mock/i, "sem números inventados");
+});
+
+test("identidade visual Overhaul: paleta oficial e fontes Archivo + Geist Mono", () => {
+  const css = html.slice(html.indexOf("<style>"), html.indexOf("</style>"));
+  const dark = css.slice(css.lastIndexOf(':root, :root[data-theme="dark"] {'));
+  for (const token of ["--color-brand: #1EFF95", "--color-brand-text: #1E0D43", "--color-bg: #0F1814", "--color-text: #F4F9FA", "--risk-critical: #FC3700", "--risk-high: #FFCD00", "--risk-medium: #00ACFF"]) {
+    assert.ok(dark.includes(token), `token ${token}`);
+  }
+  assert.match(css, /--accent: #5029FF;/, "tema claro usa Vivid Purple como destaque");
+  assert.match(css, /font-family: 'Archivo';\s*src: url\('\/assets\/fonts\/archivo\/Archivo-Variable-latin\.woff2'\)/);
+  assert.match(css, /--font-mono: 'GeistMono'/);
+  assert.ok(fs.existsSync(path.join(ROOT, "public", "assets", "fonts", "archivo", "Archivo-Variable-latin.woff2")));
+  assert.ok(fs.existsSync(path.join(ROOT, "public", "assets", "fonts", "archivo", "OFL.txt")), "licença da fonte junto do arquivo");
+  assert.doesNotMatch(css, /url\('assets\/fonts/, "fontes com caminho absoluto (funciona em /developer/...)");
+  assert.match(html, /const MAP_RISK_COLORS = \{ critical: "#FC3700", high: "#FFCD00", medium: "#00ACFF", low: "#1EFF95" \}/);
+});
+
 test("resumo operacional usa a janela escolhida e compara com o período anterior", () => {
   const { buildWeeklyBrief } = require(path.join(ROOT, "public", "brief.js"));
   const now = Date.parse("2026-11-10T18:00:00-03:00");

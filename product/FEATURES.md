@@ -15,7 +15,9 @@
 
 ## Telas do painel (cliente)
 
-Alertas · Central de Evento · Notícias · Mapa rodoviário · Minha Rota · Salvos · Resumo operacional · Resumo semanal. (Fontes e Configurações ficam só para Gestor/Admin.)
+Dashboard · Alertas · Central de Evento · Notícias · Mapa rodoviário · Minha Rota · Salvos · Resumo operacional · Relatórios (resumo semanal). (Fontes e Configurações ficam só para Gestor/Admin.) Tema claro ou escuro à escolha do usuário.
+
+**Dashboard executivo:** indicadores do período com comparativo (notícias coletadas, com impacto na frota, alertas importantes, críticas, rodovias afetadas, fontes ativas), ocorrência em destaque com a ação recomendada, tendência, principais temas, panorama no mapa do Brasil e últimas notícias com filtros, além de busca global e alertas das últimas 24h no cabeçalho.
 
 **Resumo operacional:** situação das últimas 6h/24h/72h/7 dias comparada ao período anterior: rodovias com bloqueio ou restrição (há quanto tempo e o que fazer), ações imediatas, pontos de atenção dos próximos dias, risco por estado, evolução no período, segurança da carga e clima.
 
