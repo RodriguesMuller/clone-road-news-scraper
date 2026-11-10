@@ -2008,6 +2008,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" integrity="sha384-eXVCORTRlv4FUUgS/xmOyr66XBVraen8ATNLMESp92FKXLAMiKkerixTiBvXriZr" crossorigin="anonymous"></script>
+  <script src="/risk.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
   <script>
     const SUPABASE_URL = "https://vdyilgbqxnrwqgoairat.supabase.co";
@@ -3039,39 +3040,8 @@ function showAuthView() {
       return match ? match[1].replace(/\s+/g, "-").toUpperCase() : "";
     }
 
-    // Cobre tanto formas nominais (morto/ferido) quanto os verbos no presente/passado
-    // que os títulos de notícia usam o tempo todo ("acidente mata 2 e fere 3", "motorista morre").
-    const RISK_FATALITY_PATTERN = /\bmort[eosa]s?\b|\bmorr(?:e|eu|em|eram|endo)\b|\bmat(?:a|ou|aram|ando)\b|\bfatal\b|\bobito\b/;
-    const RISK_INJURY_PATTERN = /\bferid[oa]s?\b|\bhospitalizad[oa]s?\b|\bestado grave\b|\bfer(?:e|em|iu|iram|indo)\b/;
-    const RISK_TOTAL_BLOCK_PATTERN = /bloqueio total|interdicao total/;
-    const RISK_LONG_DURATION_PATTERN = /sem previsao|mais de \d+\s*horas|\d+\s*dias/;
-    const RISK_CARGO_THEFT_PATTERN = /roubo de carga|\bsaque|assalto.*carga/;
-    const RISK_CIVIL_UNREST_PATTERN = /manifestacao|protesto|greve geral/;
-    const RISK_MAJOR_INCIDENT_PATTERN = /acidente|tombamento|colisao|capotamento|choque/;
-    const RISK_INFRASTRUCTURE_PATTERN = /bloqueio|interdicao|interdita|queda de barreira|desabamento|incendio/;
-    const RISK_WEATHER_SEVERE_PATTERN = /tempestade|temporal|alagamento|enchente|granizo/;
-    const RISK_HAZARDOUS_CARGO_PATTERN = /produtos? perigosos?|inflamavel|combustivel|toxico|quimico|explosivo/;
-    const RISK_MINOR_DISRUPTION_PATTERN = /lentidao|chuva forte|obra|interdicao parcial|congestionamento|pare-e-siga|fila/;
-    // Evita falso-positivo quando a notícia nega vítimas explicitamente (ex.: "sem feridos").
-    const RISK_NO_CASUALTIES_PATTERN = /sem feridos?\b|sem vitimas?\b|sem mortos?\b|nenhuma vitima|nao houve (?:ferido|morte|vitima)/;
-
-    // Bloqueio de rodovia (mesma regra de api/news-feed.js -> roadBlockLevel).
-    // "total" | "partial" | "" — trecho já liberado não conta como bloqueado.
-    const BLOCK_ROAD_CONTEXT = /\b(?:br|sp|mg|rj|rs|sc|pr|ba|go|mt|ms|pa|pe|ce|es|ro|to|ma|pi|rn|pb|al|se|am|ac|rr|ap|df)-?\s?\d{2,4}\b|rodovi|estrada|pista|ponte|viaduto|trecho|\bkm\s*\d|\bvia\b|serra/;
-    const BLOCK_RELEASED = /\b(?:liberad[ao]s?|desbloquead[ao]s?|reabert[ao]s?|normalizad[ao]s?|retomad[ao]s?)\b|transito normal|fluxo normal|libera(?:cao)? total/;
-    const BLOCK_STILL_ACTIVE = /segue (?:bloquead|interditad|fechad)|continua (?:bloquead|interditad|fechad)|permanece (?:bloquead|interditad|fechad)|sem previsao de liberacao/;
-    const BLOCK_PARTIAL = /interdicao parcial|bloqueio parcial|parcialmente (?:bloquead|interditad|fechad)|meia pista|pare[- ]?e[- ]?siga|faixa (?:interditada|bloqueada)|uma (?:das )?faixas?|uma pista/;
-    const BLOCK_TOTAL = /bloqueio total|interdicao total|totalmente (?:bloquead|interditad|fechad)|\bbloquead[ao]s?\b|\binterditad[ao]s?\b|\binterdita\b|\bbloqueia\b|\bbloqueio\b|\binterdicao\b|\bfechad[ao]s?\b|queda de barreira|desabamento de ponte|ponte (?:cai|caiu|desaba)/;
-
-    function roadBlockLevel(item) {
-      if (item && typeof item.block_level === "string") return item.block_level;
-      const text = normalizeText(`${item?.title || ""} ${item?.summary || ""}`);
-      if (!BLOCK_ROAD_CONTEXT.test(text)) return "";
-      if (BLOCK_RELEASED.test(text) && !BLOCK_STILL_ACTIVE.test(text)) return "";
-      if (BLOCK_PARTIAL.test(text)) return "partial";
-      if (BLOCK_TOTAL.test(text)) return "total";
-      return "";
-    }
+    // Régua única de risco e de bloqueio: public/risk.js (a mesma usada pela API e pelos resumos).
+    const { classifyRisk, roadBlockLevel, BLOCK_ROAD_CONTEXT, BLOCK_RELEASED } = window.RoadRisk;
 
     function blockedClass(item) {
       const level = roadBlockLevel(item);
@@ -3084,8 +3054,10 @@ function showAuthView() {
       const road = roadFromText(`${item.title || ""} ${item.summary || ""} ${item.highway || ""}`);
       const km = (String(`${item.title || ""} ${item.summary || ""}`).match(/\bkm\s*(\d{1,4}(?:[.,]\d+)?)/i) || [])[1];
       const where = [road, km ? `km ${km}` : ""].filter(Boolean).join(" · ");
-      const label = level === "total" ? "Rodovia bloqueada" : "Rodovia parcialmente bloqueada";
-      const hint = level === "total" ? "Evite o trecho ou aguarde a liberação" : "Fila e atraso prováveis";
+      // Bloqueio total ainda não iniciado (programado) é Alto na régua, não Crítico.
+      const scheduled = level === "total" && classifyRisk(item).level !== "critical";
+      const label = scheduled ? "Bloqueio total programado" : level === "total" ? "Rodovia bloqueada" : "Rodovia parcialmente bloqueada";
+      const hint = scheduled ? "Planeje o desvio para a data e horário informados" : level === "total" ? "Evite o trecho ou aguarde a liberação" : "Fila e atraso prováveis";
       return `<div class="block-banner ${level === "partial" ? "partial" : ""}" role="status">⛔ ${label}${where ? ` · ${escapeHtml(where)}` : ""}<small>— ${hint}</small></div>`;
     }
 
@@ -3094,6 +3066,15 @@ function showAuthView() {
     function fleetImpact(item) {
       const text = textForItem(item);
       const block = roadBlockLevel(item);
+      const risk = classifyRisk(item);
+      // Fora do Brasil, desdobramento, boato ou greve negada: nada a decidir na rota.
+      if (risk.level === "low") {
+        return /liberad|reabert|desbloquead/.test(text) && BLOCK_ROAD_CONTEXT.test(text)
+          ? ["ok", "Trecho liberado", "A rota volta a ser opção; confirme se há fila residual."]
+          : null;
+      }
+      if (/ormuz|hormuz|suez|mar vermelho|bab el.mandeb|canal do panama/.test(text)) return ["", "Custo da viagem", "Impacto indireto: acompanhe preço do diesel e do frete; as rotas no Brasil seguem normais."];
+      if (block === "total" && risk.level === "high") return ["high", "Bloqueio programado", "Planeje o desvio ou ajuste o horário de saída para a janela informada."];
       if (block === "total") return ["critical", "Rodovia bloqueada", "Reprograme a rota por um desvio ou segure a saída até a confirmação de liberação."];
       if (/roubo de carga|\bsaque|assalt.{0,30}(?:caminh|motorista|carga)|quadrilha/.test(text)) return ["critical", "Risco de roubo de carga", "Evite paradas no trecho, reforce rastreamento/escolta e prefira trafegar de dia."];
       if (/greve|paralisac|manifestac|protesto/.test(text)) return ["critical", "Paralisação / manifestação", "Risco de bloqueio a qualquer momento: confirme a situação antes de despachar e tenha rota B."];
@@ -3112,7 +3093,9 @@ function showAuthView() {
     function fleetImpactMarkup(item) {
       const impact = fleetImpact(item);
       if (!impact) return "";
-      const [tone, label, action] = impact;
+      const [, label, action] = impact;
+      const level = classifyRisk(item).level;
+      const tone = label === "Trecho liberado" ? "ok" : level === "critical" ? "critical" : level === "high" ? "high" : "";
       return `<p class="fleet-impact ${tone}"><strong>Impacto na frota: ${escapeHtml(label)}.</strong> ${escapeHtml(action)}</p>`;
     }
 
@@ -3121,33 +3104,14 @@ function showAuthView() {
       return (block === "total" ? 20 : block === "partial" ? 10 : 0) + (fleetImpact(item) ? 5 : 0) + riskScoreForItem(item);
     }
 
+    // [classe CSS, rótulo] — classe vazia = Baixo (mantém o CSS legado risk-low).
     function operationalRisk(item) {
-      const text = textForItem(item);
-      const noCasualties = RISK_NO_CASUALTIES_PATTERN.test(text);
-      if (roadBlockLevel(item) === "total") return ["critical", "Crítico"];
+      const risk = classifyRisk(item);
+      return [risk.level === "low" ? "" : risk.level, risk.label];
+    }
 
-      // Crítico: mortes confirmadas, roubo/saque de carga, ou bloqueio total/prolongado sem previsão de liberação.
-      if ((RISK_FATALITY_PATTERN.test(text) && !noCasualties) || RISK_CARGO_THEFT_PATTERN.test(text) || RISK_TOTAL_BLOCK_PATTERN.test(text)) {
-        return ["critical", "Crítico"];
-      }
-      if (RISK_INFRASTRUCTURE_PATTERN.test(text) && RISK_LONG_DURATION_PATTERN.test(text)) {
-        return ["critical", "Crítico"];
-      }
-      if (RISK_CIVIL_UNREST_PATTERN.test(text) && RISK_INFRASTRUCTURE_PATTERN.test(text)) {
-        return ["critical", "Crítico"];
-      }
-
-      // Alto: feridos, acidente com bloqueio/interdição real, carga perigosa envolvida, ou clima severo.
-      if (RISK_INJURY_PATTERN.test(text) && !noCasualties) return ["high", "Alto"];
-      if (RISK_MAJOR_INCIDENT_PATTERN.test(text) && (RISK_INFRASTRUCTURE_PATTERN.test(text) || RISK_HAZARDOUS_CARGO_PATTERN.test(text))) {
-        return ["high", "Alto"];
-      }
-      if (RISK_WEATHER_SEVERE_PATTERN.test(text) || RISK_INFRASTRUCTURE_PATTERN.test(text)) return ["high", "Alto"];
-
-      // Médio: acidente sem sinal de bloqueio/ferido, obras, lentidão, chuva.
-      if (RISK_MAJOR_INCIDENT_PATTERN.test(text) || RISK_MINOR_DISRUPTION_PATTERN.test(text)) return ["medium", "Médio"];
-
-      return ["", "Monitorar"];
+    function riskReason(item) {
+      return classifyRisk(item).reason;
     }
 
     function isActionableAlert(item) {
@@ -3412,7 +3376,7 @@ function showAuthView() {
               <article class="alert-card${blockedClass(item)}">
                 ${blockBannerMarkup(item)}
                 <div class="alert-meta">
-                  <span class="alert-badge ${riskClassName}">${riskLabel}</span>
+                  <span class="alert-badge ${riskClassName}" title="${escapeHtml(riskReason(item))}">${riskLabel}</span>
                   <span>${escapeHtml(meta || "Fonte não informada")}</span>
                 </div>
                 <h3>${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${title}</a>` : title}</h3>
@@ -3704,7 +3668,7 @@ function showAuthView() {
               <article class="item${blockedClass(item)}">
                 ${blockBannerMarkup(item)}
                 <div class="meta">
-                  <span class="info-badge risk-${riskClassName || "low"}">Risco ${riskLabel}</span>
+                  <span class="info-badge risk-${riskClassName || "low"}" title="${escapeHtml(riskReason(item))}">Risco ${riskLabel}</span>
                   <span>${escapeHtml([item.source, displayTime(item)].filter(Boolean).join(" · "))}</span>
                 </div>
                 <p class="title">${escapeHtml(item.title || "Notícia salva")}</p>
@@ -3741,7 +3705,7 @@ function showAuthView() {
             const relevance = cleanDisplayText(item.operational_relevance || item.operational_impact || "");
             const saved = isSavedNews(item);
             const badges = [
-              `<span class="info-badge risk-${riskClassName || "low"}">Risco ${riskLabel}</span>`,
+              `<span class="info-badge risk-${riskClassName || "low"}" title="${escapeHtml(riskReason(item))}">Risco ${riskLabel}</span>`,
               road ? `<span class="info-badge">Rodovia ${escapeHtml(road)}</span>` : "",
               region ? `<span class="info-badge">Região ${escapeHtml(region)}</span>` : "",
               relevance ? `<span class="info-badge">Relevância ${escapeHtml(shortText(relevance, 48))}</span>` : "",
@@ -4044,7 +4008,7 @@ function showAuthView() {
         <div class="map-popup${blockedClass(point.item)}">
           ${blockBannerMarkup(point.item)}
           <div class="map-popup-meta">
-            <span class="alert-badge ${riskClass}">${escapeHtml(point.riskLabel)}</span>
+            <span class="alert-badge ${riskClass}" title="${escapeHtml(riskReason(point.item))}">${escapeHtml(point.riskLabel)}</span>
             <span>${escapeHtml(point.category)}</span>
             ${point.uf ? `<span>${escapeHtml(point.uf)}</span>` : ""}
           </div>
@@ -4163,7 +4127,7 @@ function showAuthView() {
       const title = escapeHtml(alert.title || "Ocorrência monitorada");
       return `
         <article class="route-alert-item${blockedClass(alert)}">
-          <span class="alert-badge ${routeRiskClass(alert.risk_level)}">${escapeHtml(alert.risk_level || "Monitorar")}</span>
+          <span class="alert-badge ${routeRiskClass(alert.risk_level)}" title="${escapeHtml(alert.risk_reason || "")}">${escapeHtml(alert.risk_level || "Baixo")}</span>
           <div>
             ${blockBannerMarkup(alert)}
             ${roadBlockLevel(alert) && !Number.isInteger(alert.route_point_index) ? `<p class="route-alert-block critical">Ponto exato não identificado no traçado — confirme o km com a concessionária/PRF.</p>` : ""}

@@ -2,6 +2,7 @@ const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
 const { assertCanUse, json, recordUsage, requireManager, supabaseFetch } = require("./_auth");
 const { readJson } = require("./_admin");
+const RoadRisk = require("../public/risk.js");
 
 function clean(value) {
   return String(value || "")
@@ -52,12 +53,9 @@ function categoryFromText(item) {
   return clean(item.category) || "Monitoramento";
 }
 
+// Régua única (public/risk.js). Rótulo sem acento ("Critico"/"Medio") por compatibilidade.
 function riskFromText(item) {
-  const text = normalize(`${item.title} ${item.summary} ${item.category} ${item.type}`);
-  if (/roubo de carga|saque|bloqueio total|interdicao total|manifestacao|protesto/.test(text)) return "Critico";
-  if (/acidente|bloqueio|interdicao|interdita|tempestade|perigo|queda de barreira|tombamento|alagamento/.test(text)) return "Alto";
-  if (/lentidao|chuva forte|obra|interdicao parcial|congestionamento|pare-e-siga|fila/.test(text)) return "Medio";
-  return "Baixo";
+  return RoadRisk.classifyRisk(item).ascii;
 }
 
 function regionFromText(item) {
@@ -143,7 +141,8 @@ function fallbackSummary(item) {
     base = `${regionPrefix(region)}, ${lowerFirstForPrefix(base)}`;
   }
 
-  const risk = clean(item.risk_level) || riskFromText({ ...item, category });
+  const riskResult = RoadRisk.classifyRisk({ ...item, category });
+  const risk = riskResult.ascii;
   const relevance = ["Alto", "Critico"].includes(risk) ? "Alta" : "Baixa";
   const highway = clean(item.highway) || roadFromText(`${title} ${rawSummary}`);
   const insufficientData = !highway && !region && category === "Monitoramento";
@@ -160,6 +159,7 @@ function fallbackSummary(item) {
     status: "",
     category,
     risk_level: risk,
+    risk_reason: riskResult.reason,
     operational_relevance: relevance,
     operational_impact: relevance === "Alta"
       ? "Pode afetar segurança, prazo ou planejamento de rotas no transporte rodoviário."
@@ -326,6 +326,9 @@ async function generateAiSummary(item) {
     return { ...fallback, ai_used: false };
   }
   const result = { ...fallback, ...parsed };
+  // Risco nunca vem da IA: é sempre o da régua determinística, igual ao do painel.
+  result.risk_level = fallback.risk_level;
+  result.risk_reason = fallback.risk_reason;
   result.region = sanitizeRegion(result.region, item.source, fallback.region);
   result.image_summary = completeSentence(result.image_summary || result.ai_summary || fallback.image_summary);
   result.ai_summary = completeSentence(result.ai_summary || result.image_summary);

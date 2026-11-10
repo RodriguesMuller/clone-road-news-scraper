@@ -23,7 +23,16 @@ Admin · Gestor · Clientes · Usuários · Pacotes · Consumo · Fontes (gestor
 
 ## Como a classificação de gravidade funciona (o motivo pra confiar no alerta)
 
-Toda notícia recebe um nível de risco (Baixo/Médio/Alto/Crítico). Notícia de rodovia bloqueada recebe borda vermelha e o aviso "Rodovia bloqueada" (ou "parcialmente bloqueada") em todas as telas, e bloqueio total é sempre Crítico. Eventos logísticos maiores (greve, bloqueio de porto, interdição estratégica) passam por uma triagem adicional com confiança mínima calculada e evidência (link da fonte) obrigatória — nunca uma classificação sem justificativa auditável. Ver [`../docs/AI_PIPELINE.md`](../docs/AI_PIPELINE.md).
+Toda notícia recebe um nível de risco que mede o **impacto na operação da frota**, sempre com justificativa visível no painel:
+
+| Nível | Quando | Exemplo |
+|---|---|---|
+| Crítico | Via indisponível agora ou carga sob ameaça imediata | Carreta tomba e interdita a Bandeirantes; INMET Grande Perigo |
+| Alto | Impacto forte e provável | Caminhão tombado na BR-459; acidente com morte; roubo de carga; bloqueio total programado |
+| Médio | Atraso ou atenção | Acidente sem interdição; bloqueio parcial; obra; neblina; INMET Perigo Potencial |
+| Baixo | Sem impacto atual | Trecho liberado; acidente no exterior; notícia de julgamento; greve negada |
+
+Notícia sem rodovia ou local identificado fica limitada a Médio. A mesma régua vale para painel, mapa, Minha Rota, resumo individual e resumo semanal. Notícia de rodovia bloqueada recebe borda vermelha e o aviso "Rodovia bloqueada" (ou "parcialmente bloqueada") em todas as telas, e bloqueio total é sempre Crítico. Eventos logísticos maiores (greve, bloqueio de porto, interdição estratégica) passam por uma triagem adicional com confiança mínima calculada e evidência (link da fonte) obrigatória — nunca uma classificação sem justificativa auditável. Ver [`../docs/AI_PIPELINE.md`](../docs/AI_PIPELINE.md).
 
 ## O que existe mas ainda não é "feature vendável" (uso interno/técnico)
 

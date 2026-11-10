@@ -1,0 +1,46 @@
+{
+  "_doc": "Dataset dourado da régua de risco (public/risk.js e scraper/utils/risk.py). Títulos reais coletados em 2026-11-10, mais casos de borda. Toda mudança de régua precisa manter estes casos ou atualizar o esperado com justificativa.",
+  "cases": [
+    { "title": "Carreta tomba, pega fogo e interdita a Rodovia dos Bandeirantes em Jundiaí", "expected": "critical", "why": "via interditada agora" },
+    { "title": "Asfalto afunda e Rodovia SP-421 tem interdição total entre Lutécia e Paraguaçu Paulista", "expected": "critical", "why": "interdição total em curso" },
+    { "title": "Carreta tomba após colisão e fecha Ponte Rio-Niterói no sentido Rio", "expected": "critical", "why": "ponte fechada" },
+    { "title": "BR-282 segue com bloqueio", "expected": "critical", "why": "bloqueio ainda ativo" },
+    { "title": "Moradores bloqueiam AL-460 em protesto contra falta d'água", "expected": "critical", "why": "manifestação bloqueando a rodovia" },
+    { "title": "Tempestade - Grande Perigo", "type": "INMET", "source": "INMET - Avisos Meteorológicos", "expected": "critical", "why": "nível máximo do INMET" },
+
+    { "title": "BR-101 terá bloqueio total no ES nesta terça-feira; veja horário", "expected": "high", "why": "bloqueio total programado: planejável" },
+    { "title": "Bloqueio no km 83 da Rodovia dos Tamoios em Caraguatatuba está previsto nesta segunda-feira (9)", "expected": "high", "why": "bloqueio programado" },
+    { "title": "Rodovia dos Imigrantes terá bloqueio para simulado de acidente", "expected": "high", "why": "simulado com fechamento real programado" },
+    { "title": "Carreta tomba e bloqueia duas faixas da Rodovia Raposo Tavares em Cotia", "expected": "high", "why": "pesado tombado, bloqueio parcial" },
+    { "title": "Caminhão tomba na BR-459", "expected": "high", "why": "pesado tombado na rodovia" },
+    { "title": "Bitrem carregado com algodão tomba e pega fogo na Rodovia Castello Branco", "expected": "high", "why": "pesado tombado e incendiado" },
+    { "title": "Acidente com caminhão provoca derramamento de óleo na BR-040", "expected": "high", "why": "produto perigoso" },
+    { "title": "Acidente entre carro e moto deixa um morto na BR-235 em Sergipe", "expected": "high", "why": "vítima fatal: perícia interdita" },
+    { "title": "Acidente em Caeté deixa trânsito em pare e siga na BR-381", "expected": "high", "why": "acidente com interdição parcial" },
+    { "title": "Roubo de carga: quadrilha ataca caminhão na Via Dutra", "expected": "high", "why": "ameaça direta à carga" },
+    { "title": "Caminhoneiros do Alto Paraná iniciam paralisação por tempo indeterminado", "expected": "high", "why": "paralisação de transporte em curso" },
+    { "title": "Queda de barreira atinge acostamento na BR-116 em Itaobim", "expected": "high", "why": "dano estrutural sem bloqueio declarado" },
+    { "title": "Tempestade - Perigo", "type": "INMET", "source": "INMET - Avisos Meteorológicos", "expected": "high", "why": "alerta laranja" },
+
+    { "title": "Motociclista fica ferido após acidente na BR-470 em Bento Gonçalves", "expected": "medium", "why": "acidente leve sem interdição" },
+    { "title": "BR-101 TERÁ BLOQUEIO PARCIAL EM PONTE SOBRE O RIO ITAJAÍ-AÇU", "expected": "medium", "why": "parcial programado" },
+    { "title": "Rodovia Mogi-Bertioga tem interdição parcial em trecho da serra nesta quarta-feira", "expected": "medium", "why": "bloqueio parcial" },
+    { "title": "Bombeiros combatem princípio de incêndio em carreta na BR-163", "expected": "medium", "why": "princípio de incêndio controlado" },
+    { "title": "Operação Serra do Cafezal desarticula quadrilha de roubo de cargas que atuava na Rodovia Régis Bittencourt", "expected": "medium", "why": "ação policial: trecho visado" },
+    { "title": "Obras na Pista (km 180.0–185.0): Congestionamento devido Obras na Pista no sentido sul.", "expected": "medium", "why": "obra com congestionamento" },
+    { "title": "Neblina reduz visibilidade na BR-277", "expected": "medium", "why": "baixa visibilidade" },
+    { "title": "Tempestade - Perigo Potencial", "type": "INMET", "source": "INMET - Avisos Meteorológicos", "expected": "medium", "why": "alerta amarelo" },
+    { "title": "Irã volta a fechar o Estreito de Ormuz após EUA manterem bloqueio naval", "expected": "medium", "why": "impacto indireto (frete/diesel)" },
+    { "title": "Acidente deixa dois mortos e três feridos", "expected": "medium", "why": "sem local identificado: teto Médio" },
+
+    { "title": "Rodovia SP-055 é liberada após acidente", "expected": "low", "why": "trecho liberado" },
+    { "title": "Engavetamento em rodovia na Bulgária deixa 11 mortos e 50 feridos", "expected": "low", "why": "fora do Brasil" },
+    { "title": "Ex-assessor do governo do AC é denunciado por acidente que matou 3 na BR-364", "expected": "low", "why": "desdobramento judicial" },
+    { "title": "Patu está de luto com as mortes de médico e motorista em acidente na BR-226", "expected": "low", "why": "luto, fato encerrado" },
+    { "title": "Ecovias realiza simulado de acidente na Rodovia dos Imigrantes nesta quinta", "expected": "low", "why": "simulado sem fechamento" },
+    { "title": "Entidades negam greve de caminhoneiros e atribuem boatos a notícias antigas", "expected": "low", "why": "greve negada" },
+    { "title": "Paralisação de caminhoneiros no Porto do Rio Grande é encerrada após um dia de negociações", "expected": "low", "why": "paralisação encerrada" },
+    { "title": "Acidente entre dois carros deixa dez vítimas na rodovia Mogi-Guararema - G1", "summary": "há alerta de acidente com vítimas, conforme aviso meteorológico publicado pelo INMET.", "expected": "medium", "why": "texto citando INMET não torna a notícia um aviso meteorológico" },
+    { "title": "Prefeitura inaugura nova praça às margens da rodovia", "expected": "low", "why": "sem impacto operacional" }
+  ]
+}

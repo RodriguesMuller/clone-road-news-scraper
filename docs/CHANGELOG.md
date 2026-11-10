@@ -2,6 +2,13 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — régua única de risco (Baixo/Médio/Alto/Crítico)
+- **Alterado**: risco passa a medir o **impacto na operação da frota**, não a gravidade humana do fato. Crítico = via indisponível agora (bloqueio total em curso, manifestação bloqueando, INMET Grande Perigo); Alto = impacto forte provável (pesado tombado/incendiado, vítima fatal, produto perigoso, roubo de carga, greve anunciada, bloqueio total **programado**, INMET Perigo); Médio = atraso/atenção (acidente sem interdição, bloqueio parcial, obra, neblina, INMET Perigo Potencial, corredor internacional); Baixo = sem impacto atual (liberado, fora do Brasil, desdobramento judicial/luto, simulado, boato, greve negada).
+- **Corrigido**: em amostra real de 254 notícias, 39% saíam como Crítico (qualquer morte, inclusive no exterior e em notícia de julgamento); agora 8%. Caminhão tombado sem a palavra "tombamento" saía como "Monitorar"; INMET Perigo Potencial saía como Alto.
+- **Corrigido**: seis réguas divergentes (painel, Minha Rota, resumo individual, resumo semanal JS e Python, `risk_level` gravado pelo scraper) foram unificadas em `public/risk.js` (espelho `scraper/utils/risk.py`). A IA não define mais o risco.
+- **Adicionado**: justificativa de cada nível (passe o mouse no selo de risco; campo `risk_reason` na Minha Rota e no resumo individual). Notícia sem local identificado fica limitada a Médio.
+- **Corrigido**: títulos "Fato - Veículo" (ex.: "... - G1") geravam o resumo "há alerta de ... publicado pelo INMET".
+
 ## 2026-11-10 — Minha Rota: ocorrências de fora do trajeto
 - **Corrigido**: a Minha Rota listava ocorrências de outros estados como "relacionadas à rota" (ex.: bloqueio da BR-101 no Espírito Santo numa rota Santo André → Itaquaquecetuba), porque a origem/destino era casada palavra a palavra ("santo" ⊂ "Espírito Santo"). Agora casa a localidade inteira com limite de palavra, descarta ocorrência geolocalizada a mais de 45 km do trajeto e ocorrência que cita só rodovias fora da rota.
 - **Melhorado**: ocorrência casada pela cidade de origem/destino passa a ser marcada nessa ponta do mapa; bloqueio sem ponto identificável no traçado exibe aviso explícito.

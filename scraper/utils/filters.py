@@ -359,7 +359,13 @@ def _normalize_weather_phrases(text: str) -> str:
 
 def _fallback_summary(title: str) -> str:
     clean_title = clean_text(title)
-    weather = re.match(r"^([A-Za-z\u00c0-\u017F ]+)\s*-\s*([A-Za-z\u00c0-\u017F ]+)$", clean_title)
+    # S\u00f3 t\u00edtulos de aviso do INMET ("Tempestade - Perigo Potencial"). Antes qualquer
+    # "Acidente na rodovia X - G1" virava "h\u00e1 alerta de ... publicado pelo INMET".
+    weather = re.match(
+        r"^([A-Za-z\u00c0-\u017F ]+)\s*-\s*(Perigo Potencial|Grande Perigo|Perigo)$",
+        clean_title,
+        flags=re.IGNORECASE,
+    )
     if weather:
         event = weather.group(1).strip().lower()
         severity = weather.group(2).strip().lower()
