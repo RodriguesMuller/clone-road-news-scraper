@@ -1,7 +1,8 @@
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
-const { assertCanUse, finalizeReservation, json, releaseUsage, requireManager, reserveUsage, supabaseFetch } = require("./_auth");
+const { assertCanUse, finalizeReservation, json, releaseUsage, requireAccount, requireManager, reserveUsage, supabaseFetch } = require("./_auth");
 const { readJson } = require("./_admin");
+const { followEvent, setFollowedEventStatus, unfollowEvent } = require("./_followed_events");
 const RoadRisk = require("../public/risk.js");
 
 function clean(value) {
@@ -205,7 +206,7 @@ function openAiApiKey() {
 
 function publicErrorMessage(error) {
   const message = String(error?.message || "");
-  if (/login|sessao|sessão|perfil|inativo|pacote|recurso|limite|acesso|evento|status operacional|requisicao|senha temporaria/i.test(message)) return message;
+  if (/login|sessao|sessão|perfil|inativo|pacote|recurso|limite|acesso|evento|acompanh|status operacional|requisicao|senha temporaria/i.test(message)) return message;
   if (/openai_api_key|invalid_api_key|incorrect api key/i.test(message)) {
     return "A IA ainda nao esta configurada corretamente. Verifique a chave da OpenAI na Vercel.";
   }
@@ -354,6 +355,15 @@ module.exports = async function handler(req, res) {
 
   try {
     const body = await readBody(req);
+    // Acompanhamento de eventos pela empresa (Central de Evento). Não consome saldo de IA.
+    if (["follow-event", "followed-event-status", "unfollow-event"].includes(body.action)) {
+      const account = await requireAccount(req);
+      if (body.action === "follow-event") json(res, 200, await followEvent(account, body.item));
+      else if (body.action === "unfollow-event") json(res, 200, await unfollowEvent(account, body.event_id));
+      else json(res, 200, await setFollowedEventStatus(account, body.event_id, clean(body.status)));
+      return;
+    }
+
     if (body.action === "event-status") {
       const event = await updateMajorEventStatus(req, body);
       json(res, 200, { event });
@@ -396,7 +406,7 @@ module.exports = async function handler(req, res) {
   } catch (error) {
     const safeMessage = publicErrorMessage(error);
     res.statusCode = /^requisicao/i.test(safeMessage) ? 400
-      : /limite|pacote|login|sessao|acesso|recurso|perfil|inativo|senha temporaria/i.test(safeMessage) ? 403 : 500;
+      : /limite|pacote|login|sessao|acesso|recurso|perfil|inativo|senha temporaria|evento|acompanh/i.test(safeMessage) ? 403 : 500;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ error: safeMessage }));
   }

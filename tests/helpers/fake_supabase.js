@@ -71,6 +71,7 @@ function createFakeSupabase(seed = {}) {
     audit_logs: [],
     news: seed.news || [],
     platform_events: [],
+    followed_events: seed.followed_events || [],
   };
   let seq = 0;
   const nextId = (prefix) => `${prefix}-${String(++seq).padStart(6, "0")}`;

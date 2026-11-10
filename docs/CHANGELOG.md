@@ -2,6 +2,12 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — Central de Evento por acompanhamento ("Acompanhar evento")
+- **Alterado**: a Central de Evento deixa de ser preenchida pela IA. Cada notícia (Notícias, Alertas e Salvos) ganha o botão **"Acompanhar evento"**. A notícia vai para a Central da **empresa** (todos os usuários do cliente veem), e a cada coleta a Central reúne as notícias seguintes sobre o mesmo evento: mesma rodovia ou nome próprio do local, mais termos em comum, a partir de 12h antes da notícia de origem. A correspondência é por regra, sem IA.
+- **Adicionado**: encerrar, reabrir e parar de acompanhar um evento. Evento encerrado para de receber notícias e fica visível por 30 dias. Também há o selo "Sem notícia nova há N dias".
+- **Removido**: triagem automática de eventos por IA (`EVENT_INTELLIGENCE_ENABLED=false` no workflow; código mantido em `scraper/event_intelligence.py`) e a publicação do evento curado do Porto de Santos a cada push.
+- **Migration**: `scripts/supabase_followed_events.sql` (tabela `followed_events`).
+
 ## 2026-11-10 — Central de Evento só com o que afeta frota de carga
 - **Corrigido**: acidente pontual com interdição parcial (ex.: tombamento na Raposo Tavares que parou linhas de ônibus) virava evento "Crítico" na Central. Agora a triagem descarta acidente com interdição parcial sem bloqueio total, e impacto só em ônibus, metrô ou passageiros não conta como gravidade. Essas ocorrências continuam em Alertas e Notícias. O prompt da IA define evento grave como o que obriga o gestor de frota de carga a replanejar rotas ou janelas.
 - **Adicionado**: botão "Descartar: não é evento grave" para Admin/Gestor. O evento sai da Central para todos e a triagem automática não o republica.

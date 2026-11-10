@@ -14,11 +14,12 @@ Erros voltam como `{ "error": "mensagem específica" }`, nunca stack trace ou de
 
 | Endpoint | Métodos | Feature/quota | Descrição |
 |---|---|---|---|
-| `/api/news-feed` | `GET`, `POST` | `news_query` (GET) / `route_analysis` + `ai_summary_individual` (POST) | `GET`: feed de notícias (últimas, INMET, recentes 24h, mapa 30d, eventos maiores). `POST`: análise da tela **Minha Rota** (Google Routes + notícias cruzadas por rodovia/proximidade + recomendação por IA com fallback determinístico). Cada item de `alerts` traz `road_blocked` (boolean) e `block_level` (`"total"`, `"partial"` ou `null`); bloqueios vêm primeiro na ordenação e bloqueio total eleva `risk_level` a Crítico. |
+| `/api/news-feed` | `GET`, `POST` | `news_query` (GET) / `route_analysis` + `ai_summary_individual` (POST) | `GET`: feed de notícias (últimas, INMET, recentes 24h, mapa 30d e `followedEvents`: eventos acompanhados pela empresa, com as notícias relacionadas em `related`). `POST`: análise da tela **Minha Rota** (Google Routes + notícias cruzadas por rodovia/proximidade + recomendação por IA com fallback determinístico). Cada item de `alerts` traz `road_blocked` (boolean) e `block_level` (`"total"`, `"partial"` ou `null`); bloqueios vêm primeiro na ordenação e bloqueio total eleva `risk_level` a Crítico. |
 | `/api/news-summary` | `POST` | `ai_summary_individual` | Resumo de uma notícia específica via IA. |
 | `/api/weekly-summary` | `GET`, `POST` | `ai_summary_weekly` | Resumo semanal da frota (mesmo cálculo do e-mail). (`GET /api/news-feed` passa a incluir `image_url` nas linhas quando a coluna existe.) Resposta: `{ summary: { period, verdict, headline, executive_summary, numbers[{key,label,value,previous,delta}], watchlist[], hotspots[], cargo_security[], weather[], actions[], highlights[], coverage, ai_used }, context: { period_days, generated_at, total } }`; `summary` é `null` sem notícias no período. Lê 14 dias (semana atual + anterior para o comparativo). |
 | `/api/my-access` | `GET` | — | Retorna pacote ativo, papel e limites do usuário autenticado (usado pelo painel para exibir consumo). |
 | `/api/usage-event` | `POST` | — | Registro de evento de uso genérico vindo do frontend. |
+| `/api/news-summary` (ações de evento) | `POST` | — (não consome saldo) | `action: "follow-event"` + `item` (acompanhar a notícia; idempotente por link dentro da empresa), `"followed-event-status"` + `event_id` + `status` (`active`/`closed`), `"unfollow-event"` + `event_id`. Escopo: empresa do usuário. |
 | `/api/auth-config` | `GET` | — | Configuração pública de auth (se está habilitada, URL/chave pública do Supabase). |
 
 ## Endpoints de plataforma / backoffice (dono: `saas-platform-engineer`)

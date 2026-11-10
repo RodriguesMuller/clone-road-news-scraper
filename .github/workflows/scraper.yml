@@ -73,12 +73,9 @@ jobs:
           # Chave da OpenAI: aceita o secret OPENAI_API_KEY ou ROAD_NEWS_KEY (nome criado no repositório).
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || secrets.ROAD_NEWS_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4.1-mini' }}
-          EVENT_INTELLIGENCE_ENABLED: "true"
+          # Triagem de eventos por IA desligada (2026-11-10): a Central de Evento passou a mostrar os
+          # eventos que cada empresa escolhe acompanhar. O código segue em scraper/event_intelligence.py.
+          EVENT_INTELLIGENCE_ENABLED: "false"
           SCRAPER_AI_SUMMARIES_ENABLED: "false"
         run: python main.py
 
-      - name: Publish curated Porto de Santos event
-        if: github.event_name == 'push'
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: python scripts/upsert_santos_trucker_event.py
