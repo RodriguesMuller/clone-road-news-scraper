@@ -15,6 +15,23 @@ test("ambiente Cliente não mostra Fontes nem Configurações", () => {
   assert.match(html, /settingsButton\.hidden = mode === "client"/);
 });
 
+test("dashboard executivo é a página inicial e carrega antes do script principal", () => {
+  const risk = html.indexOf('<script src="/risk.js">');
+  const brief = html.indexOf('<script src="/brief.js">');
+  const dash = html.indexOf('<script src="/dashboard.js">');
+  assert.ok(risk > 0 && risk < brief && brief < dash, "ordem: risk → brief → dashboard");
+  assert.match(html, /data-client-page="dashboard"/);
+  assert.match(html, /"\/dashboard": \{ view: "occurrences", scroll: "top", page: "dashboard" \}/);
+  assert.match(html, /"\/alertas": \{ view: "occurrences", scroll: "clientAlertsPage", page: "alerts" \}/);
+  // Tema aplicado no <head>, antes da primeira pintura, com fallback para escuro.
+  const head = html.slice(0, html.indexOf("<style>"));
+  assert.match(head, /localStorage\.getItem\("roadnews\.theme"\)/);
+  assert.match(html, /:root\[data-theme="light"\] \{/);
+  const dashboard = fs.readFileSync(path.join(ROOT, "public", "dashboard.js"), "utf8");
+  assert.match(dashboard, /window\.RoadDashboard = \{ render, renderChrome, onShow, applyTheme \}/);
+  assert.doesNotMatch(dashboard, /Math\.random\(\) \* \d|fake|mock/i, "sem números inventados");
+});
+
 test("resumo operacional usa a janela escolhida e compara com o período anterior", () => {
   const { buildWeeklyBrief } = require(path.join(ROOT, "public", "brief.js"));
   const now = Date.parse("2026-11-10T18:00:00-03:00");
