@@ -248,7 +248,7 @@
     const scene = sceneFor(theme, text);
     const [top, mid, horizon] = SKIES[scene.sky] || SKIES.dusk;
     const id = `il-${Math.random().toString(36).slice(2, 7)}`;
-    return `<svg class="news-illustration ${variant}" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Ilustração: ${esc(theme)}">
+    return `<svg class="news-illustration ${variant}" viewBox="0 0 400 200" preserveAspectRatio="xMidYMax slice" role="img" aria-label="Ilustração: ${esc(theme)}">
       <defs>
         <linearGradient id="${id}s" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${top}"/><stop offset=".62" stop-color="${mid}"/><stop offset="1" stop-color="${horizon}"/></linearGradient>
         <radialGradient id="${id}g" cx=".5" cy=".56" r=".38"><stop offset="0" stop-color="${horizon}" stop-opacity=".9"/><stop offset="1" stop-color="${horizon}" stop-opacity="0"/></radialGradient>
