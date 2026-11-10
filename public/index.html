@@ -4166,6 +4166,7 @@ function showAuthView() {
           <span class="alert-badge ${routeRiskClass(alert.risk_level)}">${escapeHtml(alert.risk_level || "Monitorar")}</span>
           <div>
             ${blockBannerMarkup(alert)}
+            ${roadBlockLevel(alert) && !Number.isInteger(alert.route_point_index) ? `<p class="route-alert-block critical">Ponto exato não identificado no traçado — confirme o km com a concessionária/PRF.</p>` : ""}
             <h3>${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${title}</a>` : title}</h3>
             ${alert.segment_tone ? `<p class="route-alert-block ${escapeHtml(alert.segment_tone)}">${escapeHtml(alert.block_description || "")}</p>` : ""}
             <p>${escapeHtml(shortText(alert.summary || alert.title, 220))}</p>
