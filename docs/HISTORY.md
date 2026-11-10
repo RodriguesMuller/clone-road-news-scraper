@@ -2,6 +2,13 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — Hotfix: feed fora do ar por arquivo excluído do deploy
+**O que mudou:** `config/accented_words.json` → `public/accented_words.json`; `api/_text_repair.js` carrega o vocabulário com `try/catch`; `scraper/utils/filters.py` lê o novo caminho. Teste novo `tests/test_deploy_bundle.js`: nenhum `require` em `api/` pode apontar para pasta listada no `.vercelignore`.
+**Por quê:** o usuário viu o painel zerado logo após o merge do PR #22. O `require("../config/accented_words.json")` falhava no carregamento da função, porque `config` está no `.vercelignore`. Os testes locais não pegaram porque rodam com o repositório inteiro.
+**Impacto medido:** JS 74/74, Python 58/58. O teste novo falha no código do PR #22 e passa no corrigido.
+**Alternativas descartadas:** tirar `config` do `.vercelignore` (publicaria `sources.yaml` e outras configs do scraper sem necessidade); negação `!config/accented_words.json` (o diretório inteiro é ignorado, e a semântica de negação dentro de diretório ignorado não é garantida).
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — Central de Evento pela decisão de despacho; reparo de acento
 **O que mudou:** `scraper/event_intelligence.py`:
 - prompt reescrito pela ótica de quem libera caminhões;
@@ -11,7 +18,7 @@
 - evento novo encerrado é descartado;
 - `CLASSIFICATION_VERSION` v3.
 
-Também entrou o commit do PR #20 (limite de saída 8000 e erro claro para resposta incompleta), fechado sem merge quando a Central por acompanhamento foi proposta. `repair_text`/`strip_section_prefix` em `scraper/utils/filters.py` (usados em `clean_text` e nos títulos de `rss.py`/`html.py`) e `api/_text_repair.js` (aplicado em `news-feed.js` e `weekly-summary.js`), com o vocabulário compartilhado `config/accented_words.json`. Em `public/index.html`, `dispatchDecision` no destaque, no banner e nos indicadores.
+Também entrou o commit do PR #20 (limite de saída 8000 e erro claro para resposta incompleta), fechado sem merge quando a Central por acompanhamento foi proposta. `repair_text`/`strip_section_prefix` em `scraper/utils/filters.py` (usados em `clean_text` e nos títulos de `rss.py`/`html.py`) e `api/_text_repair.js` (aplicado em `news-feed.js` e `weekly-summary.js`), com o vocabulário compartilhado `public/accented_words.json`. Em `public/index.html`, `dispatchDecision` no destaque, no banner e nos indicadores.
 
 **Por quê:** o usuário decidiu manter a Central automática (o PR #21, Central por acompanhamento manual, foi fechado sem merge; a branch `feat/acompanhar-evento` ficou guardada). Pediu critério de gestor de frota que libera caminhões e apontou o título "Not??cias - Grave acidente na RSC-472…" com acento quebrado.
 
