@@ -1,4 +1,4 @@
-"""Resumo semanal para o gestor de frota: espelho em Python de api/_weekly_brief.js.
+"""Resumo semanal para o gestor de frota: espelho em Python de public/brief.js.
 
 Usado pelo e-mail de segunda-feira (scraper/weekly_news.py). Mantenha igual ao JS: os dois
 são validados pelo mesmo par tests/fixtures/weekly_items.json -> weekly_brief_expected.json.

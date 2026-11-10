@@ -2,6 +2,14 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — Resumo operacional, menu do Cliente e refresh visual
+**O que mudou:** `renderOperationalSummary` (em `public/index.html`) substitui os cartões de contagem do Resumo operacional. O cálculo reutiliza `public/brief.js` (movido de `api/_weekly_brief.js`, que agora só o reexporta) com `windowMs` (6h/24h/72h/7d) e `includeEvents` (eventos agrupados, notícias de liberação e data mais antiga, para avisar quando não há base de comparação). Dados: `uniqueMapItems()` (feed de 24h + linhas do mapa de 30 dias). O menu do Cliente perdeu "Fontes", o botão de Configurações fica oculto no ambiente Cliente e `/fontes`/`/configuracoes` saíram de `CLIENT_ROUTES`. O bloco de CSS "Refresh visual" foi acrescentado ao fim do `<style>` (tokens, tipografia, cartões, navegação, selos) e as telas antigas foram preservadas.
+**Por quê:** o Resumo operacional repetia contagens sem dizer o que está bloqueado, onde e o que fazer; Fontes/Configurações não têm utilidade para o cliente final; o visual monoespaçado e neon parecia ferramenta técnica, não painel gerencial.
+**Arquivos/módulos:** `public/index.html`, `public/brief.js`, `api/_weekly_brief.js`, `scraper/weekly_brief.py` (comentário), `tests/test_client_panel.js`, `tests/test_risk.js`.
+**Impacto medido:** a medir (uso da tela Resumo operacional). Visual não verificado por captura de tela no ambiente de desenvolvimento (Chrome headless indisponível); foram geradas prévias estáticas.
+**Alternativas descartadas:** tema claro executivo (o usuário escolheu "escuro refinado"); calcular o resumo operacional no servidor (os dados já estão no navegador e a troca de janela ficaria lenta); fonte web externa para o sans-serif (dependência e LGPD; usamos fonte do sistema).
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — Resumo semanal da frota
 **O que mudou:** novo `api/_weekly_brief.js` (`buildWeeklyBrief`) e espelho `scraper/weekly_brief.py`, consumidos por `api/weekly-summary.js` (painel) e `scraper/weekly_news.py` (e-mail). Fluxo: classificar com `public/risk.js` → descartar Baixo → agrupar a mesma ocorrência (mesma rodovia+UF+tipo em 24h ou Jaccard de títulos ≥ 0,35 em 48h; UF divergente nunca agrupa) → comparar com os 7 dias anteriores (leitura de 14 dias) → seções e ações determinísticas. Datas citadas no título ("(10)", "dia 14", "15/11") viram agenda, e as já passadas saem da lista. A IA só reescreve título e abertura. `risk.js`/`risk.py` passaram a expor `kind` e `fatal`. Renderização nova no painel (`renderWeeklySummary`, CSS e PDF) e no e-mail (HTML inline em tabela).
 **Por quê:** o resumo anterior listava volume de notícias, rodovias e fontes mais citadas e recomendações genéricas ("monitorar as rodovias mais citadas"), sem responder o que muda na operação da semana.

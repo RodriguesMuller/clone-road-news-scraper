@@ -2,6 +2,12 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — resumo operacional, menu do Cliente e refresh visual
+- **Alterado**: "Resumo operacional" deixou de ser quatro cartões de contagem (categorias, estados, rodovias citadas, risco) e virou **Situação operacional**: janela de 6h/24h/72h/7 dias comparada à janela anterior; situação geral; KPIs (bloqueios totais, restrições parciais, programados, acidentes com pesado, vítimas fatais, roubo de carga, avisos INMET); **rodovias com restrição** (pior situação por rodovia, há quanto tempo, ação; bloqueio com liberação posterior vira "Liberada (confirmar)"); ações imediatas; atenção nos próximos dias; risco por estado; evolução no período; segurança da carga e clima.
+- **Alterado**: o ambiente **Cliente** não mostra mais **Fontes** nem **Configurações**, e as rotas `/fontes` e `/configuracoes` redirecionam para o painel nesse ambiente (Gestor/Admin seguem com acesso).
+- **Alterado**: refresh visual "escuro refinado": texto em sans-serif (monoespaçada só em números), paleta grafite em camadas, verde da marca como destaque, cartões com raio e sombra suaves, navegação lateral com indicador de item ativo.
+- **Interno**: o motor do resumo semanal foi para `public/brief.js` (UMD, usado no navegador e pela API via `api/_weekly_brief.js`), com `windowMs` e `includeEvents` opcionais; saída semanal inalterada.
+
 ## 2026-11-10 — resumo semanal da frota
 - **Alterado**: o resumo semanal (painel e e-mail) deixou de ser contagem de notícias ("rodovias mais citadas", "fontes com maior volume") e passou a ser um briefing de decisão: veredito da semana; números (bloqueios totais e programados, acidentes com pesado, vítimas fatais, roubo de carga, paralisações, avisos INMET de Perigo) com comparativo contra a semana anterior; **Atenção para os próximos dias**; trechos mais críticos com a ação; segurança da carga; clima por UF; até 5 ações; principais ocorrências.
 - **Adicionado**: a mesma ocorrência noticiada por vários veículos conta uma vez só (com o nº de fontes); bloqueio programado já passado sai da lista; bloqueio total sem notícia de liberação aparece como "pode seguir bloqueado".
