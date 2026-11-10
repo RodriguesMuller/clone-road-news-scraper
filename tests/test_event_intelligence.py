@@ -122,7 +122,10 @@ class EventIntelligenceTests(unittest.TestCase):
 
         candidate["title"] = "Acessos ao Porto de Santos são liberados após fim da paralisação"
         candidate["summary"] = "Tráfego normalizado e operações retomadas no terminal."
-        self.assertEqual(len(_valid_events({"events": [event]}, [candidate], [])), 1)
+        published = [{"metadata": {"event_key": "porto-santos-paralisacao"}}]
+        self.assertEqual(len(_valid_events({"events": [event]}, [candidate], published)), 1)
+        # Evento novo já encerrado não entra: encerramento só atualiza um evento publicado.
+        self.assertEqual(_valid_events({"events": [event]}, [candidate], []), [])
 
 
 def _classified(status="em_andamento", published_at="2026-11-10T08:00:00-03:00", note=""):
@@ -226,6 +229,53 @@ class OpenAiResponseTests(unittest.TestCase):
         with mock.patch.object(ei.requests, "post", return_value=fake):
             with self.assertRaisesRegex(RuntimeError, "incompleta .max_output_tokens."):
                 ei._call_openai([], [], "k", "m")
+
+
+class DispatchDecisionTests(unittest.TestCase):
+    """Central = o que muda a decisão de liberar caminhões de carga para rodar."""
+
+    def test_grave_accident_without_total_block_stays_in_alerts(self):
+        # Caso real (10/11/2026): RSC-472, Palmitinho/RS, caminhão-baú.
+        item = {"title": "Grave acidente na RSC-472, em Palmitinho, envolvendo caminhão-baú emplacado em Três Passos",
+                "summary": "Colisão deixou feridos; a rodovia ficou interditada para atendimento da ocorrência.",
+                "source": "Guia Crissiumal", "url": "https://example.com/rsc472"}
+        self.assertEqual(candidate_reasons(item), [])
+
+    def test_accident_that_closes_the_road_is_candidate(self):
+        item = {"title": "Acidente com carreta deixa a BR-282 totalmente interditada em Lages",
+                "summary": "Bloqueio total nos dois sentidos, sem previsão de liberação; filas de caminhões.",
+                "source": "PRF", "url": "https://example.com/br282"}
+        self.assertTrue(candidate_reasons(item))
+
+    def test_release_of_accident_block_passes_to_close_the_event(self):
+        item = {"title": "BR-282 é liberada após acidente com carreta em Lages",
+                "summary": "Rodovia liberada e trânsito normalizado nos dois sentidos.", "source": "PRF", "url": "https://example.com/lib"}
+        self.assertIn("possível encerramento", candidate_reasons(item))
+
+    def test_dispatch_decision_is_kept_and_defaults_to_hold(self):
+        candidate = {"title": "Greve de caminhoneiros bloqueia a BR-116", "summary": "Bloqueio total em Feira de Santana; filas de caminhões.",
+                     "source": "PRF", "url": "https://example.com/greve", "published_at": "2026-11-10T08:00:00-03:00",
+                     "category": "", "screening_reasons": ["gravidade"]}
+        event = {"is_major_event": True, "event_key": "greve-caminhoneiros-br116-ba", "title": "Greve na BR-116", "category": "Greve",
+                 "scope": "nacional", "severity": "critical", "status": "em_andamento", "confidence": 0.9, "location": "Feira de Santana/BA",
+                 "affected_infrastructure": ["BR-116"], "operational_impact": "Bloqueio total impede a passagem de caminhões no trecho.",
+                 "dispatch_decision": "liberar_com_desvio", "evidence": [{"url": candidate["url"]}]}
+        self.assertEqual(_valid_events({"events": [event]}, [candidate], [])[0]["dispatch_decision"], "liberar_com_desvio")
+        event["dispatch_decision"] = "invalido"
+        self.assertEqual(_valid_events({"events": [event]}, [candidate], [])[0]["dispatch_decision"], "segurar")
+
+
+class TextRepairTests(unittest.TestCase):
+    def test_broken_accents_and_section_prefix_are_repaired(self):
+        from scraper.utils.filters import clean_text, strip_section_prefix
+
+        r = chr(0xFFFD)
+        title = f"Not{r}{r}cias - Grave acidente na RSC-472, envolvendo caminh{r}{r}o-ba{r}{r} emplacado em Tr{r}{r}s Passos"
+        self.assertEqual(strip_section_prefix(clean_text(title)),
+                         "Grave acidente na RSC-472, envolvendo caminhão-baú emplacado em Três Passos")
+        self.assertEqual(clean_text("CaminhÃ£o tomba na SÃ£o Paulo"), "Caminhão tomba na São Paulo")
+        self.assertEqual(clean_text(f"palavra x{r}y desconhecida"), "palavra xy desconhecida")
+        self.assertEqual(clean_text("Texto já correto: ônibus, São Paulo"), "Texto já correto: ônibus, São Paulo")
 
 
 if __name__ == "__main__":

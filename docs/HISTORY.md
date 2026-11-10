@@ -2,6 +2,27 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — Central de Evento pela decisão de despacho; reparo de acento
+**O que mudou:** `scraper/event_intelligence.py`:
+- prompt reescrito pela ótica de quem libera caminhões;
+- `dispatch_decision` no schema e na validação;
+- acidente exige `TOTAL_PATTERN`;
+- notícia de liberação vira candidata;
+- evento novo encerrado é descartado;
+- `CLASSIFICATION_VERSION` v3.
+
+Também entrou o commit do PR #20 (limite de saída 8000 e erro claro para resposta incompleta), fechado sem merge quando a Central por acompanhamento foi proposta. `repair_text`/`strip_section_prefix` em `scraper/utils/filters.py` (usados em `clean_text` e nos títulos de `rss.py`/`html.py`) e `api/_text_repair.js` (aplicado em `news-feed.js` e `weekly-summary.js`), com o vocabulário compartilhado `config/accented_words.json`. Em `public/index.html`, `dispatchDecision` no destaque, no banner e nos indicadores.
+
+**Por quê:** o usuário decidiu manter a Central automática (o PR #21, Central por acompanhamento manual, foi fechado sem merge; a branch `feat/acompanhar-evento` ficou guardada). Pediu critério de gestor de frota que libera caminhões e apontou o título "Not??cias - Grave acidente na RSC-472…" com acento quebrado.
+
+**Impacto medido:** Python 58/58 e JS 73/73. O caso RSC-472 (grave acidente sem bloqueio total) fica em Alertas; acidente com bloqueio total sem previsão e greve de caminhoneiros seguem candidatos.
+
+**Alternativas descartadas:**
+- trocar o vocabulário por detecção de idioma ou dicionário completo (dependência nova);
+- apagar o U+FFFD sem tentar reconstruir (deixaria "Not cias").
+
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — Triagem de eventos: limite de saída e diagnóstico
 **O que mudou:** `scraper/event_intelligence.py`: `max_output_tokens` de 3000 para 8000; `_call_openai` detecta `status: incomplete` e informa o motivo; o log de falha inclui uma mensagem curta, sem corpo de resposta nem cabeçalhos. Teste `OpenAiResponseTests`.
 **Por quê:** a coleta seguinte ao merge do PR #19 registrou `[Eventos] Falha na triagem inteligente: JSONDecodeError`, com 40 candidatos e o prompt maior. O log só trazia o nome da exceção, então a causa (resposta cortada) é a mais provável, mas não foi confirmada; o novo log vai mostrá-la.

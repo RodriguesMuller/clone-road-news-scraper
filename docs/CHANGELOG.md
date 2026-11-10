@@ -2,6 +2,11 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — Central de Evento pela decisão de despacho; texto com acento quebrado
+- **Alterado**: a triagem de eventos passa a perguntar "isso muda a decisão de liberar caminhões de carga?". Acidente, mesmo grave, só vira evento com bloqueio total, nos dois sentidos ou sem previsão; o resto fica em Alertas. Evento novo já encerrado não entra na Central. Notícia de liberação da via chega à IA para encerrar o evento publicado.
+- **Adicionado**: **decisão de despacho** em cada evento ("Segurar veículos para o trecho", "Liberar com desvio", "Liberar com atenção"; encerrado = "Trecho liberado: despacho normal"), no selo, no banner e nos indicadores. As ações recomendadas passam a ser de despacho.
+- **Corrigido**: título com acento corrompido na fonte (ex.: "Not??cias - Grave acidente…", Guia Crissiumal). A coleta conserta o acento pela palavra conhecida (`config/accented_words.json`) e tira o rótulo de seção "Notícias - ". As notícias já gravadas são consertadas na exibição (feed e resumo semanal).
+
 ## 2026-11-10 — Triagem de eventos: resposta da IA cortada
 - **Corrigido**: após o prompt v2, a triagem falhou em produção com `JSONDecodeError`. A resposta da IA era cortada pelo limite de 3000 tokens de saída. O limite passou para 8000, e resposta incompleta agora gera erro claro no log (`resposta da IA incompleta (motivo)`) em vez de erro de JSON.
 

@@ -4247,6 +4247,18 @@ function showAuthView() {
       return days === null ? "" : `<span class="event-badge" title="Nenhuma notícia nova sobre o evento desde a última atualização. Confirme a situação antes de decidir.">Sem atualização há ${days} dias</span>`;
     }
 
+    // Decisão de despacho sugerida pela triagem: o que o gestor faz com os caminhões que iriam pelo trecho.
+    function dispatchDecision(event) {
+      const labels = {
+        segurar: ["Segurar veículos para o trecho", "critical"],
+        liberar_com_desvio: ["Liberar com desvio", "monitoring"],
+        liberar_com_atencao: ["Liberar com atenção", ""],
+      };
+      const decision = majorEventMeta(event).dispatch_decision;
+      if (!isActiveMajorEvent(event)) return ["Trecho liberado: despacho normal", ""];
+      return labels[decision] || null;
+    }
+
     function majorEventStatus(event) {
       const status = majorEventMeta(event).operational_status || (event.status === "resolved" ? "encerrado" : "monitoramento");
       const labels = {
@@ -4315,6 +4327,7 @@ function showAuthView() {
             <div class="event-badges">
               <span class="event-badge critical">Crítico</span>
               <span class="event-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
+              ${dispatchDecision(event) ? `<span class="event-badge ${dispatchDecision(event)[1]}">Despacho: ${escapeHtml(dispatchDecision(event)[0])}</span>` : ""}
               ${staleBadge(event)}
               <span class="event-badge">${escapeHtml(meta.category || "Evento logístico")}</span>
               <span class="event-badge">${escapeHtml(scope)}</span>
@@ -4329,7 +4342,7 @@ function showAuthView() {
             <div class="event-metric"><span>Encerramento</span><strong>${escapeHtml(!isActiveMajorEvent(event) && (meta.ended_on || meta.ended_at || event.resolved_at) ? formatCalendarDate(meta.ended_on || meta.ended_at || event.resolved_at) : "Em andamento")}</strong></div>
             <div class="event-metric"><span>Última atualização</span><strong>${escapeHtml(formatDate(meta.last_update_at || event.created_at))}</strong></div>
             <div class="event-metric"><span>Infraestrutura afetada</span><strong>${escapeHtml(infrastructures.join(" · ") || "Em confirmação")}</strong></div>
-            <div class="event-metric"><span>Confiança da análise</span><strong>${escapeHtml(meta.confidence_label || "Alta")}</strong></div>
+            <div class="event-metric"><span>Decisão de despacho</span><strong>${escapeHtml(dispatchDecision(event)?.[0] || "Avaliar antes de liberar")}</strong></div>
           </div>
         </article>
         <div class="event-detail-grid">
@@ -4355,6 +4368,7 @@ function showAuthView() {
             <div class="event-analysis-row"><span>Status operacional</span><strong>${escapeHtml(statusLabel)}</strong></div>
             <div class="event-analysis-row"><span>Critérios do evento</span><strong>${escapeHtml((meta.why_major || []).join(" · ") || "Gravidade, contexto logístico e impacto operacional confirmados.")}</strong></div>
             <div class="event-analysis-row"><span>Abrangência</span><strong>${escapeHtml(`${scope} · ${location}`)}</strong></div>
+            <div class="event-analysis-row"><span>Confiança da análise</span><strong>${escapeHtml(meta.confidence_label || "Alta")}</strong></div>
             <div class="event-analysis-row"><span>Duração estimada</span><strong>${escapeHtml(meta.estimated_duration || "Sem previsão confirmada")}</strong></div>
             ${managementActions}
           </aside>
@@ -4377,7 +4391,7 @@ function showAuthView() {
           <div>
             <span class="event-badge critical">Evento crítico em andamento</span>
             <h2>${escapeHtml(event.message || "Evento logístico grave")}</h2>
-            <p>${escapeHtml(shortText(majorEventMeta(event).operational_impact || majorEventMeta(event).summary, 190))}</p>
+            <p>${dispatchDecision(event) ? `<strong>Despacho: ${escapeHtml(dispatchDecision(event)[0])}.</strong> ` : ""}${escapeHtml(shortText(majorEventMeta(event).operational_impact || majorEventMeta(event).summary, 190))}</p>
           </div>
           <button class="mini-button" type="button" data-route="/central-eventos" data-scroll="clientEventsPage">Acompanhar evento</button>
         ` : "";

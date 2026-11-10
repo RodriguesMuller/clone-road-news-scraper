@@ -2,13 +2,14 @@ const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
 const { assertCanUse, finalizeReservation, json, releaseUsage, reserveUsage, supabaseFetch } = require("./_auth");
 const { buildWeeklyBrief } = require("./_weekly_brief");
+const { repairNewsItem } = require("./_text_repair");
 
 // Semana atual + semana anterior (para o comparativo dos números).
 async function fetchTwoWeeks() {
   const since = encodeURIComponent(new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString());
   const columns = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
   const response = await supabaseFetch(`/rest/v1/news?select=${columns}&created_at=gte.${since}&order=created_at.desc&limit=800`);
-  return response.json();
+  return (await response.json()).map(repairNewsItem);
 }
 
 function extractText(data) {

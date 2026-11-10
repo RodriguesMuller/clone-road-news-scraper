@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 from scraper.sources import HEADERS
 from scraper.sources.arteris import scrape_arteris
-from scraper.utils.filters import build_summary, matches_keywords, clean_text, is_fleet_relevant, safe_image_url
+from scraper.utils.filters import build_summary, matches_keywords, clean_text, is_fleet_relevant, safe_image_url, strip_section_prefix
 from scraper.utils.timezone import brasilia_iso_from_datetime, brasilia_now_iso
 
 
@@ -120,7 +120,7 @@ def scrape_band(source: dict, keywords: list) -> list:
         title = ""
         head = a.find(["h1", "h2", "h3", "h4"])
         if head:
-            title = clean_text(head.get_text())
+            title = strip_section_prefix(clean_text(head.get_text()))
         if not title:
             img = a.find("img", alt=True)
             if img:

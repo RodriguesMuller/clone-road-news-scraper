@@ -1,0 +1,28 @@
+{
+  "_comment": "Palavras acentuadas usadas para reparar texto de fonte com acento corrompido (ex.: 'Not��cias' -> 'Notícias'). Lido por scraper/utils/filters.py (coleta) e api/_text_repair.js (exibição de notícias já gravadas).",
+  "words": [
+    "notícia", "notícias", "caminhão", "caminhões", "caminhão-baú", "ônibus", "três", "após", "não", "são", "está", "estão",
+    "região", "regiões", "situação", "interdição", "interdições", "liberação", "colisão", "colisões", "operação", "operações",
+    "polícia", "rodoviária", "rodoviário", "rodoviários", "trânsito", "tráfego", "veículo", "veículos", "condução", "condutor",
+    "mão", "mãos", "km", "município", "municípios", "prefeitura", "cidade", "área", "áreas", "público", "pública", "públicos",
+    "ação", "ações", "atenção", "previsão", "informação", "informações", "manutenção", "pavimentação", "duplicação", "sinalização",
+    "obra", "obras", "pista", "faixa", "acesso", "início", "término", "horário", "horários", "período", "próximo", "próxima",
+    "próximos", "próximas", "último", "última", "últimos", "últimas", "família", "vítima", "vítimas", "ferido", "feridos",
+    "grávida", "saúde", "socorro", "bombeiros", "incêndio", "incêndios", "chuva", "chuvas", "temporal", "alagamento",
+    "deslizamento", "erosão", "cratera", "ponte", "viaduto", "túnel", "pedágio", "pedágios", "concessão", "concessionária",
+    "paralisação", "paralisações", "manifestação", "manifestações", "protesto", "greve", "combustível", "combustíveis",
+    "diesel", "abastecimento", "desabastecimento", "carga", "cargas", "frete", "logística", "exportação", "importação",
+    "porto", "terminal", "aduana", "fronteira", "sábado", "domingo", "segunda-feira", "terça-feira", "quarta-feira",
+    "quinta-feira", "sexta-feira", "terça", "manhã", "amanhã", "nesta", "também", "até", "já", "só", "é", "à", "às",
+    "pé", "lá", "cá", "nó", "trás", "através", "porém", "além", "ninguém", "alguém", "também", "contém", "têm", "vêm",
+    "São Paulo", "Paraná", "Pará", "Amapá", "Goiás", "Piauí", "Maranhão", "Ceará", "Espírito", "Rondônia", "Brasília",
+    "Florianópolis", "Goiânia", "Cuiabá", "Belém", "Macapá", "Vitória", "Maceió", "São", "José", "João", "Luís", "Antônio",
+    "Três Passos", "Crissiumal", "Palmitinho", "Itajaí", "Paranaguá", "Jundiaí", "Taubaté", "Guarujá", "Cubatão", "Mauá",
+    "Itaquaquecetuba", "Ribeirão", "Preto", "Uberlândia", "Contagem", "Betim", "Londrina", "Maringá", "Cascavel",
+    "Chapecó", "Joinville", "Blumenau", "Criciúma", "Erechim", "Ijuí", "Santa Rosa", "Pelotas", "Canoas", "Gravataí",
+    "polícia", "detran", "dnit", "prf", "anel", "marginal", "avenida", "rodovia", "estrada", "trecho", "sentido",
+    "crítico", "crítica", "médio", "média", "alto", "baixo", "grave", "gravíssimo", "fatal", "óbito", "óbitos",
+    "atropelamento", "engavetamento", "tombamento", "capotamento", "carreta", "bitrem", "rodotrem", "baú", "caçamba",
+    "lâmina", "óleo", "água", "árvore", "árvores", "elétrica", "energia", "previsões", "condições", "condição"
+  ]
+}

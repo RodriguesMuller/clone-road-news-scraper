@@ -229,8 +229,80 @@ def first_image_in_html(fragment: str) -> str:
     return ""
 
 
+def _load_accented_words() -> dict[str, list[str]]:
+    """Vocabulário de config/accented_words.json indexado pelo esqueleto sem acento (ordem = prioridade)."""
+    import json
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[2] / "config" / "accented_words.json"
+    try:
+        words = json.loads(path.read_text(encoding="utf-8")).get("words", [])
+    except (OSError, ValueError):
+        return {}
+    index: dict[str, list[str]] = {}
+    for entry in words:
+        for word in str(entry).split():
+            if re.search(r"[^\x00-\x7f]", word):
+                key = re.sub(r"[^\x00-\x7f]", "?", word.lower())
+                if word not in index.setdefault(key, []):
+                    index[key].append(word)
+    return index
+
+
+# U+FFFD: caractere de substituição que aparece quando a fonte perdeu os bytes do acento.
+REPLACEMENT_CHAR = chr(0xFFFD)
+_ACCENTED_WORDS = _load_accented_words()
+# "Ã" ou "Â" seguidos de um byte de continuação lido como Latin-1: UTF-8 decodificado errado.
+_MOJIBAKE_HINT = re.compile("[" + chr(0xC3) + chr(0xC2) + "][" + chr(0x80) + "-" + chr(0xBF) + "]")
+_BROKEN_WORD = re.compile(r"[\w" + REPLACEMENT_CHAR + r"-]*" + REPLACEMENT_CHAR + r"[\w" + REPLACEMENT_CHAR + r"-]*")
+SECTION_PREFIX = re.compile(
+    r"^\s*(?:[u" + chr(0xFA) + REPLACEMENT_CHAR + r"]+ltimas\s+)?not[i" + chr(0xED) + REPLACEMENT_CHAR
+    + r"]+cias?\s*[-:|" + chr(0x2013) + r"]\s+",
+    re.IGNORECASE,
+)
+
+
+def repair_text(text: str) -> str:
+    """Conserta acento corrompido na origem.
+
+    - UTF-8 lido como Latin-1 ("NotÃ­cias") é recodificado.
+    - Bytes perdidos ("Not" + U+FFFD + U+FFFD + "cias"): cada sequência de U+FFFD vira o caractere
+      acentuado da palavra conhecida que encaixa (config/accented_words.json, em ordem de prioridade);
+      sem nenhuma, o U+FFFD sai, para não exibir o losango de caractere inválido.
+    """
+    if not text:
+        return ""
+    value = str(text)
+    if _MOJIBAKE_HINT.search(value):
+        try:
+            value = value.encode("latin-1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
+    if REPLACEMENT_CHAR not in value:
+        return value
+
+    def fix(match: re.Match) -> str:
+        word = match.group(0)
+        key = re.sub(REPLACEMENT_CHAR + "+", "?", word.lower())
+        candidates = _ACCENTED_WORDS.get(key, [])
+        if not candidates:
+            return word.replace(REPLACEMENT_CHAR, "")
+        # Palavra com maiúscula prefere a forma própria do vocabulário ("Três" Passos); senão, a primeira.
+        proper = [c for c in candidates if c[:1].isupper()] if word[:1].isupper() else []
+        fixed = (proper or candidates)[0]
+        return fixed[0].upper() + fixed[1:] if word[:1].isupper() else fixed.lower()
+
+    return _BROKEN_WORD.sub(fix, value)
+
+
+def strip_section_prefix(title: str) -> str:
+    """Remove rótulo de seção do site no começo do título ("Notícias - Grave acidente...")."""
+    stripped = SECTION_PREFIX.sub("", title or "", count=1)
+    return stripped[:1].upper() + stripped[1:] if stripped != (title or "") else stripped
+
+
 def clean_text(text: str) -> str:
-    """Remove HTML, entidades e espacos duplicados."""
+    """Remove HTML, entidades e espacos duplicados, e conserta acento corrompido na origem."""
     if not text:
         return ""
 
@@ -238,6 +310,7 @@ def clean_text(text: str) -> str:
     text = re.sub(r"&nbsp;?", " ", text, flags=re.IGNORECASE)
     text = re.sub(r"&[a-zA-Z]+;?", " ", text)
     text = re.sub(r"<[^>]+>", " ", text)
+    text = repair_text(text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
