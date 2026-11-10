@@ -8,7 +8,7 @@
 |---|---|---|
 | Consulta de notícias | Feed só com o que impacta a frota (bloqueio, acidente, clima, roubo de carga, greve, obra, restrição), cada notícia com a ação sugerida ("Impacto na frota"), atualizado de hora em hora | `monthly_news_limit` |
 | Resumo individual por IA | Resumo de uma notícia específica, gerado por IA | `monthly_ai_summary_limit` + `can_generate_individual_summary` |
-| Resumo semanal por IA | Resumo operacional da semana, por e-mail ou sob demanda no painel | `monthly_ai_summary_limit` + `can_generate_weekly_summary` |
+| Resumo semanal da frota | Briefing de segunda-feira (e-mail ou painel): veredito da semana, números com comparativo, o que vem nos próximos dias (bloqueios programados, greves, trechos que podem seguir fechados, avisos INMET), trechos mais críticos com a ação recomendada, segurança da carga, clima por estado e até 5 ações | `monthly_ai_summary_limit` + `can_generate_weekly_summary` |
 | Geração de PDF | Exportar conteúdo em PDF | `monthly_pdf_limit` |
 | Acesso ao mapa | Mapa rodoviário com marcadores de risco, agrupados por zoom; rodovias bloqueadas sempre visíveis, com destaque vermelho | `can_access_map` |
 | Minha Rota | Análise de trajeto: trânsito real + notícias cruzadas por proximidade + recomendação (IA com fallback por regra); bloqueios no trajeto aparecem primeiro, com sugestão de rota alternativa | `monthly_route_limit` |

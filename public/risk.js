@@ -96,9 +96,24 @@
     location: new RegExp(`${ROAD_CODE.source}|rodovi|estrada|\\bkm\\s*\\d|\\bvia\\b|serra|ponte|viaduto|marginal|${NAMED_HIGHWAYS}|\\b(?:${STATE_NAMES})\\b|(?:\\bem|\\bno|\\bna|,|\\()\\s?(?:${UF.split("|").slice(1, 28).join("|")})\\b`),
   };
 
+  // Tipo de ocorrência (usado pelo resumo semanal para agrupar e sugerir ação).
+  const KIND_BY_REASON = [
+    ["Corredor logístico internacional", "intl"], ["Ocorrência fora do Brasil", "foreign"], ["Desdobramento", "aftermath"],
+    ["Aviso INMET de Grande Perigo", "inmet_red"], ["Aviso INMET de Perigo Potencial", "inmet_yellow"], ["Aviso INMET de Perigo", "inmet_orange"],
+    ["Aviso meteorológico", "inmet"], ["Trecho liberado", "released"], ["Simulado", "simulation"],
+    ["Bloqueio total programado", "block_planned"], ["Manifestação bloqueando", "strike_block"], ["Rodovia totalmente bloqueada", "block_total"],
+    ["Paralisação negada", "strike_over"], ["Paralisação ou manifestação", "strike"], ["Ação policial", "cargo_theft_police"],
+    ["Roubo de carga", "cargo_theft"], ["Dano estrutural", "structural"], ["Acidente com produto perigoso", "hazmat"],
+    ["Princípio de incêndio", "small_fire"], ["Veículo pesado", "heavy_vehicle"], ["Acidente com interdição parcial", "accident_partial"],
+    ["Acidente com congestionamento", "accident_jam"], ["Acidente com vítima fatal", "fatal_accident"], ["Acidente sem sinal", "accident"],
+    ["Interdição parcial programada", "block_partial_planned"], ["Bloqueio parcial", "block_partial"], ["Congestionamento extenso", "jam"],
+    ["Clima severo", "weather"], ["Baixa visibilidade", "visibility"], ["Incêndio próximo", "fire"], ["Lentidão, obra", "traffic"],
+  ];
+
   function result(level, reason) {
     const meta = LEVELS[level];
-    return { level, rank: meta.rank, label: meta.label, ascii: meta.ascii, reason };
+    const kind = (KIND_BY_REASON.find(([prefix]) => reason.startsWith(prefix)) || [null, "none"])[1];
+    return { level, rank: meta.rank, label: meta.label, ascii: meta.ascii, reason, kind };
   }
 
   // Só pela origem do registro: o texto de notícia comum pode citar o INMET.
@@ -172,10 +187,11 @@
     const base = rawClassify(item, text);
     // Sem localização identificável não pode ser Alto/Crítico (régua de logistics-intelligence).
     const located = P.location.test(text) || item?.highway || item?.city || item?.state || item?.region || isInmet(item, text);
+    const fatal = P.fatality.test(text) && !P.noCasualties.test(text) && P.accident.test(text);
     if (!located && base.rank >= 3) {
-      return { ...result("medium", base.reason), reason: `${base.reason} Sem rodovia ou local identificado na notícia.`, needs_geo_review: true };
+      return { ...result("medium", base.reason), reason: `${base.reason} Sem rodovia ou local identificado na notícia.`, kind: base.kind, fatal, needs_geo_review: true };
     }
-    return base;
+    return { ...base, fatal };
   }
 
   return { LEVELS, normalize, classifyRisk, roadBlockLevel, BLOCK_ROAD_CONTEXT, BLOCK_RELEASED, BLOCK_STILL_ACTIVE };

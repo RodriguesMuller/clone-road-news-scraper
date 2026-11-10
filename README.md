@@ -75,7 +75,9 @@ O workflow [`.github/workflows/weekly-news.yml`](.github/workflows/weekly-news.y
 gera um resumo semanal toda segunda-feira, 08:00 no horario de Brasilia, com a
 identidade visual Road News inspirada no padrão corporativo da Overhaul. Ele usa:
 
-- `OPENAI_API_KEY` para montar o resumo operacional com IA.
+- `OPENAI_API_KEY` (opcional) para a IA redigir o título e a abertura. Números,
+  pontos de atenção, trechos críticos e ações são calculados sem IA
+  (`scraper/weekly_brief.py`, espelho de `api/_weekly_brief.js`).
 - `RESEND_API_KEY` para enviar e-mail pelo Resend.
 - `WEEKLY_EMAIL_TO` com os destinatarios separados por virgula.
 - `WEEKLY_EMAIL_FROM` como remetente. Para producao, configure um dominio no

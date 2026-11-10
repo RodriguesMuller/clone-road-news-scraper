@@ -451,8 +451,13 @@ test("weekly summary classifies region and category without false positives", as
   } finally {
     delete process.env.AUTH_ENABLED;
   }
-  const items = JSON.parse(response.body).context.items;
+  const payload = JSON.parse(response.body);
   assert.equal(response.statusCode, 200);
-  assert.deepEqual(items.map((item) => item.region), ["", "Mato Grosso do Sul", "Parana", "Para"]);
-  assert.notEqual(items[0].category, "Roubo de carga");
+  assert.equal(payload.summary.coverage.analyzed, 4);
+  assert.equal(payload.summary.ai_used, false);
+  // "para" (preposição) não é Pará; "Mato Grosso do Sul" não vira Mato Grosso.
+  const { ufFromText } = require(path.join(ROOT, "api", "_weekly_brief.js"));
+  assert.deepEqual(rows.map((row) => ufFromText(row.title)), ["", "MS", "PR", "PA"]);
+  assert.ok(!payload.summary.cargo_security.length, "tombamento não é roubo de carga");
+  assert.ok(payload.summary.highlights.some((h) => h.uf === "PA" && h.kind === "block_total"));
 });
