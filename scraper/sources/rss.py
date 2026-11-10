@@ -3,7 +3,7 @@ import requests
 from datetime import datetime, timezone
 
 from scraper.sources import HEADERS
-from scraper.utils.filters import build_summary, matches_keywords, clean_text, is_blocked_url
+from scraper.utils.filters import build_summary, matches_keywords, clean_text, is_blocked_url, is_fleet_relevant
 from scraper.utils.timezone import brasilia_iso_from_datetime, brasilia_now_iso
 
 
@@ -72,6 +72,11 @@ def scrape_rss(source: dict, keywords: list) -> list:
             # filtro das demais notícias nacionais.
             source_keywords = source.get("keywords") or keywords
             if not matches_keywords(title, source_keywords):
+                continue
+            # Só guarda o que ajuda o gestor de frota a decidir rota/horário:
+            # contexto viário + sinal de impacto. Fontes com fleet_filter: false
+            # (ex.: corredores internacionais) mantêm apenas o filtro próprio.
+            if source.get("fleet_filter", True) and not is_fleet_relevant(title, summary):
                 continue
 
             # Normaliza a data de publicação

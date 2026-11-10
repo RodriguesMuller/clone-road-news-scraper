@@ -14,7 +14,7 @@ Erros voltam como `{ "error": "mensagem específica" }`, nunca stack trace ou de
 
 | Endpoint | Métodos | Feature/quota | Descrição |
 |---|---|---|---|
-| `/api/news-feed` | `GET`, `POST` | `news_query` (GET) / `route_analysis` + `ai_summary_individual` (POST) | `GET`: feed de notícias (últimas, INMET, recentes 24h, mapa 30d, eventos maiores). `POST`: análise da tela **Minha Rota** (Google Routes + notícias cruzadas por rodovia/proximidade + recomendação por IA com fallback determinístico). |
+| `/api/news-feed` | `GET`, `POST` | `news_query` (GET) / `route_analysis` + `ai_summary_individual` (POST) | `GET`: feed de notícias (últimas, INMET, recentes 24h, mapa 30d, eventos maiores). `POST`: análise da tela **Minha Rota** (Google Routes + notícias cruzadas por rodovia/proximidade + recomendação por IA com fallback determinístico). Cada item de `alerts` traz `road_blocked` (boolean) e `block_level` (`"total"`, `"partial"` ou `null`); bloqueios vêm primeiro na ordenação e bloqueio total eleva `risk_level` a Crítico. |
 | `/api/news-summary` | `POST` | `ai_summary_individual` | Resumo de uma notícia específica via IA. |
 | `/api/weekly-summary` | `GET`, `POST` | `ai_summary_weekly` | Geração/consulta do resumo semanal (o mesmo fluxo do e-mail, disparável pelo painel). |
 | `/api/my-access` | `GET` | — | Retorna pacote ativo, papel e limites do usuário autenticado (usado pelo painel para exibir consumo). |

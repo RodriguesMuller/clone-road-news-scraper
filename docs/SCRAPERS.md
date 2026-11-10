@@ -6,7 +6,7 @@
 
 1. `main.py` lê `config/sources.yaml`.
 2. Cada fonte é coletada por um módulo de `scraper/sources/`: `rss.py` (feeds RSS/Atom via `feedparser`), `html.py` (raspagem HTML via `requests`+`BeautifulSoup4`, hoje só a Band), `inmet.py` (avisos meteorológicos, filtrados por severidade, não por keyword), `arteris.py` (API JSON pública da concessionária Arteris Fluminense, tempo real).
-3. Itens passam pelo motor de keyword (`scraper/utils/filters.py`) antes de entrar na lista final — exceto fontes que já são inerentemente relevantes (INMET, Arteris, que não usam keyword).
+3. Itens passam pelo motor de keyword e depois pelo filtro de impacto na frota (`scraper/utils/filters.py`) antes de entrar na lista final — exceto fontes que já são inerentemente relevantes (INMET, Arteris, que não usam keyword).
 4. `scraper/storage/postgres.py` grava no Postgres, deduplicando por `UNIQUE(url)`.
 5. `scraper/event_intelligence.py` roda a triagem de eventos críticos sobre o lote coletado (ver [`docs/AI_PIPELINE.md`](AI_PIPELINE.md)).
 
@@ -35,6 +35,16 @@ Aplicado só a **título e subtítulo/resumo** (nunca ao texto completo do artig
 - Palavra inteira: `ferido` **não** casa com `ferimentos`.
 - Keyword com múltiplas palavras (ex. `"incêndio em caminhão"`): casa quando **todas** aparecem no título, em qualquer posição — não exige frase exata.
 - Keyword com pontuação (ex. `"BR-"`): casa por substring.
+
+## Filtro de impacto na frota (`fleet_relevance` em `scraper/utils/filters.py`)
+
+Depois da keyword, RSS e Band passam por um segundo filtro: a notícia só é guardada se o título+resumo tiver **contexto viário/logístico** (código de rodovia, rodovia/estrada/pista/km/ponte, caminhão/carreta/carga, porto, PRF/DNIT, pedágio...) **e** um **sinal de impacto operacional** (bloqueio/interdição/liberação, acidente, congestionamento/pare e siga, queda de barreira/cratera, alagamento/neblina, roubo de carga, greve/manifestação, obra, restrição a caminhões, diesel/pedágio). Assuntos de entretenimento, esporte, aviação/náutica, acidente doméstico/de trabalho são descartados, salvo quando citam um código de rodovia.
+
+- Objetivo: entregar só o que ajuda o gestor de frota a decidir rota, horário ou proteção da carga, e não qualquer notícia que cite "estrada".
+- Fonte que não cita rodovia por natureza pode desligar o filtro com `fleet_filter: false` no `config/sources.yaml` (hoje: Corredores logísticos internacionais).
+- INMET e Arteris não passam por esse filtro, assim como não passam pela keyword.
+- Vale só para coletas novas; registros já gravados não são removidos.
+- Testes: `tests/test_fleet_relevance.py`.
 
 Mudar essa semântica afeta recall retroativamente — qualquer alteração aqui precisa de aviso a `data-analyst` (para medir o impacto) e atualização do comentário em `config/sources.yaml`.
 

@@ -36,6 +36,10 @@ Tudo o que influencia os resultados fica em **[`config/sources.yaml`](config/sou
   **várias palavras** (ex.: `incêndio em caminhão`) casam quando **todas** as
   palavras aparecem no título; e keywords com pontuação (ex.: `BR-`) casam por
   substring.
+- **Filtro de impacto na frota** — além da keyword, a notícia precisa citar
+  via/caminhão/carga **e** algo que afete a operação (bloqueio, acidente, clima,
+  roubo de carga, greve, obra...). Uma fonte pode desligá-lo com
+  `fleet_filter: false`. Detalhes em [`docs/SCRAPERS.md`](docs/SCRAPERS.md).
 - **`severities` do INMET** — quais níveis de aviso de clima guardar
   (`Perigo`, `Grande Perigo`, etc.).
 - **As fontes** (`rss_sources`, `html_sources`, `inmet_sources`) — quais
