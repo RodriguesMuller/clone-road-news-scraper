@@ -33,7 +33,7 @@ Consequências:
 - A Central só tinha o evento do Porto de Santos, publicado manualmente pelo script de curadoria e encerrado em julho.
 
 **Ação necessária (fora do código):**
-1. Em GitHub → Settings → Secrets and variables → Actions → New repository secret, criar `OPENAI_API_KEY` com a mesma chave usada na Vercel.
+1. Em GitHub → Settings → Secrets and variables → Actions → New repository secret, criar o secret com a mesma chave da OpenAI usada na Vercel. O workflow aceita o nome `OPENAI_API_KEY` ou `ROAD_NEWS_KEY` (este último criado em 2026-11-10).
 2. Custo estimado: no máximo uma chamada `gpt-4.1-mini` por coleta (de hora em hora), e só quando há notícia candidata nova, porque o lote repetido é reaproveitado pelo fingerprint.
 
 ## Defeitos encontrados e correções
