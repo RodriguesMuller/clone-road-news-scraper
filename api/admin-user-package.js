@@ -1,5 +1,5 @@
 const { json, requireManager, supabaseFetch } = require("./_auth");
-const { adminErrorMessage, audit, fetchJson, readJson } = require("./_admin");
+const { adminErrorMessage, audit, fetchJson, packageSeatsUsed, readJson } = require("./_admin");
 
 async function fetchActivePackage(packageId) {
   try {
@@ -10,14 +10,6 @@ async function fetchActivePackage(packageId) {
     const packages = await fetchJson(`/rest/v1/packages?id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=id&limit=1`);
     return packages?.[0] || null;
   }
-}
-
-async function activePackageUsers(packageId) {
-  const response = await supabaseFetch(
-    `/rest/v1/user_packages?package_id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=id`,
-    { method: "HEAD", headers: { Prefer: "count=exact" } },
-  );
-  return Number((response.headers.get("content-range") || "0/0").split("/")[1] || 0);
 }
 
 module.exports = async function handler(req, res) {
@@ -39,6 +31,16 @@ module.exports = async function handler(req, res) {
       throw new Error("Voce nao tem permissao para alterar usuarios Admin.");
     }
 
+    // Valida o pacote novo ANTES de encerrar o atual: se falhar, o usuário continua com o que tinha.
+    if (packageId) {
+      const pkg = await fetchActivePackage(packageId);
+      if (!pkg) throw new Error("Pacote inicial nao encontrado ou inativo.");
+      const maxUsers = Number(pkg.max_users || 0);
+      if (maxUsers > 0 && await packageSeatsUsed(packageId, profile[0].client_id, userId) >= maxUsers) {
+        throw new Error("Limite de usuarios deste pacote atingido para este cliente.");
+      }
+    }
+
     await supabaseFetch(`/rest/v1/user_packages?user_id=eq.${encodeURIComponent(userId)}&is_active=eq.true`, {
       method: "PATCH",
       headers: { Prefer: "return=minimal" },
@@ -46,12 +48,6 @@ module.exports = async function handler(req, res) {
     });
 
     if (packageId) {
-      const pkg = await fetchActivePackage(packageId);
-      if (!pkg) throw new Error("Pacote inicial nao encontrado ou inativo.");
-      const maxUsers = Number(pkg.max_users || 0);
-      if (maxUsers > 0 && await activePackageUsers(packageId) >= maxUsers) {
-        throw new Error("Limite de usuarios deste pacote atingido.");
-      }
       await supabaseFetch("/rest/v1/user_packages", {
         method: "POST",
         headers: { Prefer: "return=minimal" },

@@ -7,6 +7,7 @@ const {
   isValidCpf,
   normalizeCpf,
   normalizePhone,
+  packageSeatsUsed,
   readJson,
 } = require("./_admin");
 
@@ -51,14 +52,6 @@ async function deleteRows(path) {
 async function activePackage(packageId) {
   const rows = await fetchJson(`/rest/v1/packages?id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=*&limit=1`);
   return rows?.[0] || null;
-}
-
-async function activePackageUsers(packageId) {
-  const response = await supabaseFetch(
-    `/rest/v1/user_packages?package_id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=id`,
-    { method: "HEAD", headers: { Prefer: "count=exact" } },
-  );
-  return Number((response.headers.get("content-range") || "0/0").split("/")[1] || 0);
 }
 
 async function activeClient(clientId) {
@@ -106,8 +99,8 @@ async function normalizedUser(account, body) {
   if (!pkg) throw new Error("Pacote nao encontrado ou inativo.");
   if (profile || authUser) throw new Error("Este e-mail ja esta cadastrado.");
   const maxUsers = Number(pkg.max_users || 0);
-  if (maxUsers > 0 && await activePackageUsers(packageId) >= maxUsers) {
-    throw new Error("Limite de usuarios deste pacote atingido.");
+  if (maxUsers > 0 && await packageSeatsUsed(packageId, clientId) >= maxUsers) {
+    throw new Error("Limite de usuarios deste pacote atingido para este cliente.");
   }
 
   return { fullName, email, password, cpf, phone, client, packageId, status, role };

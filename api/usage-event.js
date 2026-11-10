@@ -1,4 +1,4 @@
-const { assertCanUse, json, recordUsage } = require("./_auth");
+const { assertCanUse, json } = require("./_auth");
 const { adminErrorMessage, readJson } = require("./_admin");
 
 const FEATURE_BY_EVENT = {
@@ -33,8 +33,8 @@ module.exports = async function handler(req, res) {
     const eventType = String(body.event_type || "").trim();
     const feature = FEATURE_BY_EVENT[eventType];
     if (!feature) throw new Error("Evento de uso invalido.");
-    const account = await assertCanUse(req, feature);
-    await recordUsage(account, CANONICAL_EVENT[eventType] || eventType, { metadata: safeMetadata(body.metadata) });
+    // Reserva atômica: autoriza e registra o uso na mesma operação (o limite nunca é ultrapassado).
+    await assertCanUse(req, feature, { reserve: CANONICAL_EVENT[eventType] || eventType, metadata: safeMetadata(body.metadata) });
     json(res, 200, { ok: true });
   } catch (error) {
     json(res, 403, { error: adminErrorMessage(error) || "Uso nao autorizado." });

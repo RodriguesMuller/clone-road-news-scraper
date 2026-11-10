@@ -1,7 +1,7 @@
 const GOOGLE_ROUTES_URL = "https://routes.googleapis.com/directions/v2:computeRoutes";
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
-const { assertCanUse, featureFlagEnabled, featureRule, featureUsage, json, recordUsage, supabaseFetch } = require("./_auth");
+const { assertCanUse, featureFlagEnabled, featureRule, featureUsage, finalizeReservation, json, releaseUsage, reserveUsage, supabaseFetch } = require("./_auth");
 const { adminErrorMessage, readJson } = require("./_admin");
 
 const BASE_COLUMNS = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
@@ -533,7 +533,7 @@ async function canUseRouteAi(account) {
   const rule = featureRule("ai_summary_individual");
   if (!pkg || !featureFlagEnabled(pkg, rule)) return false;
   const limit = Number(pkg[rule.limit] || 0);
-  return limit > 0 && (await featureUsage(account.user.id, "ai_summary_individual")) < limit;
+  return limit > 0 && (await featureUsage(account, "ai_summary_individual")) < limit;
 }
 
 async function handleRouteAnalysis(req, res) {
@@ -556,9 +556,18 @@ async function handleRouteAnalysis(req, res) {
     return;
   }
 
-  const route = await computeRoute(origin, destination, stops);
-  const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-  const recentRows = await fetchRows(`&created_at=gte.${since24h}&order=created_at.desc&limit=350`);
+  // Consome a consulta só depois de validar a entrada; se a rota falhar, a consulta é devolvida.
+  await reserveUsage(account, "route_analysis", "route_analysis", { origin, destination, stops });
+  let route;
+  let recentRows;
+  try {
+    route = await computeRoute(origin, destination, stops);
+    const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+    recentRows = await fetchRows(`&created_at=gte.${since24h}&order=created_at.desc&limit=350`);
+  } catch (error) {
+    await releaseUsage(account);
+    throw error;
+  }
   const matched = matchRouteNews(recentRows, route, origin, destination);
   const intervals = route.travelAdvisory?.speedReadingIntervals || [];
   const durationSeconds = readDuration(route.duration);
@@ -575,25 +584,30 @@ async function handleRouteAnalysis(req, res) {
     alerts: matched.alerts,
   };
 
+  // IA da recomendação: reserva o uso de IA antes de chamar; sem saldo (ou corrida), usa a síntese por regra.
+  let analysis = fallbackRouteAnalysis(context);
   const aiAllowed = await canUseRouteAi(account);
-  const analysis = aiAllowed ? await generateRouteAnalysis(context) : fallbackRouteAnalysis(context);
-
-  await recordUsage(account, "route_analysis", {
-    metadata: {
-      origin,
-      destination,
-      stops,
-      alerts: matched.alerts.length,
-      ai_used: Boolean(analysis.ai_used),
-    },
-  });
-  if (analysis.ai_used) {
-    await recordUsage(account, "ai_summary_individual", {
-      tokens_input: analysis._usage?.input_tokens ?? null,
-      tokens_output: analysis._usage?.output_tokens ?? null,
-      model: analysis._model,
-      metadata: { source: "route-analysis", origin, destination },
-    });
+  if (aiAllowed) {
+    let reserved = false;
+    try {
+      await reserveUsage(account, "ai_summary_individual", "ai_summary_individual", { source: "route-analysis", origin, destination });
+      reserved = true;
+    } catch {
+      reserved = false;
+    }
+    if (reserved) {
+      analysis = await generateRouteAnalysis(context);
+      if (analysis.ai_used) {
+        await finalizeReservation(account, {
+          tokens_input: analysis._usage?.input_tokens ?? null,
+          tokens_output: analysis._usage?.output_tokens ?? null,
+          model: analysis._model,
+          metadata: { source: "route-analysis", origin, destination },
+        });
+      } else {
+        await releaseUsage(account);
+      }
+    }
   }
 
   const { _usage, _model, ...publicAnalysis } = analysis;
@@ -625,7 +639,8 @@ async function handleRouteAnalysis(req, res) {
 }
 
 async function handleNewsFeed(req, res) {
-  const account = await assertCanUse(req, "news_query");
+  // Reserva atômica da consulta: autoriza e registra juntos (limite do cliente nunca ultrapassado).
+  const account = await assertCanUse(req, "news_query", { reserve: "news_query" });
   const pkg = account.activePackage?.packages || null;
   const monthlyNewsLimit = !account.authEnabled || account.isPrivileged ? 700 : Number(pkg?.monthly_news_limit || 0);
   const canAccessMap = !account.authEnabled || account.isPrivileged || featureFlagEnabled(pkg, featureRule("map_access"));
@@ -641,14 +656,6 @@ async function handleNewsFeed(req, res) {
     fetchMajorEvents(),
     supabaseFetch("/rest/v1/news?select=id", { method: "HEAD", headers: { Prefer: "count=exact" } }),
   ]);
-
-  await recordUsage(account, "news_query", {
-    metadata: {
-      loaded_latest: latestNews.length,
-      loaded_recent: recentRows.length,
-      loaded_map: mapRows.length,
-    },
-  });
 
   const total = Number((countResponse.headers.get("content-range") || "0/0").split("/")[1] || 0);
   json(res, 200, { latestNews, latestInmet, recentRows, mapRows, majorEvents, total });

@@ -2,6 +2,12 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — QA de pacotes e limites
+- **Alterado**: o limite de cada funcionalidade passa a ser do **cliente (empresa)**: todos os usuários da mesma empresa somam no mesmo saldo do pacote (antes, cada usuário tinha o saldo inteiro). `my-access` e "Uso e notificações" mostram o consumo da empresa.
+- **Corrigido**: requisições simultâneas furavam o limite (reserva atômica de uso); pacote com início no futuro já liberava; trocar para pacote inválido deixava o usuário sem pacote; `max_users` contava a plataforma inteira e vínculos vencidos; a gestão subcontava o consumo acima de 1000 eventos/mês.
+- **Alterado**: Minha Rota com entrada inválida ou falha do Google não consome a consulta.
+- Relatório completo: `docs/qa-audit/2026-11-10-pacotes-e-limites.md`.
+
 ## 2026-11-10 — mais fotos reais: feeds regionais do G1
 - **Adicionado**: 24 feeds RSS regionais do G1 (um por estado), com o mesmo filtro de keywords e de frota. O G1 é o veículo mais frequente por trás das buscas do Google News, que chegam sem foto; o feed direto traz a foto e o link original. Avaliados antes: robots.txt liberado e 93 notícias relevantes, todas com foto.
 - **Adicionado**: deduplicação entre fontes (`prefer_direct_sources`): a cópia do Google News sai quando a mesma notícia veio do feed direto.

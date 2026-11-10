@@ -3495,8 +3495,8 @@ function showAuthView() {
       ].filter(([, limit]) => limit > 0).map(([used, limit]) => used / limit);
       const highest = Math.max(0, ...ratios);
       if (highest >= 1) return "Limite atingido. Recurso bloqueado até a renovação do ciclo ou alteração do pacote.";
-      if (highest >= .9) return "Atenção: você está próximo de atingir o limite do seu pacote.";
-      if (highest >= .8) return "Você já utilizou 80% do limite deste recurso no seu pacote.";
+      if (highest >= .9) return "Atenção: sua empresa está próxima de atingir o limite do pacote.";
+      if (highest >= .8) return "Sua empresa já utilizou 80% do limite deste recurso no pacote.";
       return "";
     }
 
@@ -5709,21 +5709,25 @@ function showAuthView() {
       return (state.admin.userPackages || []).filter((item) => item.package_id === packageId && item.is_active).length;
     }
 
-    function usageCount(userId, eventTypes) {
+    // Mesmo escopo que o servidor cobra: o saldo é do CLIENTE (todos os usuários da empresa).
+    // Usuário sem cliente conta sozinho.
+    function usageCount(user, eventTypes) {
       const types = Array.isArray(eventTypes) ? eventTypes : [eventTypes];
-      return (state.admin.usage || []).filter((event) => event.user_id === userId && types.includes(event.event_type)).length;
+      const clientId = user?.client_id || null;
+      return (state.admin.usage || []).filter((event) => types.includes(event.event_type)
+        && (clientId ? event.client_id === clientId : event.user_id === user?.id)).length;
     }
 
     function usageForUser(user) {
       const current = currentPackageForUser(user.id);
       const pkg = packageById(current?.package_id);
       const unlimited = ["admin", "manager"].includes(user.role);
-      const news = usageCount(user.id, ["news_query", "news_view"]);
-      const route = usageCount(user.id, ["route_analysis"]);
-      const ai = usageCount(user.id, ["ai_summary_individual", "ai_summary_weekly", "ai_summary", "image_generation", "weekly_summary"]);
-      const pdf = usageCount(user.id, ["pdf_generated", "pdf_generation"]);
-      const images = usageCount(user.id, ["ai_summary_individual", "ai_summary", "image_generation"]);
-      const weekly = usageCount(user.id, ["ai_summary_weekly", "weekly_summary"]);
+      const news = usageCount(user, ["news_query", "news_view"]);
+      const route = usageCount(user, ["route_analysis"]);
+      const ai = usageCount(user, ["ai_summary_individual", "ai_summary_weekly", "ai_summary", "image_generation", "weekly_summary"]);
+      const pdf = usageCount(user, ["pdf_generated", "pdf_generation"]);
+      const images = usageCount(user, ["ai_summary_individual", "ai_summary", "image_generation"]);
+      const weekly = usageCount(user, ["ai_summary_weekly", "weekly_summary"]);
       const limits = {
         news: Number(pkg?.monthly_news_limit || 0),
         route: Number(pkg?.monthly_route_limit || 0),
@@ -6106,6 +6110,7 @@ function showAuthView() {
           logs: data.logs || [],
         };
         renderAdmin();
+        if (data.usage_truncated) setNotice("O consumo do mês passou de 20.000 eventos: os totais de uso nesta tela podem estar incompletos. O bloqueio por limite no servidor não é afetado.");
       } catch (error) {
         setNotice(getFriendlyErrorMessage(error, "Não foi possível carregar a gestão. Tente novamente."));
       }

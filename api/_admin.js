@@ -107,6 +107,24 @@ function packagePayload(body = {}) {
   };
 }
 
+// Vagas ocupadas de um pacote DENTRO de um cliente: max_users é o número de usuários que cada
+// empresa pode ter naquele pacote (antes contava a plataforma inteira, e uma empresa cheia
+// impedia as outras de usar o mesmo pacote). Sem cliente, conta só o próprio usuário.
+async function packageSeatsUsed(packageId, clientId, excludeUserId = "") {
+  if (!clientId) return 0;
+  const members = await fetchJson(`/rest/v1/profiles?client_id=eq.${encodeURIComponent(clientId)}&select=id`);
+  const ids = (members || []).map((row) => row.id).filter((id) => id && id !== excludeUserId);
+  if (!ids.length) return 0;
+  const list = ids.map((id) => `"${String(id).replace(/"/g, "")}"`).join(",");
+  // Só vínculos vigentes ocupam vaga: o que já terminou (ends_at no passado) libera a vaga.
+  const now = encodeURIComponent(new Date().toISOString());
+  const response = await supabaseFetch(
+    `/rest/v1/user_packages?package_id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&or=(ends_at.is.null,ends_at.gt.${now})&user_id=in.(${list})&select=id`,
+    { method: "HEAD", headers: { Prefer: "count=exact" } },
+  );
+  return Number((response.headers.get("content-range") || "0/0").split("/")[1] || 0);
+}
+
 async function audit(account, action, targetType, targetId, metadata = {}) {
   try {
     await supabaseFetch("/rest/v1/audit_logs", {
@@ -200,5 +218,6 @@ module.exports = {
   normalizeCpf,
   normalizePhone,
   packagePayload,
+  packageSeatsUsed,
   readJson,
 };

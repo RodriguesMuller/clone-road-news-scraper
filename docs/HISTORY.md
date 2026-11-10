@@ -2,6 +2,14 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — QA de pacotes e limites
+**O que mudou:** `api/_auth.js` (escopo de consumo por cliente em `monthlyUsage`/`featureUsage`, `reserveUsage`/`releaseUsage`/`finalizeReservation`/`firstUsageIds`, `starts_at` em `getActivePackage`, `recordUsage` devolve o id); reserva aplicada em `api/usage-event.js`, `api/news-feed.js` (notícias, Minha Rota e IA da rota), `api/news-summary.js` e `api/weekly-summary.js`; `packageSeatsUsed` em `api/_admin.js`, usada por `admin-user-package.js` (que agora valida antes de encerrar o pacote atual) e `admin-users.js`; paginação de eventos em `api/admin-data.js`; escopo por cliente em `usageCount` do painel. Testes: `tests/helpers/fake_supabase.js`, `tests/test_package_limits.js`.
+**Por quê:** pedido de QA com foco em "cada cliente terá o seu limite de uso de cada funcionalidade". Encontrados 7 defeitos (ver `docs/qa-audit/2026-11-10-pacotes-e-limites.md`).
+**Arquivos/módulos:** os citados acima, mais `tests/test_production_access.js` (mocks atualizados) e `public/index.html`.
+**Impacto medido:** 20/20 cenários de uso no simulador (antes: 12/17); suíte JS 65/65 e Python 42/42.
+**Alternativas descartadas:** função SQL com trava (`SECURITY DEFINER` + advisory lock) para a reserva atômica (exigiria migration e mais uma função privilegiada; a reserva com recontagem e desempate pela ordem de gravação resolve sem mudar o banco); manter o limite por usuário (contraria o requisito do produto).
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — Feeds regionais do G1 e deduplicação entre fontes
 **O que mudou:** 24 feeds `https://g1.globo.com/rss/g1/{uf}/` em `config/sources.yaml`; `prefer_direct_sources` em `scraper/utils/filters.py`, chamada no fim de `main.collect_news`; testes em `tests/test_news_images.py`.
 **Por quê:** pedido do usuário de mais fotos reais. 87% dos itens vinham do Google News sem imagem, e o G1 respondia por 65 deles.

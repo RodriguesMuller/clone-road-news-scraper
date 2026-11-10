@@ -22,6 +22,20 @@ function clientPayload(body = {}, partial = false) {
   return payload;
 }
 
+// Todos os eventos de uso do mês, em páginas de 1000 (o Supabase limita cada resposta a 1000
+// linhas; antes vinham no máximo 1000, e o consumo do painel de gestão ficava subcontado).
+const USAGE_PAGE = 1000;
+const USAGE_MAX_PAGES = 20;
+async function monthUsageEvents(monthStart) {
+  const rows = [];
+  for (let page = 0; page < USAGE_MAX_PAGES; page += 1) {
+    const batch = await fetchJson(`/rest/v1/usage_events?select=*&created_at=gte.${monthStart}&order=created_at.desc,id.desc&limit=${USAGE_PAGE}&offset=${page * USAGE_PAGE}`);
+    rows.push(...(batch || []));
+    if (!batch || batch.length < USAGE_PAGE) return { rows, truncated: false };
+  }
+  return { rows, truncated: true };
+}
+
 function publicUser(profile = {}) {
   const { cpf, phone, ...safe } = profile;
   return {
@@ -82,7 +96,7 @@ module.exports = async function handler(req, res) {
       fetchJson("/rest/v1/clients?select=*&order=company_name.asc"),
       fetchJson("/rest/v1/packages?select=*&order=name.asc"),
       fetchJson("/rest/v1/user_packages?select=*&order=created_at.desc"),
-      fetchJson(`/rest/v1/usage_events?select=*&created_at=gte.${monthStart}&order=created_at.desc&limit=2000`),
+      monthUsageEvents(monthStart),
       fetchJson("/rest/v1/audit_logs?select=*&order=created_at.desc&limit=200"),
     ]);
     const visibleProfiles = account.isAdmin ? (profiles || []) : (profiles || []).filter((profile) => profile.role !== "admin");
@@ -92,7 +106,8 @@ module.exports = async function handler(req, res) {
       clients: clients || [],
       packages: packages || [],
       userPackages: (userPackages || []).filter((item) => visibleUserIds.has(item.user_id)),
-      usage: (usage || []).filter((item) => visibleUserIds.has(item.user_id)),
+      usage: usage.rows.filter((item) => visibleUserIds.has(item.user_id)),
+      usage_truncated: usage.truncated,
       logs: account.isAdmin ? (logs || []) : [],
     });
   } catch (error) {
