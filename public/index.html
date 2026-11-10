@@ -163,6 +163,33 @@
     .item { padding: 16px; position: relative; }
     .item.has-save { padding-right: 56px; }
     .item:hover, .alert-card:hover { border-color: rgba(30, 255, 149, .42); }
+    /* Rodovia bloqueada: precisa saltar aos olhos do gestor antes de qualquer outra notícia. */
+    .item.road-blocked, .alert-card.road-blocked, .route-alert-item.road-blocked, .map-popup.road-blocked {
+      border: 2px solid #ff3b3b;
+      box-shadow: 0 0 0 1px rgba(255, 59, 59, .25), 0 8px 24px rgba(255, 59, 59, .14);
+      background: linear-gradient(180deg, rgba(255, 59, 59, .09), transparent 70%), var(--color-surface);
+    }
+    .item.road-blocked:hover, .alert-card.road-blocked:hover { border-color: #ff5c5c; }
+    .item.road-blocked.partial, .alert-card.road-blocked.partial, .route-alert-item.road-blocked.partial { border-style: dashed; }
+    .route-alert-item.road-blocked { border-radius: 8px; padding: 11px !important; }
+    .map-popup.road-blocked { border-radius: 8px; padding: 10px; }
+    .block-banner {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin: 0 0 10px; padding: 7px 10px; border-radius: 6px;
+      background: #ff3b3b; color: #fff;
+      font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase;
+    }
+    .block-banner.partial { background: rgba(255, 59, 59, .16); color: #ff6b6b; border: 1px solid rgba(255, 59, 59, .55); }
+    .block-banner small { font-weight: 700; letter-spacing: 0; text-transform: none; opacity: .92; }
+    .fleet-impact {
+      margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid var(--color-primary);
+      background: rgba(255,255,255,.04); border-radius: 0 6px 6px 0;
+      color: var(--color-muted-strong); font-size: 13px; line-height: 1.45;
+    }
+    .fleet-impact strong { color: var(--color-text); }
+    .fleet-impact.critical { border-left-color: #ff3b3b; }
+    .fleet-impact.high { border-left-color: #e8b042; }
+    .fleet-impact.ok { border-left-color: var(--color-success); }
     .alerts-panel { margin-bottom: 18px; }
     .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
     .panel-head h2 { margin: 0; }
@@ -867,7 +894,16 @@
       font-size: 12px;
     }
     .map-footer strong { color: var(--color-primary); }
+    /* Base OSM clara convertida para o tema escuro do painel (sem chave de API). */
+    .leaflet-tile-pane .dark-tiles { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.55); }
     .road-marker { background: transparent; border: 0; }
+    .marker-dot.blocked {
+      border: 3px solid #ff3b3b;
+      box-shadow: 0 0 0 5px rgba(255, 59, 59, .28), 0 0 16px rgba(255, 59, 59, .65);
+      animation: blockPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes blockPulse { 50% { box-shadow: 0 0 0 9px rgba(255, 59, 59, .12), 0 0 22px rgba(255, 59, 59, .8); } }
+    @media (prefers-reduced-motion: reduce) { .marker-dot.blocked { animation: none; } }
     .marker-dot {
       width: 18px;
       height: 18px;
@@ -1473,7 +1509,7 @@
           <div class="field"><label for="periodFilter">Período</label><select id="periodFilter"><option value="24">Últimas 24h</option><option value="168">7 dias</option><option value="720">30 dias</option><option value="all">Tudo</option></select></div>
           <div class="field"><label for="regionFilter">Região</label><input id="regionFilter" type="search" placeholder="Estado, cidade ou BR"></div>
           <div class="field"><label for="categoryFilter">Categoria</label><select id="categoryFilter"><option value="">Todas</option><option value="clima">Clima</option><option value="rodovia">Rodovia</option><option value="acidente">Acidente</option><option value="interdicao">Interdição</option><option value="roubo">Roubo de carga</option><option value="manifestacao">Manifestação</option><option value="obra">Obras</option><option value="outros">Outros</option></select></div>
-          <div class="field"><label for="sortFilter">Ordenação</label><select id="sortFilter"><option value="recent">Mais recentes</option><option value="risk">Maior risco</option><option value="relevance">Mais relevantes</option></select></div>
+          <div class="field"><label for="sortFilter">Ordenação</label><select id="sortFilter"><option value="impact" selected>Impacto na frota</option><option value="recent">Mais recentes</option><option value="risk">Maior risco</option><option value="relevance">Mais relevantes</option></select></div>
         </div>
       </section>
 
@@ -2090,7 +2126,7 @@
       majorEvents: [],
       selectedMajorEventId: null,
       admin: { users: [], clients: [], packages: [], userPackages: [], usage: [], logs: [] },
-      filters: { search: "", period: "24", region: "", category: "", sort: "recent" },
+      filters: { search: "", period: "24", region: "", category: "", sort: "impact" },
       map: {
         instance: null,
         cluster: null,
@@ -3019,9 +3055,76 @@ function showAuthView() {
     // Evita falso-positivo quando a notícia nega vítimas explicitamente (ex.: "sem feridos").
     const RISK_NO_CASUALTIES_PATTERN = /sem feridos?\b|sem vitimas?\b|sem mortos?\b|nenhuma vitima|nao houve (?:ferido|morte|vitima)/;
 
+    // Bloqueio de rodovia (mesma regra de api/news-feed.js -> roadBlockLevel).
+    // "total" | "partial" | "" — trecho já liberado não conta como bloqueado.
+    const BLOCK_ROAD_CONTEXT = /\b(?:br|sp|mg|rj|rs|sc|pr|ba|go|mt|ms|pa|pe|ce|es|ro|to|ma|pi|rn|pb|al|se|am|ac|rr|ap|df)-?\s?\d{2,4}\b|rodovi|estrada|pista|ponte|viaduto|trecho|\bkm\s*\d|\bvia\b|serra/;
+    const BLOCK_RELEASED = /\b(?:liberad[ao]s?|desbloquead[ao]s?|reabert[ao]s?|normalizad[ao]s?|retomad[ao]s?)\b|transito normal|fluxo normal|libera(?:cao)? total/;
+    const BLOCK_STILL_ACTIVE = /segue (?:bloquead|interditad|fechad)|continua (?:bloquead|interditad|fechad)|permanece (?:bloquead|interditad|fechad)|sem previsao de liberacao/;
+    const BLOCK_PARTIAL = /interdicao parcial|bloqueio parcial|parcialmente (?:bloquead|interditad|fechad)|meia pista|pare[- ]?e[- ]?siga|faixa (?:interditada|bloqueada)|uma (?:das )?faixas?|uma pista/;
+    const BLOCK_TOTAL = /bloqueio total|interdicao total|totalmente (?:bloquead|interditad|fechad)|\bbloquead[ao]s?\b|\binterditad[ao]s?\b|\binterdita\b|\bbloqueia\b|\bbloqueio\b|\binterdicao\b|\bfechad[ao]s?\b|queda de barreira|desabamento de ponte|ponte (?:cai|caiu|desaba)/;
+
+    function roadBlockLevel(item) {
+      if (item && typeof item.block_level === "string") return item.block_level;
+      const text = normalizeText(`${item?.title || ""} ${item?.summary || ""}`);
+      if (!BLOCK_ROAD_CONTEXT.test(text)) return "";
+      if (BLOCK_RELEASED.test(text) && !BLOCK_STILL_ACTIVE.test(text)) return "";
+      if (BLOCK_PARTIAL.test(text)) return "partial";
+      if (BLOCK_TOTAL.test(text)) return "total";
+      return "";
+    }
+
+    function blockedClass(item) {
+      const level = roadBlockLevel(item);
+      return level ? ` road-blocked${level === "partial" ? " partial" : ""}` : "";
+    }
+
+    function blockBannerMarkup(item) {
+      const level = roadBlockLevel(item);
+      if (!level) return "";
+      const road = roadFromText(`${item.title || ""} ${item.summary || ""} ${item.highway || ""}`);
+      const km = (String(`${item.title || ""} ${item.summary || ""}`).match(/\bkm\s*(\d{1,4}(?:[.,]\d+)?)/i) || [])[1];
+      const where = [road, km ? `km ${km}` : ""].filter(Boolean).join(" · ");
+      const label = level === "total" ? "Rodovia bloqueada" : "Rodovia parcialmente bloqueada";
+      const hint = level === "total" ? "Evite o trecho ou aguarde a liberação" : "Fila e atraso prováveis";
+      return `<div class="block-banner ${level === "partial" ? "partial" : ""}" role="status">⛔ ${label}${where ? ` · ${escapeHtml(where)}` : ""}<small>— ${hint}</small></div>`;
+    }
+
+    // Traduz a notícia em decisão para o gestor de frota: o que muda na rota, no horário ou na carga.
+    // Retorna null quando a notícia não altera nada na operação.
+    function fleetImpact(item) {
+      const text = textForItem(item);
+      const block = roadBlockLevel(item);
+      if (block === "total") return ["critical", "Rodovia bloqueada", "Reprograme a rota por um desvio ou segure a saída até a confirmação de liberação."];
+      if (/roubo de carga|\bsaque|assalt.{0,30}(?:caminh|motorista|carga)|quadrilha/.test(text)) return ["critical", "Risco de roubo de carga", "Evite paradas no trecho, reforce rastreamento/escolta e prefira trafegar de dia."];
+      if (/greve|paralisac|manifestac|protesto/.test(text)) return ["critical", "Paralisação / manifestação", "Risco de bloqueio a qualquer momento: confirme a situação antes de despachar e tenha rota B."];
+      if (block === "partial") return ["high", "Bloqueio parcial", "Preveja fila e atraso; para cargas com janela apertada, avalie rota alternativa."];
+      if (/queda de barreira|deslizamento|cratera|erosao|afundamento|desaba/.test(text)) return ["high", "Dano na pista", "Trecho com risco estrutural: confirme condição da via e limite de peso antes de passar."];
+      if (/tempestade|temporal|alagamento|alagad|enchente|inundac|granizo|vendaval|grande perigo/.test(text)) return ["high", "Clima severo", "Avalie adiar a saída ou antecipar a passagem; risco de interdição e pista escorregadia."];
+      if (/neblina|baixa visibilidade|nevoeiro/.test(text)) return ["high", "Baixa visibilidade", "Evite o trecho nos horários de neblina (madrugada/início da manhã)."];
+      if (/acidente|tomba|engavet|colis|capot|incendio|pega fogo/.test(text)) return ["high", "Acidente na via", "Possível lentidão e interdição momentânea: monitore a liberação antes de passar."];
+      if (/restric|proib|rodizio|horario de circulacao/.test(text) && /caminh|carga|carreta|veiculo pesado/.test(text)) return ["high", "Restrição a caminhões", "Verifique horários e trechos permitidos para circulação de pesados."];
+      if (/falta de diesel|desabastec|preco do diesel|reajuste.{0,20}pedagio|pedagio.{0,20}reajuste/.test(text)) return ["", "Custo da viagem", "Revise abastecimento e custo de pedágio na escolha da rota."];
+      if (/lentid|congestion|\bfila\b|obra|manutencao|retencao/.test(text)) return ["", "Lentidão / obra", "Inclua margem de tempo na janela de entrega ou ajuste o horário de saída."];
+      if (BLOCK_RELEASED.test(text) && BLOCK_ROAD_CONTEXT.test(text)) return ["ok", "Trecho liberado", "A rota volta a ser opção; confirme se há fila residual."];
+      return null;
+    }
+
+    function fleetImpactMarkup(item) {
+      const impact = fleetImpact(item);
+      if (!impact) return "";
+      const [tone, label, action] = impact;
+      return `<p class="fleet-impact ${tone}"><strong>Impacto na frota: ${escapeHtml(label)}.</strong> ${escapeHtml(action)}</p>`;
+    }
+
+    function fleetPriority(item) {
+      const block = roadBlockLevel(item);
+      return (block === "total" ? 20 : block === "partial" ? 10 : 0) + (fleetImpact(item) ? 5 : 0) + riskScoreForItem(item);
+    }
+
     function operationalRisk(item) {
       const text = textForItem(item);
       const noCasualties = RISK_NO_CASUALTIES_PATTERN.test(text);
+      if (roadBlockLevel(item) === "total") return ["critical", "Crítico"];
 
       // Crítico: mortes confirmadas, roubo/saque de carga, ou bloqueio total/prolongado sem previsão de liberação.
       if ((RISK_FATALITY_PATTERN.test(text) && !noCasualties) || RISK_CARGO_THEFT_PATTERN.test(text) || RISK_TOTAL_BLOCK_PATTERN.test(text)) {
@@ -3048,6 +3151,7 @@ function showAuthView() {
     }
 
     function isActionableAlert(item) {
+      if (roadBlockLevel(item) || fleetImpact(item)) return true;
       return /acidente|interdicao|interdita|bloqueio|lentidao|roubo de carga|saque|manifestacao|protesto|alagamento|tempestade|queda de barreira|tombamento|obra|pare-e-siga|congestionamento|chuva forte|perigo/.test(textForItem(item));
     }
 
@@ -3131,10 +3235,12 @@ function showAuthView() {
         if (category && !haystack.includes(category)) return false;
         return true;
       });
-      if (state.filters.sort === "risk") {
+      if (state.filters.sort === "impact") {
+        items = items.sort((a, b) => fleetPriority(b) - fleetPriority(a) || displayDateValue(b) - displayDateValue(a));
+      } else if (state.filters.sort === "risk") {
         items = items.sort((a, b) => riskScoreForItem(b) - riskScoreForItem(a) || displayDateValue(b) - displayDateValue(a));
       } else if (state.filters.sort === "relevance") {
-        items = items.sort((a, b) => Number(isActionableAlert(b)) - Number(isActionableAlert(a)) || riskScoreForItem(b) - riskScoreForItem(a));
+        items = items.sort((a, b) => Number(Boolean(fleetImpact(b))) - Number(Boolean(fleetImpact(a))) || riskScoreForItem(b) - riskScoreForItem(a));
       } else {
         items = items.sort((a, b) => displayDateValue(b) - displayDateValue(a));
       }
@@ -3286,6 +3392,7 @@ function showAuthView() {
           const bRoad = roadFromText(`${b.title || ""} ${b.summary || ""}`) ? 1 : 0;
           if (state.filters.sort === "recent") return collectionDateValue(b) - collectionDateValue(a);
           if (state.filters.sort === "risk") return (riskScore[bRisk] - riskScore[aRisk]) || (collectionDateValue(b) - collectionDateValue(a));
+          if (state.filters.sort === "impact") return (fleetPriority(b) - fleetPriority(a)) || (collectionDateValue(b) - collectionDateValue(a));
           return (riskScore[bRisk] - riskScore[aRisk]) || (bRoad - aRoad) || (collectionDateValue(b) - collectionDateValue(a));
         });
       return alerts.slice(0, 8);
@@ -3302,13 +3409,15 @@ function showAuthView() {
             const url = externalNewsUrl(item);
             const title = escapeHtml(item.title || "Alerta operacional");
             return `
-              <article class="alert-card">
+              <article class="alert-card${blockedClass(item)}">
+                ${blockBannerMarkup(item)}
                 <div class="alert-meta">
                   <span class="alert-badge ${riskClassName}">${riskLabel}</span>
                   <span>${escapeHtml(meta || "Fonte não informada")}</span>
                 </div>
                 <h3>${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${title}</a>` : title}</h3>
                 <p>${escapeHtml(shortText(summary, 135) || "Ocorrência recente com possível impacto operacional.")}</p>
+                ${fleetImpactMarkup(item)}
                 ${url ? `<div class="actions"><a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir fonte</a></div>` : ""}
               </article>
             `;
@@ -3592,13 +3701,15 @@ function showAuthView() {
             const url = externalNewsUrl(item);
             const key = savedNewsKey(item);
             return `
-              <article class="item">
+              <article class="item${blockedClass(item)}">
+                ${blockBannerMarkup(item)}
                 <div class="meta">
                   <span class="info-badge risk-${riskClassName || "low"}">Risco ${riskLabel}</span>
                   <span>${escapeHtml([item.source, displayTime(item)].filter(Boolean).join(" · "))}</span>
                 </div>
                 <p class="title">${escapeHtml(item.title || "Notícia salva")}</p>
                 <p class="summary">${escapeHtml(shortText(smartSummary(item), 220))}</p>
+                ${fleetImpactMarkup(item)}
                 <div class="actions">
                   <button class="mini-button make-image" type="button" data-index="${index}">Gerar resumo</button>
                   ${url ? `<a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir fonte</a>` : ""}
@@ -3637,10 +3748,11 @@ function showAuthView() {
             ].filter(Boolean).join("");
             const saveTitle = saved ? "Remover dos salvos" : "Salvar notícia";
             return `
-              <article class="item has-save">
+              <article class="item has-save${blockedClass(item)}">
                 <button class="news-save-toggle save-news ${saved ? "saved" : ""}" type="button" data-index="${index}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">
                   ${iconSvg("bookmark")}
                 </button>
+                ${blockBannerMarkup(item)}
                 <div class="meta">
                   <span class="tag ${tagClass}${trusted ? " trusted" : ""}">
                     ${tagLabel}${trusted ? "<span class=\"verified\">Fonte confiável</span>" : ""}
@@ -3652,6 +3764,7 @@ function showAuthView() {
                 </p>
                 <p class="summary">${escapeHtml(summary)}</p>
                 <div class="badge-row">${badges}</div>
+                ${fleetImpactMarkup(item)}
                 <div class="actions">
                   <button class="mini-button make-image" type="button" data-index="${index}">Gerar resumo</button>
                   ${url ? `<a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir fonte</a>` : ""}
@@ -3826,6 +3939,7 @@ function showAuthView() {
         precisionLabel: geo.precisionLabel,
         riskKey,
         riskLabel: mapRiskLabel(riskKey),
+        blocked: Boolean(roadBlockLevel(item)),
         category,
         road,
         title: cleanDisplayText(item.title || "Ocorrência monitorada"),
@@ -3877,6 +3991,20 @@ function showAuthView() {
       }
     }
 
+    // Os tiles "dark_all" do CARTO passaram a exigir API key (o mapa exibia "API KEY REQUIRED").
+    // Usamos os tiles padrão do OpenStreetMap, sem chave, escurecidos via CSS (.dark-tiles).
+    // Para volume alto de produção, troque por um provedor com chave (MapTiler, Stadia, CARTO).
+    const BASE_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+    const BASE_TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+
+    function addBaseTiles(map) {
+      return L.tileLayer(BASE_TILE_URL, {
+        maxZoom: 19,
+        className: "dark-tiles",
+        attribution: BASE_TILE_ATTRIBUTION,
+      }).addTo(map);
+    }
+
     function ensureMap() {
       if (!window.L) {
         document.getElementById("mapEmpty").textContent = "Não foi possível carregar o mapa agora. Verifique a conexão com a biblioteca Leaflet.";
@@ -3888,24 +4016,24 @@ function showAuthView() {
         zoomControl: true,
         preferCanvas: true,
       }).setView([-14.24, -51.93], 4);
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap &copy; CARTO",
-      }).addTo(state.map.instance);
+      addBaseTiles(state.map.instance);
       state.map.cluster = window.L.markerClusterGroup
         ? L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 44 })
         : L.layerGroup();
       state.map.instance.addLayer(state.map.cluster);
+      // Bloqueios ficam fora do cluster: nunca podem sumir dentro de um "53".
+      state.map.blockedLayer = L.layerGroup().addTo(state.map.instance);
       return true;
     }
 
     function mapMarkerIcon(point) {
       const color = MAP_RISK_COLORS[point.riskKey] || MAP_RISK_COLORS.low;
+      const size = point.blocked ? 22 : 18;
       return L.divIcon({
         className: "road-marker",
-        html: `<span class="marker-dot" style="background:${color}"></span>`,
-        iconSize: [18, 18],
-        iconAnchor: [9, 9],
+        html: `<span class="marker-dot${point.blocked ? " blocked" : ""}" style="background:${color};width:${size}px;height:${size}px"></span>`,
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2],
         popupAnchor: [0, -10],
       });
     }
@@ -3913,7 +4041,8 @@ function showAuthView() {
     function mapPopup(point) {
       const riskClass = point.riskKey === "critical" ? "critical" : point.riskKey === "high" ? "high" : point.riskKey === "medium" ? "medium" : "";
       return `
-        <div class="map-popup">
+        <div class="map-popup${blockedClass(point.item)}">
+          ${blockBannerMarkup(point.item)}
           <div class="map-popup-meta">
             <span class="alert-badge ${riskClass}">${escapeHtml(point.riskLabel)}</span>
             <span>${escapeHtml(point.category)}</span>
@@ -3951,10 +4080,15 @@ function showAuthView() {
       if (!ensureMap()) return;
 
       state.map.cluster.clearLayers();
+      state.map.blockedLayer.clearLayers();
       points.forEach((point) => {
-        const marker = L.marker([point.lat, point.lng], { icon: mapMarkerIcon(point), title: point.title });
+        const marker = L.marker([point.lat, point.lng], {
+          icon: mapMarkerIcon(point),
+          title: point.blocked ? `RODOVIA BLOQUEADA — ${point.title}` : point.title,
+          zIndexOffset: point.blocked ? 1000 : 0,
+        });
         marker.bindPopup(mapPopup(point), { closeButton: true, maxWidth: 340 });
-        state.map.cluster.addLayer(marker);
+        (point.blocked ? state.map.blockedLayer : state.map.cluster).addLayer(marker);
       });
 
       setTimeout(() => state.map.instance.invalidateSize(), 80);
@@ -4028,9 +4162,10 @@ function showAuthView() {
       const sourceUrl = /INMET/i.test(alert.source || "") ? "" : safeUrl(alert.url);
       const title = escapeHtml(alert.title || "Ocorrência monitorada");
       return `
-        <article class="route-alert-item">
+        <article class="route-alert-item${blockedClass(alert)}">
           <span class="alert-badge ${routeRiskClass(alert.risk_level)}">${escapeHtml(alert.risk_level || "Monitorar")}</span>
           <div>
+            ${blockBannerMarkup(alert)}
             <h3>${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${title}</a>` : title}</h3>
             ${alert.segment_tone ? `<p class="route-alert-block ${escapeHtml(alert.segment_tone)}">${escapeHtml(alert.block_description || "")}</p>` : ""}
             <p>${escapeHtml(shortText(alert.summary || alert.title, 220))}</p>
@@ -4061,7 +4196,8 @@ function showAuthView() {
       const route = data.route;
       const analysis = data.analysis || {};
       const alerts = Array.isArray(data.alerts) ? data.alerts : [];
-      const blockages = alerts.filter((item) => /bloqueio|interdi|queda de barreira|manifestacao|protesto/i.test(`${item.title || ""} ${item.summary || ""}`)).length;
+      const blockages = alerts.filter((item) => roadBlockLevel(item)).length;
+      const totalBlockages = alerts.filter((item) => roadBlockLevel(item) === "total").length;
       const [trafficLabel, trafficClass] = routeTrafficLabel(route.traffic);
       const [statusLabel, statusClass] = routeStatusLabel(analysis.status);
       const roads = Array.isArray(route.roads) ? route.roads : [];
@@ -4081,7 +4217,7 @@ function showAuthView() {
           <div class="route-kpi"><span>Tempo estimado</span><strong>${escapeHtml(formatRouteDuration(route.duration_seconds))}</strong><small>com trânsito</small></div>
           <div class="route-kpi"><span>Atraso estimado</span><strong>${escapeHtml(formatRouteDuration(route.delay_seconds))}</strong><small>comparado ao fluxo livre</small></div>
           <div class="route-kpi"><span>Trânsito</span><strong>${escapeHtml(trafficLabel)}</strong><small>${Number(route.traffic?.slow_percent || 0)}% lento · ${Number(route.traffic?.jam_percent || 0)}% congestionado</small></div>
-          <div class="route-kpi"><span>Ocorrências</span><strong>${alerts.length}</strong><small>${blockages} possível(is) bloqueio(s)</small></div>
+          <div class="route-kpi"><span>Ocorrências</span><strong>${alerts.length}</strong><small>${totalBlockages ? `<span style="color:#ff3b3b;font-weight:900">${totalBlockages} rodovia(s) bloqueada(s)</span>` : `${blockages} bloqueio(s) parcial(is)`}</small></div>
         </section>
         <section class="route-main-grid">
           <div class="route-map-shell">
@@ -4134,10 +4270,7 @@ function showAuthView() {
       if (!container || !window.L || !data?.route?.polyline) return;
       if (!state.route.instance) {
         state.route.instance = L.map(container, { zoomControl: true, preferCanvas: true });
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-          maxZoom: 19,
-          attribution: "&copy; OpenStreetMap &copy; CARTO",
-        }).addTo(state.route.instance);
+        addBaseTiles(state.route.instance);
         state.route.layers = L.layerGroup().addTo(state.route.instance);
         state.route.markerLayer = L.layerGroup().addTo(state.route.instance);
         state.route.instance.on("zoomend moveend", renderRiskMarkers);
@@ -6518,7 +6651,7 @@ function showAuthView() {
       state.filters.period = document.getElementById("periodFilter")?.value || "24";
       state.filters.region = document.getElementById("regionFilter")?.value || "";
       state.filters.category = document.getElementById("categoryFilter")?.value || "";
-      state.filters.sort = document.getElementById("sortFilter")?.value || "recent";
+      state.filters.sort = document.getElementById("sortFilter")?.value || "impact";
       state.newsPage = 1;
       renderClientHeaderAndTrends();
       renderRecentAlerts();

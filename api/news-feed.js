@@ -139,6 +139,23 @@ function extractRoads(value) {
   return [...new Set(matches.map((road) => road.replace(/\s+/g, "-")))];
 }
 
+// Bloqueio de rodovia: o que o gestor precisa ver primeiro para decidir entre uma rota e outra.
+// Retorna "total", "partial" ou "" (sem bloqueio ativo / trecho ja liberado).
+const BLOCK_ROAD_CONTEXT = /\b(?:br|sp|mg|rj|rs|sc|pr|ba|go|mt|ms|pa|pe|ce|es|ro|to|ma|pi|rn|pb|al|se|am|ac|rr|ap|df)-?\s?\d{2,4}\b|rodovi|estrada|pista|ponte|viaduto|trecho|\bkm\s*\d|\bvia\b|serra/;
+const BLOCK_RELEASED = /\b(?:liberad[ao]s?|desbloquead[ao]s?|reabert[ao]s?|normalizad[ao]s?|retomad[ao]s?)\b|transito normal|fluxo normal|libera(?:cao)? total/;
+const BLOCK_STILL_ACTIVE = /segue (?:bloquead|interditad|fechad)|continua (?:bloquead|interditad|fechad)|permanece (?:bloquead|interditad|fechad)|sem previsao de liberacao/;
+const BLOCK_PARTIAL = /interdicao parcial|bloqueio parcial|parcialmente (?:bloquead|interditad|fechad)|meia pista|pare[- ]?e[- ]?siga|faixa (?:interditada|bloqueada)|uma (?:das )?faixas?|uma pista/;
+const BLOCK_TOTAL = /bloqueio total|interdicao total|totalmente (?:bloquead|interditad|fechad)|\bbloquead[ao]s?\b|\binterditad[ao]s?\b|\binterdita\b|\bbloqueia\b|\bbloqueio\b|\binterdicao\b|\bfechad[ao]s?\b|queda de barreira|desabamento de ponte|ponte (?:cai|caiu|desaba)/;
+
+function roadBlockLevel(item) {
+  const text = normalize(`${item.title || ""} ${item.summary || ""}`);
+  if (!BLOCK_ROAD_CONTEXT.test(text)) return "";
+  if (BLOCK_RELEASED.test(text) && !BLOCK_STILL_ACTIVE.test(text)) return "";
+  if (BLOCK_PARTIAL.test(text)) return "partial";
+  if (BLOCK_TOTAL.test(text)) return "total";
+  return "";
+}
+
 function riskForItem(item) {
   const text = normalize(`${item.title} ${item.summary} ${item.category} ${item.risk_level}`);
   if (/bloqueio total|interdicao total|queda de barreira|manifestacao|protesto|saque|roubo de carga/.test(text)) return [4, "Crítico"];
@@ -322,7 +339,9 @@ function matchRouteNews(items, route, origin, destination) {
     const corridorDistanceKm = nearest.distanceKm;
     const corridorMatch = corridorDistanceKm <= 45;
     if (!roadMatch && !corridorMatch && !endpointMatch) return null;
-    const [riskRank, riskLevel] = riskForItem(item);
+    let [riskRank, riskLevel] = riskForItem(item);
+    const blockLevel = roadBlockLevel(item);
+    if (blockLevel === "total" && riskRank < 4) [riskRank, riskLevel] = [4, "Crítico"];
     const publishedAt = clean(item.published_at || item.scraped_at || item.created_at);
     const ageHours = publishedAt ? Math.max(0, (now - new Date(publishedAt).getTime()) / 36e5) : 999;
     const highway = roadMatch || clean(item.highway) || itemRoads[0] || "";
@@ -351,21 +370,25 @@ function matchRouteNews(items, route, origin, destination) {
       match_reason: roadMatch ? `Rodovia ${roadMatch}` : corridorMatch ? `A ${Math.round(corridorDistanceKm)} km do trajeto` : `Localidade ${endpointMatch}`,
       block_description: blockDescription(item, highway, region),
       map_label: mapLabel(item, highway, extractKm(`${item.title} ${item.summary}`)),
+      road_blocked: Boolean(blockLevel),
+      block_level: blockLevel || null,
       segment_tone: anchorable ? segmentTone : null,
       route_point_index: anchorable ? anchorPointIndex : null,
       _riskRank: riskRank,
+      _blockRank: blockLevel === "total" ? 2 : blockLevel === "partial" ? 1 : 0,
     };
   }).filter(Boolean);
 
-  matches.sort((a, b) => (b._riskRank - a._riskRank) || (a.age_hours - b.age_hours));
+  matches.sort((a, b) => (b._blockRank - a._blockRank) || (b._riskRank - a._riskRank) || (a.age_hours - b.age_hours));
   return {
     routeRoads,
-    alerts: matches.slice(0, 12).map(({ _riskRank, ...item }) => item),
+    alerts: matches.slice(0, 12).map(({ _riskRank, _blockRank, ...item }) => item),
   };
 }
 
 function fallbackRouteAnalysis(context) {
-  const blocking = context.alerts.filter((item) => /bloqueio|interdi|queda de barreira|manifestacao|protesto/i.test(`${item.title} ${item.summary}`));
+  const blocking = context.alerts.filter((item) => item.road_blocked || /manifestacao|protesto/i.test(`${item.title} ${item.summary}`));
+  const totalBlocks = context.alerts.filter((item) => item.block_level === "total");
   const works = context.alerts.filter((item) => /obra|manutencao|pare-e-siga/i.test(`${item.title} ${item.summary}`));
   const severe = context.alerts.filter((item) => /Crítico|Alto/i.test(item.risk_level));
   const hasJam = context.traffic.jam_percent > 0;
@@ -376,7 +399,9 @@ function fallbackRouteAnalysis(context) {
     : status === "atencao"
       ? "Rota disponível para análise com pontos de atenção"
       : "Sem restrição crítica confirmada nas fontes monitoradas";
-  const recommendation = blocking.length
+  const recommendation = totalBlocks.length
+    ? `Rodovia bloqueada no trajeto (${totalBlocks[0].highway || "trecho da rota"}): avalie rota alternativa ou segure a saída até a liberação. ${totalBlocks[0].title}.`
+    : blocking.length
     ? `Validar o trecho antes da liberação: ${blocking[0].title}.`
     : hasJam
       ? "Há trecho congestionado indicado pela API. Considere ajustar o horário de saída e valide as condições próximas à liberação."
@@ -640,3 +665,6 @@ module.exports = async function handler(req, res) {
     json(res, status, { error: message });
   }
 };
+
+// Exposto para testes (node:test).
+module.exports.roadBlockLevel = roadBlockLevel;

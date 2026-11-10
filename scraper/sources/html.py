@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 from scraper.sources import HEADERS
 from scraper.sources.arteris import scrape_arteris
-from scraper.utils.filters import build_summary, matches_keywords, clean_text
+from scraper.utils.filters import build_summary, matches_keywords, clean_text, is_fleet_relevant
 from scraper.utils.timezone import brasilia_iso_from_datetime, brasilia_now_iso
 
 
@@ -145,6 +145,8 @@ def scrape_band(source: dict, keywords: list) -> list:
         # Filtrar apenas pelo título (não pelo resumo) conforme solicitado
         if matches_keywords(title, keywords):
             summary = _extract_band_summary(url)
+            if not is_fleet_relevant(title, summary):
+                continue
             news.append(_build_item(title, url, summary, source, published_at))
 
     return news

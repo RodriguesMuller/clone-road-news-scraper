@@ -111,6 +111,60 @@ def matches_keywords(text: str, keywords: list) -> bool:
     return False
 
 
+# ------------------------------------------------------------------------------
+# Relevancia para gestao de frota
+# ------------------------------------------------------------------------------
+# A keyword so diz que a noticia "fala de estrada". Para o gestor de frota, uma
+# noticia so vale se ajudar a decidir rota, horario ou protecao da carga: precisa
+# de contexto viario/logistico E de um sinal de impacto na circulacao.
+_FLEET_ROAD_CONTEXT = re.compile(
+    r"\b(?:br|sp|mg|rj|rs|sc|pr|ba|go|mt|ms|pa|pe|ce|es|ro|to|ma|pi|rn|pb|al|se|am|ac|rr|ap|df)[-\s]?\d{2,4}\b|"
+    r"\brodovi|\bestrada|\bpista\b|\bacostamento|\bkm\s*\d|\btrecho\b|\bponte\b|\bviaduto|\bpedagio|"
+    r"\bconcessionaria|\bprf\b|policia rodoviaria|\bder\b|\bdnit\b|\bbalsa\b|\btravessia\b|"
+    r"\bcaminh(?:ao|oes|oneir)|\bcarreta|\bbitrem|\brodotrem|\btreminhao|\bveiculo de carga|"
+    r"\btransportador|\btransporte de carga|\bcarga\b|\bfrete\b|\bporto\b|\bportuari|\bterminal\b|\bfronteira",
+)
+_FLEET_IMPACT = re.compile(
+    r"bloque|interdi|\bfechad|\bfecha\b|liberad|desbloque|reabert|\bdesvio|rota alternativa|"
+    r"acidente|tomba|engavet|colis|capot|batida|\bbate\b|incendio|pega fogo|\bfogo\b|"
+    r"congestion|lentid|\bfila\b|pare.e.siga|meia pista|retencao|transito|"
+    r"queda de barreira|deslizamento|desaba|cratera|erosao|afundamento|"
+    r"alagad|alagamento|enchente|inundac|neblina|baixa visibilidade|nevoeiro|"
+    r"roubo de carga|roubo.{0,20}caminh|assalt.{0,30}(?:caminh|motorista|carga)|saque|quadrilha|"
+    r"greve|paralisac|manifestac|protesto|\bobras?\b|restric|proib|\bbalanca\b|fiscalizac|"
+    r"falta de diesel|desabastec|preco do diesel|reajuste.{0,20}pedagio|pedagio.{0,20}reajuste",
+)
+# Assuntos que usam "estrada"/"acidente" fora do contexto de transporte.
+_FLEET_NOISE = re.compile(
+    r"novela|\bfilme|\bserie\b|\bshow\b|cantor|\batriz|\bator\b|\bbbb\b|reality|horoscopo|receita|"
+    r"futebol|campeonato|\bjogo\b|\bgol\b|torcida|"
+    r"aviao|aeronave|helicoptero|aeroporto|naufragio|\blancha|\bbarco|"
+    r"acidente de trabalho|acidente domestico|estrada da vida",
+)
+
+
+def fleet_relevance(title: str, summary: str = "") -> list:
+    """Retorna os motivos pelos quais a noticia impacta a frota (lista vazia = descartar)."""
+    text = _normalize(f"{title} {summary}")
+    if not text:
+        return []
+    has_highway_code = bool(re.search(
+        r"\b(?:br|sp|mg|rj|rs|sc|pr|ba|go|mt|ms|pa|pe|ce|es|ro|to|ma|pi|rn|pb|al|se|am|ac|rr|ap|df)[-\s]?\d{2,4}\b",
+        text,
+    ))
+    if _FLEET_NOISE.search(text) and not has_highway_code:
+        return []
+    road = _FLEET_ROAD_CONTEXT.search(text)
+    impact = _FLEET_IMPACT.search(text)
+    if not road or not impact:
+        return []
+    return [f"contexto: {road.group(0).strip()}", f"impacto: {impact.group(0).strip()}"]
+
+
+def is_fleet_relevant(title: str, summary: str = "") -> bool:
+    return bool(fleet_relevance(title, summary))
+
+
 def clean_text(text: str) -> str:
     """Remove HTML, entidades e espacos duplicados."""
     if not text:

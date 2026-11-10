@@ -124,6 +124,9 @@ rss_sources:
     url: "https://news.google.com/rss/search?q=%28%22Strait+of+Hormuz%22+OR+%22Estreito+de+Ormuz%22+OR+%22Suez+Canal%22+OR+%22Red+Sea%22+OR+%22Bab+el-Mandeb%22+OR+%22Panama+Canal%22%29+%28closure+OR+blockade+OR+attack+OR+disruption+OR+closed+OR+bloqueio+OR+ataque+OR+interrup%C3%A7%C3%A3o%29+when%3A7d&hl=pt-BR&gl=BR&ceid=BR%3Apt"
     category: "logística internacional"
     max_items: 30
+    # Corredores internacionais não citam rodovia: dispensa o filtro de
+    # impacto na frota e usa só as keywords abaixo.
+    fleet_filter: false
     keywords:
       - Strait of Hormuz
       - Estreito de Ormuz
