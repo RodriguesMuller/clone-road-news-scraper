@@ -1,6 +1,13 @@
 // Conserta acento corrompido vindo da fonte (mesma regra de scraper/utils/filters.py: repair_text e
 // strip_section_prefix), para as notícias que já estão gravadas com o texto quebrado.
-const { words } = require("../config/accented_words.json");
+// O vocabulário fica em public/ porque o .vercelignore exclui config/ do deploy (em config/, o
+// require falhava e derrubava o feed inteiro). Sem o arquivo, o conserto vira no-op, nunca erro.
+let words = [];
+try {
+  ({ words } = require("../public/accented_words.json"));
+} catch {
+  words = [];
+}
 
 const REPLACEMENT = String.fromCharCode(0xfffd);
 const INDEX = new Map();

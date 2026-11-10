@@ -230,11 +230,11 @@ def first_image_in_html(fragment: str) -> str:
 
 
 def _load_accented_words() -> dict[str, list[str]]:
-    """Vocabulário de config/accented_words.json indexado pelo esqueleto sem acento (ordem = prioridade)."""
+    """Vocabulário de public/accented_words.json indexado pelo esqueleto sem acento (ordem = prioridade)."""
     import json
     from pathlib import Path
 
-    path = Path(__file__).resolve().parents[2] / "config" / "accented_words.json"
+    path = Path(__file__).resolve().parents[2] / "public" / "accented_words.json"
     try:
         words = json.loads(path.read_text(encoding="utf-8")).get("words", [])
     except (OSError, ValueError):
@@ -267,7 +267,7 @@ def repair_text(text: str) -> str:
 
     - UTF-8 lido como Latin-1 ("NotÃ­cias") é recodificado.
     - Bytes perdidos ("Not" + U+FFFD + U+FFFD + "cias"): cada sequência de U+FFFD vira o caractere
-      acentuado da palavra conhecida que encaixa (config/accented_words.json, em ordem de prioridade);
+      acentuado da palavra conhecida que encaixa (public/accented_words.json, em ordem de prioridade);
       sem nenhuma, o U+FFFD sai, para não exibir o losango de caractere inválido.
     """
     if not text:
