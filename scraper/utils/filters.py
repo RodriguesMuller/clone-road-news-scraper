@@ -165,6 +165,40 @@ def is_fleet_relevant(title: str, summary: str = "") -> bool:
     return bool(fleet_relevance(title, summary))
 
 
+_IMAGE_EXT = re.compile(r"\.(?:jpe?g|png|webp|gif|avif)(?:$|[?#])", re.IGNORECASE)
+_IMAGE_BLOCKLIST = re.compile(r"pixel|tracking|spacer|blank|1x1|logo|favicon|avatar|icon", re.IGNORECASE)
+
+
+def safe_image_url(url: str, assume_image: bool = False) -> str:
+    """Normaliza a URL de imagem publicada pela própria fonte; vazio se não for utilizável.
+
+    Só aceita http(s) e descarta pixels de rastreio, logos e ícones. `assume_image` é usado
+    quando o feed já declara o tipo (media:content image/*), sem exigir extensão na URL.
+    """
+    value = html.unescape(str(url or "")).strip()
+    if value.startswith("//"):
+        value = "https:" + value
+    parsed = urlparse(value)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return ""
+    if _IMAGE_BLOCKLIST.search(parsed.path):
+        return ""
+    if not assume_image and not _IMAGE_EXT.search(value):
+        return ""
+    return value[:1000]
+
+
+def first_image_in_html(fragment: str) -> str:
+    """Primeira <img src> de um trecho HTML (resumo do feed), quando houver."""
+    if not fragment:
+        return ""
+    for match in re.finditer(r"<img[^>]+(?:data-src|src)=[\"']([^\"']+)[\"']", str(fragment), re.IGNORECASE):
+        candidate = safe_image_url(match.group(1), assume_image=True)
+        if candidate:
+            return candidate
+    return ""
+
+
 def clean_text(text: str) -> str:
     """Remove HTML, entidades e espacos duplicados."""
     if not text:

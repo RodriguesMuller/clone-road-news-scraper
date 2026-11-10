@@ -2,6 +2,14 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — Dropdowns do cabeçalho e imagem da notícia
+**O que mudou:** regra global `[hidden] { display: none !important; }`; `closeAll()` em `public/dashboard.js` (clique fora, opção escolhida, Esc, `popstate`). Imagem: `extract_image_url` (`rss.py`), imagem da listagem da Band (`html.py`), `safe_image_url`/`first_image_in_html` (`filters.py`), `scraper/utils/og_image.py`, coluna opcional `image_url` em `scraper/storage/postgres.py` e `api/news-feed.js` (`OPTIONAL_SETS`), `scripts/supabase_news_image_url.sql`, `newsMedia()` e novas ilustrações por tema no dashboard.
+**Por quê:** relato do usuário (menus abertos sobrepostos na Central de Evento) e pedido de imagem da própria notícia, com reserva que nunca remeta a mortes.
+**Arquivos/módulos:** `public/index.html`, `public/dashboard.js`, `scraper/sources/rss.py`, `scraper/sources/html.py`, `scraper/utils/filters.py`, `scraper/utils/og_image.py`, `scraper/storage/postgres.py`, `api/news-feed.js`, `scripts/supabase_news_image_url.sql`, `tests/test_news_images.py`, `tests/test_client_panel.js`.
+**Impacto medido:** cobertura de imagem no feed de 3/253 (1%), porque 87% dos itens vêm do Google News sem imagem; o `og:image` cobre os itens diretos. Comportamento dos menus verificado em jsdom.
+**Alternativas descartadas:** decodificar links do Google News para buscar a imagem (redirecionamento criptografado, frágil e de termos de uso duvidosos); baixar e armazenar as imagens (direito autoral e custo; o painel aponta para a URL da fonte com crédito); usar imagem genérica de acidente na reserva (proibido pelo pedido: nada que remeta a mortes).
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — Identidade visual Overhaul
 **O que mudou:** bloco "Identidade visual Overhaul" no fim do `<style>` de `public/index.html` (tokens `:root[data-theme="dark"|"light"]`, variáveis `--risk-*`, `@font-face` Archivo, Geist Mono em rótulos, links e botões). Os blocos de tokens do design anterior (azul) foram removidos, e as cores fixas restantes do CSS viraram variáveis ou cores da paleta (auditoria: nenhuma cor fora da paleta em regras de componente). `MAP_RISK_COLORS`, `public/dashboard.js` (gravidade, temas, ilustrações), estilos do PDF semanal e `scraper/weekly_news.py` (e-mail) alinhados. Archivo variável (latin, 400–700) baixada do Google Fonts para `public/assets/fonts/archivo/` com `OFL.txt`. Fontes com URL absoluta.
 **Por quê:** aplicar a identidade da empresa do usuário (paleta primária, secundária e neutra; Archivo + Geist Mono) no lugar do azul do mockup.

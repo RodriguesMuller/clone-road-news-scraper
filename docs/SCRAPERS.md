@@ -48,6 +48,15 @@ Depois da keyword, RSS e Band passam por um segundo filtro: a notícia só é gu
 
 Mudar essa semântica afeta recall retroativamente — qualquer alteração aqui precisa de aviso a `data-analyst` (para medir o impacto) e atualização do comentário em `config/sources.yaml`.
 
+## Imagem da notícia (`image_url`)
+
+O cartão do Dashboard mostra a imagem publicada pela **própria fonte**, com crédito ("Imagem: G1"). Ordem de busca:
+1. **No feed** (`scraper/sources/rss.py: extract_image_url`): `media:content`, `media:thumbnail`, enclosure de imagem ou `<img>` do resumo. Na Band, a imagem da listagem.
+2. **`og:image` da página** (`scraper/utils/og_image.py`), só para notícias **novas** de fontes **diretas**, com timeout de 8 s, leitura de até 200 KB e teto por execução (`SCRAPER_OG_IMAGE_LIMIT`, padrão 30). Links `news.google.com` são redirecionamentos criptografados e não são buscados.
+3. Sem imagem: o painel usa uma **ilustração neutra por tema** (sinalização, cones, barreira, clima, ponte), nunca cena de acidente, pessoas ou vítimas.
+
+`safe_image_url` aceita só http(s) e descarta pixels de rastreio, logos e ícones. A imagem não é baixada nem armazenada: o painel aponta para a URL da fonte (`referrerpolicy="no-referrer"`). Cobertura medida em 2026-11-10: 3/253 itens com imagem no feed, porque 220 vêm do Google News, que não expõe imagem. Para aumentar a cobertura, prefira cadastrar os feeds RSS diretos dos veículos.
+
 ## Atribuição de fonte nas queries "Google News"
 
 As 4 fontes `Google News — ...` são buscas agregadas (`news.google.com/rss/search?q=...`), não veículos editoriais. Até esta revisão, `scraper/sources/rss.py` gravava o campo `source` da notícia com o nome literal da query (ex. `"Google News - Caminhão/carreta"`), o que aparecia no card do cliente como se fosse a fonte da notícia — problema de credibilidade sinalizado por `compliance-advisor`.

@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 from scraper.sources import HEADERS
 from scraper.sources.arteris import scrape_arteris
-from scraper.utils.filters import build_summary, matches_keywords, clean_text, is_fleet_relevant
+from scraper.utils.filters import build_summary, matches_keywords, clean_text, is_fleet_relevant, safe_image_url
 from scraper.utils.timezone import brasilia_iso_from_datetime, brasilia_now_iso
 
 
@@ -22,7 +22,7 @@ def _get_soup(url: str, timeout: int = 15) -> BeautifulSoup | None:
 
 
 def _build_item(title: str, url: str, summary: str, source: dict,
-                published_at: str | None = None) -> dict:
+                published_at: str | None = None, image_url: str = "") -> dict:
     """Cria um dicionário padronizado de notícia."""
     now = brasilia_now_iso()
     return {
@@ -34,6 +34,7 @@ def _build_item(title: str, url: str, summary: str, source: dict,
         "summary": build_summary(title, summary),
         "scraped_at": now,
         "type": "HTML",
+        "image_url": image_url,
     }
 
 # ---------------------------------------------------------------
@@ -126,6 +127,13 @@ def scrape_band(source: dict, keywords: list) -> list:
                 title = clean_text(img["alt"])
         if not title:
             title = raw_text
+
+        # Imagem da própria listagem do portal (src, data-src ou primeira do srcset).
+        image_url = ""
+        tag = a.find("img")
+        if tag:
+            candidate = tag.get("src") or tag.get("data-src") or (tag.get("srcset") or "").split(" ")[0]
+            image_url = safe_image_url(candidate, assume_image=True)
         if not title:
             continue
 
@@ -147,7 +155,7 @@ def scrape_band(source: dict, keywords: list) -> list:
             summary = _extract_band_summary(url)
             if not is_fleet_relevant(title, summary):
                 continue
-            news.append(_build_item(title, url, summary, source, published_at))
+            news.append(_build_item(title, url, summary, source, published_at, image_url))
 
     return news
 
