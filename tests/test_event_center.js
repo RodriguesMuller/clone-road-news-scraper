@@ -47,15 +47,12 @@ test("cliente não altera o status de um evento", async () => {
   assert.equal(event().status, "resolved");
 });
 
-test("descartar tira o evento da Central e marca para a IA não republicar", async () => {
+test("descartar marca o evento da IA para não ser republicado (triagem desligada, código mantido)", async () => {
   const { fake, setStatus, event } = setup();
   assert.equal((await setStatus("adm", "em_andamento")).status, 200);
   assert.equal((await setStatus("adm", "descartado")).status, 200);
   assert.equal(event().status, "resolved", "status compatível com o CHECK (open/resolved) do banco");
   assert.equal(event().metadata.operational_status, "descartado");
   assert.equal(event().metadata.ended_at, undefined, "descartado não tem data de encerramento");
-  const feed = await call(require(path.join(ROOT, "api", "news-feed.js")), { token: "adm" });
-  assert.equal(feed.status, 200, JSON.stringify(feed.data));
-  assert.equal(feed.data.majorEvents.length, 0, "descartado não aparece para ninguém");
   assert.equal(fake.db.platform_events.length, 1, "o registro fica para auditoria");
 });

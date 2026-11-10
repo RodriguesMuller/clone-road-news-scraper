@@ -16,6 +16,7 @@ from scraper.sources.inmet import scrape_inmet
 from scraper.utils.filters import prefer_direct_sources
 from scraper.storage.postgres import save_to_postgres
 from scraper.event_intelligence import process_major_events
+from scraper.followed_events import update_followed_events
 
 for _stream in (sys.stdout, sys.stderr):
     try:
@@ -100,6 +101,8 @@ def run(save: bool = True) -> dict:
         process_major_events(all_news, database_url)
     else:
         print("[Postgres] Nenhuma noticia nova para salvar.")
+    # Central de Evento: a IA atualiza os eventos que os clientes escolheram acompanhar.
+    update_followed_events(database_url)
 
     print("\nConcluido.")
     return {

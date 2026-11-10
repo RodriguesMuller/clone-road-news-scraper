@@ -2,6 +2,12 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — Central de Evento: o cliente escolhe, a IA acompanha
+- **Alterado**: a IA não decide mais o que vai para a Central de Evento. Cada notícia (Notícias, Alertas, Salvos) tem o botão **"Acompanhar evento"**, e o evento fica visível para toda a empresa.
+- **Adicionado**: a cada coleta (de hora em hora), a IA revisa cada evento acompanhado. Ela confirma quais notícias novas são do mesmo evento e atualiza a situação (resumo, impacto para a frota, **decisão de despacho**, ações recomendadas, duração) e a linha do tempo. O evento é **encerrado** quando uma notícia afirmar a liberação. O cliente também pode encerrar, reabrir ou parar de acompanhar.
+- **Removido**: a triagem automática de eventos (`EVENT_INTELLIGENCE_ENABLED=false`; código mantido) e a republicação do evento curado de Santos. Os eventos que a IA tinha publicado deixam de aparecer na Central.
+- **Migration**: `scripts/supabase_followed_events.sql`.
+
 ## 2026-11-10 — Correção: painel sem notícias
 - **Corrigido**: depois do PR #22, o feed (`/api/news-feed`) e o resumo semanal respondiam `FUNCTION_INVOCATION_FAILED` e o painel ficou zerado. O vocabulário do conserto de acento estava em `config/`, que o `.vercelignore` exclui do deploy. O arquivo foi para `public/accented_words.json`, e sem ele o conserto vira no-op em vez de derrubar o feed.
 

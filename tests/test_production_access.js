@@ -230,7 +230,7 @@ test("production UI exposes the event center only inside the authenticated app",
   assert.ok(appStart > authStart);
   assert.ok(eventPage > appStart);
   assert.match(html, /Central de Evento/);
-  assert.match(html, /Foi identificado um evento/);
+  assert.match(html, /Acompanhar evento/);
   assert.doesNotMatch(html, /A IA identificou um evento/);
 });
 
@@ -246,15 +246,15 @@ test("event center presents the complete lifecycle and opens closed events", () 
   assert.match(html, /<span>Encerramento<\/span>/);
   assert.match(html, /function formatCalendarDate\(value\)/);
   assert.match(html, /data-event-open=/);
-  assert.match(html, /const otherClosed = recentClosed\.filter/);
-  assert.match(html, /MAJOR_EVENT_CLOSED_WINDOW_MS/);
+  assert.match(html, /Eventos encerrados nos últimos 30 dias/);
+  assert.match(html, /data-followed-action="reopen"/);
 });
 
-test("event management controls require a privileged profile and management environment", () => {
+test("event center actions are company-scoped and confirmed before changing", () => {
   const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
-  assert.match(html, /const privilegedProfile = isAdminProfile\(\) \|\| isManagerProfile\(\)/);
-  assert.match(html, /return privilegedProfile && canAccessManagementView\(\)/);
-  assert.match(html, /Ação disponível apenas para gestores e administradores/);
+  assert.match(html, /action: "follow-event"/);
+  assert.match(html, /Vale para toda a sua empresa/);
+  assert.match(html, /await confirmActionModal\(question, title, confirmLabel\)/);
 });
 
 test("client cannot call manager-only event actions", async () => {

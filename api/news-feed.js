@@ -4,6 +4,7 @@ const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini";
 const { assertCanUse, featureFlagEnabled, featureRule, featureUsage, finalizeReservation, json, releaseUsage, reserveUsage, supabaseFetch } = require("./_auth");
 const { adminErrorMessage, readJson } = require("./_admin");
 const { repairNewsItem } = require("./_text_repair");
+const { listFollowedEvents } = require("./_followed_events");
 
 const BASE_COLUMNS = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
 const OPTIONAL_SETS = [
@@ -205,20 +206,6 @@ async function fetchRows(suffix) {
     }
   }
   throw lastError;
-}
-
-async function fetchMajorEvents() {
-  try {
-    const response = await supabaseFetch(
-      "/rest/v1/platform_events?event_type=eq.major_logistics_event&select=id,event_type,severity,status,message,metadata,created_at,resolved_at&order=created_at.desc&limit=20"
-    );
-    // Descartado pelo gestor (não é evento grave) não aparece na Central.
-    const rows = await response.json();
-    return (Array.isArray(rows) ? rows : []).filter((row) => row?.metadata?.operational_status !== "descartado");
-  } catch (error) {
-    if (/platform_events|relation|schema|PGRST|does not exist/i.test(error.message || "")) return [];
-    throw error;
-  }
 }
 
 function routesApiKey() {
@@ -652,17 +639,18 @@ async function handleNewsFeed(req, res) {
   const since24h = encodeURIComponent(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
   const since30d = encodeURIComponent(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
   const cap = Math.max(1, Math.min(monthlyNewsLimit, 700));
-  const [latestNews, latestInmet, recentRows, mapRows, majorEvents, countResponse] = await Promise.all([
+  const [latestNews, latestInmet, recentRows, mapRows, followedEvents, countResponse] = await Promise.all([
     fetchRows(`&order=created_at.desc&limit=${Math.min(50, cap)}`),
     fetchRows(`&or=(source.ilike.*INMET*,type.eq.INMET)&order=published_at.desc&limit=${Math.min(20, cap)}`),
     fetchRows(`&created_at=gte.${since24h}&order=created_at.desc&limit=${Math.min(300, cap)}`),
     canAccessMap ? fetchRows(`&created_at=gte.${since30d}&order=created_at.desc&limit=${cap}`) : Promise.resolve([]),
-    fetchMajorEvents(),
+    // Central de Evento: eventos que a empresa escolheu acompanhar (a triagem por IA foi desligada).
+    listFollowedEvents(account),
     supabaseFetch("/rest/v1/news?select=id", { method: "HEAD", headers: { Prefer: "count=exact" } }),
   ]);
 
   const total = Number((countResponse.headers.get("content-range") || "0/0").split("/")[1] || 0);
-  json(res, 200, { latestNews, latestInmet, recentRows, mapRows, majorEvents, total });
+  json(res, 200, { latestNews, latestInmet, recentRows, mapRows, followedEvents, total });
 }
 
 module.exports = async function handler(req, res) {

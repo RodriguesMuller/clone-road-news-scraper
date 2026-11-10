@@ -21,7 +21,10 @@ Criada em runtime pelo próprio scraper (`scraper/storage/postgres.py`), não po
 
 RLS: **sem policy de leitura** depois de `scripts/supabase_security_hardening.sql` — a antiga `Allow public read news` (`anon`, `USING true`) expunha a tabela inteira a qualquer pessoa com a chave pública, contornando login e cota. Toda leitura passa por `api/news-feed.js` com service role; o scraper grava com o usuário `postgres`. A tabela não é segregada por tenant: o que é segregado é o **acesso** via quota/pacote (ver `usage_events`). Em produção (2026-11-09) as colunas opcionais de IA/geo **não existem** — ver `docs/qa-audit/database-audit.md` (DB-02).
 
-### `platform_events` + `event_intelligence_runs`
+### `followed_events`
+Eventos que cada empresa acompanha na Central de Evento (`scripts/supabase_followed_events.sql`): `client_id` (escopo da empresa; nulo = só o usuário `created_by`), `created_by`/`created_by_name`, `title`, `seed` jsonb (a notícia de origem: título, link, resumo, fonte, data, rodovia, região), `status` (`active`/`closed`), `closed_at`/`closed_by`, `ai_state` jsonb (mantido pela IA a cada coleta em `scraper/followed_events.py`: `status` operacional, `summary`, `operational_impact`, `dispatch_decision`, `recommended_actions`, `history`, `related` confirmadas, `rejected_urls`, `analyzed_at`) e `last_checked_at`. Antes da primeira análise, a API mostra as candidatas pela regra fixa. RLS habilitada sem policy; acesso só pela API (service role).
+
+### `platform_events` + `event_intelligence_runs` (triagem por IA desligada)
 Criadas por `scraper/event_intelligence.py` em runtime (não por script em `scripts/`). `platform_events` guarda eventos logísticos críticos (`event_type = 'major_logistics_event'`), com `metadata` jsonb contendo `event_key`, `operational_status`, `history` (linha do tempo), `confidence`, `affected_infrastructure` etc. `event_intelligence_runs` é só controle de idempotência (fingerprint sha256 do lote analisado → não reanalisa o mesmo lote duas vezes). RLS habilitada; `event_intelligence_runs` é revogada de `anon`/`authenticated` (só acesso via service role).
 
 ### Multi-tenancy (`scripts/supabase_production_clients_users_limits.sql` e relacionados)

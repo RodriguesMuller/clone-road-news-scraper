@@ -6,7 +6,18 @@ Todo uso de IA no Road News é via **OpenAI Responses API** (`gpt-4.1-mini` como
 
 ## Os 4 pontos de uso
 
-### 1. Triagem de eventos logísticos críticos (`scraper/event_intelligence.py`)
+### 0. Atualização dos eventos acompanhados (`scraper/followed_events.py`) — Central de Evento
+O **cliente** escolhe o que vai para a Central (botão "Acompanhar evento" numa notícia); a IA não escolhe eventos. A cada coleta, para cada evento ativo (até 50 por execução):
+1. Notícias novas desde a última checagem passam por um pré-filtro barato: mesma rodovia ou nome próprio do local, mais termos em comum com a notícia de origem. Até 15 candidatas.
+2. A IA (schema estrito `RESPONSE_SCHEMA`) confirma quais candidatas são do mesmo evento (`related_urls`, que precisam estar entre as enviadas) e atualiza `status` (`em_andamento`/`monitoramento`/`encerrado`), `summary`, `operational_impact`, `dispatch_decision` (`segurar`/`liberar_com_desvio`/`liberar_com_atencao`), `recommended_actions`, `detour`, `estimated_duration` e `timeline_note`.
+3. **Encerramento** só com notícia relacionada que afirme liberação ou retomada (`RESOLUTION_PATTERN`). Nesse caso o evento passa a `closed` e a IA para de atualizá-lo.
+
+Candidatas recusadas não são reenviadas (`rejected_urls`). Sem candidatas novas, não há chamada, exceto na primeira análise do evento. Falha num evento não interrompe os demais nem a coleta. Desliga com `FOLLOWED_EVENTS_AI_ENABLED=false`.
+
+### 1. Triagem de eventos logísticos críticos (`scraper/event_intelligence.py`) — **desligada desde 2026-11-10**
+
+> `EVENT_INTELLIGENCE_ENABLED=false` no workflow: a IA não escolhe mais o que vai para a Central (ver item 0). O código segue no repositório.
+
 O padrão-ouro do projeto: roda a cada execução do scraper (se `EVENT_INTELLIGENCE_ENABLED=true`), sobre o lote recém-coletado. Critério (v3): publica só o que muda a decisão de despacho de caminhões de carga e devolve `dispatch_decision` (`segurar`, `liberar_com_desvio`, `liberar_com_atencao`); acidente só com bloqueio total. Requer o secret `OPENAI_API_KEY` no GitHub Actions (sem ele, o log registra `OPENAI_API_KEY ausente` e nada é detectado). Evento encerrado por gestor só é reaberto pela IA com notícia publicada depois do encerramento (`merge_event`). Acidente pontual com interdição parcial e impacto só em transporte de passageiros são barrados antes da IA; evento descartado pelo gestor ("não é evento grave") nunca é republicado.
 
 - **Pré-filtro determinístico** (regex) antes de qualquer chamada de IA: `candidate_reasons()` combina padrões de contexto logístico, gravidade, impacto operacional, infraestrutura estratégica e resolução — só o que casa é enviado à IA. Notícia com padrão de "greve não-logística" (professores, bancários...) é descartada mesmo antes do pré-filtro positivo, a menos que também case com impacto logístico.
