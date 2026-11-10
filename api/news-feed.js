@@ -210,7 +210,9 @@ async function fetchMajorEvents() {
     const response = await supabaseFetch(
       "/rest/v1/platform_events?event_type=eq.major_logistics_event&select=id,event_type,severity,status,message,metadata,created_at,resolved_at&order=created_at.desc&limit=20"
     );
-    return response.json();
+    // Descartado pelo gestor (não é evento grave) não aparece na Central.
+    const rows = await response.json();
+    return (Array.isArray(rows) ? rows : []).filter((row) => row?.metadata?.operational_status !== "descartado");
   } catch (error) {
     if (/platform_events|relation|schema|PGRST|does not exist/i.test(error.message || "")) return [];
     throw error;

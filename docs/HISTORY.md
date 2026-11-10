@@ -2,6 +2,13 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — Central de Evento: critério de frota de carga e descarte
+**O que mudou:** `scraper/event_intelligence.py`: `PASSENGER_CONTEXT_PATTERN` (remove impacto em ônibus/metrô/passageiros antes de medir gravidade), regra de acidente pontual com interdição parcial (`ROUTINE_ACCIDENT_PATTERN`/`PARTIAL_PATTERN`/`TOTAL_PATTERN`), exclusões explícitas no prompt, `CLASSIFICATION_VERSION` v2, e `merge_event` não republica evento `descartado`. `api/news-summary.js` aceita `operational_status: descartado` (grava `status=resolved` + marca no metadata). `api/news-feed.js` não devolve descartados. `public/index.html`: botão "Descartar: não é evento grave". Testes: `CargoRelevanceTests`, novo teste em `tests/test_event_center.js`.
+**Por quê:** a primeira execução real da triagem publicou como "Crítico" o tombamento de um caminhão na Raposo Tavares (km 24,5) com interdição parcial, cujo impacto relevante era só em linhas de ônibus. O usuário apontou que isso não importa para gestor de frota de caminhões de carga. O filtro passou porque "paralisação de linhas de ônibus" contava como gravidade.
+**Impacto medido:** JS 71/71, Python 52/52. O caso real da Raposo Tavares agora é barrado antes da IA, e greve de caminhoneiros e acidente com bloqueio total sem previsão continuam candidatos.
+**Alternativas descartadas:** novo valor `dismissed` na coluna `status` (o CHECK de `supabase_platform_environments.sql` só aceita `open`/`resolved`; exigiria migration); apagar o evento descartado (perderia o registro para auditoria e a IA poderia recriá-lo).
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — QA da Central de Evento
 **O que mudou:** `merge_event` em `scraper/event_intelligence.py` (regras de reabertura, data de encerramento estável, início por data real; `_upsert_events` passa a usá-la); `updateMajorEventStatus` em `api/news-summary.js` limpa `ended_on`/`ended_at` ao reabrir e grava `ended_at` ao encerrar; `renderMajorEvents`/`renderPrimaryMajorEvent` em `public/index.html` (sem destaque para encerrado, janela de 30 dias, selo de evento parado). Testes: `MergeEventTests` em `tests/test_event_intelligence.py`, `tests/test_event_center.js`.
 **Por quê:** pedido de QA da Central de Evento. Os logs de produção mostraram que a triagem por IA nunca rodou (secret `OPENAI_API_KEY` ausente no GitHub) e a Central exibia só o encerramento de Santos de julho como destaque.
