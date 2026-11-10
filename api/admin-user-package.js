@@ -1,5 +1,5 @@
 const { json, requireManager, supabaseFetch } = require("./_auth");
-const { adminErrorMessage, audit, fetchJson, packageSeatsUsed, readJson } = require("./_admin");
+const { adminErrorMessage, audit, clientWithPackage, fetchJson, packageSeatsUsed, readJson } = require("./_admin");
 
 async function fetchActivePackage(packageId) {
   try {
@@ -29,6 +29,12 @@ module.exports = async function handler(req, res) {
     if (!profile?.length) throw new Error("Usuario nao encontrado.");
     if (!account.isAdmin && profile[0].role === "admin") {
       throw new Error("Voce nao tem permissao para alterar usuarios Admin.");
+    }
+
+    // Usuário de cliente com pacote configurado herda o pacote da empresa: não há pacote individual.
+    const client = profile[0].client_id ? await clientWithPackage(profile[0].client_id) : null;
+    if (client?.package_id) {
+      throw new Error("Este usuario herda o pacote do cliente. Altere o pacote no cadastro do cliente.");
     }
 
     // Valida o pacote novo ANTES de encerrar o atual: se falhar, o usuário continua com o que tinha.

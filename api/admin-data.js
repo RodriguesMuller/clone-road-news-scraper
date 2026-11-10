@@ -1,5 +1,5 @@
 const { json, monthStartIso, requireManager, supabaseFetch } = require("./_auth");
-const { adminErrorMessage, audit, fetchJson, maskCpf, readJson } = require("./_admin");
+const { adminErrorMessage, audit, clientSeatsUsed, fetchJson, maskCpf, readJson } = require("./_admin");
 
 function clientIdFromRequest(req, body = {}) {
   const url = new URL(req.url, "http://road-news.local");
@@ -19,7 +19,27 @@ function clientPayload(body = {}, partial = false) {
     payload.status = status;
   }
   if (!partial || Object.hasOwn(body, "notes")) payload.notes = String(body.notes || "").trim() || null;
+  // Pacote do cliente: todos os usuários da empresa herdam recursos e limites (o consumo é de cada um).
+  if (Object.hasOwn(body, "package_id")) payload.package_id = String(body.package_id || "").trim() || null;
   return payload;
+}
+
+// Valida o pacote do cliente: precisa estar ativo e comportar os usuários que a empresa já tem.
+async function assertClientPackage(packageId, clientId) {
+  if (!packageId) return;
+  const rows = await fetchJson(`/rest/v1/packages?id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=id,max_users&limit=1`);
+  if (!rows?.length) throw new Error("Pacote nao encontrado ou inativo.");
+  const maxUsers = Number(rows[0].max_users || 0);
+  if (clientId && maxUsers > 0 && await clientSeatsUsed(clientId) > maxUsers) {
+    throw new Error(`Este pacote permite ${maxUsers} usuario(s) e o cliente ja tem mais usuarios ativos.`);
+  }
+}
+
+function clientPackageColumnError(error) {
+  if (/package_id/i.test(error.message || "") && /column|schema|PGRST/i.test(error.message || "")) {
+    return new Error("Rode scripts/supabase_client_package.sql no Supabase para habilitar o pacote do cliente.");
+  }
+  return error;
 }
 
 // Todos os eventos de uso do mês, em páginas de 1000 (o Supabase limita cada resposta a 1000
@@ -51,11 +71,13 @@ async function writeClient(req, account) {
 
   if (req.method === "POST") {
     const payload = clientPayload(body);
+    await assertClientPackage(payload.package_id, null);
+    if (!payload.package_id) delete payload.package_id;
     const created = await fetchJson("/rest/v1/clients?select=id", {
       method: "POST",
       headers: { Prefer: "return=representation" },
       body: JSON.stringify(payload),
-    });
+    }).catch((error) => { throw clientPackageColumnError(error); });
     const id = created?.[0]?.id || null;
     await audit(account, "create_client", "client", id || payload.company_name, { status: payload.status });
     return { ok: true, id };
@@ -66,13 +88,15 @@ async function writeClient(req, account) {
   if (!existing?.length) throw new Error("Cliente nao encontrado.");
   const payload = clientPayload(body, true);
   if (!Object.keys(payload).length) throw new Error("Nenhuma alteracao informada.");
+  await assertClientPackage(payload.package_id, clientId);
   await supabaseFetch(`/rest/v1/clients?id=eq.${encodeURIComponent(clientId)}`, {
     method: "PATCH",
     headers: { Prefer: "return=minimal" },
     body: JSON.stringify(payload),
-  });
+  }).catch((error) => { throw clientPackageColumnError(error); });
   await audit(account, payload.status && payload.status !== "active" ? "deactivate_client" : "update_client", "client", clientId, {
     status: payload.status || existing[0].status,
+    ...(Object.hasOwn(payload, "package_id") ? { package_id: payload.package_id } : {}),
   });
   return { ok: true, id: clientId };
 }

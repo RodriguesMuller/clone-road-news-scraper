@@ -2449,6 +2449,7 @@
                 <div class="field"><label for="clientName">Nome do cliente / empresa</label><input id="clientName" required></div>
                 <div class="field"><label for="clientStatus">Status</label><select id="clientStatus"><option value="active">Ativo</option><option value="inactive">Inativo</option><option value="blocked">Bloqueado</option></select></div>
               </div>
+              <div class="field"><label for="clientPackage">Pacote do cliente</label><select id="clientPackage"></select><small class="field-hint">Todos os usuários da empresa herdam os recursos e limites deste pacote. O consumo é contado por usuário.</small></div>
               <div class="field"><label for="clientNotes">Observações</label><textarea id="clientNotes"></textarea></div>
               <div class="admin-actions"><button type="submit">Salvar cliente</button><button id="clearClientForm" class="mini-button" type="button">Limpar</button></div>
             </form>
@@ -3495,8 +3496,8 @@ function showAuthView() {
       ].filter(([, limit]) => limit > 0).map(([used, limit]) => used / limit);
       const highest = Math.max(0, ...ratios);
       if (highest >= 1) return "Limite atingido. Recurso bloqueado até a renovação do ciclo ou alteração do pacote.";
-      if (highest >= .9) return "Atenção: sua empresa está próxima de atingir o limite do pacote.";
-      if (highest >= .8) return "Sua empresa já utilizou 80% do limite deste recurso no pacote.";
+      if (highest >= .9) return "Atenção: você está próximo de atingir o limite do pacote.";
+      if (highest >= .8) return "Você já utilizou 80% do limite deste recurso no pacote.";
       return "";
     }
 
@@ -5649,7 +5650,14 @@ function showAuthView() {
       const clientSelect = document.getElementById("inviteClient");
       const clientId = clientSelect?.value || "";
       const submitButton = document.getElementById("inviteSubmitButton");
-      if (packageSelect) packageSelect.required = true;
+      const inherited = clientById(clientId)?.package_id || "";
+      if (packageSelect) {
+        packageSelect.required = !inherited;
+        packageSelect.disabled = Boolean(inherited);
+        if (inherited) packageSelect.value = "";
+        const placeholder = packageSelect.querySelector('option[value=""]');
+        if (placeholder) placeholder.textContent = inherited ? `Herdado do cliente: ${packageById(inherited)?.name || "pacote do cliente"}` : "Selecione um pacote";
+      }
       if (clientSelect) clientSelect.required = true;
       const activeClients = (state.admin.clients || []).filter((client) => client.status === "active");
       const activePackages = (state.admin.packages || []).filter((pkg) => pkg.is_active);
@@ -5671,9 +5679,9 @@ function showAuthView() {
         warning.hidden = false;
         return;
       }
-      if (!packageId) {
+      if (!packageId && !inherited) {
         if (submitButton) submitButton.disabled = false;
-        warning.textContent = "Selecione um pacote para o usuário.";
+        warning.textContent = "Selecione um pacote para o usuário ou configure o pacote do cliente.";
         warning.hidden = false;
         return;
       }
@@ -5697,7 +5705,15 @@ function showAuthView() {
       updateInvitePackageWarning();
     }
 
+    function clientById(clientId) {
+      return (state.admin.clients || []).find((client) => client.id === clientId) || null;
+    }
+
+    // Igual ao servidor: o usuário herda o pacote do cliente; sem pacote no cliente, vale o individual.
     function currentPackageForUser(userId) {
+      const user = (state.admin.users || []).find((item) => item.id === userId);
+      const client = clientById(user?.client_id);
+      if (client?.package_id) return { package_id: client.package_id, source: "client", client };
       return (state.admin.userPackages || []).find((item) => item.user_id === userId && item.is_active);
     }
 
@@ -5706,16 +5722,14 @@ function showAuthView() {
     }
 
     function packageUsersCount(packageId) {
-      return (state.admin.userPackages || []).filter((item) => item.package_id === packageId && item.is_active).length;
+      const users = (state.admin.users || []).filter((user) => currentPackageForUser(user.id)?.package_id === packageId).length;
+      return users + (state.admin.clients || []).filter((client) => client.package_id === packageId).length;
     }
 
-    // Mesmo escopo que o servidor cobra: o saldo é do CLIENTE (todos os usuários da empresa).
-    // Usuário sem cliente conta sozinho.
+    // Mesmo escopo que o servidor cobra: o saldo é de cada usuário (limites herdados do cliente).
     function usageCount(user, eventTypes) {
       const types = Array.isArray(eventTypes) ? eventTypes : [eventTypes];
-      const clientId = user?.client_id || null;
-      return (state.admin.usage || []).filter((event) => types.includes(event.event_type)
-        && (clientId ? event.client_id === clientId : event.user_id === user?.id)).length;
+      return (state.admin.usage || []).filter((event) => types.includes(event.event_type) && event.user_id === user?.id).length;
     }
 
     function usageForUser(user) {
@@ -5815,6 +5829,12 @@ function showAuthView() {
 
       updateInvitePackageOptions();
       updateInviteRoleOptions();
+      const clientPackageSelect = document.getElementById("clientPackage");
+      if (clientPackageSelect) {
+        const selected = clientPackageSelect.value;
+        clientPackageSelect.innerHTML = packageOptions(selected).replace(">Sem pacote<", ">Sem pacote (definir por usuário)<");
+        clientPackageSelect.value = selected;
+      }
       updateUserFilterOptions();
       updateUsageFilterOptions();
       document.getElementById("adminSummary").innerHTML = [
@@ -5882,7 +5902,9 @@ function showAuthView() {
               <div class="admin-record-body">
                 <div class="admin-record-field"><span>Empresa</span><strong>${escapeHtml(user.company_name || "-")}</strong></div>
                 <div class="admin-record-field"><span>CPF</span><strong>${escapeHtml(user.cpf_masked || "Não informado")}</strong></div>
-                <div class="admin-record-field"><span>Pacote atual</span><select class="map-select admin-package-select assign-package" data-user-id="${escapeHtml(user.id)}">${packageOptions(info.current?.package_id || "")}</select></div>
+                <div class="admin-record-field"><span>Pacote atual</span>${info.current?.source === "client"
+                  ? `<strong>${escapeHtml(info.pkg?.name || "-")}</strong><br><span class="admin-note">Herdado do cliente</span>`
+                  : `<select class="map-select admin-package-select assign-package" data-user-id="${escapeHtml(user.id)}">${packageOptions(info.current?.package_id || "")}</select>`}</div>
                 <div class="admin-record-field"><span>Consumo no mês</span>${userConsumptionHtml(info)}</div>
                 <div class="admin-record-field"><span>Acesso</span><strong>Criado: ${escapeHtml(formatDate(user.created_at))}</strong><br><span class="admin-note">Último acesso: ${escapeHtml(formatDate(user.last_sign_in_at || user.updated_at || user.created_at))}</span></div>
               </div>
@@ -5988,6 +6010,7 @@ function showAuthView() {
             <article class="management-card">
               <h3>${escapeHtml(company.name)}</h3>
               <p>Status: ${company.status === "active" ? "Ativo" : company.status === "blocked" ? "Bloqueado" : "Inativo"}</p>
+              <p>Pacote: ${escapeHtml(packageById(company.package_id)?.name || "Definido por usuário")}</p>
               <p>Usuários vinculados: ${company.users.length}</p>
               <p>Usuários ativos: ${company.active}</p>
               <p>Bloqueados/inativos: ${company.blocked}</p>
@@ -6121,6 +6144,9 @@ function showAuthView() {
       document.getElementById("clientName").value = client?.company_name || "";
       document.getElementById("clientStatus").value = ["active", "inactive", "blocked"].includes(client?.status) ? client.status : "active";
       document.getElementById("clientNotes").value = client?.notes || "";
+      const packageSelect = document.getElementById("clientPackage");
+      packageSelect.innerHTML = packageOptions(client?.package_id || "").replace(">Sem pacote<", ">Sem pacote (definir por usuário)<");
+      packageSelect.value = client?.package_id || "";
     }
 
     async function saveClient(event) {
@@ -6131,6 +6157,7 @@ function showAuthView() {
         company_name: document.getElementById("clientName").value.trim(),
         status: document.getElementById("clientStatus").value,
         notes: document.getElementById("clientNotes").value.trim(),
+        package_id: document.getElementById("clientPackage").value,
       };
       const originalLabel = button?.textContent || "Salvar cliente";
       try {
@@ -6405,6 +6432,8 @@ function showAuthView() {
         document.getElementById("editUserStatus").disabled = user.id === state.session?.user?.id;
         document.getElementById("editUserPackage").innerHTML = packageOptions(currentPackage?.package_id || "");
         document.getElementById("editUserPackageOriginal").value = currentPackage?.package_id || "";
+        document.getElementById("editUserPackage").disabled = currentPackage?.source === "client";
+        document.getElementById("editUserPackage").title = currentPackage?.source === "client" ? "Herdado do cliente. Altere no cadastro do cliente." : "";
         setUserEditError("");
         document.getElementById("userEditModal").classList.add("open");
       } catch (error) {
@@ -6481,7 +6510,7 @@ function showAuthView() {
         setNotice(passwordError);
         return;
       }
-      if (!payload.client_id || !payload.package_id) {
+      if (!payload.client_id || (!payload.package_id && !clientById(payload.client_id)?.package_id)) {
         updateInvitePackageWarning();
         setNotice(!payload.client_id ? "Cadastre e selecione um cliente antes de criar usuários." : "Cadastre e selecione um pacote antes de criar usuários.");
         return;

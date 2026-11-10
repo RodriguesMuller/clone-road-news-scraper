@@ -83,6 +83,17 @@ function createFakeSupabase(seed = {}) {
       const user = db.users[token];
       return user ? Response.json(user) : new Response("{}", { status: 401 });
     }
+    if (/\/auth\/v1\/admin\/users/.test(url)) {
+      // Cadastro de usuário pelo admin (admin-users.js): lista vazia e criação com id novo.
+      if (method === "GET") return Response.json({ users: Object.values(db.users) });
+      if (method === "POST") {
+        const body = JSON.parse(options.body || "{}");
+        const user = { id: nextId("user"), email: body.email };
+        db.users[`token-${user.id}`] = user;
+        return Response.json(user);
+      }
+      return new Response(null, { status: 204 });
+    }
     const match = url.match(/\/rest\/v1\/([a-z_]+)/);
     if (!match) throw new Error(`URL não simulada: ${url}`);
     const table = match[1];

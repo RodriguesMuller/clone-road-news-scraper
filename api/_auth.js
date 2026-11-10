@@ -148,9 +148,36 @@ async function getActivePackage(userId) {
 
 async function getClient(clientId) {
   if (!clientId) return null;
-  const response = await supabaseFetch(`/rest/v1/clients?id=eq.${encodeURIComponent(clientId)}&select=id,company_name,status&limit=1`);
+  const read = async (select) => {
+    const response = await supabaseFetch(`/rest/v1/clients?id=eq.${encodeURIComponent(clientId)}&select=${select}&limit=1`);
+    const rows = await response.json();
+    return rows[0] || null;
+  };
+  try {
+    return await read("id,company_name,status,package_id");
+  } catch (error) {
+    // Banco ainda sem clients.package_id (scripts/supabase_client_package.sql): segue sem herança.
+    if (!/package_id|column|schema|PGRST/i.test(error.message || "")) throw error;
+    return read("id,company_name,status");
+  }
+}
+
+// Pacote do cliente, no mesmo formato de user_packages (com packages embutido).
+async function getClientPackage(client) {
+  if (!client?.package_id) return null;
+  const response = await supabaseFetch(`/rest/v1/packages?id=eq.${encodeURIComponent(client.package_id)}&is_active=eq.true&select=*&limit=1`);
   const rows = await response.json();
-  return rows[0] || null;
+  const pkg = rows[0] || null;
+  return pkg ? { package_id: pkg.id, packages: pkg, source: "client" } : null;
+}
+
+// O usuário HERDA a configuração (pacote: recursos e limites) do cliente a que pertence. Só quando
+// o cliente não tem pacote vale o pacote individual do usuário (modelo antigo, mantido por compatibilidade).
+async function getEffectivePackage(userId, client) {
+  const inherited = await getClientPackage(client);
+  if (inherited) return inherited;
+  const own = await getActivePackage(userId);
+  return own ? { ...own, source: "user" } : null;
 }
 
 function monthStartIso() {
@@ -168,31 +195,14 @@ function isManagerRole(role) {
   return role === "admin" || role === "manager";
 }
 
-// Escopo do consumo: o limite do pacote vale para o CLIENTE (empresa) inteiro — todos os
-// usuários dele somam no mesmo saldo. Usuário sem cliente (ex.: legado) conta sozinho.
-function usageScope(accountOrUserId) {
-  if (accountOrUserId && typeof accountOrUserId === "object") {
-    return { userId: accountOrUserId.user?.id || null, clientId: accountOrUserId.profile?.client_id || null };
-  }
-  return { userId: accountOrUserId || null, clientId: null };
-}
-
-// Consulta os eventos do mês no escopo do cliente (ou do usuário, se não houver cliente ou se o
-// banco ainda não tiver usage_events.client_id). `run` recebe o filtro de escopo pronto.
+// Escopo do consumo: o saldo é de cada USUÁRIO. Ele herda os limites do pacote do cliente, mas não
+// o consumo — cada usuário da empresa tem o próprio saldo mensal.
 async function inUsageScope(accountOrUserId, eventTypes, run) {
-  const { userId, clientId } = usageScope(accountOrUserId);
+  const userId = accountOrUserId && typeof accountOrUserId === "object" ? accountOrUserId.user?.id : accountOrUserId;
   const types = Array.isArray(eventTypes) ? eventTypes : [eventTypes];
   const since = encodeURIComponent(monthStartIso());
   const encodedTypes = types.map((type) => `"${String(type).replace(/"/g, "")}"`).join(",");
-  const base = (scopeFilter) => `/rest/v1/usage_events?${scopeFilter}&event_type=in.(${encodedTypes})&created_at=gte.${since}`;
-  if (clientId) {
-    try {
-      return await run(base(`client_id=eq.${encodeURIComponent(clientId)}`));
-    } catch (error) {
-      if (!/client_id|column|schema|PGRST/i.test(error.message || "")) throw error;
-    }
-  }
-  return run(base(`user_id=eq.${encodeURIComponent(userId)}`));
+  return run(`/rest/v1/usage_events?user_id=eq.${encodeURIComponent(userId)}&event_type=in.(${encodedTypes})&created_at=gte.${since}`);
 }
 
 async function monthlyUsage(accountOrUserId, eventTypes) {
@@ -246,7 +256,7 @@ async function requireAccount(req, { allowPasswordChange = false } = {}) {
   const isPrivileged = isManagerRole(profile.role);
   const passwordChangeRequired = mustChangePassword(user);
   if (passwordChangeRequired && !allowPasswordChange) throw new Error(PASSWORD_CHANGE_REQUIRED);
-  const activePackage = await getActivePackage(user.id);
+  const activePackage = await getEffectivePackage(user.id, client);
   return { authEnabled: true, user, token, profile, client, activePackage, isAdmin, isManager, isPrivileged, passwordChangeRequired };
 }
 
@@ -275,9 +285,8 @@ async function featureUsage(accountOrUserId, feature) {
 }
 
 // options.reserve: tipo de evento a registrar JÁ na autorização. O uso é gravado primeiro e o
-// saldo é recontado; se a gravação passou do limite (requisições simultâneas), ela é desfeita e a
-// chamada é bloqueada. Assim o limite nunca é ultrapassado, mesmo com vários usuários do mesmo
-// cliente ao mesmo tempo. Quem reserva e depois falha deve chamar releaseUsage(account).
+// saldo é recontado; se a gravação passou do limite (requisições simultâneas, ex.: duas abas),
+// ela é desfeita e a chamada é bloqueada. Assim o limite do usuário nunca é ultrapassado. Quem reserva e depois falha deve chamar releaseUsage(account).
 async function assertCanUse(req, feature, options = {}) {
   const account = await requireAccount(req);
   if (!account.authEnabled) return account;
@@ -316,7 +325,7 @@ async function blockForLimit(account, feature, rule, used, limit) {
   throw new Error(rule.limitMessage);
 }
 
-// Registra o uso e confirma que ele coube no limite do cliente. Se requisições simultâneas
+// Registra o uso e confirma que ele coube no limite do usuário. Se requisições simultâneas
 // passaram do saldo, fica quem gravou primeiro e as excedentes são desfeitas e bloqueadas.
 // Use depois de assertCanUse(req, feature) — ou via assertCanUse(req, feature, { reserve }).
 async function reserveUsage(account, feature, eventType, metadata) {
@@ -435,6 +444,7 @@ module.exports = {
   featureUsage,
   featureRule,
   featureFlagEnabled,
+  getClientPackage,
   isManagerRole,
   requireAccount,
   requireAdmin,

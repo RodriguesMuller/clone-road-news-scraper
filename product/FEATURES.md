@@ -4,6 +4,8 @@
 
 ## Features controladas por pacote (o que pode ser limitado/vendido)
 
+O pacote é contratado pelo **cliente (empresa)**: todos os usuários dela herdam os recursos e limites do pacote, e **cada usuário tem o próprio saldo mensal** (o consumo de um não reduz o do outro). `max_users` define quantos usuários a empresa pode ter. Cliente sem pacote configurado usa pacote por usuário (modelo anterior).
+
 | Feature | O que o cliente vê | Limite técnico que a sustenta |
 |---|---|---|
 | Consulta de notícias | Feed só com o que impacta a frota (bloqueio, acidente, clima, roubo de carga, greve, obra, restrição), cada notícia com a ação sugerida ("Impacto na frota"), atualizado de hora em hora | `monthly_news_limit` |

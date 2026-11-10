@@ -28,7 +28,7 @@ Criadas por `scraper/event_intelligence.py` em runtime (não por script em `scri
 
 | Tabela | Papel |
 |---|---|
-| `clients` | Tenant. `company_name`, `status` (`active`/`inactive`/`blocked`). |
+| `clients` | Tenant. `company_name`, `status` (`active`/`inactive`/`blocked`), `package_id` (pacote herdado por todos os usuários da empresa; consumo por usuário. Migration `scripts/supabase_client_package.sql`). |
 | `profiles` | Usuário. `role` (`admin`/`manager`/`client`), `client_id` (FK), `status`, `cpf` (mascarado em listagem), `phone`. |
 | `packages` | Plano/pacote: `monthly_news_limit`, `monthly_ai_summary_limit`, `monthly_pdf_limit`, `monthly_route_limit`, `max_users`, `can_generate_individual_summary`, `can_generate_weekly_summary`, `can_access_map`, `is_active`. |
 | `user_packages` | Vínculo usuário↔pacote ativo (`ends_at` nullable = sem expiração). |

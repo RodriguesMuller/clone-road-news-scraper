@@ -3,7 +3,7 @@
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
 ## 2026-11-10 — QA de pacotes e limites
-- **Alterado**: o limite de cada funcionalidade passa a ser do **cliente (empresa)**: todos os usuários da mesma empresa somam no mesmo saldo do pacote (antes, cada usuário tinha o saldo inteiro). `my-access` e "Uso e notificações" mostram o consumo da empresa.
+- **Adicionado**: **pacote do cliente**. O pacote passa a ser configurado no cadastro do cliente e todos os usuários da empresa **herdam** recursos e limites dele. O **consumo continua sendo de cada usuário**: cada um tem o próprio saldo mensal. Cliente sem pacote mantém o modelo antigo (pacote por usuário). `max_users` do pacote herdado limita os usuários Cliente ativos da empresa. Migration: `scripts/supabase_client_package.sql`.
 - **Corrigido**: requisições simultâneas furavam o limite (reserva atômica de uso); pacote com início no futuro já liberava; trocar para pacote inválido deixava o usuário sem pacote; `max_users` contava a plataforma inteira e vínculos vencidos; a gestão subcontava o consumo acima de 1000 eventos/mês.
 - **Alterado**: Minha Rota com entrada inválida ou falha do Google não consome a consulta.
 - Relatório completo: `docs/qa-audit/2026-11-10-pacotes-e-limites.md`.

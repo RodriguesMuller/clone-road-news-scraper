@@ -7,6 +7,8 @@ const {
   isValidCpf,
   normalizeCpf,
   normalizePhone,
+  clientSeatsUsed,
+  clientWithPackage,
   packageSeatsUsed,
   readJson,
 } = require("./_admin");
@@ -55,8 +57,7 @@ async function activePackage(packageId) {
 }
 
 async function activeClient(clientId) {
-  const rows = await fetchJson(`/rest/v1/clients?id=eq.${encodeURIComponent(clientId)}&status=eq.active&select=id,company_name,status&limit=1`);
-  return rows?.[0] || null;
+  return clientWithPackage(clientId, { onlyActive: true });
 }
 
 async function profileByEmail(email) {
@@ -87,23 +88,27 @@ async function normalizedUser(account, body) {
   assertPasswordPolicy(password);
   if (!isValidCpf(cpf)) throw new Error("Informe um CPF valido.");
   if (!clientId) throw new Error("Selecione o cliente ou empresa.");
-  if (!packageId) throw new Error("Selecione um pacote para o usuario.");
 
-  const [client, pkg, profile, authUser] = await Promise.all([
+  const [client, profile, authUser] = await Promise.all([
     activeClient(clientId),
-    activePackage(packageId),
     profileByEmail(email),
     authUserByEmail(email),
   ]);
   if (!client) throw new Error("Cliente nao encontrado ou inativo.");
-  if (!pkg) throw new Error("Pacote nao encontrado ou inativo.");
   if (profile || authUser) throw new Error("Este e-mail ja esta cadastrado.");
+  // O usuário herda o pacote do cliente. Pacote individual só para cliente sem pacote configurado.
+  const inherited = client.package_id ? await activePackage(client.package_id) : null;
+  if (client.package_id && !inherited) throw new Error("Pacote do cliente nao encontrado ou inativo.");
+  if (!inherited && !packageId) throw new Error("Selecione um pacote para o usuario ou configure o pacote do cliente.");
+  const pkg = inherited || await activePackage(packageId);
+  if (!pkg) throw new Error("Pacote nao encontrado ou inativo.");
   const maxUsers = Number(pkg.max_users || 0);
-  if (maxUsers > 0 && await packageSeatsUsed(packageId, clientId) >= maxUsers) {
-    throw new Error("Limite de usuarios deste pacote atingido para este cliente.");
+  if (role === "client" && maxUsers > 0) {
+    const used = inherited ? await clientSeatsUsed(clientId) : await packageSeatsUsed(packageId, clientId);
+    if (used >= maxUsers) throw new Error("Limite de usuarios deste pacote atingido para este cliente.");
   }
 
-  return { fullName, email, password, cpf, phone, client, packageId, status, role };
+  return { fullName, email, password, cpf, phone, client, packageId: inherited ? null : packageId, inheritedPackageId: inherited?.id || null, status, role };
 }
 
 async function createAuthUser(user) {
@@ -151,16 +156,19 @@ async function saveUser(account, authUser, user, action) {
         status: user.status,
       }),
     });
-    await supabaseFetch("/rest/v1/user_packages", {
-      method: "POST",
-      headers: { Prefer: "return=minimal" },
-      body: JSON.stringify({ user_id: userId, package_id: user.packageId, is_active: true }),
-    });
+    if (user.packageId) {
+      await supabaseFetch("/rest/v1/user_packages", {
+        method: "POST",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ user_id: userId, package_id: user.packageId, is_active: true }),
+      });
+    }
     await audit(account, action, "profile", userId, {
       role: user.role,
       status: user.status,
       client_id: user.client.id,
-      package_id: user.packageId,
+      package_id: user.packageId || user.inheritedPackageId,
+      package_source: user.packageId ? "user" : "client",
     });
     return userId;
   } catch (error) {
