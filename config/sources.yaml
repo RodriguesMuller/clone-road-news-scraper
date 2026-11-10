@@ -83,6 +83,37 @@ rss_sources:
     url: "https://www.cnnbrasil.com.br/feed/"
     category: "geral"
 
+  # G1 regional (um feed por estado). O G1 é o veículo mais frequente por trás
+  # das buscas do Google News, mas lá chega sem foto; o feed direto traz a foto
+  # da notícia (media:content) e o link original. Quando a mesma notícia vem
+  # pelos dois caminhos, main.py mantém só a versão direta.
+  # Avaliado em 2026-11-10: 24 feeds com robots.txt liberado, 93 notícias
+  # relevantes para frota, 100% com foto. Mesmo filtro de keywords + frota.
+  - { name: "G1 - SP", url: "https://g1.globo.com/rss/g1/sp/", category: "geral" }
+  - { name: "G1 - MG", url: "https://g1.globo.com/rss/g1/mg/", category: "geral" }
+  - { name: "G1 - PR", url: "https://g1.globo.com/rss/g1/pr/", category: "geral" }
+  - { name: "G1 - RS", url: "https://g1.globo.com/rss/g1/rs/", category: "geral" }
+  - { name: "G1 - SC", url: "https://g1.globo.com/rss/g1/sc/", category: "geral" }
+  - { name: "G1 - RJ", url: "https://g1.globo.com/rss/g1/rj/", category: "geral" }
+  - { name: "G1 - BA", url: "https://g1.globo.com/rss/g1/ba/", category: "geral" }
+  - { name: "G1 - GO", url: "https://g1.globo.com/rss/g1/go/", category: "geral" }
+  - { name: "G1 - MT", url: "https://g1.globo.com/rss/g1/mt/", category: "geral" }
+  - { name: "G1 - MS", url: "https://g1.globo.com/rss/g1/ms/", category: "geral" }
+  - { name: "G1 - ES", url: "https://g1.globo.com/rss/g1/es/", category: "geral" }
+  - { name: "G1 - PE", url: "https://g1.globo.com/rss/g1/pe/", category: "geral" }
+  - { name: "G1 - CE", url: "https://g1.globo.com/rss/g1/ce/", category: "geral" }
+  - { name: "G1 - PA", url: "https://g1.globo.com/rss/g1/pa/", category: "geral" }
+  - { name: "G1 - MA", url: "https://g1.globo.com/rss/g1/ma/", category: "geral" }
+  - { name: "G1 - PB", url: "https://g1.globo.com/rss/g1/pb/", category: "geral" }
+  - { name: "G1 - RN", url: "https://g1.globo.com/rss/g1/rn/", category: "geral" }
+  - { name: "G1 - AL", url: "https://g1.globo.com/rss/g1/al/", category: "geral" }
+  - { name: "G1 - SE", url: "https://g1.globo.com/rss/g1/se/", category: "geral" }
+  - { name: "G1 - PI", url: "https://g1.globo.com/rss/g1/pi/", category: "geral" }
+  - { name: "G1 - TO", url: "https://g1.globo.com/rss/g1/to/", category: "geral" }
+  - { name: "G1 - RO", url: "https://g1.globo.com/rss/g1/ro/", category: "geral" }
+  - { name: "G1 - AM", url: "https://g1.globo.com/rss/g1/am/", category: "geral" }
+  - { name: "G1 - DF", url: "https://g1.globo.com/rss/g1/df/", category: "geral" }
+
   # Google News (busca) — agrega notícias rodoviárias de TODAS as fontes do
   # Brasil num único feed. As queries (parâmetro "q=", percent-encoded) já
   # filtram por rodovia/caminhão, então rendem alta relevância (~75-98 itens

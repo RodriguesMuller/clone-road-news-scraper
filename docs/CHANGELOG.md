@@ -2,6 +2,11 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — mais fotos reais: feeds regionais do G1
+- **Adicionado**: 24 feeds RSS regionais do G1 (um por estado), com o mesmo filtro de keywords e de frota. O G1 é o veículo mais frequente por trás das buscas do Google News, que chegam sem foto; o feed direto traz a foto e o link original. Avaliados antes: robots.txt liberado e 93 notícias relevantes, todas com foto.
+- **Adicionado**: deduplicação entre fontes (`prefer_direct_sources`): a cópia do Google News sai quando a mesma notícia veio do feed direto.
+- **Impacto**: notícias com foto passaram de 1% para 32% da coleta; mais cobertura regional de rodovias estaduais.
+
 ## 2026-11-10 — dropdowns do cabeçalho e imagem da notícia
 - **Corrigido**: o painel de alertas (sino) e o menu do usuário não fechavam, e o seletor de período aparecia fora do Dashboard. Causa: `display: grid/inline-flex` dos componentes vencia o atributo `hidden`. Agora `[hidden]` sempre esconde, e os menus fecham ao clicar fora, ao escolher uma opção (inclusive "Sair") ou com Esc; abrir um fecha o outro.
 - **Adicionado**: imagem da notícia vinda da fonte (feed ou `og:image` de fontes diretas), com crédito, gravada em `news.image_url` (migration `scripts/supabase_news_image_url.sql`). Sem imagem, ilustração neutra por tema, nunca cena de acidente, pessoas ou vítimas. Se a imagem da fonte falhar ao carregar, a ilustração assume.
