@@ -1207,6 +1207,32 @@
     .weekly-spacer { height: 8px; }
     .weekly-footer { border-top: 1px solid var(--color-border-soft); padding-top: 10px; color: var(--color-muted); font-size: 12px; }
     .weekly-loading { padding: 26px; color: var(--color-muted); }
+    /* Resumo semanal da frota */
+    .weekly-verdict { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+    .weekly-verdict .weekly-period { margin-top: 0; }
+    .weekly-kpis { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+    .weekly-kpi.zero strong { color: var(--color-muted); }
+    .weekly-delta { display: block; margin-top: 6px; font-size: 11px; font-weight: 800; }
+    .weekly-delta.up { color: #ff6b6b; }
+    .weekly-delta.down { color: var(--color-success); }
+    .weekly-delta.same { color: var(--color-muted); }
+    .weekly-attention { border-color: rgba(232, 176, 66, .55); }
+    .weekly-watch-list { display: grid; gap: 8px; }
+    .weekly-watch-item { border: 1px solid var(--color-border-soft); border-left: 3px solid #e8b042; border-radius: 6px; padding: 10px 12px; background: rgba(0,0,0,.12); }
+    .weekly-watch-item.urgent { border-left-color: #ff3b3b; }
+    .weekly-watch-item h5, .weekly-occurrence h5 { margin: 6px 0 4px; font-size: 14px; line-height: 1.35; color: var(--color-text); }
+    .weekly-watch-item p { margin: 0; color: var(--color-muted-strong); font-size: 13px; line-height: 1.45; }
+    .weekly-when { color: #e8b042; }
+    .weekly-actions ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+    .weekly-actions li { color: var(--color-text); font-size: 14px; line-height: 1.45; }
+    .weekly-table-wrap { overflow-x: auto; }
+    .weekly-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .weekly-table th { text-align: left; color: var(--color-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 6px 8px; border-bottom: 1px solid var(--color-border-soft); }
+    .weekly-table td { padding: 8px; border-bottom: 1px solid var(--color-border-soft); color: var(--color-muted-strong); vertical-align: top; line-height: 1.4; }
+    .weekly-table td strong { color: var(--color-text); }
+    .weekly-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 13px; line-height: 1.45; color: var(--color-muted-strong); }
+    .weekly-list .weekly-badge { margin-right: 6px; }
+    .weekly-empty { margin: 0; color: var(--color-muted); font-size: 13px; }
     @media (max-width: 920px) { .weekly-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 1040px) {
       .route-form-grid { grid-template-columns: minmax(190px, 1fr) 42px minmax(190px, 1fr); }
@@ -6121,193 +6147,144 @@ function showAuthView() {
       link.click();
     }
 
-    function weeklyFieldLabel(key) {
-      return {
-        road: "Rodovia",
-        why_critical: "Por que é crítica",
-        blockage_status: "Bloqueio",
-        works_status: "Obras",
-        evidence: "Evidência",
-        region: "Região",
-        danger_reason: "Motivo do perigo",
-        rainfall_or_wind: "Chuva/vento",
-        attention_required: "Atenção necessária",
-      }[key] || key.replace(/_/g, " ");
-    }
-
-    function weeklyFieldValue(key, value) {
-      if (typeof value === "boolean") return value ? "Sim" : "Não";
-      if (key === "attention_required" && String(value).toLowerCase() === "true") return "Sim";
-      if (key === "attention_required" && String(value).toLowerCase() === "false") return "Não";
-      return value;
-    }
-
-    function renderList(items) {
-      const values = Array.isArray(items) && items.length ? items : ["Sem pontos relevantes no período."];
-      return `<ul>${values.map((item) => {
-        if (item && typeof item === "object") {
-          return `<li>${Object.entries(item)
-            .filter(([, value]) => value !== undefined && value !== null && value !== "")
-            .map(([key, value]) => `<strong>${escapeHtml(weeklyFieldLabel(key))}:</strong> ${escapeHtml(weeklyFieldValue(key, value))}`)
-            .join("<br>")}</li>`;
-        }
-        return `<li>${escapeHtml(item)}</li>`;
-      }).join("")}</ul>`;
-    }
-
-    function asArray(value) {
-      return Array.isArray(value) ? value.filter(Boolean) : [];
-    }
-
-    function riskClass(value) {
-      return `risk-${String(value || "baixo").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`;
-    }
-
     function shortText(value, limit = 160) {
       const text = String(value || "").replace(/\s+/g, " ").trim();
       return text.length <= limit ? text : `${text.slice(0, limit - 1).replace(/\s+\S*$/, "")}...`;
     }
 
-    function renderKpis(summary, context) {
-      const indicators = summary.indicators || context.indicators || {};
-      const topRegions = asArray(summary.featured_regions || context.regions).slice(0, 3);
-      const topRoads = asArray(summary.featured_roads || context.roads).slice(0, 3);
-      const regionText = topRegions.length ? topRegions.map((item) => Array.isArray(item) ? item[0] : item).join(", ") : indicators.impacted_regions ?? 0;
-      const roadText = topRoads.length ? topRoads.map((item) => Array.isArray(item) ? item[0] : item).join(", ") : indicators.cited_roads ?? 0;
-      const kpis = [
-        ["Notícias relevantes", indicators.total_news ?? context.total ?? 0],
-        ["Alertas críticos/alto risco", indicators.high_critical_alerts ?? 0],
-        ["Estados/regiões mais impactados", regionText],
-        ["Rodovias mais citadas", roadText],
-      ];
-      return `<section class="weekly-kpis">${kpis.map(([label, value]) => `
-        <div class="weekly-kpi"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>
-      `).join("")}</section>`;
+    // ---- Resumo semanal da frota (dados de api/_weekly_brief.js) ----
+    const WEEKLY_LEVEL_CLASS = { critical: "risk-critico", high: "risk-alto", medium: "risk-medio", low: "risk-baixo" };
+
+    function weeklyPlace(item) {
+      return [item.road, item.uf].filter(Boolean).join("/");
     }
 
-    function renderPills(values, empty) {
-      const items = asArray(values).slice(0, 8);
-      if (!items.length) return `<div class="weekly-roads"><span>${escapeHtml(empty)}</span></div>`;
-      return `<div class="weekly-roads">${items.map((item) => {
-        if (Array.isArray(item)) return `<span>${escapeHtml(item[0])} (${escapeHtml(item[1])})</span>`;
-        return `<span>${escapeHtml(typeof item === "object" ? item.road || item.region || item.name || JSON.stringify(item) : item)}</span>`;
-      }).join("")}</div>`;
+    function weeklyLink(title, url) {
+      const safe = safeUrl(url);
+      return safe ? `<a href="${escapeHtml(safe)}" target="_blank" rel="noopener">${escapeHtml(title)}</a>` : escapeHtml(title);
     }
 
-    function renderTopOccurrences(summary, context) {
-      const items = asArray(summary.top_occurrences).length ? asArray(summary.top_occurrences) : asArray(context.top_occurrences);
-      if (!items.length) return `<div class="weekly-occurrence"><p>Nenhuma ocorrência operacional relevante confirmada no período.</p></div>`;
-      return `<div class="weekly-occurrences">${items.slice(0, 5).map((item) => {
-        const title = item.title || "Ocorrência monitorada";
-        const risk = item.risk || item.risk_level || "Baixo";
-        const regionRoad = [item.road, item.region].filter(Boolean).join(" - ");
-        const url = safeUrl(item.url);
-        const link = url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">Abrir fonte</a>` : "";
-        return `
-          <article class="weekly-occurrence">
-            <div class="weekly-meta">
-              <span class="weekly-badge ${riskClass(risk)}">${escapeHtml(risk)}</span>
-              <span>${escapeHtml(item.category || "Monitoramento")}</span>
-              ${regionRoad ? `<span>${escapeHtml(regionRoad)}</span>` : ""}
-              ${item.date ? `<span>${escapeHtml(item.date)}</span>` : ""}
-            </div>
-            <h5>${escapeHtml(title)}</h5>
-            <p>${escapeHtml(shortText(item.short_summary || item.summary || ""))}</p>
-            <div class="hint">${escapeHtml(item.source || "Fonte não informada")} ${link}</div>
-          </article>`;
-      }).join("")}</div>`;
+    function weeklyDelta(n) {
+      if (!n.delta) return `<small class="weekly-delta same">= semana anterior (${n.previous})</small>`;
+      const worse = n.delta > 0;
+      return `<small class="weekly-delta ${worse ? "up" : "down"}">${worse ? "▲" : "▼"} ${Math.abs(n.delta)} vs semana anterior (${n.previous})</small>`;
     }
 
-    function renderWeeklySummaryLegacy(data) {
-      const summary = data.summary || {};
-      const context = data.context || {};
-      const roads = Array.isArray(summary.critical_roads) && summary.critical_roads.length
-        ? summary.critical_roads.map((road) => `<span>${escapeHtml(typeof road === "object" ? road.road || road.why_critical || "Rodovia crítica" : road)}</span>`).join("")
-        : `<span>Sem rodovia crítica isolada</span>`;
+    function weeklyEmpty(text) {
+      return `<p class="weekly-empty">${escapeHtml(text)}</p>`;
+    }
 
-      document.getElementById("weeklyContent").innerHTML = `
-        <section class="weekly-hero">
-          <div class="weekly-logo">ROAD NEWS</div>
-          <div class="weekly-sub">Resumo de inteligência rodoviária</div>
-          <h3>${escapeHtml(summary.headline || "Resumo semanal rodoviário")}</h3>
-          <p>${escapeHtml(summary.executive_summary || "Não foi possível montar o resumo de inteligência rodoviária.")}</p>
-          <div class="risk-pill">Risco: ${escapeHtml(summary.risk_level || "Atenção")}</div>
-        </section>
-        <section class="weekly-grid">
-          <div class="weekly-section">
-            <h4>Pontos operacionais</h4>
-            ${renderList(summary.operational_points)}
+    function renderWeeklyWatch(list) {
+      if (!list.length) return weeklyEmpty("Nada programado ou pendente para os próximos dias nas fontes monitoradas.");
+      return `<div class="weekly-watch-list">${list.map((w) => `
+        <article class="weekly-watch-item ${w.type === "Pode seguir bloqueado" || w.type === "Paralisação/manifestação" ? "urgent" : ""}">
+          <div class="weekly-meta">
+            <span class="weekly-badge ${WEEKLY_LEVEL_CLASS[w.level] || ""}">${escapeHtml(w.type)}</span>
+            ${weeklyPlace(w) ? `<span>${escapeHtml(weeklyPlace(w))}</span>` : ""}
+            ${w.scheduled ? `<span class="weekly-when">Agendado: ${escapeHtml(w.scheduled)}</span>` : w.date ? `<span>Notícia de ${escapeHtml(w.date)}</span>` : ""}
+            ${w.sources > 1 ? `<span>${w.sources} fontes</span>` : ""}
           </div>
-          <div class="weekly-section">
-            <h4>Rodovias críticas</h4>
-            <div class="weekly-roads">${roads}</div>
-            ${renderList(summary.critical_roads)}
+          <h5>${weeklyLink(w.title, w.url)}</h5>
+          <p><strong>O que fazer:</strong> ${escapeHtml(w.action)}</p>
+        </article>`).join("")}</div>`;
+    }
+
+    function renderWeeklyHotspots(list) {
+      if (!list.length) return weeklyEmpty("Nenhum trecho concentrou ocorrências graves na semana.");
+      return `<div class="weekly-table-wrap"><table class="weekly-table"><thead><tr><th>Trecho</th><th>Ocorr.</th><th>Principal problema</th><th>O que fazer</th></tr></thead><tbody>${list.map((h) => `
+        <tr>
+          <td><strong>${escapeHtml(weeklyPlace(h))}</strong></td>
+          <td>${h.events}${h.critical_high ? ` <small>(${h.critical_high} graves)</small>` : ""}</td>
+          <td>${escapeHtml(h.main_problem)}<br><small>Ex.: ${weeklyLink(shortText(h.worst_title, 80), h.worst_url)}</small></td>
+          <td>${escapeHtml(h.action)}</td>
+        </tr>`).join("")}</tbody></table></div>`;
+    }
+
+    function renderWeeklyCargo(list) {
+      if (!list.length) return weeklyEmpty("Nenhum roubo de carga noticiado na semana nas fontes monitoradas.");
+      return `<ul class="weekly-list">${list.map((c) => `
+        <li><span class="weekly-badge ${c.police ? "risk-medio" : "risk-alto"}">${c.police ? "Trecho visado" : "Roubo de carga"}</span>
+          ${weeklyPlace(c) ? `<strong>${escapeHtml(weeklyPlace(c))}</strong> · ` : ""}${weeklyLink(shortText(c.title, 110), c.url)}${c.date ? ` <small>(${escapeHtml(c.date)})</small>` : ""}</li>`).join("")}</ul>`;
+    }
+
+    function renderWeeklyWeather(list) {
+      if (!list.length) return weeklyEmpty("Sem avisos do INMET no período.");
+      return `<div class="weekly-table-wrap"><table class="weekly-table"><thead><tr><th>Área</th><th>Avisos</th><th>Nível máximo</th><th>Fenômenos</th></tr></thead><tbody>${list.map((w) => `
+        <tr><td><strong>${escapeHtml(w.uf)}</strong></td><td>${w.alerts}</td><td>${escapeHtml(w.max_level)}</td><td>${escapeHtml(w.phenomena.join(", "))}</td></tr>`).join("")}</tbody></table></div>`;
+    }
+
+    function renderWeeklyHighlights(list) {
+      if (!list.length) return weeklyEmpty("Nenhuma ocorrência de risco alto ou crítico na semana.");
+      return `<div class="weekly-occurrences">${list.map((h) => `
+        <article class="weekly-occurrence">
+          <div class="weekly-meta">
+            <span class="weekly-badge ${WEEKLY_LEVEL_CLASS[h.level] || ""}">${escapeHtml(h.level_label)}</span>
+            <span>${escapeHtml(h.kind_label)}</span>
+            ${weeklyPlace(h) ? `<span>${escapeHtml(weeklyPlace(h))}</span>` : ""}
+            ${h.date ? `<span>${escapeHtml(h.date)}</span>` : ""}
+            ${h.sources > 1 ? `<span>${h.sources} fontes</span>` : ""}
           </div>
-          <div class="weekly-section">
-            <h4>INMET: regiões em perigo</h4>
-            ${renderList(summary.inmet_regions || summary.weather_notes)}
-          </div>
-          <div class="weekly-section">
-            <h4>Bloqueios, obras e desvios</h4>
-            ${renderList([...(summary.blockages_or_works || []), ...(summary.detours || [])])}
-          </div>
-          <div class="weekly-section">
-            <h4>Recomendações</h4>
-            ${renderList(summary.recommendations)}
-          </div>
-        </section>
-        <div class="hint">Analisados ${Number(context.total || 0)} registros dos últimos ${Number(context.period_days || 7)} dias.</div>
-      `;
+          <h5>${weeklyLink(h.title, h.url)}</h5>
+          <p>${escapeHtml(h.action)}</p>
+        </article>`).join("")}</div>`;
     }
 
     function renderWeeklySummary(data) {
-      const summary = data.summary || {};
+      const brief = data.summary;
       const context = data.context || {};
-      if (!Number(context.total || 0)) {
-        document.getElementById("weeklyContent").innerHTML = `<div class="notice" style="display:block">Não há notícias suficientes para gerar o resumo semanal.</div>`;
+      const target = document.getElementById("weeklyContent");
+      if (!brief || !brief.coverage?.analyzed) {
+        target.innerHTML = `<div class="notice" style="display:block">Não há notícias suficientes para gerar o resumo semanal.</div>`;
         return;
       }
-
-      document.getElementById("weeklyContent").innerHTML = `
+      const verdictClass = WEEKLY_LEVEL_CLASS[brief.verdict?.level] || "";
+      target.innerHTML = `
         <div id="weekly-summary-report">
           <section class="weekly-hero">
             <div class="weekly-logo">ROAD NEWS</div>
-            <div class="weekly-sub">Resumo de inteligência rodoviária</div>
-            <h3>${escapeHtml(summary.headline || "Resumo semanal rodoviário")}</h3>
-            <p>${escapeHtml(summary.executive_summary || "Não foi possível montar o resumo de inteligência rodoviária.")}</p>
-            <div class="risk-pill">Risco: ${escapeHtml(summary.risk_level || "Atenção")}</div>
-            <div class="weekly-period">Período: últimos ${Number(context.period_days || 7)} dias - Gerado em ${escapeHtml(context.generated_at || "-")}</div>
+            <div class="weekly-sub">Resumo semanal da frota</div>
+            <div class="weekly-verdict">
+              <span class="weekly-badge ${verdictClass}">Semana: ${escapeHtml(brief.verdict?.label || "-")}</span>
+              <span class="weekly-period">${escapeHtml(brief.period?.start || "")} a ${escapeHtml(brief.period?.end || "")} · gerado em ${escapeHtml(context.generated_at || "-")}</span>
+            </div>
+            <h3>${escapeHtml(brief.headline || "Resumo semanal")}</h3>
+            <p>${escapeHtml(brief.executive_summary || "")}</p>
           </section>
-          ${renderKpis(summary, context)}
+          <section class="weekly-kpis">${(brief.numbers || []).map((n) => `
+            <div class="weekly-kpi ${n.value ? "" : "zero"}"><span>${escapeHtml(n.label)}</span><strong>${n.value}</strong>${weeklyDelta(n)}</div>`).join("")}
+          </section>
+          <section class="weekly-section weekly-attention">
+            <h4>Atenção para os próximos dias</h4>
+            ${renderWeeklyWatch(brief.watchlist || [])}
+          </section>
+          <section class="weekly-section weekly-actions">
+            <h4>O que fazer esta semana</h4>
+            <ol>${(brief.actions || []).map((a) => `<li>${escapeHtml(a)}</li>`).join("")}</ol>
+          </section>
+          <section class="weekly-section">
+            <h4>Trechos mais críticos da semana</h4>
+            ${renderWeeklyHotspots(brief.hotspots || [])}
+          </section>
           <section class="weekly-grid">
             <div class="weekly-section">
-              <h4>Principais pontos da semana</h4>
-              ${renderList(asArray(summary.weekly_points || summary.operational_points).slice(0, 3))}
+              <h4>Segurança da carga</h4>
+              ${renderWeeklyCargo(brief.cargo_security || [])}
             </div>
             <div class="weekly-section">
-              <h4>Rodovias, regiões e categorias</h4>
-              ${renderPills(summary.featured_roads || context.roads, "Sem rodovia crítica isolada")}
-              <div class="weekly-spacer"></div>
-              ${renderPills(summary.featured_regions || context.regions, "Sem região dominante")}
-              <div class="weekly-spacer"></div>
-              ${renderPills(summary.featured_categories || context.category_counts, "Sem categoria dominante")}
+              <h4>Clima (avisos INMET)</h4>
+              ${renderWeeklyWeather(brief.weather || [])}
             </div>
           </section>
           <section class="weekly-section">
-            <h4>Top ocorrências relevantes</h4>
-            ${renderTopOccurrences(summary, context)}
+            <h4>Principais ocorrências</h4>
+            ${renderWeeklyHighlights(brief.highlights || [])}
           </section>
-          <section class="weekly-grid">
-            <div class="weekly-section">
-              <h4>INMET: regiões em perigo</h4>
-              ${renderList(asArray(summary.inmet_regions || summary.weather_notes).slice(0, 5))}
-            </div>
-            <div class="weekly-section">
-              <h4>Recomendações operacionais</h4>
-              ${renderList(asArray(summary.recommendations).slice(0, 3))}
-            </div>
-          </section>
-          <div class="weekly-footer">Relatório gerado automaticamente pelo Road News. Base analisada: ${Number(context.total || 0)} registros.</div>
+          <div class="weekly-footer">
+            Base: ${brief.coverage.analyzed} notícias dos últimos 7 dias, agrupadas em ${brief.coverage.events} ocorrências com impacto operacional
+            (${brief.coverage.discarded} sem impacto na frota foram descartadas). Comparativo com os 7 dias anteriores.
+            ${brief.ai_used ? "Texto de abertura redigido por IA a partir destes dados; números e ações são calculados pelo Road News." : ""}
+            Confirme sempre com concessionária/PRF antes de liberar o veículo.
+          </div>
         </div>
       `;
     }
@@ -6388,6 +6365,20 @@ function showAuthView() {
         .weekly-spacer { height: 5px; }
         .weekly-footer { border-top: 1px solid rgba(255, 255, 255, .12); color: #6a6d6a; font-size: 9px; padding-top: 6px; }
         .hint { color: #6a6d6a; font-size: 9px; }
+        .weekly-kpis { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+        .weekly-verdict { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+        .weekly-badge { border-radius: 999px; padding: 3px 7px; font-size: 8px; font-weight: 900; text-transform: uppercase; border: 1px solid rgba(255,255,255,.2); }
+        .risk-critico { color: #ff6b6b; border-color: rgba(255,59,59,.5); } .risk-alto { color: #e8b042; border-color: rgba(232,176,66,.5); }
+        .risk-medio { color: #6b9ec7; border-color: rgba(107,158,199,.5); } .risk-baixo { color: #7caa6f; border-color: rgba(124,170,111,.5); }
+        .weekly-delta { display: block; font-size: 7px; margin-top: 3px; } .weekly-delta.up { color: #ff6b6b; } .weekly-delta.down { color: #7caa6f; } .weekly-delta.same { color: #6a6d6a; }
+        .weekly-watch-list, .weekly-list { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+        .weekly-watch-item { border-left: 3px solid #e8b042; padding: 5px 8px; background: rgba(0,0,0,.18); border-radius: 4px; break-inside: avoid; }
+        .weekly-watch-item.urgent { border-left-color: #ff3b3b; }
+        .weekly-watch-item h5 { color: #d8dad6; font-size: 10px; margin: 3px 0 2px; } .weekly-watch-item p, .weekly-list li { color: #9a9d99; font-size: 9px; margin: 0; }
+        .weekly-actions ol { margin: 0; padding-left: 14px; } .weekly-actions li { color: #d8dad6; font-size: 10px; margin: 3px 0; }
+        .weekly-table { width: 100%; border-collapse: collapse; font-size: 9px; } .weekly-table th { text-align: left; color: #6a6d6a; font-size: 7px; text-transform: uppercase; padding: 3px; }
+        .weekly-table td { color: #9a9d99; padding: 3px; border-top: 1px solid rgba(255,255,255,.08); vertical-align: top; } .weekly-table td strong { color: #d8dad6; }
+        .weekly-empty { color: #6a6d6a; font-size: 9px; margin: 0; }
         a { color: #1eff95; text-decoration: none; }
       `;
       printWindow.document.open();

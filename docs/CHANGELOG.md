@@ -2,6 +2,12 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — resumo semanal da frota
+- **Alterado**: o resumo semanal (painel e e-mail) deixou de ser contagem de notícias ("rodovias mais citadas", "fontes com maior volume") e passou a ser um briefing de decisão: veredito da semana; números (bloqueios totais e programados, acidentes com pesado, vítimas fatais, roubo de carga, paralisações, avisos INMET de Perigo) com comparativo contra a semana anterior; **Atenção para os próximos dias**; trechos mais críticos com a ação; segurança da carga; clima por UF; até 5 ações; principais ocorrências.
+- **Adicionado**: a mesma ocorrência noticiada por vários veículos conta uma vez só (com o nº de fontes); bloqueio programado já passado sai da lista; bloqueio total sem notícia de liberação aparece como "pode seguir bloqueado".
+- **Alterado**: números, seções e ações são calculados sem IA (`api/_weekly_brief.js`, espelho `scraper/weekly_brief.py`); a IA, quando configurada, só redige título e abertura. `GET/POST /api/weekly-summary` mudou o formato da resposta (ver `docs/API.md`).
+- **Adicionado**: `classifyRisk` passa a retornar `kind` (tipo de ocorrência) e `fatal`.
+
 ## 2026-11-10 — régua única de risco (Baixo/Médio/Alto/Crítico)
 - **Alterado**: risco passa a medir o **impacto na operação da frota**, não a gravidade humana do fato. Crítico = via indisponível agora (bloqueio total em curso, manifestação bloqueando, INMET Grande Perigo); Alto = impacto forte provável (pesado tombado/incendiado, vítima fatal, produto perigoso, roubo de carga, greve anunciada, bloqueio total **programado**, INMET Perigo); Médio = atraso/atenção (acidente sem interdição, bloqueio parcial, obra, neblina, INMET Perigo Potencial, corredor internacional); Baixo = sem impacto atual (liberado, fora do Brasil, desdobramento judicial/luto, simulado, boato, greve negada).
 - **Corrigido**: em amostra real de 254 notícias, 39% saíam como Crítico (qualquer morte, inclusive no exterior e em notícia de julgamento); agora 8%. Caminhão tombado sem a palavra "tombamento" saía como "Monitorar"; INMET Perigo Potencial saía como Alto.

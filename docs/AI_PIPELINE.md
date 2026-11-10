@@ -27,8 +27,10 @@ Gera o resumo individual mostrado no card compartilhável (canvas em `public/ind
 - `fallbackSummary()` (sem `OPENAI_API_KEY`) preenche a mesma forma de dado, com `km`/`direction`/`status` sempre vazios (a extração determinística por regex ainda não infere esses três campos).
 - O card de imagem (`drawShareImage`) agora renderiza um badge de rota (rodovia + região) além dos badges de risco/relevância, e a cor do badge de risco varia por severidade (crítico/alto/médio/baixo) em vez de usar sempre a cor de marca.
 
-### 3. Resumo semanal por e-mail (`scraper/weekly_news.py`)
-Gera o resumo operacional enviado toda segunda-feira (ver [`docs/DEPLOY.md`](DEPLOY.md) para o agendamento). Também acionável sob demanda via `api/weekly-summary.js`.
+### 3. Resumo semanal da frota (`api/_weekly_brief.js` / `scraper/weekly_brief.py`)
+O conteúdo é **determinístico**: `buildWeeklyBrief` classifica cada notícia com a régua de risco, descarta o que não tem impacto na frota, agrupa a mesma ocorrência noticiada por vários veículos (mesma rodovia+UF+tipo em 24h, ou títulos parecidos em 48h) e compara com os 7 dias anteriores. As seções são veredito, números com variação, atenção para os próximos dias (bloqueio programado com data citada ainda futura, paralisação, bloqueio de até 72h sem notícia de liberação, aviso INMET de Perigo nas últimas 48h), trechos mais críticos (pontuação 8/4/1 por Crítico/Alto/Médio), segurança da carga, clima por UF, ações (máx. 5) e principais ocorrências.
+
+A IA (opcional) **só reescreve `headline` e `executive_summary`** a partir dos fatos já calculados (`factsForAi`), e qualquer falha mantém o texto automático. O painel (`api/weekly-summary.js`) e o e-mail de segunda-feira (`scraper/weekly_news.py`, ver [`docs/DEPLOY.md`](DEPLOY.md)) usam o mesmo cálculo; a paridade JS × Python é garantida por `tests/fixtures/weekly_items.json` → `weekly_brief_expected.json`.
 
 ### 4. Recomendação da tela "Minha Rota" (`api/news-feed.js` → `generateRouteAnalysis`)
 Combina trajeto real (Google Routes API, com trânsito) + notícias das últimas 24h cruzadas por rodovia/proximidade geográfica + recomendação por IA. **Tem fallback determinístico completo** (`fallbackRouteAnalysis`): se a chave de API estiver ausente/inválida ou a chamada falhar, a tela continua funcionando com uma síntese baseada em regras (status `validacao_obrigatoria`/`atencao`/`sem_restricao_confirmada` calculado a partir de bloqueios/tráfego detectados, sem IA).

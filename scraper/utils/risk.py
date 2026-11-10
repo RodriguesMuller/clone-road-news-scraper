@@ -134,8 +134,24 @@ def road_block_level(item: dict) -> str:
     return ""
 
 
+# Tipo de ocorrência (usado pelo resumo semanal para agrupar e sugerir ação). Igual ao JS.
+KIND_BY_REASON = [
+    ("Corredor logístico internacional", "intl"), ("Ocorrência fora do Brasil", "foreign"), ("Desdobramento", "aftermath"),
+    ("Aviso INMET de Grande Perigo", "inmet_red"), ("Aviso INMET de Perigo Potencial", "inmet_yellow"), ("Aviso INMET de Perigo", "inmet_orange"),
+    ("Aviso meteorológico", "inmet"), ("Trecho liberado", "released"), ("Simulado", "simulation"),
+    ("Bloqueio total programado", "block_planned"), ("Manifestação bloqueando", "strike_block"), ("Rodovia totalmente bloqueada", "block_total"),
+    ("Paralisação negada", "strike_over"), ("Paralisação ou manifestação", "strike"), ("Ação policial", "cargo_theft_police"),
+    ("Roubo de carga", "cargo_theft"), ("Dano estrutural", "structural"), ("Acidente com produto perigoso", "hazmat"),
+    ("Princípio de incêndio", "small_fire"), ("Veículo pesado", "heavy_vehicle"), ("Acidente com interdição parcial", "accident_partial"),
+    ("Acidente com congestionamento", "accident_jam"), ("Acidente com vítima fatal", "fatal_accident"), ("Acidente sem sinal", "accident"),
+    ("Interdição parcial programada", "block_partial_planned"), ("Bloqueio parcial", "block_partial"), ("Congestionamento extenso", "jam"),
+    ("Clima severo", "weather"), ("Baixa visibilidade", "visibility"), ("Incêndio próximo", "fire"), ("Lentidão, obra", "traffic"),
+]
+
+
 def _result(level: str, reason: str) -> dict:
-    return {"level": level, **LEVELS[level], "reason": reason}
+    kind = next((k for prefix, k in KIND_BY_REASON if reason.startswith(prefix)), "none")
+    return {"level": level, **LEVELS[level], "reason": reason, "kind": kind}
 
 
 def _is_inmet(item: dict) -> bool:
@@ -231,8 +247,11 @@ def classify_risk(item: dict) -> dict:
         or item.get("highway") or item.get("city") or item.get("state") or item.get("region")
         or _is_inmet(item)
     )
+    fatal = bool(P["fatality"].search(text) and not P["no_casualties"].search(text) and P["accident"].search(text))
     if not located and base["rank"] >= 3:
         capped = _result("medium", f"{base['reason']} Sem rodovia ou local identificado na notícia.")
+        capped["kind"] = base["kind"]
+        capped["fatal"] = fatal
         capped["needs_geo_review"] = True
         return capped
-    return base
+    return {**base, "fatal": fatal}

@@ -1,0 +1,381 @@
+{
+ "period": {
+  "days": 7,
+  "start": "03/11",
+  "end": "10/11"
+ },
+ "verdict": {
+  "level": "critical",
+  "label": "Crítica",
+  "text": "3 bloqueios totais, 4 bloqueios programados, 4 acidentes com veículo pesado."
+ },
+ "headline": "Semana crítica: 3 bloqueios totais e 4 bloqueios programados",
+ "executive_summary": "Semana crítica: 3 bloqueios totais, 4 bloqueios programados, 4 acidentes com veículo pesado, mais ocorrências graves que na semana anterior. Trechos mais críticos: BR-226/RN, BR-235/SE, BR-101/ES. 7 ponto(s) de atenção para os próximos dias.",
+ "numbers": [
+  {
+   "key": "block_total",
+   "label": "Bloqueios totais",
+   "value": 3,
+   "previous": 3,
+   "delta": 0
+  },
+  {
+   "key": "block_planned",
+   "label": "Bloqueios programados",
+   "value": 4,
+   "previous": 5,
+   "delta": -1
+  },
+  {
+   "key": "heavy",
+   "label": "Acidentes com veículo pesado",
+   "value": 4,
+   "previous": 1,
+   "delta": 3
+  },
+  {
+   "key": "fatal",
+   "label": "Acidentes com vítima fatal",
+   "value": 14,
+   "previous": 8,
+   "delta": 6
+  },
+  {
+   "key": "cargo",
+   "label": "Roubos de carga",
+   "value": 2,
+   "previous": 0,
+   "delta": 2
+  },
+  {
+   "key": "strike",
+   "label": "Paralisações/manifestações",
+   "value": 1,
+   "previous": 0,
+   "delta": 1
+  },
+  {
+   "key": "inmet",
+   "label": "Avisos INMET de Perigo",
+   "value": 0,
+   "previous": 1,
+   "delta": -1
+  }
+ ],
+ "watchlist": [
+  {
+   "type": "Bloqueio programado",
+   "title": "BR-101 em Rio Novo do Sul terá bloqueio total nesta terça (10); veja horário e trecho afetado",
+   "road": "BR-101",
+   "uf": "ES",
+   "date": "05/11",
+   "level": "high",
+   "level_label": "Alto",
+   "kind": "block_planned",
+   "kind_label": "Bloqueio programado",
+   "action": "Planeje o desvio ou ajuste o horário de saída para fora da janela informada.",
+   "sources": 2,
+   "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxQZmwyWDBVbGJUTXREOEdmazZSWkxjRzBxYWZEVnF0OEF0ajZta3pycEZ1SDBLQnNtU29DbUF6eG84d0VaUjhNNk9lRXNiZF81eVJfa0k1VWd5dU8xYmEtQkN1VjVDaDhVUEwzWVZkUFUtNDAzcEhpNmNPdUdRRkxreFVKVTVLTFB0NlFuVFZpcnJNMHVOc0sxLTBnWllJdUN1OUtJN3VxOEw2bG5JYUJLTUFKSjFiU3RCV19XTFBVUC1IZ3FMWElN?oc=5",
+   "scheduled": "10/11"
+  },
+  {
+   "type": "Bloqueio programado",
+   "title": "BR-153 terá bloqueio total no dia 14 em Goiás para obras na ponte",
+   "road": "BR-153",
+   "uf": "GO",
+   "date": "10/11",
+   "level": "high",
+   "level_label": "Alto",
+   "kind": "block_planned",
+   "kind_label": "Bloqueio programado",
+   "action": "Planeje o desvio ou ajuste o horário de saída para fora da janela informada.",
+   "sources": 1,
+   "url": "https://example.com/BR-153%20ter%C3%A1%20bloqueio%20total%20",
+   "scheduled": "14/11"
+  },
+  {
+   "type": "Bloqueio programado",
+   "title": "BR-470 na Serra das Antas terá bloqueio no sábado",
+   "road": "BR-470",
+   "uf": "",
+   "date": "07/11",
+   "level": "high",
+   "level_label": "Alto",
+   "kind": "block_planned",
+   "kind_label": "Bloqueio programado",
+   "action": "Planeje o desvio ou ajuste o horário de saída para fora da janela informada.",
+   "sources": 1,
+   "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE9KWC02S3kxTU5XZUFvaXppc2otT1VfMVF2UHVhZzU4M2xWbHBscnVvZnZTbmtTUnZlSE1vTDNDN3Z3MXoxb0pmM3laZFcySEhzM2JhalVibFUxT3dPblVvSnVZTDJpSldURzVOVnlneXFwUF95VFlJcTdZd1lZdw?oc=5",
+   "scheduled": ""
+  },
+  {
+   "type": "Bloqueio programado",
+   "title": "Rodovia dos Imigrantes terá bloqueio para simulado de acidente",
+   "road": "Imigrantes",
+   "uf": "",
+   "date": "06/11",
+   "level": "high",
+   "level_label": "Alto",
+   "kind": "block_planned",
+   "kind_label": "Bloqueio programado",
+   "action": "Planeje o desvio ou ajuste o horário de saída para fora da janela informada.",
+   "sources": 1,
+   "url": "https://news.google.com/rss/articles/CBMikAFBVV95cUxQdDNqU211aC1BLVpUOVJHTUlZZ2JrWUNzc3BibXRfcGFmOHIwVDVyZEJuR1d3b240bVRUV3pWZmpRb3pqOFNqWXZpSGlHMnJBZnNTZGpYeTNqbzlGZU5sSHcwRlg5ZmtNSUNYZm1LTHNUcHR4WHVua1gteWVGSV9aTWJDVlFCRVdETG95eE9ZN1o?oc=5",
+   "scheduled": ""
+  },
+  {
+   "type": "Paralisação/manifestação",
+   "title": "Caminhoneiros anunciam paralisação na BR-163 em Sinop, MT",
+   "road": "BR-163",
+   "uf": "MT",
+   "date": "10/11",
+   "level": "high",
+   "level_label": "Alto",
+   "kind": "strike",
+   "kind_label": "Paralisação/manifestação",
+   "action": "Confirme a situação antes de despachar e tenha rota alternativa definida.",
+   "sources": 1,
+   "url": "https://example.com/Caminhoneiros%20anunciam%20paralisa%C3%A",
+   "scheduled": ""
+  },
+  {
+   "type": "Pode seguir bloqueado",
+   "title": "Ponte interditada na BR-235: entenda o que muda na travessia de balsa",
+   "road": "BR-235",
+   "uf": "TO",
+   "date": "08/11",
+   "level": "critical",
+   "level_label": "Crítico",
+   "kind": "block_total",
+   "kind_label": "Bloqueio total",
+   "action": "Sem notícia de liberação: confirme com a concessionária/PRF antes de liberar o veículo.",
+   "sources": 1,
+   "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxNb0VUNnUxS0VuS1JucjZtdGY5UnJ0c2wwQkE0ZDFHRWI1Sms4WDB1QzYwY3JMeElxZVdhb0dKWjlHMFN3ZllzRHQyWWxzZmI5Y0RPNXl4NHpPRlVhYlJ5eVVFNzNoWk1JNGRuMktjNGZZX3REV3BMSllROUYycmozLUlLWWxENFN1dV9ZNHBWbHRFZXdvNWI3dmgxWGR5SG1nR014X2UyX0JvTllBVUF2ZHozQmNGSDIyQ2IwdGY3SV8?oc=5",
+   "scheduled": ""
+  },
+  {
+   "type": "Pode seguir bloqueado",
+   "title": "Ponte sobre arroio Capané está interditada na ERS-705 - DAER-RS",
+   "road": "ERS-705",
+   "uf": "",
+   "date": "07/11",
+   "level": "critical",
+   "level_label": "Crítico",
+   "kind": "block_total",
+   "kind_label": "Bloqueio total",
+   "action": "Sem notícia de liberação: confirme com a concessionária/PRF antes de liberar o veículo.",
+   "sources": 1,
+   "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxOTkdFLVlKQVlBRGpNWG1GQzVIMlRKQzlRYjBtQU5ibnZ4dG9HV3hLSGxQY2Nzemx0NGx6VU53UzdtZ3dFZFlkdXBoMmpQLVlQUFc2SFppU1l1Nm1ZRTA0dlNzSHJhb2hKTGJwWGJhTGR3TVNhNk1vR2FIUmlCWXp0cEhTNE5uSTQ?oc=5",
+   "scheduled": ""
+  }
+ ],
+ "hotspots": [
+  {
+   "road": "BR-226",
+   "uf": "RN",
+   "score": 12,
+   "events": 3,
+   "critical_high": 3,
+   "main_problem": "Acidente com vítima fatal",
+   "action": "A perícia interdita por horas: confirme a liberação antes de passar.",
+   "worst_title": "Médico e motorista morrem em acidente na BR-226 no RN",
+   "worst_url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxNbjZoR3RENExKV3huVWJpM2FvZGxMUlNERHNOalBINlBxdGRXS0xJYUMtV3N4bC1CakdSUHRpSHVVNW5aN2htV0tOUkFzeWwwNTJySVFYeUxyU29DcGx6U0lMU2NFSHBRdHJLX1pKVzUyTnd2TnRsU0VWdGpDa2xKWkRFOA?oc=5"
+  },
+  {
+   "road": "BR-235",
+   "uf": "SE",
+   "score": 12,
+   "events": 2,
+   "critical_high": 2,
+   "main_problem": "Bloqueio total",
+   "action": "Trecho indisponível: use desvio ou aguarde a liberação confirmada.",
+   "worst_title": "Ponte interditada na BR-235: entenda o que muda na travessia de balsa",
+   "worst_url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxNb0VUNnUxS0VuS1JucjZtdGY5UnJ0c2wwQkE0ZDFHRWI1Sms4WDB1QzYwY3JMeElxZVdhb0dKWjlHMFN3ZllzRHQyWWxzZmI5Y0RPNXl4NHpPRlVhYlJ5eVVFNzNoWk1JNGRuMktjNGZZX3REV3BMSllROUYycmozLUlLWWxENFN1dV9ZNHBWbHRFZXdvNWI3dmgxWGR5SG1nR014X2UyX0JvTllBVUF2ZHozQmNGSDIyQ2IwdGY3SV8?oc=5"
+  },
+  {
+   "road": "BR-101",
+   "uf": "ES",
+   "score": 9,
+   "events": 3,
+   "critical_high": 2,
+   "main_problem": "Bloqueio programado",
+   "action": "Planeje o desvio ou ajuste o horário de saída para fora da janela informada.",
+   "worst_title": "BR-101 em Rio Novo do Sul terá bloqueio total nesta terça (10); veja horário e trecho afetado",
+   "worst_url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxQZmwyWDBVbGJUTXREOEdmazZSWkxjRzBxYWZEVnF0OEF0ajZta3pycEZ1SDBLQnNtU29DbUF6eG84d0VaUjhNNk9lRXNiZF81eVJfa0k1VWd5dU8xYmEtQkN1VjVDaDhVUEwzWVZkUFUtNDAzcEhpNmNPdUdRRkxreFVKVTVLTFB0NlFuVFZpcnJNMHVOc0sxLTBnWllJdUN1OUtJN3VxOEw2bG5JYUJLTUFKSjFiU3RCV19XTFBVUC1IZ3FMWElN?oc=5"
+  },
+  {
+   "road": "BR-277",
+   "uf": "PR",
+   "score": 8,
+   "events": 1,
+   "critical_high": 1,
+   "main_problem": "Bloqueio total",
+   "action": "Trecho indisponível: use desvio ou aguarde a liberação confirmada.",
+   "worst_title": "BR-277 é interditada após queda de barreira em Guaratuba, PR",
+   "worst_url": "https://example.com/BR-277%20%C3%A9%20interditada%20ap%C3%B3"
+  },
+  {
+   "road": "ERS-705",
+   "uf": "",
+   "score": 8,
+   "events": 1,
+   "critical_high": 1,
+   "main_problem": "Bloqueio total",
+   "action": "Trecho indisponível: use desvio ou aguarde a liberação confirmada.",
+   "worst_title": "Ponte sobre arroio Capané está interditada na ERS-705 - DAER-RS",
+   "worst_url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxOTkdFLVlKQVlBRGpNWG1GQzVIMlRKQzlRYjBtQU5ibnZ4dG9HV3hLSGxQY2Nzemx0NGx6VU53UzdtZ3dFZFlkdXBoMmpQLVlQUFc2SFppU1l1Nm1ZRTA0dlNzSHJhb2hKTGJwWGJhTGR3TVNhNk1vR2FIUmlCWXp0cEhTNE5uSTQ?oc=5"
+  }
+ ],
+ "cargo_security": [
+  {
+   "title": "Quadrilha rouba carga de caminhão na Via Dutra em Guarulhos, SP",
+   "road": "Via Dutra",
+   "uf": "SP",
+   "date": "09/11",
+   "level": "high",
+   "level_label": "Alto",
+   "kind": "cargo_theft",
+   "kind_label": "Roubo de carga",
+   "action": "Evite paradas no trecho, reforce rastreamento/escolta e prefira trafegar de dia.",
+   "sources": 1,
+   "url": "https://example.com/Quadrilha%20rouba%20carga%20de%20caminh%",
+   "police": false
+  },
+  {
+   "title": "Roubo de carga em caminhão na BR-116 em Feira de Santana, BA",
+   "road": "BR-116",
+   "uf": "BA",
+   "date": "08/11",
+   "level": "high",
+   "level_label": "Alto",
+   "kind": "cargo_theft",
+   "kind_label": "Roubo de carga",
+   "action": "Evite paradas no trecho, reforce rastreamento/escolta e prefira trafegar de dia.",
+   "sources": 1,
+   "url": "https://example.com/Roubo%20de%20carga%20em%20caminh%C3%A3o%",
+   "police": false
+  }
+ ],
+ "weather": [
+  {
+   "uf": "MS",
+   "alerts": 1,
+   "max_level": "Perigo Potencial",
+   "phenomena": [
+    "Tempestade"
+   ],
+   "action": "Atenção a chuva e vento; sem restrição de saída."
+  },
+  {
+   "uf": "TO",
+   "alerts": 1,
+   "max_level": "Perigo Potencial",
+   "phenomena": [
+    "Tempestade"
+   ],
+   "action": "Atenção a chuva e vento; sem restrição de saída."
+  },
+  {
+   "uf": "Área não informada",
+   "alerts": 1,
+   "max_level": "Perigo Potencial",
+   "phenomena": [
+    "Tempestade"
+   ],
+   "action": "Atenção a chuva e vento; sem restrição de saída."
+  }
+ ],
+ "actions": [
+  "Planeje o desvio para 10/11: BR-101 em Rio Novo do Sul terá bloqueio total nesta terça (10); veja horário e trecho afetado.",
+  "Planeje o desvio para 14/11: BR-153 terá bloqueio total no dia 14 em Goiás para obras na ponte.",
+  "Confirme antes de despachar: Caminhoneiros anunciam paralisação na BR-163 em Sinop, MT.",
+  "Confirme a liberação antes de passar: Ponte interditada na BR-235: entenda o que muda na travessia de balsa.",
+  "BR-226/RN (acidente com vítima fatal): A perícia interdita por horas: confirme a liberação antes de passar."
+ ],
+ "highlights": [
+  {
+   "title": "BR-277 é interditada após queda de barreira em Guaratuba, PR",
+   "road": "BR-277",
+   "uf": "PR",
+   "date": "09/11",
+   "level": "critical",
+   "level_label": "Crítico",
+   "kind": "block_total",
+   "kind_label": "Bloqueio total",
+   "action": "Trecho indisponível: use desvio ou aguarde a liberação confirmada.",
+   "sources": 1,
+   "url": "https://example.com/BR-277%20%C3%A9%20interditada%20ap%C3%B3"
+  },
+  {
+   "title": "Ponte interditada na BR-235: entenda o que muda na travessia de balsa",
+   "road": "BR-235",
+   "uf": "TO",
+   "date": "08/11",
+   "level": "critical",
+   "level_label": "Crítico",
+   "kind": "block_total",
+   "kind_label": "Bloqueio total",
+   "action": "Trecho indisponível: use desvio ou aguarde a liberação confirmada.",
+   "sources": 1,
+   "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxNb0VUNnUxS0VuS1JucjZtdGY5UnJ0c2wwQkE0ZDFHRWI1Sms4WDB1QzYwY3JMeElxZVdhb0dKWjlHMFN3ZllzRHQyWWxzZmI5Y0RPNXl4NHpPRlVhYlJ5eVVFNzNoWk1JNGRuMktjNGZZX3REV3BMSllROUYycmozLUlLWWxENFN1dV9ZNHBWbHRFZXdvNWI3dmgxWGR5SG1nR014X2UyX0JvTllBVUF2ZHozQmNGSDIyQ2IwdGY3SV8?oc=5"
+  },
+  {
+   "title": "Ponte sobre arroio Capané está interditada na ERS-705 - DAER-RS",
+   "road": "ERS-705",
+   "uf": "",
+   "date": "07/11",
+   "level": "critical",
+   "level_label": "Crítico",
+   "kind": "block_total",
+   "kind_label": "Bloqueio total",
+   "action": "Trecho indisponível: use desvio ou aguarde a liberação confirmada.",
+   "sources": 1,
+   "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxOTkdFLVlKQVlBRGpNWG1GQzVIMlRKQzlRYjBtQU5ibnZ4dG9HV3hLSGxQY2Nzemx0NGx6VU53UzdtZ3dFZFlkdXBoMmpQLVlQUFc2SFppU1l1Nm1ZRTA0dlNzSHJhb2hKTGJwWGJhTGR3TVNhNk1vR2FIUmlCWXp0cEhTNE5uSTQ?oc=5"
+  },
+  {
+   "title": "Radialista morre em acidente na BR-452, em Goiás",
+   "road": "BR-452",
+   "uf": "GO",
+   "date": "09/11",
+   "level": "high",
+   "level_label": "Alto",
+   "kind": "fatal_accident",
+   "kind_label": "Acidente com vítima fatal",
+   "action": "A perícia interdita por horas: confirme a liberação antes de passar.",
+   "sources": 2,
+   "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxQUkhRYjFjVFdaOTVCTldIQklUSEJPQXZ6S05hdnBydFNSVEN5OXZBY21sRGNqTWt0SEdXZE5ubV9jQXNWQ3lvRGM2MFN6SGlGZGtFX0dKRGdkb0pQUXEwMkp2U09FVmRITi1qLXJwMm85aEtNWXNna2twelZQeHR4djE3d0NZWlctMHEwdFNoVjJoNS1rNEJpbWtLMXVEcHp4LW4xQWJEaVdNVzJ2N2FNVNIBvwFBVV95cUxNZWpmZE1SUEtqYmpJT3hJWmNCSWlpR05zOVdvRDNEdVhONVVITy1wYll3dTdnR3BWbGpZV0RxQ1Q3ZUN5SDY2akpoMEtfWDBWcHZnTU5zSV9CUUh5SVZfTll1T3djMVFmWmh1aFpmcEE5Q2pjQk1Cc2gzVWNFYVBqTDBCNUZTNm93VW5rNmVHeDhuQlRFYXl6QVVCWWNmNHBYREF4YWJkaWhzaDdQV1ltV1NGVU1xS0JmSXAtQl9KVQ?oc=5"
+  },
+  {
+   "title": "BR-101 em Rio Novo do Sul terá bloqueio total nesta terça (10); veja horário e trecho afetado",
+   "road": "BR-101",
+   "uf": "ES",
+   "date": "05/11",
+   "level": "high",
+   "level_label": "Alto",
+   "kind": "block_planned",
+   "kind_label": "Bloqueio programado",
+   "action": "Planeje o desvio ou ajuste o horário de saída para fora da janela informada.",
+   "sources": 2,
+   "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxQZmwyWDBVbGJUTXREOEdmazZSWkxjRzBxYWZEVnF0OEF0ajZta3pycEZ1SDBLQnNtU29DbUF6eG84d0VaUjhNNk9lRXNiZF81eVJfa0k1VWd5dU8xYmEtQkN1VjVDaDhVUEwzWVZkUFUtNDAzcEhpNmNPdUdRRkxreFVKVTVLTFB0NlFuVFZpcnJNMHVOc0sxLTBnWllJdUN1OUtJN3VxOEw2bG5JYUJLTUFKSjFiU3RCV19XTFBVUC1IZ3FMWElN?oc=5"
+  },
+  {
+   "title": "Médico e motorista morrem em acidente na BR-226 no RN",
+   "road": "BR-226",
+   "uf": "RN",
+   "date": "04/11",
+   "level": "high",
+   "level_label": "Alto",
+   "kind": "fatal_accident",
+   "kind_label": "Acidente com vítima fatal",
+   "action": "A perícia interdita por horas: confirme a liberação antes de passar.",
+   "sources": 2,
+   "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxNbjZoR3RENExKV3huVWJpM2FvZGxMUlNERHNOalBINlBxdGRXS0xJYUMtV3N4bC1CakdSUHRpSHVVNW5aN2htV0tOUkFzeWwwNTJySVFYeUxyU29DcGx6U0lMU2NFSHBRdHJLX1pKVzUyTnd2TnRsU0VWdGpDa2xKWkRFOA?oc=5"
+  }
+ ],
+ "coverage": {
+  "analyzed": 45,
+  "relevant": 40,
+  "events": 33,
+  "discarded": 5
+ }
+}

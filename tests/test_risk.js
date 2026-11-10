@@ -20,11 +20,13 @@ test("painel, API e resumos usam a mesma régua (sem regex de risco próprias)",
   assert.match(html, /<script src="\/risk\.js"><\/script>/);
   assert.doesNotMatch(html, /const RISK_[A-Z_]+_PATTERN/);
   assert.doesNotMatch(html, /const BLOCK_TOTAL = \//);
-  for (const file of ["news-feed.js", "news-summary.js", "weekly-summary.js"]) {
+  for (const file of ["news-feed.js", "news-summary.js", "_weekly_brief.js"]) {
     const source = fs.readFileSync(path.join(ROOT, "api", file), "utf8");
     assert.match(source, /require\("\.\.\/public\/risk\.js"\)/, `${file} usa public/risk.js`);
     assert.doesNotMatch(source, /return "Critico";/, `${file} não tem régua própria`);
   }
+  const weekly = fs.readFileSync(path.join(ROOT, "api", "weekly-summary.js"), "utf8");
+  assert.match(weekly, /require\("\.\/_weekly_brief"\)/, "resumo semanal usa o mesmo cálculo do e-mail");
 });
 
 test("Minha Rota expõe o mesmo nível e justificativa da régua", () => {
