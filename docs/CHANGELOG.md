@@ -2,6 +2,13 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — impacto na frota, destaque de bloqueios e mapa
+- **Corrigido**: o mapa rodoviário e o mapa da Minha Rota exibiam "API KEY REQUIRED" porque os tiles `dark_all` do CARTO passaram a exigir chave. Agora usam tiles do OpenStreetMap (sem chave), escurecidos via CSS; provedor centralizado em `BASE_TILE_URL`.
+- **Adicionado**: destaque de rodovia bloqueada: borda vermelha e faixa "Rodovia bloqueada" (total) ou "parcialmente bloqueada" (tracejada) em notícias, alertas, salvos, ocorrências da rota e pop-up do mapa. Marcadores de bloqueio ficam fora do cluster e com anel pulsante.
+- **Alterado**: `POST /api/news-feed` retorna `road_blocked`/`block_level` por ocorrência, ordena bloqueios primeiro e recomenda rota alternativa quando há bloqueio total.
+- **Alterado**: o scraper descarta notícias sem impacto operacional para frota (filtro `fleet_relevance`); fontes podem desligá-lo com `fleet_filter: false`.
+- **Adicionado**: linha "Impacto na frota" com ação sugerida em cada card; ordenação padrão passa a ser "Impacto na frota".
+
 ## 2026-11-09 — acesso por senha temporária
 - **Alterado**: o convite por e-mail e a recuperação de senha por e-mail foram removidos. O admin/gestor cria o acesso com **senha temporária** e o usuário é obrigado a trocá-la no primeiro login (`POST /api/my-access`); enquanto não troca, toda a API responde 403. Política única de senha: mínimo 8 caracteres, 1 minúscula, 1 maiúscula, 1 caractere especial (validada no navegador e no servidor). O admin pode redefinir uma senha temporária pela edição do usuário.
 - **Aplicado em produção**: `scripts/supabase_security_hardening.sql` — leitura anônima de `news` e RPC anônimo bloqueados (retestado: 401/42501); consultas do feed de 11–17 ms para 0,2–0,8 ms com `news_created_at_idx`.
