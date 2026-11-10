@@ -2,6 +2,10 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — dropdowns do cabeçalho e imagem da notícia
+- **Corrigido**: o painel de alertas (sino) e o menu do usuário não fechavam, e o seletor de período aparecia fora do Dashboard. Causa: `display: grid/inline-flex` dos componentes vencia o atributo `hidden`. Agora `[hidden]` sempre esconde, e os menus fecham ao clicar fora, ao escolher uma opção (inclusive "Sair") ou com Esc; abrir um fecha o outro.
+- **Adicionado**: imagem da notícia vinda da fonte (feed ou `og:image` de fontes diretas), com crédito, gravada em `news.image_url` (migration `scripts/supabase_news_image_url.sql`). Sem imagem, ilustração neutra por tema, nunca cena de acidente, pessoas ou vítimas. Se a imagem da fonte falhar ao carregar, a ilustração assume.
+
 ## 2026-11-10 — identidade visual Overhaul (paleta e tipografia)
 - **Alterado**: o painel, o PDF do resumo semanal e o e-mail de segunda passam a usar a paleta oficial. **Escuro**: fundo Midnight Green `#0F1814`, superfícies derivadas do Dark Green `#2A3E33`, texto Grey `#F4F9FA`/Cool Steel, marca Vivid Green `#1EFF95` com texto Dark Purple `#1E0D43`. **Claro**: fundo Grey `#F4F9FA`, cartões brancos/White Smoke, texto Midnight Green/Dim Grey, destaque Vivid Purple `#5029FF`. Gravidade: Crítico Deep Orange `#FC3700` (a paleta não tem vermelho), Alto Burnt Yellow `#FFCD00`, Médio Sky Blue `#00ACFF`, Baixo Vivid/Heritage Green. Temas e indicadores com a paleta secundária.
 - **Alterado**: tipografia **Archivo** (títulos e texto) e **Geist Mono** (rótulos, links, botões e números). Archivo hospedada no projeto (`public/assets/fonts/archivo/`, licença OFL junto), sem requisição a terceiros.

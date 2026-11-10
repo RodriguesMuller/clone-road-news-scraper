@@ -6,6 +6,8 @@ const { adminErrorMessage, readJson } = require("./_admin");
 
 const BASE_COLUMNS = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
 const OPTIONAL_SETS = [
+  // image_url: scripts/supabase_news_image_url.sql (imagem publicada pela fonte).
+  "image_summary,ai_summary,operational_relevance,operational_impact,risk_level,region,country,state,city,highway,latitude,longitude,geo_precision,image_url",
   "image_summary,ai_summary,operational_relevance,operational_impact,risk_level,region,country,state,city,highway,latitude,longitude,geo_precision",
   "image_summary,ai_summary,operational_relevance,operational_impact,risk_level,region,country,state,city,highway",
   "",
@@ -195,7 +197,7 @@ async function fetchRows(suffix) {
       return response.json();
     } catch (error) {
       lastError = error;
-      if (!/image_summary|ai_summary|operational_relevance|risk_level|latitude|longitude|geo_precision|column|schema|PGRST/i.test(error.message || "")) {
+      if (!/image_url|image_summary|ai_summary|operational_relevance|risk_level|latitude|longitude|geo_precision|column|schema|PGRST/i.test(error.message || "")) {
         throw error;
       }
     }

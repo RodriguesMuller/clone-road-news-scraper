@@ -184,31 +184,59 @@
     return `<span class="kpi-delta ${pct > 0 ? "up" : "down"}">${pct > 0 ? "↑" : "↓"} ${Math.abs(pct)}% <small>vs período anterior</small></span>`;
   }
 
-  // Ilustração vetorial por tema (não é foto da ocorrência: as fontes não fornecem imagem).
+  // Ilustração de reserva por tema, usada quando a fonte não publica imagem.
+  // Sempre neutra: sinalização, cones, barreiras, clima, ponte — nunca veículo acidentado,
+  // pessoas ou vítimas, mesmo em notícia de acidente com morte.
+  const TRUCK = '<g transform="translate(118 108)"><rect width="96" height="46" rx="4" fill="#F3F3F3"/><rect x="6" y="8" width="84" height="4" rx="2" fill="#1EFF95" opacity=".8"/><path d="M96 12h24l14 17v17H96Z" fill="#CFD1D0"/><rect x="104" y="17" width="14" height="10" rx="2" fill="#1E0D43"/><circle cx="22" cy="50" r="9" fill="#0F1814"/><circle cx="22" cy="50" r="3" fill="#9FA3A1"/><circle cx="78" cy="50" r="9" fill="#0F1814"/><circle cx="78" cy="50" r="3" fill="#9FA3A1"/><circle cx="120" cy="50" r="9" fill="#0F1814"/><circle cx="120" cy="50" r="3" fill="#9FA3A1"/></g>';
+  const CONE = (x, s = 1) => `<g transform="translate(${x} 150) scale(${s})"><path d="M-12 0 0-34 12 0Z" fill="#FC3700"/><path d="M-7.5-13h15M-4.5-24h9" stroke="#F4F9FA" stroke-width="4"/><rect x="-16" y="0" width="32" height="5" rx="2" fill="#FC3700"/></g>`;
+  const MOTIFS = {
+    "Acidentes": `<g transform="translate(300 98)"><path d="M0-40 38 26H-38Z" fill="#FFCD00" stroke="#1E0D43" stroke-width="4" stroke-linejoin="round"/><path d="M0-14v20" stroke="#1E0D43" stroke-width="7" stroke-linecap="round"/><circle cy="16" r="4" fill="#1E0D43"/><rect x="-3" y="28" width="6" height="26" fill="#9FA3A1"/></g>${CONE(220)}${CONE(250, 0.85)}${CONE(355, 0.9)}`,
+    "Interdições": '<g transform="translate(250 112)"><rect x="-110" y="-12" width="220" height="26" rx="4" fill="#F4F9FA"/><path d="M-100-12l16 26M-68-12l16 26M-36-12l16 26M-4-12l16 26M28-12l16 26M60-12l16 26M92-12l16 26" stroke="#FC3700" stroke-width="9"/><rect x="-100" y="14" width="7" height="26" fill="#9FA3A1"/><rect x="93" y="14" width="7" height="26" fill="#9FA3A1"/><circle cx="-96" cy="-20" r="7" fill="#FFCD00"/><circle cx="96" cy="-20" r="7" fill="#FFCD00"/></g>',
+    "Obras": `${CONE(140)}${CONE(185, 0.9)}${CONE(230, 0.8)}<g transform="translate(320 96)"><path d="M0-34 34 0 0 34-34 0Z" fill="#FFCD00" stroke="#1E0D43" stroke-width="3"/><path d="M-12 12 4-6M8-14l6 6-8 8-6-6Z" stroke="#1E0D43" stroke-width="4" fill="#1E0D43"/><rect x="-3" y="34" width="6" height="22" fill="#9FA3A1"/></g>`,
+    "Trânsito": '<g fill="#C6BDFC"><rect x="40" y="128" width="58" height="22" rx="7"/><rect x="112" y="128" width="58" height="22" rx="7"/><rect x="184" y="128" width="58" height="22" rx="7"/></g><rect x="256" y="124" width="86" height="26" rx="5" fill="#F3F3F3"/><g fill="#FC3700" opacity=".9"><circle cx="44" cy="138" r="3"/><circle cx="116" cy="138" r="3"/><circle cx="188" cy="138" r="3"/><circle cx="260" cy="136" r="3"/></g>',
+    "Clima": '<g fill="#CFD1D0" opacity=".95"><ellipse cx="270" cy="62" rx="52" ry="24"/><ellipse cx="318" cy="72" rx="40" ry="20"/><ellipse cx="230" cy="74" rx="34" ry="17"/></g><g stroke="#00ACFF" stroke-width="3.5" stroke-linecap="round" opacity=".85"><path d="M232 102l-8 18"/><path d="M256 106l-8 18"/><path d="M280 102l-8 18"/><path d="M304 106l-8 18"/><path d="M328 102l-8 18"/></g><path d="M300 92l-12 20h12l-8 18" stroke="#FFCD00" stroke-width="4" fill="none" stroke-linejoin="round"/>' + TRUCK,
+    "Roubo de carga": TRUCK + '<g transform="translate(312 96)"><path d="M0-36 32-23v21c0 22-15 36-32 42-17-6-32-20-32-42v-21Z" fill="#7758FF"/><rect x="-11" y="-6" width="22" height="18" rx="3" fill="#F4F9FA"/><path d="M-6-6v-6a6 6 0 0 1 12 0v6" stroke="#F4F9FA" stroke-width="4" fill="none"/></g>',
+    "Greves": TRUCK + '<g transform="translate(316 96)"><circle r="30" fill="#E4C1F9"/><rect x="-11" y="-14" width="8" height="28" rx="2" fill="#1E0D43"/><rect x="3" y="-14" width="8" height="28" rx="2" fill="#1E0D43"/></g>',
+    "Infraestrutura": `<path d="M40 130 Q200 60 360 130" stroke="#CFD1D0" stroke-width="6" fill="none"/><rect x="30" y="128" width="340" height="10" fill="#9FA3A1"/><g stroke="#CFD1D0" stroke-width="3"><path d="M90 102v26M140 84v44M200 76v52M260 84v44M310 102v26"/></g><rect x="60" y="138" width="12" height="14" fill="#6F7472"/><rect x="328" y="138" width="12" height="14" fill="#6F7472"/>${CONE(200, 0.8)}`,
+    "Combustíveis e pedágios": '<g transform="translate(300 100)"><rect x="-26" y="-34" width="44" height="70" rx="6" fill="#1EFF95"/><rect x="-18" y="-24" width="28" height="18" rx="3" fill="#0F1814"/><path d="M18-14h10v34a6 6 0 0 1-12 0V6" stroke="#CFD1D0" stroke-width="5" fill="none"/><rect x="-32" y="36" width="56" height="8" rx="2" fill="#6F7472"/></g>' + TRUCK,
+    "Outros": TRUCK,
+  };
+
   function illustration(theme, level, variant = "card") {
     const accent = LEVEL[level]?.color || "#1EFF95";
-    const motif = {
-      "Clima": '<g fill="#CFD1D0" opacity=".9"><ellipse cx="300" cy="70" rx="48" ry="22"/><ellipse cx="340" cy="78" rx="36" ry="18"/></g><g stroke="#00ACFF" stroke-width="3" opacity=".8"><path d="M285 105l-8 18"/><path d="M310 108l-8 18"/><path d="M335 105l-8 18"/></g>',
-      "Obras": '<g transform="translate(300 118)"><path d="M-14 30 0-22 14 30Z" fill="#FFCD00"/><path d="M-9 12h18M-5 0h10" stroke="#fff" stroke-width="5"/><rect x="-20" y="30" width="40" height="6" rx="2" fill="#FFCD00"/></g>',
-      "Interdições": '<g transform="translate(300 120)"><rect x="-60" y="-8" width="120" height="22" rx="4" fill="#FC3700"/><path d="M-50-8l14 22M-22-8l14 22M6-8l14 22M34-8l14 22" stroke="#fff" stroke-width="6"/><rect x="-54" y="14" width="6" height="26" fill="#9FA3A1"/><rect x="48" y="14" width="6" height="26" fill="#9FA3A1"/></g>',
-      "Roubo de carga": '<g transform="translate(300 105)"><path d="M0-34 30-22v20c0 20-14 34-30 40-16-6-30-20-30-40v-20Z" fill="#F78D87" opacity=".9"/><path d="M-10 0l7 7 14-15" stroke="#fff" stroke-width="5" fill="none"/></g>',
-    }[theme] || "";
-    const truck = '<g transform="translate(120 112)"><rect x="0" y="0" width="92" height="44" rx="4" fill="#F3F3F3"/><path d="M92 12h22l14 16v16H92Z" fill="#CFD1D0"/><rect x="100" y="16" width="14" height="10" rx="2" fill="#1E0D43"/><circle cx="22" cy="48" r="9" fill="#0F1814"/><circle cx="76" cy="48" r="9" fill="#0F1814"/><circle cx="114" cy="48" r="9" fill="#0F1814"/></g>';
     const id = `il-${Math.random().toString(36).slice(2, 7)}`;
     return `<svg class="news-illustration ${variant}" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Ilustração: ${esc(theme)}">
       <defs>
-        <linearGradient id="${id}s" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#1E0D43"/><stop offset=".6" stop-color="#5029FF" stop-opacity=".55"/><stop offset="1" stop-color="#0F1814"/></linearGradient>
+        <linearGradient id="${id}s" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#1E0D43"/><stop offset=".65" stop-color="#5029FF" stop-opacity=".5"/><stop offset="1" stop-color="#0F1814"/></linearGradient>
         <linearGradient id="${id}r" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2A3E33"/><stop offset="1" stop-color="#0F1814"/></linearGradient>
       </defs>
       <rect width="400" height="200" fill="url(#${id}s)"/>
-      <circle cx="80" cy="96" r="26" fill="#D0FFEC" opacity=".45"/>
-      <path d="M0 150 L400 150 L400 200 L0 200 Z" fill="url(#${id}r)"/>
-      <path d="M0 150 Q 200 140 400 150" stroke="#487E72" stroke-width="2" fill="none"/>
-      <g stroke="#F4F9FA" stroke-width="3" stroke-dasharray="18 16" opacity=".55"><path d="M0 178 L400 178"/></g>
-      ${truck}${motif}
+      <path d="M0 128 L70 96 L130 118 L210 88 L290 116 L350 100 L400 112 L400 160 L0 160Z" fill="#2A3E33" opacity=".7"/>
+      <path d="M0 154 L400 154 L400 200 L0 200 Z" fill="url(#${id}r)"/>
+      <g stroke="#F4F9FA" stroke-width="3" stroke-dasharray="18 16" opacity=".45"><path d="M0 180 L400 180"/></g>
+      ${MOTIFS[theme] || MOTIFS.Outros}
       <rect x="0" y="0" width="400" height="4" fill="${accent}"/>
     </svg>`;
   }
+
+  // Foto publicada pela fonte (quando existe) sobre a ilustração de reserva.
+  // Se a imagem não carregar, o listener global remove o <img> e a ilustração aparece.
+  function newsMedia(item, theme, level, variant) {
+    const photo = urlOf(item?.image_url);
+    const source = String(item?.source || "").trim();
+    return `<div class="news-media">${illustration(theme, level, variant)}${photo
+      ? `<img class="news-photo" src="${esc(photo)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">${source ? `<span class="news-credit">Imagem: ${esc(source)}</span>` : ""}`
+      : ""}</div>`;
+  }
+
+  document.addEventListener("error", (event) => {
+    const img = event.target;
+    if (img && img.classList && img.classList.contains("news-photo")) {
+      const credit = img.nextElementSibling;
+      if (credit && credit.classList.contains("news-credit")) credit.remove();
+      img.remove();
+    }
+  }, true);
 
   function sevBadge(level) {
     const meta = LEVEL[level] || LEVEL.low;
@@ -258,7 +286,7 @@
       .map((ev) => {
         const source = byUrl.get(ev.url);
         const summary = source && typeof smartSummary === "function" ? smartSummary(source.item) : "";
-        return { ...ev, summary, theme: source?.theme || themeOf(ev.kind, ""), source: source?.source || "" };
+        return { ...ev, summary, item: source?.item || { url: ev.url }, theme: source?.theme || themeOf(ev.kind, ""), source: source?.source || "" };
       });
   }
 
@@ -277,7 +305,7 @@
       const ev = events[index];
       const url = urlOf(ev.url);
       target.innerHTML = `
-        <div class="featured-media">${illustration(ev.theme, ev.level, "hero")}</div>
+        <div class="featured-media">${newsMedia(ev.item, ev.theme, ev.level, "hero")}</div>
         <div class="featured-overlay"></div>
         <div class="featured-body">
           <div class="featured-tags"><span class="featured-tag">Destaque</span>${sevBadge(ev.level)}${themeBadge(ev.theme)}</div>
@@ -449,7 +477,7 @@
         const url = urlOf(e.item.url);
         const road = [e.road, ""].filter(Boolean).join("");
         return `<article class="latest-item">
-          <div class="latest-thumb">${illustration(e.theme, e.risk.level, "thumb")}</div>
+          <div class="latest-thumb">${newsMedia(e.item, e.theme, e.risk.level, "thumb")}</div>
           <div class="latest-body">
             <h4>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(shorten(e.item.title, 110))}</a>` : esc(shorten(e.item.title, 110))}</h4>
             <div class="latest-meta"><span>${esc(e.source || "Fonte não informada")}</span><span>${esc(relative(e.time))}</span>${road ? `<span>${esc(road)}</span>` : ""}</div>
@@ -588,10 +616,16 @@
     const userPanel = document.getElementById("topbarUserPanel");
     bell?.addEventListener("click", (e) => { e.stopPropagation(); toggleDropdown(bell, bellPanel); });
     user?.addEventListener("click", (e) => { e.stopPropagation(); toggleDropdown(user, userPanel); });
+    const closeAll = () => {
+      document.querySelectorAll(".topbar-dropdown").forEach((p) => { p.hidden = true; });
+      document.querySelectorAll(".topbar [aria-expanded]").forEach((b) => b.setAttribute("aria-expanded", "false"));
+    };
     document.addEventListener("click", (e) => {
-      if (!e.target.closest(".topbar-menu")) document.querySelectorAll(".topbar-dropdown").forEach((p) => { p.hidden = true; });
+      // Fora do menu, ou escolhendo algo dentro dele (link, "Ver alertas", "Sair"): fecha.
+      if (!e.target.closest(".topbar-menu") || e.target.closest(".topbar-dropdown a, .topbar-dropdown button")) closeAll();
       if (e.target.closest("[data-topbar-logout]")) document.getElementById("sidebarLogoutButton")?.click();
     });
+    window.addEventListener("popstate", closeAll);
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") document.querySelectorAll(".topbar-dropdown").forEach((p) => { p.hidden = true; });
     });

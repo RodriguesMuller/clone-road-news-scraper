@@ -9,6 +9,7 @@ import os
 import psycopg
 
 from scraper.utils.image_summary import build_image_summary_fallback, generate_image_summary, should_use_ai_for_image_summary
+from scraper.utils.og_image import can_fetch_og_image, fetch_og_image
 
 COLUMNS = [
     "title",
@@ -19,6 +20,8 @@ COLUMNS = [
     "summary",
     "scraped_at",
     "type",
+    # Opcional: só é gravada depois de scripts/supabase_news_image_url.sql.
+    "image_url",
 ]
 
 AI_COLUMNS = [
@@ -127,9 +130,14 @@ def save_to_postgres(news_items: list, database_url: str) -> int:
             existing_urls = _existing_urls(cur, [item.get("url", "") for item in unique_items])
 
             new_count = 0
+            og_budget = int(os.environ.get("SCRAPER_OG_IMAGE_LIMIT", "30"))
             for item in unique_items:
                 if item.get("url") in existing_urls:
                     continue
+                # Sem imagem no feed: tenta a og:image da notícia (só fontes diretas, com teto).
+                if "image_url" in available_columns and not item.get("image_url") and og_budget > 0 and can_fetch_og_image(item.get("url")):
+                    og_budget -= 1
+                    item = {**item, "image_url": fetch_og_image(item["url"])}
                 enriched = _with_image_summary(item, available_columns)
                 row = tuple(enriched.get(col, "") for col in insert_columns)
                 cur.execute(insert_sql, row)

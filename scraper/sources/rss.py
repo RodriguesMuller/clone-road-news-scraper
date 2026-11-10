@@ -3,7 +3,32 @@ import requests
 from datetime import datetime, timezone
 
 from scraper.sources import HEADERS
-from scraper.utils.filters import build_summary, matches_keywords, clean_text, is_blocked_url, is_fleet_relevant
+from scraper.utils.filters import build_summary, matches_keywords, clean_text, is_blocked_url, is_fleet_relevant, safe_image_url, first_image_in_html
+
+
+def extract_image_url(entry) -> str:
+    """Imagem que a própria fonte publica no feed (sem baixar a página da notícia)."""
+    for media in entry.get("media_content", []) or []:
+        medium = str(media.get("medium") or media.get("type") or "")
+        if medium.startswith("image") or medium == "":
+            url = safe_image_url(media.get("url"), assume_image=medium.startswith("image"))
+            if url:
+                return url
+    for thumb in entry.get("media_thumbnail", []) or []:
+        url = safe_image_url(thumb.get("url"), assume_image=True)
+        if url:
+            return url
+    for link in list(entry.get("enclosures", []) or []) + list(entry.get("links", []) or []):
+        if str(link.get("type") or "").startswith("image") or link.get("rel") == "enclosure":
+            url = safe_image_url(link.get("href") or link.get("url"), assume_image=str(link.get("type") or "").startswith("image"))
+            if url:
+                return url
+    contents = [c.get("value", "") for c in entry.get("content", []) or []]
+    for fragment in [entry.get("summary", ""), entry.get("description", ""), *contents]:
+        url = first_image_in_html(fragment)
+        if url:
+            return url
+    return ""
 from scraper.utils.timezone import brasilia_iso_from_datetime, brasilia_now_iso
 
 
@@ -99,6 +124,7 @@ def scrape_rss(source: dict, keywords: list) -> list:
                     "summary": build_summary(title, summary),
                     "scraped_at": brasilia_now_iso(),
                     "type": "RSS",
+                    "image_url": extract_image_url(entry),
                 }
             )
             if source.get("max_items") and len(news) >= int(source["max_items"]):

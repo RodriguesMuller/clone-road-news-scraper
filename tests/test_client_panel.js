@@ -47,6 +47,22 @@ test("identidade visual Overhaul: paleta oficial e fontes Archivo + Geist Mono",
   assert.match(html, /const MAP_RISK_COLORS = \{ critical: "#FC3700", high: "#FFCD00", medium: "#00ACFF", low: "#1EFF95" \}/);
 });
 
+test("dropdowns e itens ocultos respeitam o atributo hidden", () => {
+  // .topbar-dropdown tem display: grid; sem esta regra o hidden não escondia (painéis não fechavam).
+  assert.match(html, /\[hidden\] \{ display: none !important; \}/);
+  const dashboard = fs.readFileSync(path.join(ROOT, "public", "dashboard.js"), "utf8");
+  assert.match(dashboard, /e\.target\.closest\("\.topbar-dropdown a, \.topbar-dropdown button"\)\) closeAll\(\)/);
+});
+
+test("imagem da notícia vem da fonte, com reserva neutra (sem cena de acidente)", () => {
+  const dashboard = fs.readFileSync(path.join(ROOT, "public", "dashboard.js"), "utf8");
+  assert.match(dashboard, /referrerpolicy="no-referrer"/);
+  assert.match(dashboard, /Imagem: \$\{esc\(source\)\}/, "crédito à fonte");
+  const motifs = dashboard.slice(dashboard.indexOf("const MOTIFS = {"), dashboard.indexOf("function illustration("));
+  assert.doesNotMatch(motifs, /mort|vitim|sangue|ambul|feri|caveira|skull/i);
+  assert.match(fs.readFileSync(path.join(ROOT, "api", "news-feed.js"), "utf8"), /geo_precision,image_url"/);
+});
+
 test("resumo operacional usa a janela escolhida e compara com o período anterior", () => {
   const { buildWeeklyBrief } = require(path.join(ROOT, "public", "brief.js"));
   const now = Date.parse("2026-11-10T18:00:00-03:00");
