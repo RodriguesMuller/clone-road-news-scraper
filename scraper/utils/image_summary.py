@@ -4,6 +4,8 @@ import os
 import re
 from datetime import datetime
 
+from scraper.utils.risk import classify_risk
+
 OPENAI_URL = "https://api.openai.com/v1/responses"
 DEFAULT_MODEL = "gpt-4.1-mini"
 
@@ -90,8 +92,9 @@ def build_image_summary_fallback(item: dict) -> dict:
         base = f"Na região de {region}, {base}"
 
     image_summary = _complete_sentence(base)
-    risk_level = "Alto" if category in {"Acidente", "Interdição", "Clima", "Roubo de carga", "Manifestação"} else "Baixo"
-    relevance = "Alta" if risk_level == "Alto" and country == "Brasil" else "Baixa"
+    # Régua única (scraper/utils/risk.py); antes todo acidente/clima virava "Alto".
+    risk_level = classify_risk(item)["ascii"]
+    relevance = "Alta" if risk_level in {"Alto", "Critico"} and country == "Brasil" else "Baixa"
     impact = "Pode impactar viagens, prazos e segurança operacional no trecho." if relevance == "Alta" else "Sem impacto operacional direto identificado para rotas no Brasil."
 
     return {
@@ -200,6 +203,8 @@ def generate_image_summary(item: dict, api_key: str | None = None, model: str | 
 
     result = {**fallback, **{key: parsed.get(key) for key in fallback.keys() if parsed.get(key) is not None}}
     result["region"] = _sanitize_region(result.get("region"), item.get("source"), fallback["region"])
+    # Risco nunca vem da IA: sempre o da régua determinística, igual ao do painel.
+    result["risk_level"] = fallback["risk_level"]
     result["image_summary"] = _complete_sentence(result.get("image_summary"), 280)
     result["ai_processed_at"] = datetime.utcnow().isoformat() + "Z"
     result["ai_model"] = model or os.environ.get("OPENAI_IMAGE_MODEL") or os.environ.get("OPENAI_MODEL", DEFAULT_MODEL)

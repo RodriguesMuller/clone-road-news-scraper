@@ -9,6 +9,7 @@ import psycopg
 import requests
 
 from scraper.utils.filters import _state_from_text
+from scraper.utils.risk import classify_risk
 from scraper.utils.timezone import BRASILIA_TZ, brasilia_now
 
 OPENAI_URL = "https://api.openai.com/v1/responses"
@@ -116,14 +117,8 @@ def _category_from_item(item: dict) -> str:
 
 
 def _risk_from_item(item: dict) -> str:
-    text = _match_text(f"{item.get('title', '')} {item.get('summary', '')} {item.get('category', '')} {item.get('type', '')}")
-    if re.search(r"roubo de carga|saque|bloqueio total|interdicao total|manifestacao", text):
-        return "Critico"
-    if re.search(r"acidente|bloqueio|interdicao|tempestade|perigo|queda de barreira|tombamento", text):
-        return "Alto"
-    if re.search(r"lentidao|chuva forte|obra|interdicao parcial|congestionamento|pare-e-siga", text):
-        return "Medio"
-    return "Baixo"
+    # Régua única (scraper/utils/risk.py, espelho de public/risk.js).
+    return classify_risk(item)["ascii"]
 
 
 def _risk_rank(value: str) -> int:

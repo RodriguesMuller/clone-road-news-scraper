@@ -24,18 +24,6 @@ test("roadBlockLevel classifica bloqueio total, parcial e liberado", () => {
   }
 });
 
-test("painel usa a mesma regra de bloqueio do backend", () => {
-  const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
-  const api = fs.readFileSync(path.join(ROOT, "api", "news-feed.js"), "utf8");
-  for (const name of ["BLOCK_ROAD_CONTEXT", "BLOCK_RELEASED", "BLOCK_STILL_ACTIVE", "BLOCK_PARTIAL", "BLOCK_TOTAL"]) {
-    const pattern = new RegExp(`const ${name} = (/.*/);`);
-    const fromApi = api.match(pattern)?.[1];
-    const fromHtml = html.match(pattern)?.[1];
-    assert.ok(fromApi && fromHtml, `${name} presente nos dois arquivos`);
-    assert.equal(fromHtml, fromApi, `${name} divergiu entre painel e API`);
-  }
-});
-
 test("mapa não depende mais dos tiles do CARTO que exigem API key", () => {
   const html = fs.readFileSync(path.join(ROOT, "public", "index.html"), "utf8");
   assert.doesNotMatch(html, /basemaps\.cartocdn\.com/);
@@ -72,7 +60,7 @@ test("Minha Rota não puxa bloqueio de outro estado por nome parecido e ancora o
   const items = [
     { title: "BR-101 em Rio Novo do Sul terá bloqueio total nesta terça", summary: "Trecho no Espírito Santo", published_at: now },
     { title: "Carreta tomba e bloqueia SP-021 em Poá", summary: "", published_at: now },
-    { title: "Alagamento interdita avenida em Santo André", summary: "", published_at: now },
+    { title: "Alagamento interdita avenida em Santo André, SP", summary: "", published_at: now },
     { title: "Acidente bloqueia avenida em Santos", summary: "", published_at: now },
   ];
   const { alerts } = matchRouteNews(items, route, "Santo André, SP", "Itaquaquecetuba, SP");

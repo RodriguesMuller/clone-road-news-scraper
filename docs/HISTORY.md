@@ -2,6 +2,14 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — Régua única de risco operacional
+**O que mudou:** criada `public/risk.js` (UMD: `window.RoadRisk` no painel, `require` na API) com `classifyRisk(item) → {level, rank, label, ascii, reason}` e `roadBlockLevel`; espelho em `scraper/utils/risk.py`. Painel (`operationalRisk`), Minha Rota (`riskForItem`), `api/news-summary.js`, `api/weekly-summary.js`, `scraper/weekly_news.py` e `scraper/utils/image_summary.py` passaram a usá-la; a IA deixou de sobrescrever `risk_level`. Dataset dourado em `docs/domain/risk_golden.json` (40 casos) validado por `tests/test_risk.js` e `tests/test_risk.py`. Corrigido `_fallback_summary` em `scraper/utils/filters.py`, que tratava qualquer título "X - Y" como aviso do INMET.
+**Por quê:** havia seis réguas com regras diferentes (54% de divergência entre painel e Minha Rota na amostra); o painel marcava 39% das notícias como Crítico, porque qualquer morte contava (exterior, julgamento, luto), enquanto caminhões tombados caíam em "Monitorar".
+**Arquivos/módulos:** `public/risk.js`, `scraper/utils/risk.py`, `public/index.html`, `api/news-feed.js`, `api/news-summary.js`, `api/weekly-summary.js`, `scraper/weekly_news.py`, `scraper/utils/image_summary.py`, `scraper/utils/filters.py`, `docs/domain/risk_golden.json`, `tests/test_risk.{js,py}`, `tests/test_road_block.js`.
+**Impacto medido:** amostra real de 254 notícias coletadas em 2026-11-10 (220 únicas): Crítico 39% → 8%, Alto 26% → 40%, Médio 14% → 41%, Baixo 21% → 11%; divergência JS × Python 0/254. Reclassifica mais de 10% do histórico, por isso a mudança foi levada a decisão humana no PR.
+**Alternativas descartadas:** classificar risco por IA (custo por item, não determinístico, e já divergia da régua do card); manter regex por tela com teste de paridade (seis cópias para manter); usar a gravidade humana (morte = Crítico) como régua, porque não responde se a rota está disponível.
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — Minha Rota: casamento de localidade e ancoragem de bloqueios
 **O que mudou:** `routeKeywords` em `api/news-feed.js` passou a gerar a localidade inteira de origem/destino (regex com limite de palavra) em vez de tokens soltos. `matchRouteNews` descarta itens geolocalizados fora do corredor de 45 km e itens que citam apenas rodovias que não fazem parte da rota, e ancora no mapa (origem ou destino) os itens casados por localidade. O painel avisa quando um bloqueio não tem ponto no traçado.
 **Por quê:** numa rota Santo André → Itaquaquecetuba, o token "santo" casou com "Espírito Santo" e um bloqueio total da BR-101 (ES) apareceu como Crítico na rota, sem marcador no mapa, já que não estava no trajeto.

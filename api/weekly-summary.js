@@ -1,6 +1,7 @@
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
 const { assertCanUse, json, recordUsage, supabaseFetch } = require("./_auth");
+const RoadRisk = require("../public/risk.js");
 
 function clean(value) {
   return String(value || "")
@@ -60,12 +61,9 @@ function categoryFromText(item) {
   return "Monitoramento";
 }
 
+// Régua única (public/risk.js). Rótulo sem acento ("Critico"/"Medio") por compatibilidade.
 function riskFromText(item) {
-  const text = normalizeForMatch(`${item.title} ${item.summary} ${item.category} ${item.type}`);
-  if (/roubo de carga|saque|bloqueio total|interdicao total|manifestacao/.test(text)) return "Critico";
-  if (/acidente|bloqueio|interdicao|tempestade|perigo|queda de barreira|tombamento/.test(text)) return "Alto";
-  if (/lentidao|chuva forte|obra|interdicao parcial|congestionamento|pare-e-siga/.test(text)) return "Medio";
-  return "Baixo";
+  return RoadRisk.classifyRisk(item).ascii;
 }
 
 function riskRank(value) {

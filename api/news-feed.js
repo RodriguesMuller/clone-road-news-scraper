@@ -139,29 +139,13 @@ function extractRoads(value) {
   return [...new Set(matches.map((road) => road.replace(/\s+/g, "-")))];
 }
 
-// Bloqueio de rodovia: o que o gestor precisa ver primeiro para decidir entre uma rota e outra.
-// Retorna "total", "partial" ou "" (sem bloqueio ativo / trecho ja liberado).
-const BLOCK_ROAD_CONTEXT = /\b(?:br|sp|mg|rj|rs|sc|pr|ba|go|mt|ms|pa|pe|ce|es|ro|to|ma|pi|rn|pb|al|se|am|ac|rr|ap|df)-?\s?\d{2,4}\b|rodovi|estrada|pista|ponte|viaduto|trecho|\bkm\s*\d|\bvia\b|serra/;
-const BLOCK_RELEASED = /\b(?:liberad[ao]s?|desbloquead[ao]s?|reabert[ao]s?|normalizad[ao]s?|retomad[ao]s?)\b|transito normal|fluxo normal|libera(?:cao)? total/;
-const BLOCK_STILL_ACTIVE = /segue (?:bloquead|interditad|fechad)|continua (?:bloquead|interditad|fechad)|permanece (?:bloquead|interditad|fechad)|sem previsao de liberacao/;
-const BLOCK_PARTIAL = /interdicao parcial|bloqueio parcial|parcialmente (?:bloquead|interditad|fechad)|meia pista|pare[- ]?e[- ]?siga|faixa (?:interditada|bloqueada)|uma (?:das )?faixas?|uma pista/;
-const BLOCK_TOTAL = /bloqueio total|interdicao total|totalmente (?:bloquead|interditad|fechad)|\bbloquead[ao]s?\b|\binterditad[ao]s?\b|\binterdita\b|\bbloqueia\b|\bbloqueio\b|\binterdicao\b|\bfechad[ao]s?\b|queda de barreira|desabamento de ponte|ponte (?:cai|caiu|desaba)/;
-
-function roadBlockLevel(item) {
-  const text = normalize(`${item.title || ""} ${item.summary || ""}`);
-  if (!BLOCK_ROAD_CONTEXT.test(text)) return "";
-  if (BLOCK_RELEASED.test(text) && !BLOCK_STILL_ACTIVE.test(text)) return "";
-  if (BLOCK_PARTIAL.test(text)) return "partial";
-  if (BLOCK_TOTAL.test(text)) return "total";
-  return "";
-}
+// Régua única de risco/bloqueio, compartilhada com o painel e os resumos (public/risk.js).
+const RoadRisk = require("../public/risk.js");
+const { roadBlockLevel } = RoadRisk;
 
 function riskForItem(item) {
-  const text = normalize(`${item.title} ${item.summary} ${item.category} ${item.risk_level}`);
-  if (/bloqueio total|interdicao total|queda de barreira|manifestacao|protesto|saque|roubo de carga/.test(text)) return [4, "Crítico"];
-  if (/acidente|bloqueio|interdicao|tombamento|alagamento|tempestade|grande perigo/.test(text)) return [3, "Alto"];
-  if (/lentidao|congestionamento|pare-e-siga|obra|chuva forte|fila/.test(text)) return [2, "Médio"];
-  return [1, "Baixo"];
+  const risk = RoadRisk.classifyRisk(item);
+  return [risk.rank, risk.label, risk.reason];
 }
 
 function categoryForItem(item) {
@@ -362,9 +346,8 @@ function matchRouteNews(items, route, origin, destination) {
     if (preciseGeo && !corridorMatch) return null;
     // Cita rodovias e nenhuma delas faz parte da rota: o casamento por localidade e coincidencia.
     if (!roadMatch && !corridorMatch && itemRoads.length) return null;
-    let [riskRank, riskLevel] = riskForItem(item);
+    const [riskRank, riskLevel, riskReason] = riskForItem(item);
     const blockLevel = roadBlockLevel(item);
-    if (blockLevel === "total" && riskRank < 4) [riskRank, riskLevel] = [4, "Crítico"];
     const publishedAt = clean(item.published_at || item.scraped_at || item.created_at);
     const ageHours = publishedAt ? Math.max(0, (now - new Date(publishedAt).getTime()) / 36e5) : 999;
     const highway = roadMatch || clean(item.highway) || itemRoads[0] || "";
@@ -385,6 +368,7 @@ function matchRouteNews(items, route, origin, destination) {
       source: clean(item.source),
       category: categoryForItem(item),
       risk_level: riskLevel,
+      risk_reason: riskReason,
       highway,
       region,
       published_at: publishedAt,
@@ -694,3 +678,4 @@ module.exports = async function handler(req, res) {
 // Exposto para testes (node:test).
 module.exports.roadBlockLevel = roadBlockLevel;
 module.exports.matchRouteNews = matchRouteNews;
+module.exports.riskForItem = riskForItem;
