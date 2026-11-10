@@ -28,7 +28,7 @@ test("dashboard executivo é a página inicial e carrega antes do script princip
   assert.match(head, /localStorage\.getItem\("roadnews\.theme"\)/);
   assert.match(html, /:root\[data-theme="light"\] \{/);
   const dashboard = fs.readFileSync(path.join(ROOT, "public", "dashboard.js"), "utf8");
-  assert.match(dashboard, /window\.RoadDashboard = \{ render, renderChrome, onShow, applyTheme \}/);
+  assert.match(dashboard, /window\.RoadDashboard = \{ render, renderChrome, onShow, applyTheme, newsMedia, themeOfItem, icon, THEME_COLOR, LEVEL \}/);
   assert.doesNotMatch(dashboard, /Math\.random\(\) \* \d|fake|mock/i, "sem números inventados");
 });
 

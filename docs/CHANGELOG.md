@@ -2,6 +2,13 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — Novo design da página de Notícias e das imagens
+- **Alterado**: a página de Notícias segue o mockup aprovado, nas cores Overhaul.
+  - Filtros por categoria com ícone e contagem (Todas, Acidentes, Interdições, Obras, Clima, Outros) e seletor de período.
+  - Cards em duas colunas com imagem, faixa e selo na cor da categoria, título, local, tempo, fonte, etiquetas (risco, rodovia, categoria), impacto na frota e as ações "Gerar resumo", "Acompanhar evento" e "Ver detalhe". A borda vermelha de rodovia bloqueada continua.
+  - Rodapé com o total de notícias e as principais fontes.
+- **Alterado**: as ilustrações de reserva (quando a fonte não publica foto) viraram cenas de estrada em perspectiva, com céu ao entardecer, horizonte e vegetação, mais um elemento por categoria: placa e cones, barreira, obra, faróis no trânsito, chuva, neblina, caminhão, ponte, posto. Nunca há veículo acidentado nem pessoas. Valem no Dashboard e nas Notícias.
+
 ## 2026-11-10 — Central de Evento: o cliente escolhe, a IA acompanha
 - **Alterado**: a IA não decide mais o que vai para a Central de Evento. Cada notícia (Notícias, Alertas, Salvos) tem o botão **"Acompanhar evento"**, e o evento fica visível para toda a empresa.
 - **Adicionado**: a cada coleta (de hora em hora), a IA revisa cada evento acompanhado. Ela confirma quais notícias novas são do mesmo evento e atualiza a situação (resumo, impacto para a frota, **decisão de despacho**, ações recomendadas, duração) e a linha do tempo. O evento é **encerrado** quando uma notícia afirmar a liberação. O cliente também pode encerrar, reabrir ou parar de acompanhar.
