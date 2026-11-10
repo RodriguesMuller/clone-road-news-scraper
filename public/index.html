@@ -2769,7 +2769,7 @@
       viewMode: null,
       access: null,
       dataLoadError: "",
-      majorEvents: [],
+      followedEvents: [],
       selectedMajorEventId: null,
       admin: { users: [], clients: [], packages: [], userPackages: [], usage: [], logs: [] },
       filters: { search: "", period: "24", region: "", category: "", sort: "impact" },
@@ -2802,7 +2802,7 @@
       dashboard: { title: "Dashboard", subtitle: "Visão executiva das rodovias e do impacto na frota." },
       news: { title: "Notícias", subtitle: "Busca, filtros e acompanhamento das notícias recentes." },
       alerts: { title: "Alertas", subtitle: "Ocorrências recentes com impacto operacional." },
-      events: { title: "Central de Evento", subtitle: "Acompanhamento de eventos graves com impacto logístico confirmado." },
+      events: { title: "Central de Evento", subtitle: "Eventos que sua empresa escolheu acompanhar, atualizados a cada notícia relacionada." },
       route: { title: "Minha Rota", subtitle: "Condição de trânsito, ocorrências relacionadas e recomendação para a liberação." },
       saved: { title: "Salvos", subtitle: "Notícias marcadas para acompanhar depois." },
       operational: { title: "Resumo operacional", subtitle: "Tendências, regiões, rodovias e riscos do período." },
@@ -3800,7 +3800,7 @@ function showAuthView() {
 
       state.recentItems = payload.recentRows || [];
       state.mapItems = payload.mapRows || [];
-      state.majorEvents = payload.majorEvents || [];
+      state.followedEvents = payload.followedEvents || [];
 
       const merged = new Map();
       for (const item of [...(payload.latestNews || []), ...(payload.latestInmet || [])]) {
@@ -4210,269 +4210,230 @@ function showAuthView() {
                 <h3>${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${title}</a>` : title}</h3>
                 <p>${escapeHtml(shortText(summary, 135) || "Ocorrência recente com possível impacto operacional.")}</p>
                 ${fleetImpactMarkup(item)}
-                ${url ? `<div class="actions"><a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir fonte</a></div>` : ""}
+                <div class="actions">${url ? `<a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir fonte</a>` : ""}${followButtonMarkup(item)}</div>
               </article>
             `;
           }).join("")
         : `<div class="hint">Nenhum alerta operacional acionável nas últimas ${state.alertHours}h.</div>`;
     }
 
-    function majorEventMeta(event) {
-      return event?.metadata && typeof event.metadata === "object" ? event.metadata : {};
+    // Central de Evento: eventos que a EMPRESA escolheu acompanhar ("Acompanhar evento" numa
+    // notícia). A API reúne as notícias seguintes sobre o mesmo evento (rodovia, nomes próprios e
+    // palavras-chave em comum), sem IA. Encerrados ficam visíveis por 30 dias.
+    const FOLLOWED_STALE_MS = 72 * 3600 * 1000;
+
+    function followedEventUpdatedValue(event) {
+      return parseBrasiliaDate(event.last_update_at || event.created_at)?.getTime() || 0;
     }
 
-    function majorEventUpdatedValue(event) {
-      const meta = majorEventMeta(event);
-      return parseBrasiliaDate(meta.last_update_at || event.resolved_at || event.created_at)?.getTime() || 0;
+    function isActiveFollowedEvent(event) {
+      return event.status !== "closed";
     }
 
-    function isActiveMajorEvent(event) {
-      const status = majorEventMeta(event).operational_status;
-      return event.status === "open" && status !== "encerrado";
+    function followedEventForItem(item) {
+      const url = String(item?.url || "");
+      return url ? (state.followedEvents || []).find((event) => isActiveFollowedEvent(event) && event.seed?.url === url) || null : null;
     }
 
-    const MAJOR_EVENT_STALE_MS = 72 * 3600 * 1000;
-    const MAJOR_EVENT_CLOSED_WINDOW_MS = 30 * 24 * 3600 * 1000;
-
-    // Dias sem atualização de um evento ativo (null se atualizado nas últimas 72h).
-    function majorEventStaleDays(event) {
-      if (!isActiveMajorEvent(event)) return null;
-      const updated = majorEventUpdatedValue(event);
-      if (!updated || Date.now() - updated < MAJOR_EVENT_STALE_MS) return null;
-      return Math.floor((Date.now() - updated) / (24 * 3600 * 1000));
+    function canFollowEvents() {
+      return Boolean(state.authEnabled && state.session);
     }
 
-    function staleBadge(event) {
-      const days = majorEventStaleDays(event);
-      return days === null ? "" : `<span class="event-badge" title="Nenhuma notícia nova sobre o evento desde a última atualização. Confirme a situação antes de decidir.">Sem atualização há ${days} dias</span>`;
+    // Botão "Acompanhar evento" dos cards de notícia e de alerta.
+    function followButtonMarkup(item) {
+      if (!canFollowEvents() || !/^https?:\/\//i.test(String(item?.url || ""))) return "";
+      const followed = followedEventForItem(item);
+      return followed
+        ? `<button class="mini-button follow-event following" type="button" data-event-open="${escapeHtml(followed.id)}" title="Esta notícia já está na Central de Evento">Acompanhando</button>`
+        : `<button class="mini-button follow-event" type="button" data-follow-url="${escapeHtml(item.url)}" title="Levar para a Central de Evento e reunir as próximas notícias sobre este evento">Acompanhar evento</button>`;
     }
 
-    // Decisão de despacho sugerida pela triagem: o que o gestor faz com os caminhões que iriam pelo trecho.
-    function dispatchDecision(event) {
-      const labels = {
-        segurar: ["Segurar veículos para o trecho", "critical"],
-        liberar_com_desvio: ["Liberar com desvio", "monitoring"],
-        liberar_com_atencao: ["Liberar com atenção", ""],
-      };
-      const decision = majorEventMeta(event).dispatch_decision;
-      if (!isActiveMajorEvent(event)) return ["Trecho liberado: despacho normal", ""];
-      return labels[decision] || null;
+    function followedStaleBadge(event) {
+      if (!isActiveFollowedEvent(event)) return "";
+      const updated = followedEventUpdatedValue(event);
+      if (!updated || Date.now() - updated < FOLLOWED_STALE_MS) return "";
+      const days = Math.floor((Date.now() - updated) / (24 * 3600 * 1000));
+      return `<span class="event-badge" title="Nenhuma notícia nova sobre o evento. Confirme a situação antes de decidir.">Sem notícia nova há ${days} dias</span>`;
     }
 
-    function majorEventStatus(event) {
-      const status = majorEventMeta(event).operational_status || (event.status === "resolved" ? "encerrado" : "monitoramento");
-      const labels = {
-        em_andamento: ["Em andamento", "active"],
-        monitoramento: ["Em monitoramento", "monitoring"],
-        encerrado: ["Encerrado", ""],
-      };
-      return labels[status] || labels.monitoramento;
+    function followedEventStatus(event) {
+      return isActiveFollowedEvent(event) ? ["Em acompanhamento", "active"] : ["Encerrado", ""];
     }
 
-    function renderEventList(values, emptyMessage) {
-      const items = Array.isArray(values) ? values.filter(Boolean) : [];
-      return items.length
-        ? `<ul class="event-list">${items.map((value) => `<li>${escapeHtml(value)}</li>`).join("")}</ul>`
-        : `<p>${escapeHtml(emptyMessage)}</p>`;
-    }
-
-    function renderEventTimeline(meta) {
-      const history = Array.isArray(meta.history) ? [...meta.history].reverse().slice(0, 5) : [];
-      if (!history.length) return `<p>O evento está sendo acompanhado desde o primeiro registro confirmado.</p>`;
-      return `<div class="event-timeline">${history.map((item) => `
-        <div class="event-timeline-item">
-          <strong>${escapeHtml(majorEventStatus({ status: item.status === "encerrado" ? "resolved" : "open", metadata: { operational_status: item.status } })[0])} · ${escapeHtml(item.on ? formatCalendarDate(item.on) : formatDate(item.at))}</strong>
-          <span>${escapeHtml(item.note || "Atualização operacional registrada.")}</span>
-        </div>
-      `).join("")}</div>`;
-    }
-
-    function renderEventEvidence(meta) {
-      const evidence = Array.isArray(meta.evidence) ? meta.evidence.slice(0, 8) : [];
-      if (!evidence.length) return `<p>As fontes relacionadas ainda estão sendo consolidadas.</p>`;
-      return `<div class="event-evidence-list">${evidence.map((item) => {
+    function renderFollowedUpdates(event) {
+      const seed = event.seed || {};
+      const updates = [...(event.related || []), { ...seed, origin: true }];
+      return `<div class="event-evidence-list">${updates.map((item) => {
         const url = safeUrl(item.url);
-        const title = escapeHtml(item.title || "Atualização relacionada");
+        const title = escapeHtml(item.title || "Notícia relacionada");
         return `
           <article class="event-evidence">
+            ${item.origin ? `<span class="event-badge">Notícia de origem</span>` : ""}
             ${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${title}</a>` : `<strong>${title}</strong>`}
+            ${item.summary ? `<p>${escapeHtml(shortText(item.summary, 220))}</p>` : ""}
             <div class="event-evidence-meta"><span>${escapeHtml(item.source || "Fonte monitorada")}</span><span>${escapeHtml(formatDate(item.published_at))}</span></div>
           </article>
         `;
       }).join("")}</div>`;
     }
 
-    function canManageMajorEvents() {
-      const privilegedProfile = isAdminProfile() || isManagerProfile();
-      return privilegedProfile && canAccessManagementView();
-    }
-
-    function renderPrimaryMajorEvent(event) {
-      const meta = majorEventMeta(event);
-      const [statusLabel, statusClass] = majorEventStatus(event);
-      const infrastructures = Array.isArray(meta.affected_infrastructure) ? meta.affected_infrastructure.filter(Boolean) : [];
-      const location = meta.location || meta.country || "Localização em confirmação";
-      const scope = meta.scope === "internacional" ? "Internacional" : "Nacional";
-      const managementActions = canManageMajorEvents() ? `
-        <div class="event-actions">
-          ${meta.operational_status === "encerrado"
-            ? `<button class="mini-button" type="button" data-event-id="${escapeHtml(event.id)}" data-event-status="em_andamento">Reabrir evento</button>`
-            : `<button class="mini-button danger" type="button" data-event-id="${escapeHtml(event.id)}" data-event-status="encerrado">Encerrar evento</button>
-               <button class="mini-button" type="button" data-event-id="${escapeHtml(event.id)}" data-event-status="descartado" title="Remove da Central um evento que não afeta frota de carga. A IA não o publica de novo.">Descartar: não é evento grave</button>`}
-        </div>
-      ` : "";
+    function renderPrimaryFollowedEvent(event) {
+      const seed = event.seed || {};
+      const [statusLabel, statusClass] = followedEventStatus(event);
+      const [riskClassName, riskLabel] = operationalRisk(seed);
+      const road = seed.road || roadFromText(`${seed.title || ""} ${seed.summary || ""}`);
+      const region = cleanDisplayText(seed.region || findPlace(`${seed.title || ""} ${seed.summary || ""}`));
+      const updates = (event.related || []).length;
+      const actions = isActiveFollowedEvent(event)
+        ? `<button class="mini-button danger" type="button" data-followed-id="${escapeHtml(event.id)}" data-followed-action="close">Encerrar evento</button>`
+        : `<button class="mini-button" type="button" data-followed-id="${escapeHtml(event.id)}" data-followed-action="reopen">Reabrir evento</button>`;
       return `
         <article class="event-hero">
           <div class="event-hero-main">
             <div class="event-badges">
-              <span class="event-badge critical">Crítico</span>
+              <span class="event-badge ${riskClassName === "critical" ? "critical" : ""}" title="${escapeHtml(riskReason(seed))}">Risco ${escapeHtml(riskLabel)}</span>
               <span class="event-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
-              ${dispatchDecision(event) ? `<span class="event-badge ${dispatchDecision(event)[1]}">Despacho: ${escapeHtml(dispatchDecision(event)[0])}</span>` : ""}
-              ${staleBadge(event)}
-              <span class="event-badge">${escapeHtml(meta.category || "Evento logístico")}</span>
-              <span class="event-badge">${escapeHtml(scope)}</span>
-              <span class="event-badge">${escapeHtml(location)}</span>
+              ${followedStaleBadge(event)}
+              ${road ? `<span class="event-badge">Rodovia ${escapeHtml(road)}</span>` : ""}
+              ${region ? `<span class="event-badge">${escapeHtml(region)}</span>` : ""}
             </div>
-            <h2>${escapeHtml(event.message || meta.title || "Evento logístico grave")}</h2>
-            <p class="event-lead">Foi identificado um evento ${scope.toLowerCase()} com impacto logístico relevante. ${escapeHtml(meta.summary || meta.operational_impact || "A situação está sendo acompanhada pelas fontes monitoradas.")}</p>
+            <h2>${escapeHtml(event.title || seed.title || "Evento acompanhado")}</h2>
+            <p class="event-lead">${escapeHtml(shortText(seed.summary, 320) || "Acompanhando as próximas notícias sobre este evento.")}</p>
           </div>
           <div class="event-metrics">
             <div class="event-metric"><span>Status</span><strong>${escapeHtml(statusLabel)}</strong></div>
-            <div class="event-metric"><span>Início</span><strong>${escapeHtml(formatCalendarDate(meta.started_on || meta.started_at || event.created_at))}</strong></div>
-            <div class="event-metric"><span>Encerramento</span><strong>${escapeHtml(!isActiveMajorEvent(event) && (meta.ended_on || meta.ended_at || event.resolved_at) ? formatCalendarDate(meta.ended_on || meta.ended_at || event.resolved_at) : "Em andamento")}</strong></div>
-            <div class="event-metric"><span>Última atualização</span><strong>${escapeHtml(formatDate(meta.last_update_at || event.created_at))}</strong></div>
-            <div class="event-metric"><span>Infraestrutura afetada</span><strong>${escapeHtml(infrastructures.join(" · ") || "Em confirmação")}</strong></div>
-            <div class="event-metric"><span>Decisão de despacho</span><strong>${escapeHtml(dispatchDecision(event)?.[0] || "Avaliar antes de liberar")}</strong></div>
+            <div class="event-metric"><span>Início</span><strong>${escapeHtml(formatCalendarDate(seed.published_at || event.created_at))}</strong></div>
+            <div class="event-metric"><span>Encerramento</span><strong>${escapeHtml(!isActiveFollowedEvent(event) && event.closed_at ? formatCalendarDate(event.closed_at) : "Em andamento")}</strong></div>
+            <div class="event-metric"><span>Última notícia</span><strong>${escapeHtml(formatDate(event.last_update_at))}</strong></div>
+            <div class="event-metric"><span>Atualizações</span><strong>${updates ? `${updates} notícia${updates > 1 ? "s" : ""} relacionada${updates > 1 ? "s" : ""}` : "Nenhuma ainda"}</strong></div>
+            <div class="event-metric"><span>Acompanhado por</span><strong>${escapeHtml(event.created_by_name || "Sua empresa")}</strong></div>
           </div>
         </article>
-        <div class="event-detail-grid">
-          <div class="event-center">
-            <section class="event-section">
-              <h3>Impacto operacional</h3>
-              <p>${escapeHtml(meta.operational_impact || "O impacto operacional está sendo consolidado.")}</p>
-              ${meta.detour ? `<h4>Alternativa confirmada</h4><p>${escapeHtml(meta.detour)}</p>` : ""}
-              <h4>Ações recomendadas</h4>
-              ${renderEventList(meta.recommended_actions, "Acompanhar as atualizações antes de alterar rotas ou janelas operacionais.")}
-            </section>
-            <section class="event-section">
-              <h3>Linha do tempo</h3>
-              ${renderEventTimeline(meta)}
-            </section>
-            <section class="event-section">
-              <h3>Notícias relacionadas</h3>
-              ${renderEventEvidence(meta)}
-            </section>
+        <section class="event-section">
+          <h3>Atualizações do evento</h3>
+          <p class="admin-note">Notícias sobre a mesma ocorrência (mesma rodovia ou local e termos em comum), da mais recente para a mais antiga. A lista é atualizada a cada coleta.</p>
+          ${renderFollowedUpdates(event)}
+          <div class="event-actions" style="margin-top:14px;">
+            ${actions}
+            <button class="mini-button" type="button" data-followed-id="${escapeHtml(event.id)}" data-followed-action="unfollow">Parar de acompanhar</button>
           </div>
-          <aside class="event-section">
-            <h3>Análise operacional</h3>
-            <div class="event-analysis-row"><span>Status operacional</span><strong>${escapeHtml(statusLabel)}</strong></div>
-            <div class="event-analysis-row"><span>Critérios do evento</span><strong>${escapeHtml((meta.why_major || []).join(" · ") || "Gravidade, contexto logístico e impacto operacional confirmados.")}</strong></div>
-            <div class="event-analysis-row"><span>Abrangência</span><strong>${escapeHtml(`${scope} · ${location}`)}</strong></div>
-            <div class="event-analysis-row"><span>Confiança da análise</span><strong>${escapeHtml(meta.confidence_label || "Alta")}</strong></div>
-            <div class="event-analysis-row"><span>Duração estimada</span><strong>${escapeHtml(meta.estimated_duration || "Sem previsão confirmada")}</strong></div>
-            ${managementActions}
-          </aside>
-        </div>
+        </section>
+      `;
+    }
+
+    function followedEventCard(event) {
+      const [statusLabel, statusClass] = followedEventStatus(event);
+      const updates = (event.related || []).length;
+      return `
+        <article class="event-evidence">
+          <div class="event-badges"><span class="event-badge ${statusClass}">${escapeHtml(statusLabel)}</span>${followedStaleBadge(event)}<span class="event-badge">${updates} atualizaç${updates === 1 ? "ão" : "ões"}</span></div>
+          <h3 style="margin:10px 0 6px;">${escapeHtml(event.title || "Evento acompanhado")}</h3>
+          <div class="event-evidence-meta"><span>Última notícia</span><span>${escapeHtml(formatDate(event.last_update_at))}</span></div>
+          <div class="event-actions" style="margin-top:10px;"><button class="mini-button" type="button" data-event-open="${escapeHtml(event.id)}">Abrir evento</button></div>
+        </article>
       `;
     }
 
     function renderMajorEvents() {
-      const events = [...(state.majorEvents || [])].sort((a, b) => majorEventUpdatedValue(b) - majorEventUpdatedValue(a));
-      const active = events.filter(isActiveMajorEvent);
-      const closed = events.filter((event) => !isActiveMajorEvent(event));
-      const banner = document.getElementById("activeEventBanner");
+      const events = [...(state.followedEvents || [])].sort((a, b) => followedEventUpdatedValue(b) - followedEventUpdatedValue(a));
+      const active = events.filter(isActiveFollowedEvent);
+      const closed = events.filter((event) => !isActiveFollowedEvent(event));
       const count = document.getElementById("activeEventSidebarCount");
       if (count) count.textContent = String(active.length);
-
-      if (banner) {
-        const event = active[0];
-        banner.hidden = !event;
-        banner.innerHTML = event ? `
-          <div>
-            <span class="event-badge critical">Evento crítico em andamento</span>
-            <h2>${escapeHtml(event.message || "Evento logístico grave")}</h2>
-            <p>${dispatchDecision(event) ? `<strong>Despacho: ${escapeHtml(dispatchDecision(event)[0])}.</strong> ` : ""}${escapeHtml(shortText(majorEventMeta(event).operational_impact || majorEventMeta(event).summary, 190))}</p>
-          </div>
-          <button class="mini-button" type="button" data-route="/central-eventos" data-scroll="clientEventsPage">Acompanhar evento</button>
-        ` : "";
-      }
+      const banner = document.getElementById("activeEventBanner");
+      if (banner) { banner.hidden = true; banner.innerHTML = ""; }
 
       const target = document.getElementById("eventCenter");
       if (!target) return;
-      const recentClosed = closed.filter((event) => Date.now() - majorEventUpdatedValue(event) <= MAJOR_EVENT_CLOSED_WINDOW_MS);
-      // Destaque: o evento aberto pelo usuário ou o ativo mais recente. Sem ativo, não promove um
-      // evento encerrado a destaque (parecia que havia evento grave acontecendo).
+      const emptyMessage = `<div class="event-empty"><strong>Nenhum evento em acompanhamento.</strong><br>Em Notícias ou Alertas, clique em "Acompanhar evento" numa notícia: ela vem para cá e as próximas notícias sobre o mesmo evento são reunidas aqui para toda a sua empresa.</div>`;
       const primary = events.find((event) => event.id === state.selectedMajorEventId) || active[0] || null;
-      if (!primary && !recentClosed.length) {
-        target.innerHTML = `<div class="event-empty"><strong>Nenhum evento grave ativo.</strong><br>Ocorrências comuns continuam disponíveis em Alertas e Notícias.</div>`;
+      if (!primary) {
+        target.innerHTML = emptyMessage + (closed.length ? `
+          <section class="event-section"><h3>Eventos encerrados nos últimos 30 dias</h3><div class="event-history-list">${closed.map(followedEventCard).join("")}</div></section>
+        ` : "");
         return;
       }
-      const otherActive = active.filter((event) => event.id !== primary?.id);
-      const otherClosed = recentClosed.filter((event) => event.id !== primary?.id);
-      target.innerHTML = (primary ? renderPrimaryMajorEvent(primary) : `<div class="event-empty"><strong>Nenhum evento grave ativo.</strong><br>Ocorrências comuns continuam disponíveis em Alertas e Notícias.</div>`) + (otherActive.length ? `
-        <section class="event-section">
-          <h3>Outros eventos ativos</h3>
-          <div class="event-history-list">${otherActive.map((event) => {
-            const meta = majorEventMeta(event);
-            const [statusLabel, statusClass] = majorEventStatus(event);
-            return `
-              <article class="event-evidence">
-                <div class="event-badges"><span class="event-badge critical">Crítico</span><span class="event-badge ${statusClass}">${escapeHtml(statusLabel)}</span>${staleBadge(event)}<span class="event-badge">${escapeHtml(meta.scope === "internacional" ? "Internacional" : "Nacional")}</span></div>
-                <h3 style="margin:10px 0 6px;">${escapeHtml(event.message || "Evento logístico grave")}</h3>
-                <p>${escapeHtml(shortText(meta.operational_impact || meta.summary, 220))}</p>
-                <div class="event-actions" style="margin-top:10px;"><button class="mini-button" type="button" data-event-open="${escapeHtml(event.id)}">Abrir evento</button></div>
-              </article>
-            `;
-          }).join("")}</div>
-        </section>
-      ` : "") + (otherClosed.length ? `
-        <section class="event-section">
-          <h3>Eventos encerrados nos últimos 30 dias</h3>
-          <div class="event-history-list">${otherClosed.slice(0, 5).map((event) => `
-            <article class="event-evidence">
-              <strong>${escapeHtml(event.message || "Evento encerrado")}</strong>
-              <div class="event-evidence-meta"><span>Encerrado</span><span>${escapeHtml(formatCalendarDate(majorEventMeta(event).ended_on || majorEventMeta(event).ended_at || event.resolved_at || majorEventMeta(event).last_update_at))}</span></div>
-              <div class="event-actions" style="margin-top:10px;"><button class="mini-button" type="button" data-event-open="${escapeHtml(event.id)}">Abrir evento</button></div>
-            </article>
-          `).join("")}</div>
-        </section>
-      ` : "");
+      const otherActive = active.filter((event) => event.id !== primary.id);
+      const otherClosed = closed.filter((event) => event.id !== primary.id);
+      target.innerHTML = renderPrimaryFollowedEvent(primary)
+        + (otherActive.length ? `<section class="event-section"><h3>Outros eventos em acompanhamento</h3><div class="event-history-list">${otherActive.map(followedEventCard).join("")}</div></section>` : "")
+        + (otherClosed.length ? `<section class="event-section"><h3>Eventos encerrados nos últimos 30 dias</h3><div class="event-history-list">${otherClosed.map(followedEventCard).join("")}</div></section>` : "");
     }
 
     function openMajorEvent(eventId) {
       state.selectedMajorEventId = eventId;
       renderMajorEvents();
-      scrollToTarget("eventCenter");
+      if (normalizeRoute(window.location.pathname) !== "/central-eventos") applyRoute("/central-eventos", { scroll: "clientEventsPage" });
+      else scrollToTarget("eventCenter");
     }
 
-    async function updateMajorEventStatus(eventId, operationalStatus) {
-      if (!canManageMajorEvents()) {
-        setNotice("Ação disponível apenas para gestores e administradores.");
-        return;
-      }
-      const labels = {
-        encerrado: ["encerrar", "Encerrar evento", "Encerrar", "Evento encerrado."],
-        descartado: ["descartar", "Descartar evento", "Descartar", "Evento descartado. Ele sai da Central e não será publicado de novo."],
-      };
-      const [actionLabel, modalTitle, confirmLabel, doneMessage] = labels[operationalStatus] || ["reabrir", "Reabrir evento", "Reabrir", "Evento reaberto."];
-      const confirmed = await confirmActionModal(
-        operationalStatus === "descartado"
-          ? "Descartar este evento? Ele sai da Central para todos os usuários e a triagem automática não o publica de novo. Use quando a ocorrência não afeta frota de carga."
-          : `Deseja ${actionLabel} este evento? A alteração ficará visível para todos os usuários.`,
-        modalTitle,
-        confirmLabel
-      );
-      if (!confirmed) return;
+    function findItemByUrl(url) {
+      return [...(state.items || []), ...(state.recentItems || []), ...(state.mapItems || [])].find((item) => item?.url === url) || null;
+    }
+
+    async function followedEventsApi(body) {
+      const response = await fetch("/api/news-summary", {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Não foi possível atualizar o evento.");
+      return payload;
+    }
+
+    function rerenderFollowButtons() {
+      renderNews();
+      renderRecentAlerts();
+    }
+
+    async function followNewsEvent(url, button) {
+      const item = findItemByUrl(url);
+      if (!item) return;
       try {
-        const response = await fetch("/api/news-summary", {
-          method: "POST",
-          headers: authHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify({ action: "event-status", event_id: eventId, operational_status: operationalStatus }),
+        if (button) { button.disabled = true; button.textContent = "Adicionando..."; }
+        const { event, created } = await followedEventsApi({
+          action: "follow-event",
+          item: {
+            title: item.title, url: item.url, summary: smartSummary(item), source: item.source, category: item.category,
+            published_at: item.published_at || item.created_at || item.scraped_at,
+            road: roadFromText(`${item.title || ""} ${item.summary || ""} ${item.highway || ""}`),
+            region: cleanDisplayText(item.region || item.city || item.state || findPlace(`${item.title || ""} ${item.summary || ""}`)),
+          },
         });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.error || "Não foi possível atualizar o evento.");
+        state.followedEvents = [event, ...(state.followedEvents || []).filter((current) => current.id !== event.id)];
+        setNotice(created ? "Evento adicionado à Central de Evento. As próximas notícias sobre ele aparecem lá." : "Este evento já está sendo acompanhado pela sua empresa.");
+        rerenderFollowButtons();
+        openMajorEvent(event.id);
+      } catch (error) {
+        setNotice(getFriendlyErrorMessage(error, "Não foi possível acompanhar o evento."));
+        if (button) { button.disabled = false; button.textContent = "Acompanhar evento"; }
+      }
+    }
+
+    async function updateFollowedEvent(eventId, action) {
+      const texts = {
+        close: ["Encerrar este evento? Ele vai para os encerrados e para de receber novas notícias. Vale para toda a sua empresa.", "Encerrar evento", "Encerrar", "Evento encerrado."],
+        reopen: ["Reabrir este evento? Ele volta a receber as novas notícias relacionadas.", "Reabrir evento", "Reabrir", "Evento reaberto."],
+        unfollow: ["Parar de acompanhar este evento? Ele sai da Central de Evento para toda a sua empresa.", "Parar de acompanhar", "Parar de acompanhar", "Evento removido da Central."],
+      };
+      const [question, title, confirmLabel, doneMessage] = texts[action] || texts.close;
+      if (!(await confirmActionModal(question, title, confirmLabel))) return;
+      try {
+        if (action === "unfollow") {
+          await followedEventsApi({ action: "unfollow-event", event_id: eventId });
+          state.followedEvents = (state.followedEvents || []).filter((event) => event.id !== eventId);
+          if (state.selectedMajorEventId === eventId) state.selectedMajorEventId = null;
+        } else {
+          const status = action === "close" ? "closed" : "active";
+          await followedEventsApi({ action: "followed-event-status", event_id: eventId, status });
+          state.followedEvents = (state.followedEvents || []).map((event) => event.id === eventId
+            ? { ...event, status, closed_at: status === "closed" ? new Date().toISOString() : null }
+            : event);
+        }
         setNotice(doneMessage);
-        await refresh();
+        renderMajorEvents();
+        rerenderFollowButtons();
       } catch (error) {
         setNotice(getFriendlyErrorMessage(error, "Não foi possível atualizar o evento."));
       }
@@ -4546,6 +4507,7 @@ function showAuthView() {
                 <div class="actions">
                   <button class="mini-button make-image" type="button" data-index="${index}">Gerar resumo</button>
                   ${url ? `<a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir fonte</a>` : ""}
+                  ${followButtonMarkup(item)}
                   <button class="mini-button remove-saved" type="button" data-key="${escapeHtml(key)}">Remover</button>
                 </div>
               </article>
@@ -4601,6 +4563,7 @@ function showAuthView() {
                 <div class="actions">
                   <button class="mini-button make-image" type="button" data-index="${index}">Gerar resumo</button>
                   ${url ? `<a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir fonte</a>` : ""}
+                  ${followButtonMarkup(item)}
                 </div>
               </article>
             `;
@@ -7317,7 +7280,7 @@ function showAuthView() {
         state.items = [];
         state.recentItems = [];
         state.mapItems = [];
-        state.majorEvents = [];
+        state.followedEvents = [];
         state.total = 0;
         state.dataLoadError = getFriendlyErrorMessage(error, "Erro ao carregar dados.");
         setNotice(state.dataLoadError);
@@ -7567,10 +7530,16 @@ function showAuthView() {
         openMajorEvent(eventOpenButton.dataset.eventOpen);
         return;
       }
-      const eventStatusButton = event.target.closest("[data-event-status][data-event-id]");
-      if (eventStatusButton) {
+      const followButton = event.target.closest("[data-follow-url]");
+      if (followButton) {
         event.preventDefault();
-        await updateMajorEventStatus(eventStatusButton.dataset.eventId, eventStatusButton.dataset.eventStatus);
+        await followNewsEvent(followButton.dataset.followUrl, followButton);
+        return;
+      }
+      const followedButton = event.target.closest("[data-followed-action][data-followed-id]");
+      if (followedButton) {
+        event.preventDefault();
+        await updateFollowedEvent(followedButton.dataset.followedId, followedButton.dataset.followedAction);
         return;
       }
       const actionButton = event.target.closest("[data-action='weekly-summary']");
