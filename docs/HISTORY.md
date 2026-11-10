@@ -2,6 +2,14 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — QA da Central de Evento
+**O que mudou:** `merge_event` em `scraper/event_intelligence.py` (regras de reabertura, data de encerramento estável, início por data real; `_upsert_events` passa a usá-la); `updateMajorEventStatus` em `api/news-summary.js` limpa `ended_on`/`ended_at` ao reabrir e grava `ended_at` ao encerrar; `renderMajorEvents`/`renderPrimaryMajorEvent` em `public/index.html` (sem destaque para encerrado, janela de 30 dias, selo de evento parado). Testes: `MergeEventTests` em `tests/test_event_intelligence.py`, `tests/test_event_center.js`.
+**Por quê:** pedido de QA da Central de Evento. Os logs de produção mostraram que a triagem por IA nunca rodou (secret `OPENAI_API_KEY` ausente no GitHub) e a Central exibia só o encerramento de Santos de julho como destaque.
+**Arquivos/módulos:** os citados acima, mais `tests/test_production_access.js` (asserção textual atualizada).
+**Impacto medido:** JS 70/70, Python 47/47; renderização verificada em 3 cenários (só encerrado antigo, ativo parado, ativo recente).
+**Alternativas descartadas:** encerrar automaticamente evento sem notícia há N dias (seria afirmar um fim que nenhuma fonte confirmou; optou-se por sinalizar "sem atualização"); bloquear de vez a reabertura pela IA de evento encerrado por gestor (perderia uma retomada real do evento).
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — QA de pacotes e limites
 **O que mudou:** `api/_auth.js` (pacote efetivo herdado do cliente em `getEffectivePackage`, com fallback para o pacote individual; consumo por usuário em `monthlyUsage`/`featureUsage`, `reserveUsage`/`releaseUsage`/`finalizeReservation`/`firstUsageIds`, `starts_at` em `getActivePackage`, `recordUsage` devolve o id); reserva aplicada em `api/usage-event.js`, `api/news-feed.js` (notícias, Minha Rota e IA da rota), `api/news-summary.js` e `api/weekly-summary.js`; `packageSeatsUsed` em `api/_admin.js`, usada por `admin-user-package.js` (que agora valida antes de encerrar o pacote atual) e `admin-users.js`; paginação de eventos em `api/admin-data.js`; `clients.package_id` (migration `scripts/supabase_client_package.sql`), gravado por `admin-data.js` com validação de vagas; `clientWithPackage`/`clientSeatsUsed` em `_admin.js`; `admin-users.js` cria usuário sem pacote individual quando o cliente tem pacote; `admin-user-package.js` recusa pacote individual para quem herda; `admin-packages.js` não exclui pacote em uso por cliente; no painel, pacote no formulário do cliente e "Herdado do cliente" no usuário. Testes: `tests/helpers/fake_supabase.js`, `tests/test_package_limits.js`.
 **Por quê:** pedido de QA com foco em "cada cliente terá o seu limite de uso de cada funcionalidade". Encontrados 7 defeitos (ver `docs/qa-audit/2026-11-10-pacotes-e-limites.md`).

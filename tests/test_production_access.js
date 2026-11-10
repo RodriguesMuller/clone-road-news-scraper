@@ -246,7 +246,8 @@ test("event center presents the complete lifecycle and opens closed events", () 
   assert.match(html, /<span>Encerramento<\/span>/);
   assert.match(html, /function formatCalendarDate\(value\)/);
   assert.match(html, /data-event-open=/);
-  assert.match(html, /const otherClosed = closed\.filter/);
+  assert.match(html, /const otherClosed = recentClosed\.filter/);
+  assert.match(html, /MAJOR_EVENT_CLOSED_WINDOW_MS/);
 });
 
 test("event management controls require a privileged profile and management environment", () => {

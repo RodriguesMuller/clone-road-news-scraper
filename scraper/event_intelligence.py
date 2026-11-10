@@ -431,6 +431,73 @@ def _confidence_label(value: float) -> str:
     return "Moderada"
 
 
+def _parse_dt(value: Any) -> datetime | None:
+    text = _clean(value)
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        try:
+            from email.utils import parsedate_to_datetime
+
+            parsed = parsedate_to_datetime(text)
+        except (TypeError, ValueError):
+            return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def merge_event(event: dict, previous: dict | None, model: str, now: str) -> dict | None:
+    """Combina a classificação nova com o evento já publicado.
+
+    Devolve {"metadata", "db_status", "resolved_at"} ou None quando a atualização deve ser ignorada:
+    um evento encerrado por gestor só é reaberto pela IA com notícia publicada DEPOIS do encerramento.
+    """
+    previous_meta = previous["metadata"] if previous else {}
+    previous_status = previous_meta.get("operational_status")
+    new_status = event["operational_status"]
+    closing = new_status == "encerrado"
+
+    if previous_status == "encerrado" and not closing and previous_meta.get("status_confirmed_by") == "platform_manager":
+        closed_at = _parse_dt(previous_meta.get("last_update_at"))
+        newest = max((d for d in (_parse_dt(i.get("published_at")) for i in event["evidence"]) if d), default=None)
+        if not closed_at or not newest or newest <= closed_at:
+            return None
+
+    history = list(previous_meta.get("history") or [])[-10:]
+    timeline_note = event["timeline_note"] or (
+        "Evento encerrado com base em atualização explícita da fonte."
+        if closing
+        else "Status operacional atualizado com novas evidências."
+    )
+    if not history or history[-1].get("note") != timeline_note or previous_status != new_status:
+        history.append({"at": now, "status": new_status, "note": timeline_note})
+
+    # Início = notícia mais antiga (por data real, não pela ordem alfabética do texto).
+    evidence_dates = [(d, item["published_at"]) for item in event["evidence"] if (d := _parse_dt(item.get("published_at")))]
+    metadata = {
+        **previous_meta,
+        **event,
+        "confidence_label": _confidence_label(event["confidence"]),
+        "started_at": previous_meta.get("started_at") or (min(evidence_dates)[1] if evidence_dates else now),
+        "last_update_at": now,
+        "history": history[-12:],
+        "classification_model": model,
+        "classification_version": CLASSIFICATION_VERSION,
+        "status_confirmed_by": "event_intelligence",
+    }
+    # Já encerrado continua com a data original de encerramento (não "anda" a cada coleta).
+    already_closed = previous_status == "encerrado" and bool(previous and previous.get("resolved_at"))
+    resolved_at = None
+    if closing:
+        resolved_at = previous["resolved_at"] if already_closed else now
+        metadata["ended_at"] = metadata.get("ended_at") if already_closed and metadata.get("ended_at") else resolved_at
+    else:
+        metadata.pop("ended_at", None)
+        metadata.pop("ended_on", None)
+    return {"metadata": metadata, "db_status": "resolved" if closing else "open", "resolved_at": resolved_at}
+
+
 def _upsert_events(cur, events: list[dict], current_events: list[dict], model: str) -> int:
     existing = {
         event["metadata"].get("event_key"): event
@@ -442,31 +509,11 @@ def _upsert_events(cur, events: list[dict], current_events: list[dict], model: s
 
     for event in events:
         previous = existing.get(event["event_key"])
-        previous_meta = previous["metadata"] if previous else {}
-        previous_status = previous_meta.get("operational_status")
-        history = list(previous_meta.get("history") or [])[-10:]
-        timeline_note = event["timeline_note"] or (
-            "Evento encerrado com base em atualização explícita da fonte."
-            if event["operational_status"] == "encerrado"
-            else "Status operacional atualizado com novas evidências."
-        )
-        if not history or history[-1].get("note") != timeline_note or previous_status != event["operational_status"]:
-            history.append({"at": now, "status": event["operational_status"], "note": timeline_note})
-
-        evidence_dates = [item.get("published_at") for item in event["evidence"] if item.get("published_at")]
-        metadata = {
-            **previous_meta,
-            **event,
-            "confidence_label": _confidence_label(event["confidence"]),
-            "started_at": previous_meta.get("started_at") or (min(evidence_dates) if evidence_dates else now),
-            "last_update_at": now,
-            "history": history[-12:],
-            "classification_model": model,
-            "classification_version": CLASSIFICATION_VERSION,
-            "status_confirmed_by": "event_intelligence",
-        }
-        db_status = "resolved" if event["operational_status"] == "encerrado" else "open"
-        resolved_at = now if db_status == "resolved" else None
+        merged = merge_event(event, previous, model, now)
+        if not merged:
+            print(f"[Eventos] '{event['title'][:60]}' foi encerrado por gestor; sem notícia nova, segue encerrado.")
+            continue
+        metadata, db_status, resolved_at = merged["metadata"], merged["db_status"], merged["resolved_at"]
 
         if previous:
             cur.execute(
