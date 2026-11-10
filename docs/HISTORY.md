@@ -2,6 +2,14 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — Identidade visual Overhaul
+**O que mudou:** bloco "Identidade visual Overhaul" no fim do `<style>` de `public/index.html` (tokens `:root[data-theme="dark"|"light"]`, variáveis `--risk-*`, `@font-face` Archivo, Geist Mono em rótulos, links e botões). Os blocos de tokens do design anterior (azul) foram removidos, e as cores fixas restantes do CSS viraram variáveis ou cores da paleta (auditoria: nenhuma cor fora da paleta em regras de componente). `MAP_RISK_COLORS`, `public/dashboard.js` (gravidade, temas, ilustrações), estilos do PDF semanal e `scraper/weekly_news.py` (e-mail) alinhados. Archivo variável (latin, 400–700) baixada do Google Fonts para `public/assets/fonts/archivo/` com `OFL.txt`. Fontes com URL absoluta.
+**Por quê:** aplicar a identidade da empresa do usuário (paleta primária, secundária e neutra; Archivo + Geist Mono) no lugar do azul do mockup.
+**Arquivos/módulos:** `public/index.html`, `public/dashboard.js`, `public/assets/fonts/archivo/*`, `scraper/weekly_news.py`, `tests/test_client_panel.js`.
+**Impacto medido:** n/a (visual). Testes verdes e página validada em jsdom sem erro.
+**Alternativas descartadas:** carregar a Archivo pelo Google Fonts a cada acesso (requisição a terceiros e LGPD); manter vermelho para Crítico (fora da paleta, então Deep Orange assume o papel); usar Vivid Green como destaque também no tema claro (pouco contraste no branco, por isso Vivid Purple).
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — Design executivo: Dashboard, cabeçalho e temas claro/escuro
 **O que mudou:** novo `public/dashboard.js` (`window.RoadDashboard`: `render`, `renderChrome`, `onShow`, `applyTheme`), que calcula tudo a partir de `uniqueMapItems()` com `public/risk.js` e `public/brief.js`. Em `public/index.html`: página `clientDashboardPage` (home de `/dashboard`), cabeçalho `#appTopbar`, bloco `#sidebarStatus`, script de tema no `<head>`, tokens `:root[data-theme="dark"|"light"]` e CSS do dashboard (skeleton, entrada dos cartões, contador, `prefers-reduced-motion`). As cores fixas do CSS (`rgba(30,255,149,…)`, `#1eff95`, `#1e0d43`) viraram `var(--accent-rgb)`/`var(--color-brand)`/`var(--color-brand-text)`. Rotas: `/alertas` com página própria; `/relatorios` liberado para Cliente.
 **Por quê:** pedido do usuário de interface executiva no padrão do mockup (sidebar, KPIs, destaque, tendência, temas, panorama, feed, temas claro e escuro).

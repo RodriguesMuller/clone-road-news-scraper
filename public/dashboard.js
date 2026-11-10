@@ -37,30 +37,31 @@
   };
   const icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ""}</svg>`;
 
+  // Paleta Overhaul: gravidade em Deep Orange / Burnt Yellow / Sky Blue / Vivid Green.
   const LEVEL = {
-    critical: { label: "Crítico", cls: "sev-critical", color: "#ef4444" },
-    high: { label: "Alto", cls: "sev-high", color: "#f59e0b" },
-    medium: { label: "Médio", cls: "sev-medium", color: "#eab308" },
-    low: { label: "Baixo", cls: "sev-low", color: "#22c55e" },
+    critical: { label: "Crítico", cls: "sev-critical", color: "#FC3700" },
+    high: { label: "Alto", cls: "sev-high", color: "#FFCD00" },
+    medium: { label: "Médio", cls: "sev-medium", color: "#00ACFF" },
+    low: { label: "Baixo", cls: "sev-low", color: "#1EFF95" },
   };
 
-  // Temas (rosca e selos) a partir do tipo de ocorrência da régua.
+  // Temas (rosca e selos) a partir do tipo de ocorrência da régua — cores da paleta secundária.
   const THEMES = [
-    ["Acidentes", "#3b82f6", (k) => ["accident", "accident_partial", "accident_jam", "fatal_accident", "heavy_vehicle", "hazmat", "small_fire", "fire"].includes(k)],
-    ["Interdições", "#ef4444", (k) => ["block_total", "block_partial", "block_partial_planned", "block_planned", "strike_block"].includes(k)],
-    ["Obras", "#f59e0b", (k, t) => k === "traffic" && /obra|manutenc|recapeam|pare.e.siga|pavimenta/.test(t)],
-    ["Trânsito", "#06b6d4", (k) => ["traffic", "jam"].includes(k)],
-    ["Clima", "#8b5cf6", (k) => ["weather", "visibility", "inmet", "inmet_red", "inmet_orange", "inmet_yellow"].includes(k)],
-    ["Roubo de carga", "#ec4899", (k) => ["cargo_theft", "cargo_theft_police"].includes(k)],
-    ["Greves", "#f97316", (k) => k === "strike"],
-    ["Infraestrutura", "#14b8a6", (k) => k === "structural"],
-    ["Combustíveis e pedágios", "#a3e635", (k, t) => /diesel|combustive|pedagio/.test(t)],
+    ["Acidentes", "#7758FF", (k) => ["accident", "accident_partial", "accident_jam", "fatal_accident", "heavy_vehicle", "hazmat", "small_fire", "fire"].includes(k)],
+    ["Interdições", "#FC3700", (k) => ["block_total", "block_partial", "block_partial_planned", "block_planned", "strike_block"].includes(k)],
+    ["Obras", "#FFCD00", (k, t) => k === "traffic" && /obra|manutenc|recapeam|pare.e.siga|pavimenta/.test(t)],
+    ["Trânsito", "#00ACFF", (k) => ["traffic", "jam"].includes(k)],
+    ["Clima", "#C6BDFC", (k) => ["weather", "visibility", "inmet", "inmet_red", "inmet_orange", "inmet_yellow"].includes(k)],
+    ["Roubo de carga", "#F78D87", (k) => ["cargo_theft", "cargo_theft_police"].includes(k)],
+    ["Greves", "#E4C1F9", (k) => k === "strike"],
+    ["Infraestrutura", "#487E72", (k) => k === "structural"],
+    ["Combustíveis e pedágios", "#1EFF95", (k, t) => /diesel|combustive|pedagio/.test(t)],
   ];
   function themeOf(kind, text) {
     const found = THEMES.find(([, , test]) => test(kind, text));
     return found ? found[0] : "Outros";
   }
-  const THEME_COLOR = Object.fromEntries([...THEMES.map(([n, c]) => [n, c]), ["Outros", "#64748b"]]);
+  const THEME_COLOR = Object.fromEntries([...THEMES.map(([n, c]) => [n, c]), ["Outros", "#9FA3A1"]]);
 
   const dash = { days: 7, filter: "all", featuredIndex: 0, featuredTimer: null, map: null, layer: null, lastCounts: {} };
 
@@ -185,25 +186,25 @@
 
   // Ilustração vetorial por tema (não é foto da ocorrência: as fontes não fornecem imagem).
   function illustration(theme, level, variant = "card") {
-    const accent = LEVEL[level]?.color || "#3b82f6";
+    const accent = LEVEL[level]?.color || "#1EFF95";
     const motif = {
-      "Clima": '<g fill="#cbd5e1" opacity=".9"><ellipse cx="300" cy="70" rx="48" ry="22"/><ellipse cx="340" cy="78" rx="36" ry="18"/></g><g stroke="#93c5fd" stroke-width="3" opacity=".8"><path d="M285 105l-8 18"/><path d="M310 108l-8 18"/><path d="M335 105l-8 18"/></g>',
-      "Obras": '<g transform="translate(300 118)"><path d="M-14 30 0-22 14 30Z" fill="#f59e0b"/><path d="M-9 12h18M-5 0h10" stroke="#fff" stroke-width="5"/><rect x="-20" y="30" width="40" height="6" rx="2" fill="#f59e0b"/></g>',
-      "Interdições": '<g transform="translate(300 120)"><rect x="-60" y="-8" width="120" height="22" rx="4" fill="#ef4444"/><path d="M-50-8l14 22M-22-8l14 22M6-8l14 22M34-8l14 22" stroke="#fff" stroke-width="6"/><rect x="-54" y="14" width="6" height="26" fill="#94a3b8"/><rect x="48" y="14" width="6" height="26" fill="#94a3b8"/></g>',
-      "Roubo de carga": '<g transform="translate(300 105)"><path d="M0-34 30-22v20c0 20-14 34-30 40-16-6-30-20-30-40v-20Z" fill="#ec4899" opacity=".9"/><path d="M-10 0l7 7 14-15" stroke="#fff" stroke-width="5" fill="none"/></g>',
+      "Clima": '<g fill="#CFD1D0" opacity=".9"><ellipse cx="300" cy="70" rx="48" ry="22"/><ellipse cx="340" cy="78" rx="36" ry="18"/></g><g stroke="#00ACFF" stroke-width="3" opacity=".8"><path d="M285 105l-8 18"/><path d="M310 108l-8 18"/><path d="M335 105l-8 18"/></g>',
+      "Obras": '<g transform="translate(300 118)"><path d="M-14 30 0-22 14 30Z" fill="#FFCD00"/><path d="M-9 12h18M-5 0h10" stroke="#fff" stroke-width="5"/><rect x="-20" y="30" width="40" height="6" rx="2" fill="#FFCD00"/></g>',
+      "Interdições": '<g transform="translate(300 120)"><rect x="-60" y="-8" width="120" height="22" rx="4" fill="#FC3700"/><path d="M-50-8l14 22M-22-8l14 22M6-8l14 22M34-8l14 22" stroke="#fff" stroke-width="6"/><rect x="-54" y="14" width="6" height="26" fill="#9FA3A1"/><rect x="48" y="14" width="6" height="26" fill="#9FA3A1"/></g>',
+      "Roubo de carga": '<g transform="translate(300 105)"><path d="M0-34 30-22v20c0 20-14 34-30 40-16-6-30-20-30-40v-20Z" fill="#F78D87" opacity=".9"/><path d="M-10 0l7 7 14-15" stroke="#fff" stroke-width="5" fill="none"/></g>',
     }[theme] || "";
-    const truck = '<g transform="translate(120 112)"><rect x="0" y="0" width="92" height="44" rx="4" fill="#e2e8f0"/><path d="M92 12h22l14 16v16H92Z" fill="#cbd5e1"/><rect x="100" y="16" width="14" height="10" rx="2" fill="#1e293b"/><circle cx="22" cy="48" r="9" fill="#0f172a"/><circle cx="76" cy="48" r="9" fill="#0f172a"/><circle cx="114" cy="48" r="9" fill="#0f172a"/></g>';
+    const truck = '<g transform="translate(120 112)"><rect x="0" y="0" width="92" height="44" rx="4" fill="#F3F3F3"/><path d="M92 12h22l14 16v16H92Z" fill="#CFD1D0"/><rect x="100" y="16" width="14" height="10" rx="2" fill="#1E0D43"/><circle cx="22" cy="48" r="9" fill="#0F1814"/><circle cx="76" cy="48" r="9" fill="#0F1814"/><circle cx="114" cy="48" r="9" fill="#0F1814"/></g>';
     const id = `il-${Math.random().toString(36).slice(2, 7)}`;
     return `<svg class="news-illustration ${variant}" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Ilustração: ${esc(theme)}">
       <defs>
-        <linearGradient id="${id}s" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#1e3a8a"/><stop offset=".55" stop-color="#f97316" stop-opacity=".55"/><stop offset="1" stop-color="#0f172a"/></linearGradient>
-        <linearGradient id="${id}r" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#334155"/><stop offset="1" stop-color="#0b1220"/></linearGradient>
+        <linearGradient id="${id}s" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#1E0D43"/><stop offset=".6" stop-color="#5029FF" stop-opacity=".55"/><stop offset="1" stop-color="#0F1814"/></linearGradient>
+        <linearGradient id="${id}r" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2A3E33"/><stop offset="1" stop-color="#0F1814"/></linearGradient>
       </defs>
       <rect width="400" height="200" fill="url(#${id}s)"/>
-      <circle cx="80" cy="96" r="26" fill="#fde68a" opacity=".55"/>
+      <circle cx="80" cy="96" r="26" fill="#D0FFEC" opacity=".45"/>
       <path d="M0 150 L400 150 L400 200 L0 200 Z" fill="url(#${id}r)"/>
-      <path d="M0 150 Q 200 140 400 150" stroke="#475569" stroke-width="2" fill="none"/>
-      <g stroke="#f8fafc" stroke-width="3" stroke-dasharray="18 16" opacity=".55"><path d="M0 178 L400 178"/></g>
+      <path d="M0 150 Q 200 140 400 150" stroke="#487E72" stroke-width="2" fill="none"/>
+      <g stroke="#F4F9FA" stroke-width="3" stroke-dasharray="18 16" opacity=".55"><path d="M0 178 L400 178"/></g>
       ${truck}${motif}
       <rect x="0" y="0" width="400" height="4" fill="${accent}"/>
     </svg>`;
@@ -215,7 +216,7 @@
   }
 
   function themeBadge(theme) {
-    return `<span class="theme-badge" style="--theme:${THEME_COLOR[theme] || "#64748b"}">${esc(theme)}</span>`;
+    return `<span class="theme-badge" style="--theme:${THEME_COLOR[theme] || "#9FA3A1"}">${esc(theme)}</span>`;
   }
 
   const place = (e) => [e.road, e.uf].filter(Boolean).join(" / ");
@@ -415,7 +416,7 @@
       const level = levelOf(p);
       const marker = L.circleMarker([p.lat, p.lng], {
         radius: level === "critical" ? 7 : 5.5,
-        color: "#0b1220",
+        color: "#0F1814",
         weight: 1.5,
         fillColor: LEVEL[level].color,
         fillOpacity: 0.92,

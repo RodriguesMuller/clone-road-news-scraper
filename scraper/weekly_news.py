@@ -23,7 +23,8 @@ OPENAI_URL = "https://api.openai.com/v1/responses"
 RESEND_URL = "https://api.resend.com/emails"
 DEFAULT_MODEL = "gpt-4.1-mini"
 
-LEVEL_COLORS = {"critical": "#ff5c5c", "high": "#e8b042", "medium": "#6b9ec7", "low": "#7caa6f"}
+# Escala de gravidade da identidade Overhaul (igual ao painel).
+LEVEL_COLORS = {"critical": "#FC3700", "high": "#FFCD00", "medium": "#00ACFF", "low": "#1EFF95"}
 
 
 def fetch_weekly_news(database_url: str, days: int = 14, limit: int = 800) -> list[dict]:
@@ -110,49 +111,49 @@ def render_weekly_email(brief: dict, generated_at: str) -> str:
         return f'<a href="{esc(safe)}" style="color:#1eff95;text-decoration:none">{esc(title)}</a>' if safe else esc(title)
 
     def badge(text, level) -> str:
-        color = LEVEL_COLORS.get(level, "#9a9d99")
+        color = LEVEL_COLORS.get(level, "#CFD1D0")
         return (f'<span style="display:inline-block;border:1px solid {color};color:{color};border-radius:999px;'
                 f'padding:2px 8px;font-size:11px;font-weight:700;text-transform:uppercase">{esc(text)}</span>')
 
-    def section(title, body, accent="#2a2d30") -> str:
-        return (f'<tr><td style="padding:14px 16px;border:1px solid {accent};border-radius:8px;background:#15171a">'
-                f'<div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#d8dad6;margin-bottom:10px">{esc(title)}</div>'
+    def section(title, body, accent="#26352D") -> str:
+        return (f'<tr><td style="padding:14px 16px;border:1px solid {accent};border-radius:8px;background:#16221C">'
+                f'<div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#F4F9FA;margin-bottom:10px">{esc(title)}</div>'
                 f'{body}</td></tr><tr><td style="height:12px"></td></tr>')
 
     def empty(text) -> str:
-        return f'<p style="margin:0;color:#8a8d89;font-size:13px">{esc(text)}</p>'
+        return f'<p style="margin:0;color:#9FA3A1;font-size:13px">{esc(text)}</p>'
 
     level = brief["verdict"]["level"]
     kpis = "".join(
-        f'<td style="padding:8px;border:1px solid #2a2d30;border-radius:6px;background:#1c1f22;vertical-align:top;width:{100 // 4}%">'
-        f'<div style="font-size:10px;color:#8a8d89;text-transform:uppercase;font-weight:700">{esc(n["label"])}</div>'
-        f'<div style="font-size:22px;font-weight:800;color:{"#d8dad6" if n["value"] else "#6a6d6a"}">{n["value"]}</div>'
-        f'<div style="font-size:11px;color:{"#ff6b6b" if n["delta"] > 0 else "#7caa6f" if n["delta"] < 0 else "#8a8d89"}">'
+        f'<td style="padding:8px;border:1px solid #26352D;border-radius:6px;background:#1C2B24;vertical-align:top;width:{100 // 4}%">'
+        f'<div style="font-size:10px;color:#9FA3A1;text-transform:uppercase;font-weight:700">{esc(n["label"])}</div>'
+        f'<div style="font-size:22px;font-weight:800;color:{"#F4F9FA" if n["value"] else "#9FA3A1"}">{n["value"]}</div>'
+        f'<div style="font-size:11px;color:{"#FC3700" if n["delta"] > 0 else "#1EFF95" if n["delta"] < 0 else "#9FA3A1"}">'
         f'{"▲ " + str(n["delta"]) if n["delta"] > 0 else "▼ " + str(-n["delta"]) if n["delta"] < 0 else "="} vs semana anterior ({n["previous"]})</div></td>'
         + ("</tr><tr>" if i == 3 else "")
         for i, n in enumerate(brief["numbers"])
     )
 
     watch = "".join(
-        f'<div style="border-left:3px solid {"#ff3b3b" if w["type"] in ("Pode seguir bloqueado", "Paralisação/manifestação") else "#e8b042"};'
-        f'padding:8px 10px;margin-bottom:8px;background:#1c1f22">'
-        f'{badge(w["type"], w["level"])} <span style="color:#8a8d89;font-size:12px">{esc(place(w))}'
+        f'<div style="border-left:3px solid {"#FC3700" if w["type"] in ("Pode seguir bloqueado", "Paralisação/manifestação") else "#FFCD00"};'
+        f'padding:8px 10px;margin-bottom:8px;background:#1C2B24">'
+        f'{badge(w["type"], w["level"])} <span style="color:#9FA3A1;font-size:12px">{esc(place(w))}'
         f'{" · Agendado: " + esc(w["scheduled"]) if w["scheduled"] else (" · Notícia de " + esc(w["date"]) if w["date"] else "")}</span>'
-        f'<div style="margin:6px 0 4px;font-size:14px;font-weight:700;color:#d8dad6">{link(w["title"], w["url"])}</div>'
-        f'<div style="font-size:13px;color:#b5b8b4"><strong>O que fazer:</strong> {esc(w["action"])}</div></div>'
+        f'<div style="margin:6px 0 4px;font-size:14px;font-weight:700;color:#F4F9FA">{link(w["title"], w["url"])}</div>'
+        f'<div style="font-size:13px;color:#CFD1D0"><strong>O que fazer:</strong> {esc(w["action"])}</div></div>'
         for w in brief["watchlist"]
     ) or empty("Nada programado ou pendente para os próximos dias nas fontes monitoradas.")
 
     actions = "<ol style='margin:0;padding-left:20px'>" + "".join(
-        f'<li style="color:#d8dad6;font-size:14px;margin:4px 0">{esc(a)}</li>' for a in brief["actions"]
+        f'<li style="color:#F4F9FA;font-size:14px;margin:4px 0">{esc(a)}</li>' for a in brief["actions"]
     ) + "</ol>"
 
-    th = 'style="text-align:left;font-size:10px;color:#8a8d89;text-transform:uppercase;padding:4px 6px;border-bottom:1px solid #2a2d30"'
-    td = 'style="font-size:13px;color:#b5b8b4;padding:6px;border-bottom:1px solid #2a2d30;vertical-align:top"'
+    th = 'style="text-align:left;font-size:10px;color:#9FA3A1;text-transform:uppercase;padding:4px 6px;border-bottom:1px solid #26352D"'
+    td = 'style="font-size:13px;color:#CFD1D0;padding:6px;border-bottom:1px solid #26352D;vertical-align:top"'
     hotspots = (
         f'<table width="100%" cellspacing="0" cellpadding="0"><tr><th {th}>Trecho</th><th {th}>Ocorr.</th><th {th}>Principal problema</th><th {th}>O que fazer</th></tr>'
         + "".join(
-            f'<tr><td {td}><strong style="color:#d8dad6">{esc(place(h))}</strong></td><td {td}>{h["events"]}</td>'
+            f'<tr><td {td}><strong style="color:#F4F9FA">{esc(place(h))}</strong></td><td {td}>{h["events"]}</td>'
             f'<td {td}>{esc(h["main_problem"])}<br><span style="font-size:11px">Ex.: {link(h["worst_title"][:80], h["worst_url"])}</span></td>'
             f'<td {td}>{esc(h["action"])}</td></tr>'
             for h in brief["hotspots"]
@@ -160,50 +161,50 @@ def render_weekly_email(brief: dict, generated_at: str) -> str:
     ) if brief["hotspots"] else empty("Nenhum trecho concentrou ocorrências graves na semana.")
 
     cargo = "".join(
-        f'<div style="font-size:13px;color:#b5b8b4;margin-bottom:6px">{badge("Trecho visado" if c["police"] else "Roubo de carga", "medium" if c["police"] else "high")} '
-        f'<strong style="color:#d8dad6">{esc(place(c))}</strong> {link(c["title"][:110], c["url"])}</div>'
+        f'<div style="font-size:13px;color:#CFD1D0;margin-bottom:6px">{badge("Trecho visado" if c["police"] else "Roubo de carga", "medium" if c["police"] else "high")} '
+        f'<strong style="color:#F4F9FA">{esc(place(c))}</strong> {link(c["title"][:110], c["url"])}</div>'
         for c in brief["cargo_security"]
     ) or empty("Nenhum roubo de carga noticiado na semana nas fontes monitoradas.")
 
     weather = (
         f'<table width="100%" cellspacing="0" cellpadding="0"><tr><th {th}>Área</th><th {th}>Avisos</th><th {th}>Nível máximo</th><th {th}>Fenômenos</th></tr>'
         + "".join(
-            f'<tr><td {td}><strong style="color:#d8dad6">{esc(w["uf"])}</strong></td><td {td}>{w["alerts"]}</td><td {td}>{esc(w["max_level"])}</td><td {td}>{esc(", ".join(w["phenomena"]))}</td></tr>'
+            f'<tr><td {td}><strong style="color:#F4F9FA">{esc(w["uf"])}</strong></td><td {td}>{w["alerts"]}</td><td {td}>{esc(w["max_level"])}</td><td {td}>{esc(", ".join(w["phenomena"]))}</td></tr>'
             for w in brief["weather"]
         ) + "</table>"
     ) if brief["weather"] else empty("Sem avisos do INMET no período.")
 
     highlights = "".join(
-        f'<div style="padding:8px 0;border-bottom:1px solid #2a2d30">{badge(h["level_label"], h["level"])} '
-        f'<span style="color:#8a8d89;font-size:12px">{esc(h["kind_label"])} · {esc(place(h))} {esc(h["date"])}'
+        f'<div style="padding:8px 0;border-bottom:1px solid #26352D">{badge(h["level_label"], h["level"])} '
+        f'<span style="color:#9FA3A1;font-size:12px">{esc(h["kind_label"])} · {esc(place(h))} {esc(h["date"])}'
         f'{" · " + str(h["sources"]) + " fontes" if h["sources"] > 1 else ""}</span>'
-        f'<div style="margin-top:4px;font-size:14px;color:#d8dad6">{link(h["title"], h["url"])}</div>'
-        f'<div style="font-size:12px;color:#b5b8b4">{esc(h["action"])}</div></div>'
+        f'<div style="margin-top:4px;font-size:14px;color:#F4F9FA">{link(h["title"], h["url"])}</div>'
+        f'<div style="font-size:12px;color:#CFD1D0">{esc(h["action"])}</div></div>'
         for h in brief["highlights"]
     ) or empty("Nenhuma ocorrência de risco alto ou crítico na semana.")
 
     cov = brief["coverage"]
     return f"""<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Road News - Resumo semanal da frota</title></head>
-<body style="margin:0;padding:0;background:#0d0e0e;font-family:Arial,Helvetica,sans-serif;color:#d8dad6">
-<table width="100%" cellspacing="0" cellpadding="0" style="background:#0d0e0e"><tr><td align="center" style="padding:20px 12px">
+<body style="margin:0;padding:0;background:#0F1814;font-family:'Archivo',Arial,Helvetica,sans-serif;color:#F4F9FA">
+<table width="100%" cellspacing="0" cellpadding="0" style="background:#0F1814"><tr><td align="center" style="padding:20px 12px">
 <table width="100%" cellspacing="0" cellpadding="0" style="max-width:720px">
-<tr><td style="padding:18px;border:1px solid #1eff95;border-top:4px solid #1eff95;border-radius:8px;background:#15171a">
+<tr><td style="padding:18px;border:1px solid #1eff95;border-top:4px solid #1eff95;border-radius:8px;background:#16221C">
   <div style="font-size:22px;font-weight:900;letter-spacing:.04em">ROAD NEWS</div>
   <div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#1eff95;margin-top:4px">Resumo semanal da frota</div>
   <div style="margin-top:12px">{badge("Semana: " + brief["verdict"]["label"], level)}
-    <span style="color:#8a8d89;font-size:12px">{esc(brief["period"]["start"])} a {esc(brief["period"]["end"])}</span></div>
-  <h1 style="font-size:22px;line-height:1.25;margin:10px 0 6px;color:#d8dad6">{esc(brief["headline"])}</h1>
-  <p style="margin:0;font-size:14px;line-height:1.5;color:#b5b8b4">{esc(brief["executive_summary"])}</p>
+    <span style="color:#9FA3A1;font-size:12px">{esc(brief["period"]["start"])} a {esc(brief["period"]["end"])}</span></div>
+  <h1 style="font-size:22px;line-height:1.25;margin:10px 0 6px;color:#F4F9FA">{esc(brief["headline"])}</h1>
+  <p style="margin:0;font-size:14px;line-height:1.5;color:#CFD1D0">{esc(brief["executive_summary"])}</p>
 </td></tr><tr><td style="height:12px"></td></tr>
 <tr><td><table width="100%" cellspacing="6" cellpadding="0"><tr>{kpis}</tr></table></td></tr><tr><td style="height:12px"></td></tr>
-{section("Atenção para os próximos dias", watch, "#e8b042")}
+{section("Atenção para os próximos dias", watch, "#FFCD00")}
 {section("O que fazer esta semana", actions, "#1eff95")}
 {section("Trechos mais críticos da semana", hotspots)}
 {section("Segurança da carga", cargo)}
 {section("Clima (avisos INMET)", weather)}
 {section("Principais ocorrências", highlights)}
-<tr><td style="font-size:11px;color:#6a6d6a;line-height:1.5;padding:4px 2px">
+<tr><td style="font-size:11px;color:#9FA3A1;line-height:1.5;padding:4px 2px">
   Gerado em {esc(generated_at)}. Base: {cov["analyzed"]} notícias dos últimos 7 dias, agrupadas em {cov["events"]} ocorrências com impacto operacional
   ({cov["discarded"]} sem impacto na frota descartadas). Comparativo com os 7 dias anteriores.
   {"Texto de abertura redigido por IA a partir destes dados; números e ações calculados pelo Road News. " if brief.get("ai_used") else ""}Confirme sempre com concessionária/PRF antes de liberar o veículo.
