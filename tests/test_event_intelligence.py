@@ -1,6 +1,6 @@
 import unittest
 
-from scraper.event_intelligence import _fingerprint, _valid_events, candidate_reasons, select_event_candidates
+from scraper.event_intelligence import _fingerprint, _valid_events, candidate_reasons, merge_event, select_event_candidates
 
 
 class EventIntelligenceTests(unittest.TestCase):
@@ -123,6 +123,57 @@ class EventIntelligenceTests(unittest.TestCase):
         candidate["title"] = "Acessos ao Porto de Santos são liberados após fim da paralisação"
         candidate["summary"] = "Tráfego normalizado e operações retomadas no terminal."
         self.assertEqual(len(_valid_events({"events": [event]}, [candidate], [])), 1)
+
+
+def _classified(status="em_andamento", published_at="2026-11-10T08:00:00-03:00", note=""):
+    return {
+        "event_key": "porto-santos-paralisacao", "title": "Paralisação no Porto de Santos", "category": "Paralisação",
+        "scope": "nacional", "severity": "critical", "operational_status": status, "confidence": 0.95,
+        "country": "Brasil", "location": "Santos/SP", "affected_infrastructure": ["Porto de Santos"],
+        "operational_impact": "Fluxo de cargas interrompido nos acessos ao porto.", "summary": "", "why_major": [],
+        "recommended_actions": [], "detour": "", "estimated_duration": "", "timeline_note": note,
+        "evidence": [{"title": "t", "url": "https://example.com/a", "source": "s", "published_at": published_at}],
+    }
+
+
+class MergeEventTests(unittest.TestCase):
+    NOW = "2026-11-10T15:00:00+00:00"
+
+    def _closed_by_manager(self, closed_at="2026-11-10T12:00:00+00:00"):
+        return {"id": "e1", "resolved_at": closed_at, "metadata": {
+            "event_key": "porto-santos-paralisacao", "operational_status": "encerrado", "ended_at": closed_at,
+            "status_confirmed_by": "platform_manager", "last_update_at": closed_at, "history": []}}
+
+    def test_ai_does_not_reopen_event_closed_by_manager_with_old_news(self):
+        merged = merge_event(_classified(published_at="2026-11-10T08:00:00-03:00"), self._closed_by_manager(), "m", self.NOW)
+        self.assertIsNone(merged)
+
+    def test_ai_reopens_event_closed_by_manager_with_newer_news(self):
+        merged = merge_event(_classified(published_at="2026-11-10T11:00:00-03:00"), self._closed_by_manager(), "m", self.NOW)
+        self.assertEqual(merged["db_status"], "open")
+        self.assertNotIn("ended_at", merged["metadata"], "reaberto não mostra data de encerramento antiga")
+
+    def test_closed_event_keeps_original_closing_date(self):
+        previous = {"id": "e1", "resolved_at": "2026-11-09T10:00:00+00:00", "metadata": {
+            "operational_status": "encerrado", "ended_at": "2026-11-09T10:00:00+00:00", "history": []}}
+        merged = merge_event(_classified(status="encerrado"), previous, "m", self.NOW)
+        self.assertEqual(merged["resolved_at"], "2026-11-09T10:00:00+00:00")
+        self.assertEqual(merged["metadata"]["ended_at"], "2026-11-09T10:00:00+00:00")
+
+    def test_new_closure_records_closing_date(self):
+        previous = {"id": "e1", "resolved_at": None, "metadata": {"operational_status": "em_andamento", "history": []}}
+        merged = merge_event(_classified(status="encerrado"), previous, "m", self.NOW)
+        self.assertEqual((merged["db_status"], merged["resolved_at"], merged["metadata"]["ended_at"]), ("resolved", self.NOW, self.NOW))
+
+    def test_start_is_oldest_news_by_real_date(self):
+        event = _classified()
+        event["evidence"] = [
+            {"title": "a", "url": "u1", "source": "s", "published_at": "2026-11-09T22:00:00-03:00"},
+            {"title": "b", "url": "u2", "source": "s", "published_at": "2026-11-10T00:30:00+00:00"},
+        ]
+        # A segunda é 21:30 de 09/11 em Brasília (mais antiga), embora o texto "2026-11-09..." venha antes.
+        merged = merge_event(event, None, "m", self.NOW)
+        self.assertEqual(merged["metadata"]["started_at"], "2026-11-10T00:30:00+00:00")
 
 
 if __name__ == "__main__":

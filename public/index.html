@@ -4231,6 +4231,22 @@ function showAuthView() {
       return event.status === "open" && status !== "encerrado";
     }
 
+    const MAJOR_EVENT_STALE_MS = 72 * 3600 * 1000;
+    const MAJOR_EVENT_CLOSED_WINDOW_MS = 30 * 24 * 3600 * 1000;
+
+    // Dias sem atualização de um evento ativo (null se atualizado nas últimas 72h).
+    function majorEventStaleDays(event) {
+      if (!isActiveMajorEvent(event)) return null;
+      const updated = majorEventUpdatedValue(event);
+      if (!updated || Date.now() - updated < MAJOR_EVENT_STALE_MS) return null;
+      return Math.floor((Date.now() - updated) / (24 * 3600 * 1000));
+    }
+
+    function staleBadge(event) {
+      const days = majorEventStaleDays(event);
+      return days === null ? "" : `<span class="event-badge" title="Nenhuma notícia nova sobre o evento desde a última atualização. Confirme a situação antes de decidir.">Sem atualização há ${days} dias</span>`;
+    }
+
     function majorEventStatus(event) {
       const status = majorEventMeta(event).operational_status || (event.status === "resolved" ? "encerrado" : "monitoramento");
       const labels = {
@@ -4298,6 +4314,7 @@ function showAuthView() {
             <div class="event-badges">
               <span class="event-badge critical">Crítico</span>
               <span class="event-badge ${statusClass}">${escapeHtml(statusLabel)}</span>
+              ${staleBadge(event)}
               <span class="event-badge">${escapeHtml(meta.category || "Evento logístico")}</span>
               <span class="event-badge">${escapeHtml(scope)}</span>
               <span class="event-badge">${escapeHtml(location)}</span>
@@ -4308,7 +4325,7 @@ function showAuthView() {
           <div class="event-metrics">
             <div class="event-metric"><span>Status</span><strong>${escapeHtml(statusLabel)}</strong></div>
             <div class="event-metric"><span>Início</span><strong>${escapeHtml(formatCalendarDate(meta.started_on || meta.started_at || event.created_at))}</strong></div>
-            <div class="event-metric"><span>Encerramento</span><strong>${escapeHtml(meta.ended_on || meta.ended_at || event.resolved_at ? formatCalendarDate(meta.ended_on || meta.ended_at || event.resolved_at) : "Em andamento")}</strong></div>
+            <div class="event-metric"><span>Encerramento</span><strong>${escapeHtml(!isActiveMajorEvent(event) && (meta.ended_on || meta.ended_at || event.resolved_at) ? formatCalendarDate(meta.ended_on || meta.ended_at || event.resolved_at) : "Em andamento")}</strong></div>
             <div class="event-metric"><span>Última atualização</span><strong>${escapeHtml(formatDate(meta.last_update_at || event.created_at))}</strong></div>
             <div class="event-metric"><span>Infraestrutura afetada</span><strong>${escapeHtml(infrastructures.join(" · ") || "Em confirmação")}</strong></div>
             <div class="event-metric"><span>Confiança da análise</span><strong>${escapeHtml(meta.confidence_label || "Alta")}</strong></div>
@@ -4367,14 +4384,17 @@ function showAuthView() {
 
       const target = document.getElementById("eventCenter");
       if (!target) return;
-      if (!events.length) {
+      const recentClosed = closed.filter((event) => Date.now() - majorEventUpdatedValue(event) <= MAJOR_EVENT_CLOSED_WINDOW_MS);
+      // Destaque: o evento aberto pelo usuário ou o ativo mais recente. Sem ativo, não promove um
+      // evento encerrado a destaque (parecia que havia evento grave acontecendo).
+      const primary = events.find((event) => event.id === state.selectedMajorEventId) || active[0] || null;
+      if (!primary && !recentClosed.length) {
         target.innerHTML = `<div class="event-empty"><strong>Nenhum evento grave ativo.</strong><br>Ocorrências comuns continuam disponíveis em Alertas e Notícias.</div>`;
         return;
       }
-      const primary = events.find((event) => event.id === state.selectedMajorEventId) || active[0] || events[0];
-      const otherActive = active.filter((event) => event.id !== primary.id);
-      const otherClosed = closed.filter((event) => event.id !== primary.id);
-      target.innerHTML = renderPrimaryMajorEvent(primary) + (otherActive.length ? `
+      const otherActive = active.filter((event) => event.id !== primary?.id);
+      const otherClosed = recentClosed.filter((event) => event.id !== primary?.id);
+      target.innerHTML = (primary ? renderPrimaryMajorEvent(primary) : `<div class="event-empty"><strong>Nenhum evento grave ativo.</strong><br>Ocorrências comuns continuam disponíveis em Alertas e Notícias.</div>`) + (otherActive.length ? `
         <section class="event-section">
           <h3>Outros eventos ativos</h3>
           <div class="event-history-list">${otherActive.map((event) => {
@@ -4382,7 +4402,7 @@ function showAuthView() {
             const [statusLabel, statusClass] = majorEventStatus(event);
             return `
               <article class="event-evidence">
-                <div class="event-badges"><span class="event-badge critical">Crítico</span><span class="event-badge ${statusClass}">${escapeHtml(statusLabel)}</span><span class="event-badge">${escapeHtml(meta.scope === "internacional" ? "Internacional" : "Nacional")}</span></div>
+                <div class="event-badges"><span class="event-badge critical">Crítico</span><span class="event-badge ${statusClass}">${escapeHtml(statusLabel)}</span>${staleBadge(event)}<span class="event-badge">${escapeHtml(meta.scope === "internacional" ? "Internacional" : "Nacional")}</span></div>
                 <h3 style="margin:10px 0 6px;">${escapeHtml(event.message || "Evento logístico grave")}</h3>
                 <p>${escapeHtml(shortText(meta.operational_impact || meta.summary, 220))}</p>
                 <div class="event-actions" style="margin-top:10px;"><button class="mini-button" type="button" data-event-open="${escapeHtml(event.id)}">Abrir evento</button></div>
@@ -4392,11 +4412,11 @@ function showAuthView() {
         </section>
       ` : "") + (otherClosed.length ? `
         <section class="event-section">
-          <h3>Eventos encerrados recentemente</h3>
+          <h3>Eventos encerrados nos últimos 30 dias</h3>
           <div class="event-history-list">${otherClosed.slice(0, 5).map((event) => `
             <article class="event-evidence">
               <strong>${escapeHtml(event.message || "Evento encerrado")}</strong>
-              <div class="event-evidence-meta"><span>Encerrado</span><span>${escapeHtml(formatCalendarDate(majorEventMeta(event).ended_on || event.resolved_at || majorEventMeta(event).last_update_at))}</span></div>
+              <div class="event-evidence-meta"><span>Encerrado</span><span>${escapeHtml(formatCalendarDate(majorEventMeta(event).ended_on || majorEventMeta(event).ended_at || event.resolved_at || majorEventMeta(event).last_update_at))}</span></div>
               <div class="event-actions" style="margin-top:10px;"><button class="mini-button" type="button" data-event-open="${escapeHtml(event.id)}">Abrir evento</button></div>
             </article>
           `).join("")}</div>

@@ -2,6 +2,12 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — QA da Central de Evento
+- **Corrigido**: sem evento ativo, a Central não promove mais um evento antigo encerrado a destaque; "Eventos encerrados" mostra só os últimos 30 dias.
+- **Corrigido**: a IA não reabre um evento encerrado pelo gestor sem notícia publicada depois do encerramento; reabrir apaga a data de encerramento antiga; a data de encerramento não muda mais a cada coleta; o início do evento usa a data real da notícia mais antiga.
+- **Adicionado**: selo "Sem atualização há N dias" em evento ativo parado há mais de 72h.
+- **Atenção**: a detecção automática exige o secret `OPENAI_API_KEY` no GitHub Actions (ausente até hoje). Relatório: `docs/qa-audit/2026-11-10-central-de-eventos.md`.
+
 ## 2026-11-10 — QA de pacotes e limites
 - **Adicionado**: **pacote do cliente**. O pacote passa a ser configurado no cadastro do cliente e todos os usuários da empresa **herdam** recursos e limites dele. O **consumo continua sendo de cada usuário**: cada um tem o próprio saldo mensal. Cliente sem pacote mantém o modelo antigo (pacote por usuário). `max_users` do pacote herdado limita os usuários Cliente ativos da empresa. Migration: `scripts/supabase_client_package.sql`.
 - **Corrigido**: requisições simultâneas furavam o limite (reserva atômica de uso); pacote com início no futuro já liberava; trocar para pacote inválido deixava o usuário sem pacote; `max_users` contava a plataforma inteira e vínculos vencidos; a gestão subcontava o consumo acima de 1000 eventos/mês.

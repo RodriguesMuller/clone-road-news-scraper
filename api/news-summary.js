@@ -241,11 +241,14 @@ async function updateMajorEventStatus(req, body) {
   };
   history.push({ at: now, status: operationalStatus, note: notes[operationalStatus] });
   const dbStatus = operationalStatus === "encerrado" ? "resolved" : "open";
+  // Reabrir apaga a data de encerramento antiga; encerrar grava a de agora.
+  const { ended_on, ended_at, ...rest } = metadata;
   const payload = {
     status: dbStatus,
     resolved_at: dbStatus === "resolved" ? now : null,
     metadata: {
-      ...metadata,
+      ...rest,
+      ...(dbStatus === "resolved" ? { ended_at: now } : {}),
       operational_status: operationalStatus,
       last_update_at: now,
       history,
