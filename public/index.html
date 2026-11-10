@@ -1705,6 +1705,60 @@
     .theme-badge { display: inline-flex; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 650; color: var(--theme); background: color-mix(in srgb, var(--theme) 14%, transparent); }
     .featured-body .theme-badge { color: #fff; background: color-mix(in srgb, var(--theme) 55%, transparent); }
 
+    /* Página de Notícias: filtros por categoria e cards em duas colunas */
+    .news-page { display: grid; gap: 18px; }
+    .news-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .news-pills { display: flex; flex-wrap: wrap; gap: 10px; }
+    .news-pill { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); font-family: var(--font-body, inherit); font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; cursor: pointer; box-shadow: none; transition: background .2s ease, border-color .2s ease, transform .2s ease; }
+    .news-pill:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--theme, var(--color-primary)) 60%, transparent); background: var(--color-surface); color: var(--color-text); box-shadow: none; }
+    .news-pill svg { width: 18px; height: 18px; stroke: var(--theme, var(--color-primary)); }
+    .news-pill .news-pill-count { font-size: 11px; font-weight: 700; color: var(--color-muted); }
+    .news-pill.active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; box-shadow: 0 6px 18px rgba(var(--accent-rgb), .35); }
+    .news-pill.active svg { stroke: #fff; }
+    .news-pill.active .news-pill-count { color: rgba(255,255,255,.8); }
+    .news-period { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 6px 0 14px; border-radius: 12px; border: 1px solid var(--color-border); background: var(--color-surface); }
+    .news-period-icon svg { width: 18px; height: 18px; stroke: var(--color-text); }
+    .news-period select { border: 0; background: transparent; color: var(--color-text); font-weight: 650; min-height: 40px; padding: 0 8px; box-shadow: none; }
+    .news-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .news-card { --theme: var(--color-primary); position: relative; display: grid; grid-template-columns: minmax(150px, 38%) minmax(0, 1fr); gap: 18px; padding: 12px; border-radius: 14px; border: 1px solid var(--color-border); background: var(--color-surface); box-shadow: var(--shadow-card); overflow: hidden; transition: transform .2s ease, border-color .2s ease; }
+    .news-card::before { content: ""; position: absolute; top: 0; left: 0; width: 38%; height: 4px; background: var(--theme); border-radius: 14px 0 0 0; }
+    .news-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--theme) 45%, var(--color-border)); }
+    .news-card.road-blocked { border: 2px solid var(--risk-critical); }
+    .news-card-media .news-media { position: relative; height: 100%; min-height: 150px; border-radius: 10px; overflow: hidden; background: #0F1814; }
+    .news-card-media .news-illustration, .news-card-media .news-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .news-card-media .news-credit { position: absolute; left: 6px; bottom: 6px; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #fff; background: rgba(15,24,20,.7); }
+    .news-card-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 4px 4px 2px 0; }
+    .news-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .news-theme-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--theme); background: color-mix(in srgb, var(--theme) 16%, transparent); }
+    .news-theme-badge svg { width: 14px; height: 14px; stroke: currentColor; }
+    .news-card .news-save-toggle { position: static; width: 34px; height: 34px; }
+    .news-card-title { margin: 0; font-family: var(--font-heading, inherit); font-size: 17px; line-height: 1.3; font-weight: 700; letter-spacing: 0; text-transform: none; }
+    .news-card-title a { color: var(--color-text); text-decoration: none; }
+    .news-card-title a:hover { color: var(--color-primary); }
+    .news-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; color: var(--color-muted); font-size: 13px; }
+    .news-card-meta span { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+    .news-card-meta svg { width: 14px; height: 14px; stroke: currentColor; flex: none; }
+    .news-card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .news-tag { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 7px; font-size: 12px; font-weight: 650; color: var(--color-text); background: var(--color-surface-alt); }
+    .news-tag.risk-critical { color: #fff; background: var(--risk-critical); }
+    .news-tag.risk-high { color: #1E0D43; background: #FFCD00; }
+    .news-tag.risk-medium { color: #fff; background: #0079B8; }
+    .news-tag.risk-low { color: #0F1814; background: #1EFF95; }
+    .news-card .fleet-impact { margin: 0; font-size: 12.5px; }
+    .news-card-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 4px; }
+    .news-card-actions .news-detail { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; color: var(--color-primary); text-decoration: none; }
+    .news-card-actions .news-detail svg { width: 16px; height: 16px; stroke: currentColor; transition: transform .2s ease; }
+    .news-card-actions .news-detail:hover svg { transform: translateX(3px); }
+    .news-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; color: var(--color-muted); font-size: 13px; padding: 4px 2px; }
+    .news-footer strong { color: var(--color-text); }
+    @media (max-width: 1100px) { .news-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 560px) {
+      .news-card { grid-template-columns: 1fr; }
+      .news-card::before { width: 100%; border-radius: 14px 14px 0 0; }
+      .news-card-media .news-media { min-height: 170px; }
+      .news-pill { min-height: 40px; padding: 0 14px; }
+    }
+
     /* Tendência */
     .trend-pill { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 99px; }
     .trend-pill.up { color: var(--color-success); background: rgba(var(--risk-low-rgb), .12); } .trend-pill.down { color: var(--color-danger); background: rgba(var(--risk-critical-rgb), .12); }
@@ -2148,10 +2202,22 @@
           </div>
         </section>
         <section id="clientNewsPage" class="client-page" data-client-page="news">
-          <section class="panel">
-            <h2>Notícias recentes</h2>
-            <div id="news" class="list"></div>
+          <section class="news-page" aria-label="Notícias">
+            <div class="news-toolbar">
+              <div id="newsThemeFilters" class="news-pills" role="group" aria-label="Filtrar por categoria"></div>
+              <label class="news-period" title="Período das notícias">
+                <span class="news-period-icon" aria-hidden="true"></span>
+                <select id="newsPeriod" aria-label="Período">
+                  <option value="24">Hoje (24h)</option>
+                  <option value="168">7 dias</option>
+                  <option value="720">30 dias</option>
+                  <option value="all">Tudo</option>
+                </select>
+              </label>
+            </div>
+            <div id="news" class="news-grid"></div>
             <div id="newsPagination" class="pagination" hidden></div>
+            <footer id="newsFooter" class="news-footer"></footer>
           </section>
         </section>
 
@@ -2773,6 +2839,7 @@
       selectedMajorEventId: null,
       admin: { users: [], clients: [], packages: [], userPackages: [], usage: [], logs: [] },
       filters: { search: "", period: "24", region: "", category: "", sort: "impact" },
+      newsTheme: "all",
       opsHours: 24,
       map: {
         instance: null,
@@ -4569,58 +4636,106 @@ function showAuthView() {
         : `<div class="hint">Nenhuma notícia salva ainda.</div>`;
     }
 
+    // Página de Notícias: categorias do Dashboard (mesma régua de tema e as mesmas imagens).
+    const NEWS_THEME_PILLS = [
+      ["all", "Todas", "layers"],
+      ["Acidentes", "Acidentes", "car"],
+      ["Interdições", "Interdições", "ban"],
+      ["Obras", "Obras", "cone"],
+      ["Clima", "Clima", "cloud"],
+      ["outros", "Outros", "dots"],
+    ];
+    const NEWS_THEME_ICON = { Acidentes: "car", "Interdições": "ban", Obras: "cone", Clima: "cloud", "Trânsito": "car", "Roubo de carga": "alert", Greves: "alert", Infraestrutura: "alert", "Combustíveis e pedágios": "truck", Outros: "dots" };
+    const newsThemeCache = new WeakMap();
+
+    function newsTheme(item) {
+      if (!newsThemeCache.has(item)) newsThemeCache.set(item, window.RoadDashboard?.themeOfItem ? window.RoadDashboard.themeOfItem(item) : "Outros");
+      return newsThemeCache.get(item);
+    }
+
+    function newsThemeMatches(item, filter) {
+      if (!filter || filter === "all") return true;
+      const theme = newsTheme(item);
+      if (filter === "outros") return !NEWS_THEME_PILLS.some(([key]) => key === theme);
+      return theme === filter;
+    }
+
+    function dashIcon(name) {
+      return window.RoadDashboard?.icon ? window.RoadDashboard.icon(name) : "";
+    }
+
+    function renderNewsToolbar(baseItems) {
+      const target = document.getElementById("newsThemeFilters");
+      if (!target) return;
+      const colors = window.RoadDashboard?.THEME_COLOR || {};
+      const active = state.newsTheme || "all";
+      target.innerHTML = NEWS_THEME_PILLS.map(([key, label, iconName]) => {
+        const count = baseItems.filter((item) => newsThemeMatches(item, key)).length;
+        const color = colors[key] || (key === "outros" ? colors.Outros : "") || "";
+        return `<button class="news-pill${key === active ? " active" : ""}" type="button" data-news-theme="${escapeHtml(key)}" aria-pressed="${key === active}" ${color ? `style="--theme:${escapeHtml(color)}"` : ""}>${dashIcon(iconName)}<span>${escapeHtml(label)}</span><span class="news-pill-count">${count}</span></button>`;
+      }).join("");
+      const period = document.getElementById("newsPeriod");
+      if (period && period.value !== String(state.filters.period)) period.value = String(state.filters.period);
+      const periodIcon = document.querySelector(".news-period-icon");
+      if (periodIcon && !periodIcon.innerHTML) periodIcon.innerHTML = dashIcon("calendar");
+    }
+
+    function newsCardMarkup(item) {
+      const index = Math.max(0, state.items.indexOf(item));
+      const theme = newsTheme(item);
+      const color = window.RoadDashboard?.THEME_COLOR?.[theme] || "";
+      const risk = classifyRisk(item);
+      const [riskClassName, riskLabel] = operationalRisk(item);
+      const url = externalNewsUrl(item);
+      const road = roadFromText(`${item.title || ""} ${item.summary || ""} ${item.highway || ""}`);
+      const region = cleanDisplayText(item.region || item.city || item.state || findPlace(`${item.title || ""} ${item.summary || ""}`));
+      const saved = isSavedNews(item);
+      const saveTitle = saved ? "Remover dos salvos" : "Salvar notícia";
+      const when = displayTime(item);
+      const media = window.RoadDashboard?.newsMedia ? window.RoadDashboard.newsMedia(item, theme, risk.level, "card") : "";
+      const tags = [
+        `<span class="news-tag risk-${riskClassName || "low"}" title="${escapeHtml(riskReason(item))}">Risco ${escapeHtml(riskLabel)}</span>`,
+        road ? `<span class="news-tag">${escapeHtml(road)}</span>` : "",
+        item.category ? `<span class="news-tag">${escapeHtml(cleanDisplayText(item.category))}</span>` : "",
+      ].filter(Boolean).join("");
+      const title = escapeHtml(item.title || "Notícia");
+      return `
+        <article class="news-card${blockedClass(item)}" ${color ? `style="--theme:${escapeHtml(color)}"` : ""}>
+          <div class="news-card-media">${media}</div>
+          <div class="news-card-body">
+            <div class="news-card-top">
+              <span class="news-theme-badge">${dashIcon(NEWS_THEME_ICON[theme] || "dots")}${escapeHtml(theme)}</span>
+              <button class="news-save-toggle save-news ${saved ? "saved" : ""}" type="button" data-index="${index}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">${iconSvg("bookmark")}</button>
+            </div>
+            ${blockBannerMarkup(item)}
+            <h3 class="news-card-title">${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${title}</a>` : title}</h3>
+            <div class="news-card-meta">
+              ${region ? `<span>${dashIcon("pin")}${escapeHtml(region)}</span>` : ""}
+              ${when && when !== "-" ? `<span>${dashIcon("clock")}${escapeHtml(/^\d/.test(when) ? `Há ${when}` : when)}</span>` : ""}
+              ${item.source ? `<span>${dashIcon("source")}${escapeHtml(item.source)}</span>` : ""}
+            </div>
+            <div class="news-card-tags">${tags}</div>
+            ${fleetImpactMarkup(item)}
+            <div class="news-card-actions">
+              <button class="mini-button make-image" type="button" data-index="${index}">Gerar resumo</button>
+              ${followButtonMarkup(item)}
+              ${url ? `<a class="news-detail" href="${escapeHtml(url)}" target="_blank" rel="noopener">Ver detalhe ${dashIcon("arrow")}</a>` : ""}
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
     function renderNews() {
-      const allNewsItems = filteredClientItems();
+      const baseItems = filteredClientItems();
+      renderNewsToolbar(baseItems);
+      const allNewsItems = baseItems.filter((item) => newsThemeMatches(item, state.newsTheme || "all"));
       const totalPages = Math.max(1, Math.ceil(allNewsItems.length / NEWS_PER_PAGE));
       state.newsPage = Math.min(Math.max(1, state.newsPage || 1), totalPages);
       const start = (state.newsPage - 1) * NEWS_PER_PAGE;
       const newsItems = allNewsItems.slice(start, start + NEWS_PER_PAGE);
       document.getElementById("news").innerHTML = newsItems.length
-        ? newsItems.map((item) => {
-            const index = Math.max(0, state.items.indexOf(item));
-            const [tagClass, tagLabel] = tagFor(item);
-            const [riskClassName, riskLabel] = operationalRisk(item);
-            const trusted = TRUSTED_SOURCES.has(item.source);
-            const meta = [item.source, item.category, displayTime(item)].filter(Boolean).join(" · ");
-            const url = externalNewsUrl(item);
-            const road = roadFromText(`${item.title || ""} ${item.summary || ""} ${item.highway || ""}`);
-            const region = cleanDisplayText(item.region || item.city || item.state || findPlace(`${item.title || ""} ${item.summary || ""}`));
-            const summary = shortText(smartSummary(item), 230);
-            const relevance = cleanDisplayText(item.operational_relevance || item.operational_impact || "");
-            const saved = isSavedNews(item);
-            const badges = [
-              `<span class="info-badge risk-${riskClassName || "low"}" title="${escapeHtml(riskReason(item))}">Risco ${riskLabel}</span>`,
-              road ? `<span class="info-badge">Rodovia ${escapeHtml(road)}</span>` : "",
-              region ? `<span class="info-badge">Região ${escapeHtml(region)}</span>` : "",
-              relevance ? `<span class="info-badge">Relevância ${escapeHtml(shortText(relevance, 48))}</span>` : "",
-            ].filter(Boolean).join("");
-            const saveTitle = saved ? "Remover dos salvos" : "Salvar notícia";
-            return `
-              <article class="item has-save${blockedClass(item)}">
-                <button class="news-save-toggle save-news ${saved ? "saved" : ""}" type="button" data-index="${index}" title="${escapeHtml(saveTitle)}" aria-label="${escapeHtml(saveTitle)}">
-                  ${iconSvg("bookmark")}
-                </button>
-                ${blockBannerMarkup(item)}
-                <div class="meta">
-                  <span class="tag ${tagClass}${trusted ? " trusted" : ""}">
-                    ${tagLabel}${trusted ? "<span class=\"verified\">Fonte confiável</span>" : ""}
-                  </span>
-                  <span>${escapeHtml(meta)}</span>
-                </div>
-                <p class="title">
-                  ${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(item.title)}</a>` : escapeHtml(item.title)}
-                </p>
-                <p class="summary">${escapeHtml(summary)}</p>
-                <div class="badge-row">${badges}</div>
-                ${fleetImpactMarkup(item)}
-                <div class="actions">
-                  <button class="mini-button make-image" type="button" data-index="${index}">Gerar resumo</button>
-                  ${url ? `<a class="button-link secondary" href="${escapeHtml(url)}" target="_blank" rel="noopener">Abrir fonte</a>` : ""}
-                  ${followButtonMarkup(item)}
-                </div>
-              </article>
-            `;
-          }).join("")
+        ? newsItems.map(newsCardMarkup).join("")
         : `<div class="hint">Nenhuma notícia encontrada para os filtros selecionados.</div>`;
       const pagination = document.getElementById("newsPagination");
       if (pagination) {
@@ -4630,6 +4745,11 @@ function showAuthView() {
           <span class="pagination-status">Página ${state.newsPage} de ${totalPages}</span>
           <button class="mini-button" type="button" data-page-action="next" ${state.newsPage >= totalPages ? "disabled" : ""}>Próxima</button>
         ` : "";
+      }
+      const footer = document.getElementById("newsFooter");
+      if (footer) {
+        const sources = topCounts(allNewsItems, (item) => item.source || "", 5).map(([name]) => name);
+        footer.innerHTML = `<span><strong>${allNewsItems.length}</strong> notícia${allNewsItems.length === 1 ? "" : "s"} encontrada${allNewsItems.length === 1 ? "" : "s"}</span>${sources.length ? `<span>Principais fontes: ${escapeHtml(sources.join(" · "))}</span>` : ""}`;
       }
       renderSavedNews();
     }
@@ -7679,6 +7799,18 @@ function showAuthView() {
       }
       const button = event.target.closest(".make-image");
       if (button) generateNewsSummary(Number(button.dataset.index), button);
+    });
+    document.getElementById("newsThemeFilters").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-news-theme]");
+      if (!button) return;
+      state.newsTheme = button.dataset.newsTheme;
+      state.newsPage = 1;
+      renderNews();
+    });
+    document.getElementById("newsPeriod").addEventListener("change", (event) => {
+      const global = document.getElementById("periodFilter");
+      if (global) global.value = event.target.value;
+      syncClientFilters();
     });
     document.getElementById("newsPagination").addEventListener("click", (event) => {
       const button = event.target.closest("button[data-page-action]");

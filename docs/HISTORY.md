@@ -2,6 +2,23 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — Página de Notícias pelo mockup e ilustrações em cena de estrada
+**O que mudou:**
+- `public/dashboard.js`: `illustration()` reescrita com `SCENE` por tema, mais a variante "Neblina" pelo texto. Passa a exportar `newsMedia`, `themeOfItem`, `icon`, `THEME_COLOR` e `LEVEL`, com ícones novos (car, ban, cone, cloud, dots, layers, calendar, source).
+- `public/index.html`: a página de Notícias ganhou `#newsThemeFilters`, `#newsPeriod` (sincronizado com o filtro global de período) e `#newsFooter`. `renderNews`/`newsCardMarkup` foram reescritas, com o CSS `.news-*` responsivo (2 colunas, 1 coluna abaixo de 1100px, imagem empilhada abaixo de 560px).
+- Testes: `tests/test_news_page.js`.
+
+**Por quê:** pedido do usuário com o mockup (cards com foto, filtros em pílula, "Ver detalhe"), nas cores da Overhaul.
+
+**Impacto medido:** JS 82/82, Python 62/62. As 11 cenas foram renderizadas em PNG para conferência visual. A página foi validada em jsdom: 8 cards, contagem por categoria e filtro Clima. Não houve captura de tela da página inteira, porque o Chrome headless é bloqueado no sandbox.
+
+**Alternativas descartadas:**
+- Fotos de banco de imagens (licença e direito de uso).
+- Gerar imagem por IA a cada notícia (custo e risco de cena inadequada, como acidente ou vítima).
+- Azul do mockup: substituído pelo Vivid Purple/Vivid Green da Overhaul.
+
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — Central de Evento: o cliente escolhe, a IA acompanha
 **O que mudou:**
 - Reaproveitado o commit do PR #21 (botão "Acompanhar evento", tabela `followed_events`, ações em `news-summary.js`, Central reescrita).

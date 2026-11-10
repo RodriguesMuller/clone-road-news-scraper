@@ -33,6 +33,14 @@
     pin: '<path d="M20 10c0 4.99-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
     clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
     arrow: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+    car: '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+    ban: '<circle cx="12" cy="12" r="10"/><path d="M7 12h10"/>',
+    cone: '<path d="M9.3 6.2 6.4 16"/><path d="M14.7 6.2 17.6 16"/><path d="M9.3 6.2h5.4L12 2Z"/><path d="M7.4 12.5h9.2"/><path d="M3 20h18"/><path d="m5 16h14l1 4H4Z"/>',
+    cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+    dots: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
+    layers: '<path d="m12 2 10 5-10 5L2 7Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>',
+    calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    source: '<path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/>',
     logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
   };
   const icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ""}</svg>`;
@@ -184,37 +192,81 @@
     return `<span class="kpi-delta ${pct > 0 ? "up" : "down"}">${pct > 0 ? "↑" : "↓"} ${Math.abs(pct)}% <small>vs período anterior</small></span>`;
   }
 
-  // Ilustração de reserva por tema, usada quando a fonte não publica imagem.
-  // Sempre neutra: sinalização, cones, barreiras, clima, ponte — nunca veículo acidentado,
+  // Ilustração de reserva por tema, usada quando a fonte não publica imagem: cena de estrada em
+  // perspectiva (céu, horizonte, vegetação) com um elemento da categoria, nas cores Overhaul.
+  // Sempre neutra: sinalização, cones, barreiras, clima, caminhão rodando, nunca veículo acidentado,
   // pessoas ou vítimas, mesmo em notícia de acidente com morte.
-  const TRUCK = '<g transform="translate(118 108)"><rect width="96" height="46" rx="4" fill="#F3F3F3"/><rect x="6" y="8" width="84" height="4" rx="2" fill="#1EFF95" opacity=".8"/><path d="M96 12h24l14 17v17H96Z" fill="#CFD1D0"/><rect x="104" y="17" width="14" height="10" rx="2" fill="#1E0D43"/><circle cx="22" cy="50" r="9" fill="#0F1814"/><circle cx="22" cy="50" r="3" fill="#9FA3A1"/><circle cx="78" cy="50" r="9" fill="#0F1814"/><circle cx="78" cy="50" r="3" fill="#9FA3A1"/><circle cx="120" cy="50" r="9" fill="#0F1814"/><circle cx="120" cy="50" r="3" fill="#9FA3A1"/></g>';
-  const CONE = (x, s = 1) => `<g transform="translate(${x} 150) scale(${s})"><path d="M-12 0 0-34 12 0Z" fill="#FC3700"/><path d="M-7.5-13h15M-4.5-24h9" stroke="#F4F9FA" stroke-width="4"/><rect x="-16" y="0" width="32" height="5" rx="2" fill="#FC3700"/></g>`;
-  const MOTIFS = {
-    "Acidentes": `<g transform="translate(300 98)"><path d="M0-40 38 26H-38Z" fill="#FFCD00" stroke="#1E0D43" stroke-width="4" stroke-linejoin="round"/><path d="M0-14v20" stroke="#1E0D43" stroke-width="7" stroke-linecap="round"/><circle cy="16" r="4" fill="#1E0D43"/><rect x="-3" y="28" width="6" height="26" fill="#9FA3A1"/></g>${CONE(220)}${CONE(250, 0.85)}${CONE(355, 0.9)}`,
-    "Interdições": '<g transform="translate(250 112)"><rect x="-110" y="-12" width="220" height="26" rx="4" fill="#F4F9FA"/><path d="M-100-12l16 26M-68-12l16 26M-36-12l16 26M-4-12l16 26M28-12l16 26M60-12l16 26M92-12l16 26" stroke="#FC3700" stroke-width="9"/><rect x="-100" y="14" width="7" height="26" fill="#9FA3A1"/><rect x="93" y="14" width="7" height="26" fill="#9FA3A1"/><circle cx="-96" cy="-20" r="7" fill="#FFCD00"/><circle cx="96" cy="-20" r="7" fill="#FFCD00"/></g>',
-    "Obras": `${CONE(140)}${CONE(185, 0.9)}${CONE(230, 0.8)}<g transform="translate(320 96)"><path d="M0-34 34 0 0 34-34 0Z" fill="#FFCD00" stroke="#1E0D43" stroke-width="3"/><path d="M-12 12 4-6M8-14l6 6-8 8-6-6Z" stroke="#1E0D43" stroke-width="4" fill="#1E0D43"/><rect x="-3" y="34" width="6" height="22" fill="#9FA3A1"/></g>`,
-    "Trânsito": '<g fill="#C6BDFC"><rect x="40" y="128" width="58" height="22" rx="7"/><rect x="112" y="128" width="58" height="22" rx="7"/><rect x="184" y="128" width="58" height="22" rx="7"/></g><rect x="256" y="124" width="86" height="26" rx="5" fill="#F3F3F3"/><g fill="#FC3700" opacity=".9"><circle cx="44" cy="138" r="3"/><circle cx="116" cy="138" r="3"/><circle cx="188" cy="138" r="3"/><circle cx="260" cy="136" r="3"/></g>',
-    "Clima": '<g fill="#CFD1D0" opacity=".95"><ellipse cx="270" cy="62" rx="52" ry="24"/><ellipse cx="318" cy="72" rx="40" ry="20"/><ellipse cx="230" cy="74" rx="34" ry="17"/></g><g stroke="#00ACFF" stroke-width="3.5" stroke-linecap="round" opacity=".85"><path d="M232 102l-8 18"/><path d="M256 106l-8 18"/><path d="M280 102l-8 18"/><path d="M304 106l-8 18"/><path d="M328 102l-8 18"/></g><path d="M300 92l-12 20h12l-8 18" stroke="#FFCD00" stroke-width="4" fill="none" stroke-linejoin="round"/>' + TRUCK,
-    "Roubo de carga": TRUCK + '<g transform="translate(312 96)"><path d="M0-36 32-23v21c0 22-15 36-32 42-17-6-32-20-32-42v-21Z" fill="#7758FF"/><rect x="-11" y="-6" width="22" height="18" rx="3" fill="#F4F9FA"/><path d="M-6-6v-6a6 6 0 0 1 12 0v6" stroke="#F4F9FA" stroke-width="4" fill="none"/></g>',
-    "Greves": TRUCK + '<g transform="translate(316 96)"><circle r="30" fill="#E4C1F9"/><rect x="-11" y="-14" width="8" height="28" rx="2" fill="#1E0D43"/><rect x="3" y="-14" width="8" height="28" rx="2" fill="#1E0D43"/></g>',
-    "Infraestrutura": `<path d="M40 130 Q200 60 360 130" stroke="#CFD1D0" stroke-width="6" fill="none"/><rect x="30" y="128" width="340" height="10" fill="#9FA3A1"/><g stroke="#CFD1D0" stroke-width="3"><path d="M90 102v26M140 84v44M200 76v52M260 84v44M310 102v26"/></g><rect x="60" y="138" width="12" height="14" fill="#6F7472"/><rect x="328" y="138" width="12" height="14" fill="#6F7472"/>${CONE(200, 0.8)}`,
-    "Combustíveis e pedágios": '<g transform="translate(300 100)"><rect x="-26" y="-34" width="44" height="70" rx="6" fill="#1EFF95"/><rect x="-18" y="-24" width="28" height="18" rx="3" fill="#0F1814"/><path d="M18-14h10v34a6 6 0 0 1-12 0V6" stroke="#CFD1D0" stroke-width="5" fill="none"/><rect x="-32" y="36" width="56" height="8" rx="2" fill="#6F7472"/></g>' + TRUCK,
-    "Outros": TRUCK,
+  const SKIES = {
+    dusk: ["#1E0D43", "#5029FF", "#F78D87"],
+    storm: ["#0F1814", "#2A3E33", "#6F7472"],
+    fog: ["#6F7472", "#9FA3A1", "#CFD1D0"],
+    night: ["#0F1814", "#1E0D43", "#7758FF"],
+  };
+  const TRUCK_SIDE = (x, y, s = 1) => `<g transform="translate(${x} ${y}) scale(${s})"><rect x="-34" y="-30" width="50" height="30" rx="2" fill="#F3F3F3"/><rect x="-30" y="-25" width="42" height="3" fill="#1EFF95" opacity=".85"/><path d="M16-24h12l8 10v14H16Z" fill="#CFD1D0"/><rect x="20" y="-21" width="8" height="6" rx="1" fill="#1E0D43"/><circle cx="-22" cy="1" r="5" fill="#0F1814"/><circle cx="4" cy="1" r="5" fill="#0F1814"/><circle cx="28" cy="1" r="5" fill="#0F1814"/></g>`;
+  const TRUCK_BACK = (x, y, s = 1) => `<g transform="translate(${x} ${y}) scale(${s})"><rect x="-22" y="-34" width="44" height="34" rx="2" fill="#E7E7E7"/><rect x="-22" y="-34" width="44" height="5" fill="#CFD1D0"/><rect x="-19" y="-4" width="7" height="4" rx="1" fill="#FC3700"/><rect x="12" y="-4" width="7" height="4" rx="1" fill="#FC3700"/><rect x="-20" y="0" width="40" height="4" fill="#0F1814"/></g>`;
+  const TAILLIGHTS = (x, y, s = 1) => `<g transform="translate(${x} ${y}) scale(${s})"><rect x="-14" y="-10" width="28" height="12" rx="3" fill="#2A3E33"/><circle cx="-9" cy="-3" r="2.6" fill="#FC3700"/><circle cx="9" cy="-3" r="2.6" fill="#FC3700"/></g>`;
+  const CONE = (x, y, s = 1) => `<g transform="translate(${x} ${y}) scale(${s})"><path d="M-9 0 0-26 9 0Z" fill="#FC3700"/><path d="M-5.5-9h11M-3.3-17h6.6" stroke="#F4F9FA" stroke-width="3"/><rect x="-12" y="0" width="24" height="4" rx="1.5" fill="#FC3700"/></g>`;
+  const SIGN = (x, y, inner, color = "#FFCD00") => `<g transform="translate(${x} ${y})"><rect x="-2.5" y="0" width="5" height="40" fill="#6F7472"/><path d="M0-34 30 16H-30Z" fill="${color}" stroke="#1E0D43" stroke-width="3" stroke-linejoin="round"/>${inner}</g>`;
+  const BARRIER = (y, w) => `<g transform="translate(200 ${y})"><rect x="${-w / 2}" y="-12" width="${w}" height="16" rx="2" fill="#F4F9FA"/>${Array.from({ length: Math.ceil(w / 22) }, (_, i) => `<path d="M${-w / 2 + i * 22} -12l12 16" stroke="#FC3700" stroke-width="7"/>`).join("")}<rect x="${-w / 2 + 6}" y="4" width="5" height="18" fill="#9FA3A1"/><rect x="${w / 2 - 11}" y="4" width="5" height="18" fill="#9FA3A1"/><circle cx="${-w / 2 + 8}" cy="-17" r="4" fill="#FFCD00"/><circle cx="${w / 2 - 8}" cy="-17" r="4" fill="#FFCD00"/></g>`;
+  const RAIN = '<g stroke="#00ACFF" stroke-width="1.6" stroke-linecap="round" opacity=".55">' + Array.from({ length: 34 }, (_, i) => { const x = (i * 37) % 400; const y = (i * 53) % 120; return `<path d="M${x} ${y}l-6 16"/>`; }).join("") + "</g>";
+  const SCENE = {
+    "Acidentes": { sky: "dusk", art: SIGN(318, 132, '<path d="M0-12v12" stroke="#1E0D43" stroke-width="5" stroke-linecap="round"/><circle cy="7" r="3" fill="#1E0D43"/>') + CONE(250, 168, 1.1) + CONE(282, 186, 1.25) + TAILLIGHTS(182, 150, 1) },
+    "Interdições": { sky: "dusk", art: BARRIER(162, 200) + CONE(92, 182, 1.2) + CONE(310, 182, 1.2) },
+    "Obras": { sky: "dusk", art: BARRIER(168, 150) + CONE(110, 186, 1.25) + CONE(292, 186, 1.25) + SIGN(70, 130, '<path d="M-9 8 3-4M6-10l5 5-6 6-5-5Z" stroke="#1E0D43" stroke-width="3.5" fill="#1E0D43"/>') },
+    "Trânsito": { sky: "night", art: TAILLIGHTS(188, 124, 0.55) + TAILLIGHTS(212, 128, 0.6) + TAILLIGHTS(174, 140, 0.8) + TRUCK_BACK(232, 160, 1.1) + TAILLIGHTS(150, 176, 1.25) },
+    "Clima": { sky: "storm", rain: true, art: '<g fill="#2A3E33" opacity=".9"><ellipse cx="120" cy="34" rx="90" ry="26"/><ellipse cx="270" cy="28" rx="110" ry="30"/></g>' + TAILLIGHTS(190, 140, 0.8) + TAILLIGHTS(232, 168, 1.2) },
+    "Neblina": { sky: "fog", fog: true, art: TAILLIGHTS(196, 132, 0.6) + TAILLIGHTS(214, 150, 0.85) + TAILLIGHTS(170, 172, 1.15) },
+    "Roubo de carga": { sky: "night", art: TRUCK_SIDE(170, 168, 1.2) + '<g transform="translate(320 120)"><path d="M0-30 26-19v17c0 18-12 29-26 35-14-6-26-17-26-35v-17Z" fill="#7758FF"/><rect x="-9" y="-6" width="18" height="15" rx="2" fill="#F4F9FA"/><path d="M-5-6v-5a5 5 0 0 1 10 0v5" stroke="#F4F9FA" stroke-width="3" fill="none"/></g>' },
+    "Greves": { sky: "dusk", art: TRUCK_SIDE(150, 168, 1.1) + TRUCK_SIDE(255, 176, 1.25) + '<g transform="translate(330 104)"><circle r="22" fill="#E4C1F9"/><rect x="-8" y="-10" width="6" height="20" rx="1.5" fill="#1E0D43"/><rect x="2" y="-10" width="6" height="20" rx="1.5" fill="#1E0D43"/></g>' },
+    "Infraestrutura": { sky: "dusk", art: '<path d="M40 128 Q200 70 360 128" stroke="#CFD1D0" stroke-width="5" fill="none"/><g stroke="#CFD1D0" stroke-width="2.5"><path d="M90 108v20M140 92v36M200 86v42M260 92v36M310 108v20"/></g><rect x="30" y="126" width="340" height="7" fill="#9FA3A1"/>' + CONE(200, 178, 1.1) },
+    "Combustíveis e pedágios": { sky: "dusk", art: TRUCK_SIDE(160, 172, 1.2) + '<g transform="translate(318 140)"><rect x="-20" y="-40" width="34" height="56" rx="5" fill="#1EFF95"/><rect x="-14" y="-32" width="22" height="14" rx="2" fill="#0F1814"/><path d="M14-26h8v28a5 5 0 0 1-10 0v-8" stroke="#CFD1D0" stroke-width="4" fill="none"/><rect x="-25" y="16" width="44" height="6" rx="2" fill="#6F7472"/></g>' },
+    "Outros": { sky: "dusk", art: TRUCK_BACK(206, 168, 1.15) },
   };
 
-  function illustration(theme, level, variant = "card") {
+  // Faixas centrais em perspectiva (mais largas perto da câmera).
+  const LANE = Array.from({ length: 7 }, (_, i) => {
+    const t0 = i / 7 + 0.03, t1 = t0 + 0.055;
+    const y0 = 112 + 88 * t0 * t0, y1 = 112 + 88 * t1 * t1;
+    const w0 = 0.6 + 6 * t0 * t0, w1 = 0.6 + 6 * t1 * t1;
+    return `<path d="M${200 - w0} ${y0.toFixed(1)}L${200 + w0} ${y0.toFixed(1)}L${200 + w1} ${y1.toFixed(1)}L${200 - w1} ${y1.toFixed(1)}Z"/>`;
+  }).join("");
+  const TREES = (side) => Array.from({ length: 9 }, (_, i) => {
+    const t = i / 8;
+    const x = side < 0 ? 168 - t * 190 : 232 + t * 190;
+    const base = 112 + 30 * t;
+    const h = 10 + 46 * t;
+    return `<path d="M${x.toFixed(1)} ${(base - h).toFixed(1)}l${(h * 0.28).toFixed(1)} ${h.toFixed(1)}h${(-h * 0.56).toFixed(1)}Z"/>`;
+  }).join("");
+
+  function sceneFor(theme, text = "") {
+    if (theme === "Clima" && /neblin|nevoeir|cerra/.test(text)) return SCENE.Neblina;
+    return SCENE[theme] || SCENE.Outros;
+  }
+
+  function illustration(theme, level, variant = "card", text = "") {
     const accent = LEVEL[level]?.color || "#1EFF95";
+    const scene = sceneFor(theme, text);
+    const [top, mid, horizon] = SKIES[scene.sky] || SKIES.dusk;
     const id = `il-${Math.random().toString(36).slice(2, 7)}`;
     return `<svg class="news-illustration ${variant}" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Ilustração: ${esc(theme)}">
       <defs>
-        <linearGradient id="${id}s" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#1E0D43"/><stop offset=".65" stop-color="#5029FF" stop-opacity=".5"/><stop offset="1" stop-color="#0F1814"/></linearGradient>
-        <linearGradient id="${id}r" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#2A3E33"/><stop offset="1" stop-color="#0F1814"/></linearGradient>
+        <linearGradient id="${id}s" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${top}"/><stop offset=".62" stop-color="${mid}"/><stop offset="1" stop-color="${horizon}"/></linearGradient>
+        <radialGradient id="${id}g" cx=".5" cy=".56" r=".38"><stop offset="0" stop-color="${horizon}" stop-opacity=".9"/><stop offset="1" stop-color="${horizon}" stop-opacity="0"/></radialGradient>
+        <linearGradient id="${id}r" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3A3F3D"/><stop offset="1" stop-color="#1C201E"/></linearGradient>
+        <filter id="${id}b"><feGaussianBlur stdDeviation="6"/></filter>
       </defs>
-      <rect width="400" height="200" fill="url(#${id}s)"/>
-      <path d="M0 128 L70 96 L130 118 L210 88 L290 116 L350 100 L400 112 L400 160 L0 160Z" fill="#2A3E33" opacity=".7"/>
-      <path d="M0 154 L400 154 L400 200 L0 200 Z" fill="url(#${id}r)"/>
-      <g stroke="#F4F9FA" stroke-width="3" stroke-dasharray="18 16" opacity=".45"><path d="M0 180 L400 180"/></g>
-      ${MOTIFS[theme] || MOTIFS.Outros}
+      <rect width="400" height="112" fill="url(#${id}s)"/>
+      <rect width="400" height="200" fill="url(#${id}g)"/>
+      <path d="M0 104 Q60 88 120 100 T240 96 T400 102 V114 H0Z" fill="#2A3E33" opacity=".85"/>
+      <rect y="112" width="400" height="88" fill="#0D1611"/>
+      <path d="M182 112H218L440 200H-40Z" fill="url(#${id}r)"/>
+      <path d="M182 112L-40 200M218 112L440 200" stroke="#CFD1D0" stroke-width="1.6" opacity=".55"/>
+      <g fill="#F4F9FA" opacity=".7">${LANE}</g>
+      ${scene.rain ? `<path d="M182 112H218L440 200H-40Z" fill="#00ACFF" opacity=".08"/>` : ""}
+      <g fill="#0F1814" opacity=".92">${TREES(-1)}${TREES(1)}</g>
+      ${scene.art}
+      ${scene.rain ? RAIN : ""}
+      ${scene.fog ? `<g filter="url(#${id}b)" fill="#E7E7E7" opacity=".55"><rect x="-20" y="88" width="440" height="34"/><rect x="-20" y="132" width="440" height="22" opacity=".6"/></g>` : ""}
       <rect x="0" y="0" width="400" height="4" fill="${accent}"/>
     </svg>`;
   }
@@ -224,7 +276,8 @@
   function newsMedia(item, theme, level, variant) {
     const photo = urlOf(item?.image_url);
     const source = String(item?.source || "").trim();
-    return `<div class="news-media">${illustration(theme, level, variant)}${photo
+    const text = window.RoadRisk.normalize(`${item?.title || ""} ${item?.summary || ""}`);
+    return `<div class="news-media">${illustration(theme, level, variant, text)}${photo
       ? `<img class="news-photo" src="${esc(photo)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">${source ? `<span class="news-credit">Imagem: ${esc(source)}</span>` : ""}`
       : ""}</div>`;
   }
@@ -649,5 +702,7 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindTopbar);
   else bindTopbar();
 
-  window.RoadDashboard = { render, renderChrome, onShow, applyTheme };
+  // Usados pela página de Notícias (index.html): mesma imagem, tema e ícones do Dashboard.
+  const themeOfItem = (item) => enrich(item).theme;
+  window.RoadDashboard = { render, renderChrome, onShow, applyTheme, newsMedia, themeOfItem, icon, THEME_COLOR, LEVEL };
 })();
