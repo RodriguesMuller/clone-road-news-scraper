@@ -2,6 +2,10 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-10 — Minha Rota: ocorrências de fora do trajeto
+- **Corrigido**: a Minha Rota listava ocorrências de outros estados como "relacionadas à rota" (ex.: bloqueio da BR-101 no Espírito Santo numa rota Santo André → Itaquaquecetuba), porque a origem/destino era casada palavra a palavra ("santo" ⊂ "Espírito Santo"). Agora casa a localidade inteira com limite de palavra, descarta ocorrência geolocalizada a mais de 45 km do trajeto e ocorrência que cita só rodovias fora da rota.
+- **Melhorado**: ocorrência casada pela cidade de origem/destino passa a ser marcada nessa ponta do mapa; bloqueio sem ponto identificável no traçado exibe aviso explícito.
+
 ## 2026-11-10 — impacto na frota, destaque de bloqueios e mapa
 - **Corrigido**: o mapa rodoviário e o mapa da Minha Rota exibiam "API KEY REQUIRED" porque os tiles `dark_all` do CARTO passaram a exigir chave. Agora usam tiles do OpenStreetMap (sem chave), escurecidos via CSS; provedor centralizado em `BASE_TILE_URL`.
 - **Adicionado**: destaque de rodovia bloqueada: borda vermelha e faixa "Rodovia bloqueada" (total) ou "parcialmente bloqueada" (tracejada) em notícias, alertas, salvos, ocorrências da rota e pop-up do mapa. Marcadores de bloqueio ficam fora do cluster e com anel pulsante.

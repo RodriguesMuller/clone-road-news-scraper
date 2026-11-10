@@ -2,6 +2,14 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — Minha Rota: casamento de localidade e ancoragem de bloqueios
+**O que mudou:** `routeKeywords` em `api/news-feed.js` passou a gerar a localidade inteira de origem/destino (regex com limite de palavra) em vez de tokens soltos. `matchRouteNews` descarta itens geolocalizados fora do corredor de 45 km e itens que citam apenas rodovias que não fazem parte da rota, e ancora no mapa (origem ou destino) os itens casados por localidade. O painel avisa quando um bloqueio não tem ponto no traçado.
+**Por quê:** numa rota Santo André → Itaquaquecetuba, o token "santo" casou com "Espírito Santo" e um bloqueio total da BR-101 (ES) apareceu como Crítico na rota, sem marcador no mapa, já que não estava no trajeto.
+**Arquivos/módulos:** `api/news-feed.js`, `public/index.html`, `tests/test_road_block.js`, `docs/CHANGELOG.md`.
+**Impacto medido:** a medir (ocorrências por análise de rota antes/depois).
+**Alternativas descartadas:** apenas aumentar o tamanho mínimo do token (ainda casaria "santo"/"santos"); filtrar pela UF da notícia (o campo `state` não é confiável em todos os itens).
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — Impacto na frota, destaque de bloqueios e correção do mapa
 **O que mudou:**
 - Mapa rodoviário e mapa da Minha Rota trocaram os tiles `dark_all` do CARTO por tiles do OpenStreetMap escurecidos via CSS (`.dark-tiles`), com provedor centralizado em `BASE_TILE_URL`/`addBaseTiles()`.

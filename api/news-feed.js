@@ -301,9 +301,27 @@ function routeStopCoordinates(route) {
   }).filter(Boolean);
 }
 
-function routeKeywords(origin, destination) {
-  const ignored = new Set(["brasil", "estado", "cidade", "rodovia", "origem", "destino"]);
-  return [...new Set(normalize(`${origin} ${destination}`).split(/[^a-z0-9]+/).filter((token) => token.length >= 4 && !ignored.has(token)))];
+// Casa a localidade INTEIRA de origem/destino ("santo andre"), nunca palavras soltas: o token
+// "santo" de "Santo André" casava com "Espírito Santo" e trazia bloqueio do ES para uma rota no ABC.
+const ROUTE_PLACE_IGNORED = new Set(["brasil", "estado", "cidade", "rodovia", "origem", "destino", "centro", "sp", "rj", "mg", "pr", "sc", "rs"]);
+
+function routePlaces(value) {
+  return normalize(value)
+    .split(/,|\s-\s|\//)
+    .map((part) => part.replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim())
+    .filter((part) => part.length >= 4 && !ROUTE_PLACE_IGNORED.has(part) && !/^\d/.test(part));
+}
+
+function routeKeywords(origin, destination, lastPointIndex = -1) {
+  const entries = [
+    ...routePlaces(origin).map((phrase) => ({ phrase, pointIndex: 0 })),
+    ...routePlaces(destination).map((phrase) => ({ phrase, pointIndex: lastPointIndex })),
+  ];
+  const seen = new Set();
+  return entries.filter(({ phrase }) => !seen.has(phrase) && seen.add(phrase)).map((entry) => ({
+    ...entry,
+    pattern: new RegExp(`(?:^|[^a-z0-9])${entry.phrase.replace(/ /g, "\\s+")}(?:$|[^a-z0-9])`),
+  }));
 }
 
 const ROUTE_SEGMENT_ANCHOR_RADIUS_KM = 15;
@@ -321,8 +339,8 @@ function matchRouteNews(items, route, origin, destination) {
   }));
   const routeRoads = extractRoads(`${route.description || ""} ${stepEntries.map((entry) => entry.text).join(" ")}`);
   const routeRoadSet = new Set(routeRoads);
-  const keywords = routeKeywords(origin, destination);
   const routePoints = decodePolyline(route.polyline?.encodedPolyline);
+  const keywords = routeKeywords(origin, destination, routePoints.length - 1);
   const now = Date.now();
 
   const matches = items.map((item) => {
@@ -330,7 +348,8 @@ function matchRouteNews(items, route, origin, destination) {
     const itemRoads = extractRoads(text);
     const roadMatch = itemRoads.find((road) => routeRoadSet.has(road));
     const normalized = normalize(text);
-    const endpointMatch = keywords.find((keyword) => normalized.includes(keyword));
+    const endpointEntry = keywords.find((keyword) => keyword.pattern.test(normalized));
+    const endpointMatch = endpointEntry?.phrase;
     const lat = Number(item.latitude);
     const lng = Number(item.longitude);
     const precision = normalize(item.geo_precision);
@@ -339,6 +358,10 @@ function matchRouteNews(items, route, origin, destination) {
     const corridorDistanceKm = nearest.distanceKm;
     const corridorMatch = corridorDistanceKm <= 45;
     if (!roadMatch && !corridorMatch && !endpointMatch) return null;
+    // Geolocalizada longe do trajeto: e outro trecho (mesma rodovia ou cidade homonima), nao esta rota.
+    if (preciseGeo && !corridorMatch) return null;
+    // Cita rodovias e nenhuma delas faz parte da rota: o casamento por localidade e coincidencia.
+    if (!roadMatch && !corridorMatch && itemRoads.length) return null;
     let [riskRank, riskLevel] = riskForItem(item);
     const blockLevel = roadBlockLevel(item);
     if (blockLevel === "total" && riskRank < 4) [riskRank, riskLevel] = [4, "Crítico"];
@@ -352,7 +375,9 @@ function matchRouteNews(items, route, origin, destination) {
     // onde essa rodovia aparece nas instrucoes do trajeto, para nao deixar de marcar no mapa uma
     // ocorrencia que a analise textual ja cita pelo codigo da rodovia.
     const roadAnchor = !geoAnchorable && roadMatch ? anchorByRoad(roadMatch, stepEntries, routePoints) : null;
-    const anchorPointIndex = geoAnchorable ? nearest.pointIndex : roadAnchor ? roadAnchor.pointIndex : -1;
+    // Ultimo recurso: ocorrencia casada pela cidade de origem/destino fica marcada nessa ponta da rota.
+    const endpointAnchor = !geoAnchorable && !roadAnchor && endpointEntry ? endpointEntry.pointIndex : -1;
+    const anchorPointIndex = geoAnchorable ? nearest.pointIndex : roadAnchor ? roadAnchor.pointIndex : endpointAnchor;
     const anchorable = Boolean(segmentTone) && anchorPointIndex >= 0;
     return {
       title: clean(item.title),
@@ -668,3 +693,4 @@ module.exports = async function handler(req, res) {
 
 // Exposto para testes (node:test).
 module.exports.roadBlockLevel = roadBlockLevel;
+module.exports.matchRouteNews = matchRouteNews;
