@@ -214,5 +214,19 @@ class CargoRelevanceTests(unittest.TestCase):
         self.assertIsNone(merge_event(_classified(published_at="2026-11-11T10:00:00-03:00"), previous, "m", "2026-11-11T14:00:00+00:00"))
 
 
+class OpenAiResponseTests(unittest.TestCase):
+    def test_incomplete_response_raises_clear_error(self):
+        from unittest import mock
+        from scraper import event_intelligence as ei
+
+        fake = mock.Mock()
+        fake.raise_for_status = lambda: None
+        fake.json = lambda: {"status": "incomplete", "incomplete_details": {"reason": "max_output_tokens"},
+                             "output": [{"content": [{"text": '{"events": [{"title": "cort'}]}]}
+        with mock.patch.object(ei.requests, "post", return_value=fake):
+            with self.assertRaisesRegex(RuntimeError, "incompleta .max_output_tokens."):
+                ei._call_openai([], [], "k", "m")
+
+
 if __name__ == "__main__":
     unittest.main()
