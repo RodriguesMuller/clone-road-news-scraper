@@ -158,6 +158,11 @@ test("manual user endpoint creates Auth, profile and package link without leakin
     if (value.includes("/rest/v1/clients?id=eq.client-1")) return Response.json([{ id: "client-1", company_name: "Transportador A", status: "active" }]);
     if (value.includes("/rest/v1/packages?id=eq.package-1")) return Response.json([{ id: "package-1", is_active: true, max_users: 10 }]);
     if (value.includes("/rest/v1/profiles?email=eq.")) return Response.json([]);
+    // Vagas do pacote contadas por cliente (max_users vale por empresa).
+    if (value.includes("/rest/v1/profiles?client_id=eq.client-1")) return Response.json([{ id: "other-user" }]);
+    if (value.includes("/rest/v1/user_packages?package_id=eq.package-1") && value.includes("user_id=in.") && method === "HEAD") {
+      return new Response(null, { status: 200, headers: { "content-range": "0/0" } });
+    }
     if (value.includes("/auth/v1/admin/users?page=")) return Response.json({ users: [] });
     if (value.includes("/rest/v1/user_packages?package_id=eq.package-1") && method === "HEAD") {
       return new Response(null, { status: 200, headers: { "content-range": "0/0" } });
@@ -414,7 +419,7 @@ test("route analysis combines traffic, route news and the server-side AI without
   await handler(req, response);
   const payload = JSON.parse(response.body);
 
-  assert.equal(response.statusCode, 200);
+  assert.equal(response.statusCode, 200, response.body);
   assert.equal(payload.route.provider, "Google Routes");
   assert.equal(payload.route.roads[0], "BR-364");
   assert.equal(payload.alerts[0].highway, "BR-364");

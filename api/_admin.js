@@ -107,6 +107,48 @@ function packagePayload(body = {}) {
   };
 }
 
+// Vagas ocupadas de um pacote DENTRO de um cliente: max_users é o número de usuários que cada
+// empresa pode ter naquele pacote (antes contava a plataforma inteira, e uma empresa cheia
+// impedia as outras de usar o mesmo pacote). Sem cliente, conta só o próprio usuário.
+async function packageSeatsUsed(packageId, clientId, excludeUserId = "") {
+  if (!clientId) return 0;
+  const members = await fetchJson(`/rest/v1/profiles?client_id=eq.${encodeURIComponent(clientId)}&select=id`);
+  const ids = (members || []).map((row) => row.id).filter((id) => id && id !== excludeUserId);
+  if (!ids.length) return 0;
+  const list = ids.map((id) => `"${String(id).replace(/"/g, "")}"`).join(",");
+  // Só vínculos vigentes ocupam vaga: o que já terminou (ends_at no passado) libera a vaga.
+  const now = encodeURIComponent(new Date().toISOString());
+  const response = await supabaseFetch(
+    `/rest/v1/user_packages?package_id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&or=(ends_at.is.null,ends_at.gt.${now})&user_id=in.(${list})&select=id`,
+    { method: "HEAD", headers: { Prefer: "count=exact" } },
+  );
+  return Number((response.headers.get("content-range") || "0/0").split("/")[1] || 0);
+}
+
+// Cliente ativo com o pacote que os usuários dele herdam (package_id). Sem a coluna no banco
+// (scripts/supabase_client_package.sql ainda não rodado), devolve o cliente sem herança.
+async function clientWithPackage(clientId, { onlyActive = false } = {}) {
+  const status = onlyActive ? "&status=eq.active" : "";
+  const read = (select) => fetchJson(`/rest/v1/clients?id=eq.${encodeURIComponent(clientId)}${status}&select=${select}&limit=1`);
+  try {
+    return (await read("id,company_name,status,package_id"))?.[0] || null;
+  } catch (error) {
+    if (!/package_id|column|schema|PGRST/i.test(error.message || "")) throw error;
+    return (await read("id,company_name,status"))?.[0] || null;
+  }
+}
+
+// Vagas de um cliente que usa pacote herdado: cada usuário Cliente ativo da empresa ocupa uma.
+async function clientSeatsUsed(clientId, excludeUserId = "") {
+  if (!clientId) return 0;
+  const exclude = excludeUserId ? `&id=neq.${encodeURIComponent(excludeUserId)}` : "";
+  const response = await supabaseFetch(
+    `/rest/v1/profiles?client_id=eq.${encodeURIComponent(clientId)}&role=eq.client&status=eq.active${exclude}&select=id`,
+    { method: "HEAD", headers: { Prefer: "count=exact" } },
+  );
+  return Number((response.headers.get("content-range") || "0/0").split("/")[1] || 0);
+}
+
 async function audit(account, action, targetType, targetId, metadata = {}) {
   try {
     await supabaseFetch("/rest/v1/audit_logs", {
@@ -194,11 +236,14 @@ module.exports = {
   assertPasswordPolicy,
   passwordPolicyError,
   audit,
+  clientSeatsUsed,
+  clientWithPackage,
   fetchJson,
   isValidCpf,
   maskCpf,
   normalizeCpf,
   normalizePhone,
   packagePayload,
+  packageSeatsUsed,
   readJson,
 };

@@ -11,7 +11,16 @@ async function activeUserPackageCount(packageId) {
     `/rest/v1/user_packages?package_id=eq.${encodeURIComponent(packageId)}&is_active=eq.true&select=id`,
     { method: "HEAD", headers: { Prefer: "count=exact" } },
   );
-  return Number((response.headers.get("content-range") || "0/0").split("/")[1] || 0);
+  const users = Number((response.headers.get("content-range") || "0/0").split("/")[1] || 0);
+  // Pacote configurado em um cliente também está em uso (os usuários dele o herdam).
+  let clients = 0;
+  try {
+    const rows = await fetchJson(`/rest/v1/clients?package_id=eq.${encodeURIComponent(packageId)}&select=id&limit=1`);
+    clients = rows?.length || 0;
+  } catch {
+    // Banco sem clients.package_id: nenhum cliente herda pacote.
+  }
+  return users + clients;
 }
 
 async function writePackage(path, options, payload) {

@@ -1,6 +1,6 @@
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
-const { assertCanUse, json, recordUsage, requireManager, supabaseFetch } = require("./_auth");
+const { assertCanUse, finalizeReservation, json, releaseUsage, requireManager, reserveUsage, supabaseFetch } = require("./_auth");
 const { readJson } = require("./_admin");
 const RoadRisk = require("../public/risk.js");
 
@@ -363,14 +363,27 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    const summary = await generateAiSummary(item);
+    // Reserva a geração de IA antes de chamar a OpenAI (limite do cliente nunca ultrapassado);
+    // se a IA não for usada (sem chave ou resposta fora do formato), a reserva é desfeita.
+    const metadata = { source: "news-summary", title: clean(item.title).slice(0, 300) };
+    const willUseAi = Boolean(String(process.env.OPENAI_API_KEY || "").trim());
+    if (willUseAi) await reserveUsage(account, "ai_summary_individual", "ai_summary_individual", metadata);
+    let summary;
+    try {
+      summary = await generateAiSummary(item);
+    } catch (error) {
+      await releaseUsage(account);
+      throw error;
+    }
     if (summary.ai_used) {
-      await recordUsage(account, "ai_summary_individual", {
+      await finalizeReservation(account, {
         tokens_input: summary._usage?.input_tokens ?? null,
         tokens_output: summary._usage?.output_tokens ?? null,
         model: summary._model,
-        metadata: { source: "news-summary", title: clean(item.title).slice(0, 300) },
+        metadata,
       });
+    } else {
+      await releaseUsage(account);
     }
     const { _usage, _model, ...publicSummary } = summary;
     json(res, 200, publicSummary);

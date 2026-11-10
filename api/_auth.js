@@ -138,7 +138,8 @@ async function getProfile(userId) {
 
 async function getActivePackage(userId) {
   const now = encodeURIComponent(new Date().toISOString());
-  const path = `/rest/v1/user_packages?user_id=eq.${encodeURIComponent(userId)}&is_active=eq.true&or=(ends_at.is.null,ends_at.gt.${now})&select=*,packages(*)&order=created_at.desc&limit=1`;
+  // Vigente = ativo, já começou (starts_at <= agora) e ainda não terminou.
+  const path = `/rest/v1/user_packages?user_id=eq.${encodeURIComponent(userId)}&is_active=eq.true&starts_at=lte.${now}&or=(ends_at.is.null,ends_at.gt.${now})&select=*,packages(*)&order=created_at.desc&limit=1`;
   const response = await supabaseFetch(path);
   const rows = await response.json();
   const active = rows[0] || null;
@@ -147,9 +148,36 @@ async function getActivePackage(userId) {
 
 async function getClient(clientId) {
   if (!clientId) return null;
-  const response = await supabaseFetch(`/rest/v1/clients?id=eq.${encodeURIComponent(clientId)}&select=id,company_name,status&limit=1`);
+  const read = async (select) => {
+    const response = await supabaseFetch(`/rest/v1/clients?id=eq.${encodeURIComponent(clientId)}&select=${select}&limit=1`);
+    const rows = await response.json();
+    return rows[0] || null;
+  };
+  try {
+    return await read("id,company_name,status,package_id");
+  } catch (error) {
+    // Banco ainda sem clients.package_id (scripts/supabase_client_package.sql): segue sem herança.
+    if (!/package_id|column|schema|PGRST/i.test(error.message || "")) throw error;
+    return read("id,company_name,status");
+  }
+}
+
+// Pacote do cliente, no mesmo formato de user_packages (com packages embutido).
+async function getClientPackage(client) {
+  if (!client?.package_id) return null;
+  const response = await supabaseFetch(`/rest/v1/packages?id=eq.${encodeURIComponent(client.package_id)}&is_active=eq.true&select=*&limit=1`);
   const rows = await response.json();
-  return rows[0] || null;
+  const pkg = rows[0] || null;
+  return pkg ? { package_id: pkg.id, packages: pkg, source: "client" } : null;
+}
+
+// O usuário HERDA a configuração (pacote: recursos e limites) do cliente a que pertence. Só quando
+// o cliente não tem pacote vale o pacote individual do usuário (modelo antigo, mantido por compatibilidade).
+async function getEffectivePackage(userId, client) {
+  const inherited = await getClientPackage(client);
+  if (inherited) return inherited;
+  const own = await getActivePackage(userId);
+  return own ? { ...own, source: "user" } : null;
 }
 
 function monthStartIso() {
@@ -167,14 +195,31 @@ function isManagerRole(role) {
   return role === "admin" || role === "manager";
 }
 
-async function monthlyUsage(userId, eventTypes) {
+// Escopo do consumo: o saldo é de cada USUÁRIO. Ele herda os limites do pacote do cliente, mas não
+// o consumo — cada usuário da empresa tem o próprio saldo mensal.
+async function inUsageScope(accountOrUserId, eventTypes, run) {
+  const userId = accountOrUserId && typeof accountOrUserId === "object" ? accountOrUserId.user?.id : accountOrUserId;
   const types = Array.isArray(eventTypes) ? eventTypes : [eventTypes];
   const since = encodeURIComponent(monthStartIso());
   const encodedTypes = types.map((type) => `"${String(type).replace(/"/g, "")}"`).join(",");
-  const path = `/rest/v1/usage_events?user_id=eq.${encodeURIComponent(userId)}&event_type=in.(${encodedTypes})&created_at=gte.${since}&select=id`;
-  const response = await supabaseFetch(path, { method: "HEAD", headers: { Prefer: "count=exact" } });
-  const range = response.headers.get("content-range") || "0/0";
-  return Number(range.split("/")[1] || 0);
+  return run(`/rest/v1/usage_events?user_id=eq.${encodeURIComponent(userId)}&event_type=in.(${encodedTypes})&created_at=gte.${since}`);
+}
+
+async function monthlyUsage(accountOrUserId, eventTypes) {
+  return inUsageScope(accountOrUserId, eventTypes, async (path) => {
+    const response = await supabaseFetch(`${path}&select=id`, { method: "HEAD", headers: { Prefer: "count=exact" } });
+    const range = response.headers.get("content-range") || "0/0";
+    return Number(range.split("/")[1] || 0);
+  });
+}
+
+// Ids dos primeiros `n` usos do mês (ordem de gravação): quem está aqui cabe no limite.
+async function firstUsageIds(accountOrUserId, eventTypes, n) {
+  return inUsageScope(accountOrUserId, eventTypes, async (path) => {
+    const response = await supabaseFetch(`${path}&select=id&order=created_at.asc,id.asc&limit=${Math.max(1, n)}`);
+    const rows = await response.json();
+    return new Set((rows || []).map((row) => String(row.id)));
+  });
 }
 
 const PASSWORD_CHANGE_REQUIRED = "Troque sua senha temporaria para continuar.";
@@ -211,7 +256,7 @@ async function requireAccount(req, { allowPasswordChange = false } = {}) {
   const isPrivileged = isManagerRole(profile.role);
   const passwordChangeRequired = mustChangePassword(user);
   if (passwordChangeRequired && !allowPasswordChange) throw new Error(PASSWORD_CHANGE_REQUIRED);
-  const activePackage = await getActivePackage(user.id);
+  const activePackage = await getEffectivePackage(user.id, client);
   return { authEnabled: true, user, token, profile, client, activePackage, isAdmin, isManager, isPrivileged, passwordChangeRequired };
 }
 
@@ -233,20 +278,26 @@ function featureFlagEnabled(pkg, rule) {
   return rule.legacyFlag ? Boolean(pkg?.[rule.legacyFlag]) : false;
 }
 
-async function featureUsage(userId, feature) {
+async function featureUsage(accountOrUserId, feature) {
   const rule = featureRule(feature);
   if (!rule) return 0;
-  return monthlyUsage(userId, rule.limitEvents || rule.events);
+  return monthlyUsage(accountOrUserId, rule.limitEvents || rule.events);
 }
 
-async function assertCanUse(req, feature) {
+// options.reserve: tipo de evento a registrar JÁ na autorização. O uso é gravado primeiro e o
+// saldo é recontado; se a gravação passou do limite (requisições simultâneas, ex.: duas abas),
+// ela é desfeita e a chamada é bloqueada. Assim o limite do usuário nunca é ultrapassado. Quem reserva e depois falha deve chamar releaseUsage(account).
+async function assertCanUse(req, feature, options = {}) {
   const account = await requireAccount(req);
   if (!account.authEnabled) return account;
   const normalizedFeature = canonicalFeature(feature);
   const rule = featureRule(normalizedFeature);
   if (!rule) throw new Error("Recurso controlado invalido.");
   // Admin e Gestor possuem acesso operacional ilimitado, independente de pacote.
-  if (account.isPrivileged) return account;
+  if (account.isPrivileged) {
+    if (options.reserve) await reserveUsage(account, normalizedFeature, options.reserve, options.metadata);
+    return account;
+  }
   const pkg = packageFor(account);
   if (!pkg) {
     await recordUsage(account, rule.disabledEvent || rule.blockedEvent, {
@@ -262,19 +313,77 @@ async function assertCanUse(req, feature) {
   }
   if (rule.limit) {
     const limit = Number(pkg[rule.limit] || 0);
-    const used = await featureUsage(account.user.id, normalizedFeature);
-    if (limit <= 0 || used >= limit) {
-      await recordUsage(account, rule.blockedEvent, {
-        metadata: { feature: normalizedFeature, reason: "limit", used, limit },
-      });
-      throw new Error(rule.limitMessage);
-    }
+    const used = await featureUsage(account, normalizedFeature);
+    if (limit <= 0 || used >= limit) await blockForLimit(account, normalizedFeature, rule, used, limit);
+  }
+  if (options.reserve) await reserveUsage(account, normalizedFeature, options.reserve, options.metadata);
+  return account;
+}
+
+async function blockForLimit(account, feature, rule, used, limit) {
+  await recordUsage(account, rule.blockedEvent, { metadata: { feature, reason: "limit", used, limit } });
+  throw new Error(rule.limitMessage);
+}
+
+// Registra o uso e confirma que ele coube no limite do usuário. Se requisições simultâneas
+// passaram do saldo, fica quem gravou primeiro e as excedentes são desfeitas e bloqueadas.
+// Use depois de assertCanUse(req, feature) — ou via assertCanUse(req, feature, { reserve }).
+async function reserveUsage(account, feature, eventType, metadata) {
+  if (!account?.authEnabled) return account;
+  const normalizedFeature = canonicalFeature(feature);
+  const rule = featureRule(normalizedFeature);
+  account.reservation = await recordUsage(account, eventType, { metadata });
+  const pkg = packageFor(account);
+  if (account.isPrivileged || !rule?.limit || !pkg) return account;
+  const limit = Number(pkg[rule.limit] || 0);
+  const after = await featureUsage(account, normalizedFeature);
+  if (after <= limit) return account;
+  const keep = account.reservation?.id
+    ? (await firstUsageIds(account, rule.limitEvents || rule.events, limit)).has(String(account.reservation.id))
+    : false;
+  if (!keep) {
+    await releaseUsage(account);
+    await blockForLimit(account, normalizedFeature, rule, after - 1, limit);
   }
   return account;
 }
 
+// Completa a reserva com o que só se sabe depois da ação (tokens, modelo, metadados).
+async function finalizeReservation(account, data = {}) {
+  const id = account?.reservation?.id;
+  if (!id) return;
+  const patch = {};
+  if (data.tokens_input !== undefined) patch.tokens_input = data.tokens_input;
+  if (data.tokens_output !== undefined) patch.tokens_output = data.tokens_output;
+  if (data.model) patch.model = data.model;
+  if (data.metadata) patch.metadata = data.metadata;
+  if (!Object.keys(patch).length) return;
+  try {
+    await supabaseFetch(`/rest/v1/usage_events?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify(patch),
+    });
+  } catch {
+    // Os tokens são informativos; o uso já está contado.
+  }
+}
+
+// Desfaz a reserva feita por assertCanUse({ reserve }) quando a ação não chegou a acontecer.
+async function releaseUsage(account) {
+  const id = account?.reservation?.id;
+  if (!id) return;
+  account.reservation = null;
+  try {
+    await supabaseFetch(`/rest/v1/usage_events?id=eq.${encodeURIComponent(id)}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
+  } catch {
+    // Melhor contar a mais do que derrubar a resposta ao usuário.
+  }
+}
+
+// Grava um evento de uso e devolve { id } quando o banco informa (para poder desfazer).
 async function recordUsage(account, eventType, data = {}) {
-  if (!account?.authEnabled || !account.user?.id) return;
+  if (!account?.authEnabled || !account.user?.id) return null;
   const payload = {
     user_id: account.user.id,
     client_id: account.profile?.client_id || null,
@@ -286,20 +395,22 @@ async function recordUsage(account, eventType, data = {}) {
     model: data.model || null,
     metadata: data.metadata || {},
   };
-  try {
-    await supabaseFetch("/rest/v1/usage_events", {
+  const insert = async (body) => {
+    const response = await supabaseFetch("/rest/v1/usage_events?select=id", {
       method: "POST",
-      headers: { Prefer: "return=minimal" },
-      body: JSON.stringify(payload),
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(body),
     });
+    const rows = response.status === 201 || response.status === 200 ? await response.json().catch(() => null) : null;
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    return row?.id ? { id: row.id } : null;
+  };
+  try {
+    return await insert(payload);
   } catch (error) {
     if (!/client_id|package_id|column|schema|PGRST/i.test(error.message || "")) throw error;
     const { client_id, package_id, ...legacyPayload } = payload;
-    await supabaseFetch("/rest/v1/usage_events", {
-      method: "POST",
-      headers: { Prefer: "return=minimal" },
-      body: JSON.stringify(legacyPayload),
-    });
+    return insert(legacyPayload);
   }
 }
 
@@ -333,10 +444,14 @@ module.exports = {
   featureUsage,
   featureRule,
   featureFlagEnabled,
+  getClientPackage,
   isManagerRole,
   requireAccount,
   requireAdmin,
   requireManager,
   assertCanUse,
   recordUsage,
+  reserveUsage,
+  releaseUsage,
+  finalizeReservation,
 };

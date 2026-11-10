@@ -20,7 +20,8 @@ module.exports = async function handler(req, res) {
     const [news, route, ai, pdf] = !account.authEnabled
       ? [0, 0, 0, 0]
       : await Promise.all(["news_query", "route_analysis", "ai_summary_individual", "pdf_generated"]
-        .map((feature) => featureUsage(account.user.id, feature)));
+        // Consumo do próprio usuário (limites herdados do pacote do cliente), igual ao que o servidor cobra.
+        .map((feature) => featureUsage(account, feature)));
     const usage = { news, route, ai, pdf };
     const limits = {
       monthly_news_limit: Number(pkg?.monthly_news_limit || 0),
@@ -46,6 +47,7 @@ module.exports = async function handler(req, res) {
       company_name: profile.company_name || "",
       package_id: account.activePackage?.package_id || null,
       package_name: pkg?.name || null,
+      package_source: account.activePackage?.source || null,
       has_active_package: Boolean(pkg),
       is_unlimited: unlimited,
       must_change_password: Boolean(account.passwordChangeRequired),

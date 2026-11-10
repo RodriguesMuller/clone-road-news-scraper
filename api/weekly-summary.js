@@ -1,6 +1,6 @@
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
-const { assertCanUse, json, recordUsage, supabaseFetch } = require("./_auth");
+const { assertCanUse, finalizeReservation, json, releaseUsage, reserveUsage, supabaseFetch } = require("./_auth");
 const { buildWeeklyBrief } = require("./_weekly_brief");
 
 // Semana atual + semana anterior (para o comparativo dos números).
@@ -124,14 +124,34 @@ module.exports = async function handler(req, res) {
       json(res, 200, { summary: null, context });
       return;
     }
-    const { brief, ai } = await polishWithAi(buildWeeklyBrief(items));
+    const base = buildWeeklyBrief(items);
+    // A IA só redige a abertura: reserva a geração antes; sem saldo (corrida) segue com o texto automático.
+    let reserved = false;
+    if (String(process.env.OPENAI_API_KEY || "").trim()) {
+      try {
+        await reserveUsage(account, "ai_summary_weekly", "ai_summary_weekly", { source: "weekly-summary" });
+        reserved = true;
+      } catch {
+        reserved = false;
+      }
+    }
+    let result = { brief: base, ai: null };
+    try {
+      if (reserved) result = await polishWithAi(base);
+    } catch (error) {
+      await releaseUsage(account);
+      throw error;
+    }
+    const { brief, ai } = result;
     if (ai) {
-      await recordUsage(account, "ai_summary_weekly", {
+      await finalizeReservation(account, {
         tokens_input: ai.usage?.input_tokens ?? null,
         tokens_output: ai.usage?.output_tokens ?? null,
         model: ai.model,
         metadata: { source: "weekly-summary", events: brief.coverage.events },
       });
+    } else if (reserved) {
+      await releaseUsage(account);
     }
     json(res, 200, { summary: { ...brief, ai_used: Boolean(ai) }, context: { ...context, total: brief.coverage.analyzed } });
   } catch (error) {
