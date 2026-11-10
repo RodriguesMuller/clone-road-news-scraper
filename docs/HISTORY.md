@@ -2,6 +2,12 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — Triagem de eventos: limite de saída e diagnóstico
+**O que mudou:** `scraper/event_intelligence.py`: `max_output_tokens` de 3000 para 8000; `_call_openai` detecta `status: incomplete` e informa o motivo; o log de falha inclui uma mensagem curta, sem corpo de resposta nem cabeçalhos. Teste `OpenAiResponseTests`.
+**Por quê:** a coleta seguinte ao merge do PR #19 registrou `[Eventos] Falha na triagem inteligente: JSONDecodeError`, com 40 candidatos e o prompt maior. O log só trazia o nome da exceção, então a causa (resposta cortada) é a mais provável, mas não foi confirmada; o novo log vai mostrá-la.
+**Alternativas descartadas:** reduzir o lote de 40 candidatos (perderia cobertura); reparar JSON truncado (aceitaria eventos pela metade).
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — Central de Evento: critério de frota de carga e descarte
 **O que mudou:** `scraper/event_intelligence.py`: `PASSENGER_CONTEXT_PATTERN` (remove impacto em ônibus/metrô/passageiros antes de medir gravidade), regra de acidente pontual com interdição parcial (`ROUTINE_ACCIDENT_PATTERN`/`PARTIAL_PATTERN`/`TOTAL_PATTERN`), exclusões explícitas no prompt, `CLASSIFICATION_VERSION` v2, e `merge_event` não republica evento `descartado`. `api/news-summary.js` aceita `operational_status: descartado` (grava `status=resolved` + marca no metadata). `api/news-feed.js` não devolve descartados. `public/index.html`: botão "Descartar: não é evento grave". Testes: `CargoRelevanceTests`, novo teste em `tests/test_event_center.js`.
 **Por quê:** a primeira execução real da triagem publicou como "Crítico" o tombamento de um caminhão na Raposo Tavares (km 24,5) com interdição parcial, cujo impacto relevante era só em linhas de ônibus. O usuário apontou que isso não importa para gestor de frota de caminhões de carga. O filtro passou porque "paralisação de linhas de ônibus" contava como gravidade.

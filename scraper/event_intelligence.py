@@ -349,7 +349,8 @@ def _call_openai(candidates: list[dict], current_events: list[dict], api_key: st
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
         json={
             "model": model,
-            "max_output_tokens": 3000,
+            # Folga para lotes grandes: com 3000 a resposta era cortada no meio do JSON.
+            "max_output_tokens": 8000,
             "text": {
                 "format": {
                     "type": "json_schema",
@@ -372,7 +373,11 @@ def _call_openai(candidates: list[dict], current_events: list[dict], api_key: st
         timeout=60,
     )
     response.raise_for_status()
-    return _parse_json(_extract_text(response.json()))
+    data = response.json()
+    if data.get("status") == "incomplete":
+        reason = (data.get("incomplete_details") or {}).get("reason") or "desconhecido"
+        raise RuntimeError(f"resposta da IA incompleta ({reason})")
+    return _parse_json(_extract_text(data))
 
 
 def _slug(value: str) -> str:
@@ -615,5 +620,7 @@ def process_major_events(news_items: list[dict], database_url: str) -> int:
         return changed
     except Exception as error:
         # A inteligência de eventos não pode interromper a coleta principal.
-        print(f"[Eventos] Falha na triagem inteligente: {error.__class__.__name__}")
+        # Só a classe e uma mensagem curta: nunca o corpo da resposta nem cabeçalhos (chave).
+        detail = str(error).splitlines()[0][:160] if isinstance(error, (RuntimeError, ValueError)) else ""
+        print(f"[Eventos] Falha na triagem inteligente: {error.__class__.__name__} {detail}".rstrip())
         return 0
