@@ -18,6 +18,7 @@ Sem browser headless em nenhuma etapa — nenhuma fonte hoje exige renderizaçã
 |---|---|---|---|
 | G1 - Brasil | RSS | geral | Filtrado por keyword |
 | CNN Brasil | RSS | geral | Filtrado por keyword |
+| G1 - SP, MG, PR, RS, SC, RJ, BA, GO, MT, MS, ES, PE, CE, PA, MA, PB, RN, AL, SE, PI, TO, RO, AM, DF | RSS (24 feeds regionais) | geral | Keyword + filtro de frota. Trazem a **foto** da notícia (`media:content`) e o link original; substituem a cópia do Google News da mesma notícia |
 | Google News — Incidentes em rodovia | RSS (busca) | rodovia | Query já filtra por rodovia+incidente |
 | Google News — Caminhão/carreta | RSS (busca) | rodovia | Query já filtra por veículo+incidente |
 | Estradas.com.br | RSS | rodovia | Portal especializado |
@@ -55,7 +56,9 @@ O cartão do Dashboard mostra a imagem publicada pela **própria fonte**, com cr
 2. **`og:image` da página** (`scraper/utils/og_image.py`), só para notícias **novas** de fontes **diretas**, com timeout de 8 s, leitura de até 200 KB e teto por execução (`SCRAPER_OG_IMAGE_LIMIT`, padrão 30). Links `news.google.com` são redirecionamentos criptografados e não são buscados.
 3. Sem imagem: o painel usa uma **ilustração neutra por tema** (sinalização, cones, barreira, clima, ponte), nunca cena de acidente, pessoas ou vítimas.
 
-`safe_image_url` aceita só http(s) e descarta pixels de rastreio, logos e ícones. A imagem não é baixada nem armazenada: o painel aponta para a URL da fonte (`referrerpolicy="no-referrer"`). Cobertura medida em 2026-11-10: 3/253 itens com imagem no feed, porque 220 vêm do Google News, que não expõe imagem. Para aumentar a cobertura, prefira cadastrar os feeds RSS diretos dos veículos.
+**Deduplicação entre fontes** (`prefer_direct_sources`, aplicada em `main.collect_news`): quando a mesma notícia chega pelo feed direto do veículo e pelo Google News (URLs diferentes), fica só a versão direta, que traz foto e link original. A comparação é feita pelo título normalizado, sem o sufixo " - Veículo".
+
+`safe_image_url` aceita só http(s) e descarta pixels de rastreio, logos e ícones. A imagem não é baixada nem armazenada: o painel aponta para a URL da fonte (`referrerpolicy="no-referrer"`). Cobertura medida em 2026-11-10: 3/253 itens com imagem (1%) antes dos feeds regionais do G1; **96/297 (32%)** depois, com 20 cópias do Google News trocadas pela versão direta. Outros veículos avaliados no mesmo dia e não adicionados: O Globo (robots.txt bloqueia), R7, GZH, Itatiaia e Estado de Minas (feed 404), Agência Brasil, ND Mais e Campo Grande News (nenhum item relevante para frota naquela coleta).
 
 ## Atribuição de fonte nas queries "Google News"
 

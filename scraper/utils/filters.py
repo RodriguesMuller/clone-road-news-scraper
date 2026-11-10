@@ -165,6 +165,36 @@ def is_fleet_relevant(title: str, summary: str = "") -> bool:
     return bool(fleet_relevance(title, summary))
 
 
+def _title_key(title: str, outlet: str = "") -> str:
+    """Título comparável entre fontes: sem o sufixo " - Veículo", sem acento e pontuação."""
+    text = clean_text(title)
+    if outlet and text.lower().endswith(f" - {outlet}".lower()):
+        text = text[: -len(outlet) - 3]
+    text = re.sub(r"\s[-–—|]\s[^-–—|]{2,60}$", "", text)
+    return re.sub(r"[^a-z0-9]+", " ", _normalize(text)).strip()
+
+
+def prefer_direct_sources(items: list) -> list:
+    """Remove a cópia do Google News quando a mesma notícia veio do feed direto do veículo.
+
+    O feed direto traz a foto e o link original; o do Google News traz um redirecionamento
+    sem imagem. Sem isso a mesma notícia aparecia duas vezes no painel (URLs diferentes).
+    """
+    def is_google(item: dict) -> bool:
+        return "news.google.com" in str(item.get("url") or "")
+
+    direct_titles = {
+        _title_key(item.get("title", ""), item.get("source", ""))
+        for item in items
+        if not is_google(item) and item.get("title")
+    }
+    direct_titles.discard("")
+    return [
+        item for item in items
+        if not (is_google(item) and _title_key(item.get("title", ""), item.get("source", "")) in direct_titles)
+    ]
+
+
 _IMAGE_EXT = re.compile(r"\.(?:jpe?g|png|webp|gif|avif)(?:$|[?#])", re.IGNORECASE)
 _IMAGE_BLOCKLIST = re.compile(r"pixel|tracking|spacer|blank|1x1|logo|favicon|avatar|icon", re.IGNORECASE)
 

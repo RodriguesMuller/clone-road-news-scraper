@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from scraper.sources.html import HTML_SCRAPERS
 from scraper.sources.rss import scrape_rss
 from scraper.sources.inmet import scrape_inmet
+from scraper.utils.filters import prefer_direct_sources
 from scraper.storage.postgres import save_to_postgres
 from scraper.event_intelligence import process_major_events
 
@@ -63,6 +64,10 @@ def collect_news(config_path: str = "config/sources.yaml") -> list:
         print(f"    {len(items)} aviso(s) relevante(s)")
         all_news.extend(items)
 
+    before = len(all_news)
+    all_news = prefer_direct_sources(all_news)
+    if before != len(all_news):
+        print(f"\n[Dedup] {before - len(all_news)} cópia(s) do Google News trocada(s) pelo feed direto do veículo")
     return all_news
 
 

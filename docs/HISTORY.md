@@ -2,6 +2,14 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-10 — Feeds regionais do G1 e deduplicação entre fontes
+**O que mudou:** 24 feeds `https://g1.globo.com/rss/g1/{uf}/` em `config/sources.yaml`; `prefer_direct_sources` em `scraper/utils/filters.py`, chamada no fim de `main.collect_news`; testes em `tests/test_news_images.py`.
+**Por quê:** pedido do usuário de mais fotos reais. 87% dos itens vinham do Google News sem imagem, e o G1 respondia por 65 deles.
+**Arquivos/módulos:** `config/sources.yaml`, `main.py`, `scraper/utils/filters.py`, `tests/test_news_images.py`, `docs/SCRAPERS.md`, `docs/CHANGELOG.md`.
+**Impacto medido:** coleta real de 2026-11-10: 297 notícias (sem INMET), 96 com foto (32%, antes 1%), 20 duplicatas removidas.
+**Alternativas descartadas:** O Globo (robots.txt bloqueia); R7, GZH, Itatiaia e Estado de Minas (URLs de feed 404); Agência Brasil, ND Mais e Campo Grande News (sem item relevante na amostra); decodificar links do Google News (frágil).
+**ADR relacionado:** nenhum. Fonte nova ainda sujeita à revisão de `compliance-advisor` (termos de uso do Grupo Globo para RSS e exibição de imagem com crédito).
+
 ## 2026-11-10 — Dropdowns do cabeçalho e imagem da notícia
 **O que mudou:** regra global `[hidden] { display: none !important; }`; `closeAll()` em `public/dashboard.js` (clique fora, opção escolhida, Esc, `popstate`). Imagem: `extract_image_url` (`rss.py`), imagem da listagem da Band (`html.py`), `safe_image_url`/`first_image_in_html` (`filters.py`), `scraper/utils/og_image.py`, coluna opcional `image_url` em `scraper/storage/postgres.py` e `api/news-feed.js` (`OPTIONAL_SETS`), `scripts/supabase_news_image_url.sql`, `newsMedia()` e novas ilustrações por tema no dashboard.
 **Por quê:** relato do usuário (menus abertos sobrepostos na Central de Evento) e pedido de imagem da própria notícia, com reserva que nunca remeta a mortes.

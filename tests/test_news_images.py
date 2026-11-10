@@ -33,6 +33,26 @@ class NewsImageTest(unittest.TestCase):
         page = '<head><meta property="og:image" content="/fotos/carreta.jpg"><meta name="twitter:image" content="https://x.com/t.jpg"></head>'
         self.assertEqual(og_image_from_html(page, "https://g1.globo.com/sp/noticia/x.ghtml"), "https://g1.globo.com/fotos/carreta.jpg")
 
+    def test_direct_feed_replaces_google_news_copy(self):
+        from scraper.utils.filters import prefer_direct_sources
+
+        items = [
+            {"title": "Caminhão tomba na Raposo Tavares, em Cotia - G1", "source": "G1", "url": "https://news.google.com/rss/articles/abc"},
+            {"title": "Caminhão tomba na Raposo Tavares, em Cotia", "source": "G1 - SP", "url": "https://g1.globo.com/sp/x.ghtml", "image_url": "https://s2-g1.glbimg.com/f.jpg"},
+            {"title": "Outra notícia só no Google - Itatiaia", "source": "Itatiaia", "url": "https://news.google.com/rss/articles/def"},
+        ]
+        kept = prefer_direct_sources(items)
+        self.assertEqual([i["url"] for i in kept], ["https://g1.globo.com/sp/x.ghtml", "https://news.google.com/rss/articles/def"])
+
+    def test_regional_g1_feeds_use_fleet_filter(self):
+        import yaml
+
+        config = yaml.safe_load(open("config/sources.yaml", encoding="utf-8"))
+        g1 = [s for s in config["rss_sources"] if s["name"].startswith("G1 - ") and s["name"] != "G1 - Brasil"]
+        self.assertEqual(len(g1), 24)
+        self.assertTrue(all(s.get("fleet_filter", True) for s in g1), "feeds gerais precisam do filtro de frota")
+        self.assertTrue(all(s["url"].startswith("https://g1.globo.com/rss/g1/") for s in g1))
+
     def test_google_news_redirects_are_not_fetched(self):
         self.assertFalse(can_fetch_og_image("https://news.google.com/rss/articles/CBMiabc"))
         self.assertTrue(can_fetch_og_image("https://g1.globo.com/sp/noticia/x.ghtml"))
