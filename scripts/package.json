@@ -9,13 +9,16 @@
     "build:docs-pdf": "node build-docs-pdf.js"
   },
   "dependencies": {
-    "markdown-it": "^14.1.0",
-    "puppeteer": "^24.15.0"
+    "markdown-it": "^14.3.3",
+    "puppeteer": "^25.18.1"
   },
   "puppeteer": {
     "skipDownload": true
   },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "allowScripts": {
-    "puppeteer@24.43.1": true
+    "puppeteer@25.18.1": true
   }
 }
