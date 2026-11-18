@@ -1,6 +1,6 @@
 {
-  "last_built_at": "2026-08-06T19:47:55.383Z",
-  "source_hash": "sha256:fd1188033d64a21464bd6598924e173c4c92a9d4bc04d25b777310c94e7eef26",
+  "last_built_at": "2026-11-18T14:09:58.009Z",
+  "source_hash": "sha256:40801ff0cd71ca9786ed49403a92d104a7b73c2feb2553fcdc2422d907d499e5",
   "source_files": [
     "product/VISION.md",
     "product/PITCH.md",
@@ -27,9 +27,14 @@
     "docs/ROADMAP.md",
     "docs/CHANGELOG.md",
     "docs/AGENTS.md",
+    "docs/HISTORY.md",
     "docs/adr/0001-arquitetura-de-subagents.md"
   ],
   "changelog": [
+    {
+      "date": "2026-11-18",
+      "summary": "- `public/index.html`:"
+    },
     {
       "date": "2026-08-06",
       "summary": "Publicação inicial da documentação consolidada."
