@@ -15,6 +15,7 @@ Infraestrutura real: **só Vercel + GitHub Actions**. Sem Docker, Coolify, Railw
 
 | Workflow | Gatilho | O que faz |
 |---|---|---|
+| `.github/workflows/keepalive.yml` | `cron: "41 9 * * 3"` (semanal) + manual | Reativa pela API os workflows agendados (`scraper.yml`, `weekly-news.yml` e ele mesmo): repositório público tem os agendamentos desligados após 60 dias sem atividade. |
 | `.github/workflows/scraper.yml` | `cron: "17 * * * *"` (hora em hora, fora do minuto 00 congestionado) + push na `main` + manual | Roda `python main.py`; em push, também roda `scripts/upsert_santos_trucker_event.py`. Timeout 15 min. |
 | `.github/workflows/weekly-news.yml` | Segunda-feira 08:00 (America/Sao_Paulo) + manual | Gera e envia o resumo semanal por e-mail. |
 
