@@ -218,7 +218,7 @@
   }
 
   function illustration(theme, level, variant = "card", text = "") {
-    const accent = LEVEL[level]?.color || "#1EFF95";
+    const accent = LEVEL[level]?.color || "#5F6E83";
     const scene = sceneFor(theme, text);
     const [top, mid, horizon] = SKIES[scene.sky] || SKIES.dusk;
     const id = `il-${Math.random().toString(36).slice(2, 7)}`;
@@ -347,7 +347,7 @@
     const title = url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(a.title)}</a>` : esc(a.title);
     return `<li class="aviso" data-level="${a.level}">
       <div class="aviso-body">
-        <div class="aviso-meta"><span class="ev">${esc(a.code)}</span>${where ? `<span>${esc(where)}</span>` : ""}<span>${esc(a.kindLabel || "")}</span><span>${esc(relative(a.time))}</span>${a.sources > 1 ? `<span>${a.sources} fontes</span>` : ""}</div>
+        <div class="aviso-meta"><span class="ev">${esc(a.code)}</span><span class="aviso-grade">${esc((LEVEL[a.level] || LEVEL.low).label)}</span>${where ? `<span>${esc(where)}</span>` : ""}<span>${esc(a.kindLabel || "")}</span><span>${esc(relative(a.time))}</span>${a.sources > 1 ? `<span>${a.sources} fontes</span>` : ""}</div>
         <p class="aviso-title">${title}</p>
         <p class="aviso-do">${esc(a.action)}</p>
         ${a.reason ? `<details class="aviso-why"><summary>Por que ${esc((LEVEL[a.level] || LEVEL.low).label.toLowerCase())}?</summary><p>${esc(a.reason)}</p></details>` : ""}

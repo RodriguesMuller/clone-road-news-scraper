@@ -1,0 +1,948 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-18T14:46:08.510Z",
+  "title": "Design System: Road News",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "primary",
+        "displayName": "Azul-Tinta Institucional",
+        "canonical": "#10233F",
+        "oklch": "oklch(25.7% 0.059 258)",
+        "tonalRamp": [
+          "oklch(15% 0.019 258)",
+          "oklch(26% 0.038 258)",
+          "oklch(37% 0.051 258)",
+          "oklch(48% 0.057 258)",
+          "oklch(60% 0.058 258)",
+          "oklch(72% 0.052 258)",
+          "oklch(84% 0.038 258)",
+          "oklch(95% 0.019 258)"
+        ]
+      },
+      "ink-raised": {
+        "role": "primary",
+        "displayName": "Azul-Tinta Elevado",
+        "canonical": "#1B355C",
+        "oklch": "oklch(33% 0.076 258.3)",
+        "tonalRamp": [
+          "oklch(15% 0.025 258.3)",
+          "oklch(26% 0.049 258.3)",
+          "oklch(37% 0.066 258.3)",
+          "oklch(48% 0.075 258.3)",
+          "oklch(60% 0.076 258.3)",
+          "oklch(72% 0.067 258.3)",
+          "oklch(84% 0.049 258.3)",
+          "oklch(95% 0.025 258.3)"
+        ]
+      },
+      "ink-line": {
+        "role": "primary",
+        "displayName": "Fio do Shell",
+        "canonical": "#2B4466",
+        "oklch": "oklch(38.3% 0.066 256.4)",
+        "tonalRamp": [
+          "oklch(15% 0.022 256.4)",
+          "oklch(26% 0.043 256.4)",
+          "oklch(37% 0.057 256.4)",
+          "oklch(48% 0.065 256.4)",
+          "oklch(60% 0.065 256.4)",
+          "oklch(72% 0.058 256.4)",
+          "oklch(84% 0.043 256.4)",
+          "oklch(95% 0.022 256.4)"
+        ]
+      },
+      "ink-text": {
+        "role": "primary",
+        "displayName": "Texto do Shell",
+        "canonical": "#E3E9F1",
+        "oklch": "oklch(93.2% 0.013 255.5)",
+        "tonalRamp": [
+          "oklch(15% 0.004 255.5)",
+          "oklch(26% 0.008 255.5)",
+          "oklch(37% 0.011 255.5)",
+          "oklch(48% 0.012 255.5)",
+          "oklch(60% 0.012 255.5)",
+          "oklch(72% 0.011 255.5)",
+          "oklch(84% 0.008 255.5)",
+          "oklch(95% 0.004 255.5)"
+        ]
+      },
+      "ink-muted": {
+        "role": "primary",
+        "displayName": "Texto Secundário do Shell",
+        "canonical": "#9DAEC4",
+        "oklch": "oklch(74.5% 0.037 254.9)",
+        "tonalRamp": [
+          "oklch(15% 0.012 254.9)",
+          "oklch(26% 0.024 254.9)",
+          "oklch(37% 0.032 254.9)",
+          "oklch(48% 0.036 254.9)",
+          "oklch(60% 0.037 254.9)",
+          "oklch(72% 0.033 254.9)",
+          "oklch(84% 0.024 254.9)",
+          "oklch(95% 0.012 254.9)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Azul de Despacho",
+        "canonical": "#1D4F91",
+        "oklch": "oklch(43.1% 0.121 256.8)",
+        "tonalRamp": [
+          "oklch(15% 0.04 256.8)",
+          "oklch(26% 0.078 256.8)",
+          "oklch(37% 0.105 256.8)",
+          "oklch(48% 0.119 256.8)",
+          "oklch(60% 0.12 256.8)",
+          "oklch(72% 0.107 256.8)",
+          "oklch(84% 0.078 256.8)",
+          "oklch(95% 0.04 256.8)"
+        ]
+      },
+      "accent-strong": {
+        "role": "primary",
+        "displayName": "Azul de Despacho Profundo",
+        "canonical": "#163E73",
+        "oklch": "oklch(36.7% 0.102 256.8)",
+        "tonalRamp": [
+          "oklch(15% 0.033 256.8)",
+          "oklch(26% 0.066 256.8)",
+          "oklch(37% 0.088 256.8)",
+          "oklch(48% 0.099 256.8)",
+          "oklch(60% 0.1 256.8)",
+          "oklch(72% 0.089 256.8)",
+          "oklch(84% 0.066 256.8)",
+          "oklch(95% 0.033 256.8)"
+        ]
+      },
+      "bulletin-bg": {
+        "role": "neutral",
+        "displayName": "Papel de Boletim",
+        "canonical": "#EDF0F4",
+        "oklch": "oklch(95.4% 0.006 255.5)",
+        "tonalRamp": [
+          "oklch(15% 0.002 255.5)",
+          "oklch(26% 0.004 255.5)",
+          "oklch(37% 0.005 255.5)",
+          "oklch(48% 0.006 255.5)",
+          "oklch(60% 0.006 255.5)",
+          "oklch(72% 0.006 255.5)",
+          "oklch(84% 0.004 255.5)",
+          "oklch(95% 0.002 255.5)"
+        ]
+      },
+      "bulletin-bg-deep": {
+        "role": "neutral",
+        "displayName": "Papel de Boletim Profundo",
+        "canonical": "#E4E8EE",
+        "oklch": "oklch(93% 0.009 258.3)",
+        "tonalRamp": [
+          "oklch(15% 0.003 258.3)",
+          "oklch(26% 0.006 258.3)",
+          "oklch(37% 0.008 258.3)",
+          "oklch(48% 0.009 258.3)",
+          "oklch(60% 0.009 258.3)",
+          "oklch(72% 0.008 258.3)",
+          "oklch(84% 0.006 258.3)",
+          "oklch(95% 0.003 258.3)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Branco de Superfície",
+        "canonical": "#FFFFFF",
+        "oklch": "oklch(100% 0 89.9)",
+        "tonalRamp": [
+          "oklch(15% 0 89.9)",
+          "oklch(26% 0 89.9)",
+          "oklch(37% 0 89.9)",
+          "oklch(48% 0 89.9)",
+          "oklch(60% 0 89.9)",
+          "oklch(72% 0 89.9)",
+          "oklch(84% 0 89.9)",
+          "oklch(95% 0 89.9)"
+        ]
+      },
+      "surface-alt": {
+        "role": "neutral",
+        "displayName": "Superfície Recuada",
+        "canonical": "#F5F7FA",
+        "oklch": "oklch(97.5% 0.005 258.3)",
+        "tonalRamp": [
+          "oklch(15% 0.001 258.3)",
+          "oklch(26% 0.003 258.3)",
+          "oklch(37% 0.004 258.3)",
+          "oklch(48% 0.004 258.3)",
+          "oklch(60% 0.004 258.3)",
+          "oklch(72% 0.004 258.3)",
+          "oklch(84% 0.003 258.3)",
+          "oklch(95% 0.001 258.3)"
+        ]
+      },
+      "surface-high": {
+        "role": "neutral",
+        "displayName": "Superfície Alta",
+        "canonical": "#E8ECF1",
+        "oklch": "oklch(94.1% 0.008 253.9)",
+        "tonalRamp": [
+          "oklch(15% 0.003 253.9)",
+          "oklch(26% 0.005 253.9)",
+          "oklch(37% 0.007 253.9)",
+          "oklch(48% 0.008 253.9)",
+          "oklch(60% 0.008 253.9)",
+          "oklch(72% 0.007 253.9)",
+          "oklch(84% 0.005 253.9)",
+          "oklch(95% 0.003 253.9)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Fio",
+        "canonical": "#CAD2DC",
+        "oklch": "oklch(86.1% 0.016 253.9)",
+        "tonalRamp": [
+          "oklch(15% 0.005 253.9)",
+          "oklch(26% 0.011 253.9)",
+          "oklch(37% 0.014 253.9)",
+          "oklch(48% 0.016 253.9)",
+          "oklch(60% 0.016 253.9)",
+          "oklch(72% 0.014 253.9)",
+          "oklch(84% 0.011 253.9)",
+          "oklch(95% 0.005 253.9)"
+        ]
+      },
+      "line-soft": {
+        "role": "neutral",
+        "displayName": "Fio Suave",
+        "canonical": "#E2E7ED",
+        "oklch": "oklch(92.6% 0.01 252.8)",
+        "tonalRamp": [
+          "oklch(15% 0.003 252.8)",
+          "oklch(26% 0.006 252.8)",
+          "oklch(37% 0.008 252.8)",
+          "oklch(48% 0.01 252.8)",
+          "oklch(60% 0.01 252.8)",
+          "oklch(72% 0.009 252.8)",
+          "oklch(84% 0.006 252.8)",
+          "oklch(95% 0.003 252.8)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Texto",
+        "canonical": "#10233F",
+        "oklch": "oklch(25.7% 0.059 258)",
+        "tonalRamp": [
+          "oklch(15% 0.019 258)",
+          "oklch(26% 0.038 258)",
+          "oklch(37% 0.051 258)",
+          "oklch(48% 0.057 258)",
+          "oklch(60% 0.058 258)",
+          "oklch(72% 0.052 258)",
+          "oklch(84% 0.038 258)",
+          "oklch(95% 0.019 258)"
+        ]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Texto Secundário",
+        "canonical": "#536177",
+        "oklch": "oklch(48.9% 0.039 259.4)",
+        "tonalRamp": [
+          "oklch(15% 0.013 259.4)",
+          "oklch(26% 0.026 259.4)",
+          "oklch(37% 0.034 259.4)",
+          "oklch(48% 0.039 259.4)",
+          "oklch(60% 0.039 259.4)",
+          "oklch(72% 0.035 259.4)",
+          "oklch(84% 0.026 259.4)",
+          "oklch(95% 0.013 259.4)"
+        ]
+      },
+      "text-muted-strong": {
+        "role": "neutral",
+        "displayName": "Texto Secundário Forte",
+        "canonical": "#2C3D55",
+        "oklch": "oklch(35.6% 0.047 257.1)",
+        "tonalRamp": [
+          "oklch(15% 0.016 257.1)",
+          "oklch(26% 0.031 257.1)",
+          "oklch(37% 0.041 257.1)",
+          "oklch(48% 0.047 257.1)",
+          "oklch(60% 0.047 257.1)",
+          "oklch(72% 0.042 257.1)",
+          "oklch(84% 0.031 257.1)",
+          "oklch(95% 0.016 257.1)"
+        ]
+      },
+      "grade-critical": {
+        "role": "secondary",
+        "displayName": "Vermelho Crítico",
+        "canonical": "#C8201A",
+        "oklch": "oklch(53.6% 0.202 28.6)",
+        "tonalRamp": [
+          "oklch(15% 0.066 28.6)",
+          "oklch(26% 0.131 28.6)",
+          "oklch(37% 0.174 28.6)",
+          "oklch(48% 0.198 28.6)",
+          "oklch(60% 0.2 28.6)",
+          "oklch(72% 0.177 28.6)",
+          "oklch(84% 0.131 28.6)",
+          "oklch(95% 0.066 28.6)"
+        ]
+      },
+      "grade-critical-text": {
+        "role": "secondary",
+        "displayName": "Vermelho Crítico (texto)",
+        "canonical": "#B01B15",
+        "oklch": "oklch(48.7% 0.184 28.8)",
+        "tonalRamp": [
+          "oklch(15% 0.06 28.8)",
+          "oklch(26% 0.119 28.8)",
+          "oklch(37% 0.159 28.8)",
+          "oklch(48% 0.18 28.8)",
+          "oklch(60% 0.182 28.8)",
+          "oklch(72% 0.161 28.8)",
+          "oklch(84% 0.119 28.8)",
+          "oklch(95% 0.06 28.8)"
+        ]
+      },
+      "grade-high": {
+        "role": "secondary",
+        "displayName": "Laranja Alto",
+        "canonical": "#E46C00",
+        "oklch": "oklch(66.4% 0.175 50.4)",
+        "tonalRamp": [
+          "oklch(15% 0.057 50.4)",
+          "oklch(26% 0.113 50.4)",
+          "oklch(37% 0.151 50.4)",
+          "oklch(48% 0.171 50.4)",
+          "oklch(60% 0.173 50.4)",
+          "oklch(72% 0.153 50.4)",
+          "oklch(84% 0.113 50.4)",
+          "oklch(95% 0.057 50.4)"
+        ]
+      },
+      "grade-high-text": {
+        "role": "secondary",
+        "displayName": "Laranja Alto (texto)",
+        "canonical": "#9C4A00",
+        "oklch": "oklch(50.4% 0.13 51.8)",
+        "tonalRamp": [
+          "oklch(15% 0.043 51.8)",
+          "oklch(26% 0.084 51.8)",
+          "oklch(37% 0.112 51.8)",
+          "oklch(48% 0.127 51.8)",
+          "oklch(60% 0.129 51.8)",
+          "oklch(72% 0.114 51.8)",
+          "oklch(84% 0.084 51.8)",
+          "oklch(95% 0.043 51.8)"
+        ]
+      },
+      "grade-medium": {
+        "role": "secondary",
+        "displayName": "Amarelo Médio",
+        "canonical": "#EDB800",
+        "oklch": "oklch(80.8% 0.165 87.6)",
+        "tonalRamp": [
+          "oklch(15% 0.054 87.6)",
+          "oklch(26% 0.107 87.6)",
+          "oklch(37% 0.143 87.6)",
+          "oklch(48% 0.162 87.6)",
+          "oklch(60% 0.163 87.6)",
+          "oklch(72% 0.145 87.6)",
+          "oklch(84% 0.107 87.6)",
+          "oklch(95% 0.054 87.6)"
+        ]
+      },
+      "grade-medium-text": {
+        "role": "secondary",
+        "displayName": "Amarelo Médio (texto)",
+        "canonical": "#775A00",
+        "oklch": "oklch(48.4% 0.099 86.7)",
+        "tonalRamp": [
+          "oklch(15% 0.033 86.7)",
+          "oklch(26% 0.064 86.7)",
+          "oklch(37% 0.086 86.7)",
+          "oklch(48% 0.097 86.7)",
+          "oklch(60% 0.098 86.7)",
+          "oklch(72% 0.087 86.7)",
+          "oklch(84% 0.064 86.7)",
+          "oklch(95% 0.033 86.7)"
+        ]
+      },
+      "grade-low": {
+        "role": "secondary",
+        "displayName": "Cinza-Azulado Baixo",
+        "canonical": "#5F6E83",
+        "oklch": "oklch(53.4% 0.038 256.8)",
+        "tonalRamp": [
+          "oklch(15% 0.012 256.8)",
+          "oklch(26% 0.024 256.8)",
+          "oklch(37% 0.033 256.8)",
+          "oklch(48% 0.037 256.8)",
+          "oklch(60% 0.037 256.8)",
+          "oklch(72% 0.033 256.8)",
+          "oklch(84% 0.024 256.8)",
+          "oklch(95% 0.012 256.8)"
+        ]
+      },
+      "grade-low-text": {
+        "role": "secondary",
+        "displayName": "Cinza-Azulado Baixo (texto)",
+        "canonical": "#4D5B6F",
+        "oklch": "oklch(46.7% 0.037 257.3)",
+        "tonalRamp": [
+          "oklch(15% 0.012 257.3)",
+          "oklch(26% 0.024 257.3)",
+          "oklch(37% 0.032 257.3)",
+          "oklch(48% 0.036 257.3)",
+          "oklch(60% 0.037 257.3)",
+          "oklch(72% 0.033 257.3)",
+          "oklch(84% 0.024 257.3)",
+          "oklch(95% 0.012 257.3)"
+        ]
+      },
+      "on-grade-light": {
+        "role": "neutral",
+        "displayName": "Texto sobre Crítico e Baixo",
+        "canonical": "#FFFFFF",
+        "oklch": "oklch(100% 0 89.9)",
+        "tonalRamp": [
+          "oklch(15% 0 89.9)",
+          "oklch(26% 0 89.9)",
+          "oklch(37% 0 89.9)",
+          "oklch(48% 0 89.9)",
+          "oklch(60% 0 89.9)",
+          "oklch(72% 0 89.9)",
+          "oklch(84% 0 89.9)",
+          "oklch(95% 0 89.9)"
+        ]
+      },
+      "on-grade-dark": {
+        "role": "neutral",
+        "displayName": "Texto sobre Alto e Médio",
+        "canonical": "#10233F",
+        "oklch": "oklch(25.7% 0.059 258)",
+        "tonalRamp": [
+          "oklch(15% 0.019 258)",
+          "oklch(26% 0.038 258)",
+          "oklch(37% 0.051 258)",
+          "oklch(48% 0.057 258)",
+          "oklch(60% 0.058 258)",
+          "oklch(72% 0.052 258)",
+          "oklch(84% 0.038 258)",
+          "oklch(95% 0.019 258)"
+        ]
+      },
+      "success": {
+        "role": "neutral",
+        "displayName": "Confirmação de Sistema",
+        "canonical": "#2E7A4C",
+        "oklch": "oklch(52% 0.105 153.8)",
+        "tonalRamp": [
+          "oklch(15% 0.034 153.8)",
+          "oklch(26% 0.068 153.8)",
+          "oklch(37% 0.09 153.8)",
+          "oklch(48% 0.103 153.8)",
+          "oklch(60% 0.104 153.8)",
+          "oklch(72% 0.092 153.8)",
+          "oklch(84% 0.068 153.8)",
+          "oklch(95% 0.034 153.8)"
+        ]
+      },
+      "category-accidents": {
+        "role": "tertiary",
+        "displayName": "Categoria: Acidentes",
+        "canonical": "#1D4F91",
+        "oklch": "oklch(43.1% 0.121 256.8)",
+        "tonalRamp": [
+          "oklch(15% 0.04 256.8)",
+          "oklch(26% 0.078 256.8)",
+          "oklch(37% 0.105 256.8)",
+          "oklch(48% 0.119 256.8)",
+          "oklch(60% 0.12 256.8)",
+          "oklch(72% 0.107 256.8)",
+          "oklch(84% 0.078 256.8)",
+          "oklch(95% 0.04 256.8)"
+        ]
+      },
+      "category-closures": {
+        "role": "tertiary",
+        "displayName": "Categoria: Interdições",
+        "canonical": "#10233F",
+        "oklch": "oklch(25.7% 0.059 258)",
+        "tonalRamp": [
+          "oklch(15% 0.019 258)",
+          "oklch(26% 0.038 258)",
+          "oklch(37% 0.051 258)",
+          "oklch(48% 0.057 258)",
+          "oklch(60% 0.058 258)",
+          "oklch(72% 0.052 258)",
+          "oklch(84% 0.038 258)",
+          "oklch(95% 0.019 258)"
+        ]
+      },
+      "category-works": {
+        "role": "tertiary",
+        "displayName": "Categoria: Obras",
+        "canonical": "#5B7FB0",
+        "oklch": "oklch(59% 0.086 256.3)",
+        "tonalRamp": [
+          "oklch(15% 0.028 256.3)",
+          "oklch(26% 0.056 256.3)",
+          "oklch(37% 0.074 256.3)",
+          "oklch(48% 0.084 256.3)",
+          "oklch(60% 0.085 256.3)",
+          "oklch(72% 0.076 256.3)",
+          "oklch(84% 0.056 256.3)",
+          "oklch(95% 0.028 256.3)"
+        ]
+      },
+      "category-weather": {
+        "role": "tertiary",
+        "displayName": "Categoria: Clima",
+        "canonical": "#7FA6D6",
+        "oklch": "oklch(71.5% 0.082 254)",
+        "tonalRamp": [
+          "oklch(15% 0.027 254)",
+          "oklch(26% 0.053 254)",
+          "oklch(37% 0.071 254)",
+          "oklch(48% 0.081 254)",
+          "oklch(60% 0.082 254)",
+          "oklch(72% 0.072 254)",
+          "oklch(84% 0.053 254)",
+          "oklch(95% 0.027 254)"
+        ]
+      },
+      "category-fuel-tolls": {
+        "role": "tertiary",
+        "displayName": "Categoria: Combustíveis e pedágios",
+        "canonical": "#8FA3B8",
+        "oklch": "oklch(70.7% 0.038 249.7)",
+        "tonalRamp": [
+          "oklch(15% 0.013 249.7)",
+          "oklch(26% 0.025 249.7)",
+          "oklch(37% 0.033 249.7)",
+          "oklch(48% 0.037 249.7)",
+          "oklch(60% 0.038 249.7)",
+          "oklch(72% 0.034 249.7)",
+          "oklch(84% 0.025 249.7)",
+          "oklch(95% 0.013 249.7)"
+        ]
+      },
+      "category-other": {
+        "role": "tertiary",
+        "displayName": "Categoria: Outros",
+        "canonical": "#A3ADBA",
+        "oklch": "oklch(74.4% 0.022 254.9)",
+        "tonalRamp": [
+          "oklch(15% 0.007 254.9)",
+          "oklch(26% 0.014 254.9)",
+          "oklch(37% 0.019 254.9)",
+          "oklch(48% 0.021 254.9)",
+          "oklch(60% 0.022 254.9)",
+          "oklch(72% 0.019 254.9)",
+          "oklch(84% 0.014 254.9)",
+          "oklch(95% 0.007 254.9)"
+        ]
+      },
+      "dark-ink": {
+        "role": "primary",
+        "displayName": "Azul-Tinta Noturno",
+        "canonical": "#0A1220",
+        "oklch": "oklch(18.2% 0.031 261.1)",
+        "tonalRamp": [
+          "oklch(15% 0.01 261.1)",
+          "oklch(26% 0.02 261.1)",
+          "oklch(37% 0.027 261.1)",
+          "oklch(48% 0.031 261.1)",
+          "oklch(60% 0.031 261.1)",
+          "oklch(72% 0.028 261.1)",
+          "oklch(84% 0.02 261.1)",
+          "oklch(95% 0.01 261.1)"
+        ]
+      },
+      "dark-bg": {
+        "role": "neutral",
+        "displayName": "Boletim Noturno",
+        "canonical": "#0F1828",
+        "oklch": "oklch(20.9% 0.035 261.4)",
+        "tonalRamp": [
+          "oklch(15% 0.011 261.4)",
+          "oklch(26% 0.022 261.4)",
+          "oklch(37% 0.03 261.4)",
+          "oklch(48% 0.034 261.4)",
+          "oklch(60% 0.034 261.4)",
+          "oklch(72% 0.03 261.4)",
+          "oklch(84% 0.022 261.4)",
+          "oklch(95% 0.011 261.4)"
+        ]
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Superfície Noturna",
+        "canonical": "#152134",
+        "oklch": "oklch(24.7% 0.04 259.3)",
+        "tonalRamp": [
+          "oklch(15% 0.013 259.3)",
+          "oklch(26% 0.026 259.3)",
+          "oklch(37% 0.035 259.3)",
+          "oklch(48% 0.039 259.3)",
+          "oklch(60% 0.04 259.3)",
+          "oklch(72% 0.035 259.3)",
+          "oklch(84% 0.026 259.3)",
+          "oklch(95% 0.013 259.3)"
+        ]
+      },
+      "dark-surface-alt": {
+        "role": "neutral",
+        "displayName": "Superfície Noturna Recuada",
+        "canonical": "#1A283E",
+        "oklch": "oklch(27.6% 0.045 259.2)",
+        "tonalRamp": [
+          "oklch(15% 0.015 259.2)",
+          "oklch(26% 0.029 259.2)",
+          "oklch(37% 0.039 259.2)",
+          "oklch(48% 0.044 259.2)",
+          "oklch(60% 0.045 259.2)",
+          "oklch(72% 0.04 259.2)",
+          "oklch(84% 0.029 259.2)",
+          "oklch(95% 0.015 259.2)"
+        ]
+      },
+      "dark-line": {
+        "role": "neutral",
+        "displayName": "Fio Noturno",
+        "canonical": "#2C3D57",
+        "oklch": "oklch(35.8% 0.051 258.7)",
+        "tonalRamp": [
+          "oklch(15% 0.017 258.7)",
+          "oklch(26% 0.033 258.7)",
+          "oklch(37% 0.044 258.7)",
+          "oklch(48% 0.05 258.7)",
+          "oklch(60% 0.05 258.7)",
+          "oklch(72% 0.044 258.7)",
+          "oklch(84% 0.033 258.7)",
+          "oklch(95% 0.017 258.7)"
+        ]
+      },
+      "dark-text": {
+        "role": "neutral",
+        "displayName": "Texto Noturno",
+        "canonical": "#E8EDF4",
+        "oklch": "oklch(94.4% 0.011 256.7)",
+        "tonalRamp": [
+          "oklch(15% 0.004 256.7)",
+          "oklch(26% 0.007 256.7)",
+          "oklch(37% 0.009 256.7)",
+          "oklch(48% 0.011 256.7)",
+          "oklch(60% 0.011 256.7)",
+          "oklch(72% 0.01 256.7)",
+          "oklch(84% 0.007 256.7)",
+          "oklch(95% 0.004 256.7)"
+        ]
+      },
+      "dark-text-muted": {
+        "role": "neutral",
+        "displayName": "Texto Secundário Noturno",
+        "canonical": "#9DAABD",
+        "oklch": "oklch(73.4% 0.031 257.8)",
+        "tonalRamp": [
+          "oklch(15% 0.01 257.8)",
+          "oklch(26% 0.02 257.8)",
+          "oklch(37% 0.027 257.8)",
+          "oklch(48% 0.031 257.8)",
+          "oklch(60% 0.031 257.8)",
+          "oklch(72% 0.027 257.8)",
+          "oklch(84% 0.02 257.8)",
+          "oklch(95% 0.01 257.8)"
+        ]
+      },
+      "dark-accent": {
+        "role": "primary",
+        "displayName": "Azul de Despacho Noturno",
+        "canonical": "#8DB4EE",
+        "oklch": "oklch(76.3% 0.094 258.1)",
+        "tonalRamp": [
+          "oklch(15% 0.031 258.1)",
+          "oklch(26% 0.061 258.1)",
+          "oklch(37% 0.081 258.1)",
+          "oklch(48% 0.092 258.1)",
+          "oklch(60% 0.093 258.1)",
+          "oklch(72% 0.083 258.1)",
+          "oklch(84% 0.061 258.1)",
+          "oklch(95% 0.031 258.1)"
+        ]
+      },
+      "dark-grade-critical": {
+        "role": "secondary",
+        "displayName": "Vermelho Crítico Noturno",
+        "canonical": "#F2493D",
+        "oklch": "oklch(64.6% 0.207 28.4)",
+        "tonalRamp": [
+          "oklch(15% 0.068 28.4)",
+          "oklch(26% 0.134 28.4)",
+          "oklch(37% 0.179 28.4)",
+          "oklch(48% 0.203 28.4)",
+          "oklch(60% 0.205 28.4)",
+          "oklch(72% 0.182 28.4)",
+          "oklch(84% 0.134 28.4)",
+          "oklch(95% 0.068 28.4)"
+        ]
+      },
+      "dark-grade-high": {
+        "role": "secondary",
+        "displayName": "Laranja Alto Noturno",
+        "canonical": "#FF9433",
+        "oklch": "oklch(76.5% 0.165 57.6)",
+        "tonalRamp": [
+          "oklch(15% 0.054 57.6)",
+          "oklch(26% 0.107 57.6)",
+          "oklch(37% 0.143 57.6)",
+          "oklch(48% 0.162 57.6)",
+          "oklch(60% 0.163 57.6)",
+          "oklch(72% 0.145 57.6)",
+          "oklch(84% 0.107 57.6)",
+          "oklch(95% 0.054 57.6)"
+        ]
+      },
+      "dark-grade-medium": {
+        "role": "secondary",
+        "displayName": "Amarelo Médio Noturno",
+        "canonical": "#F3C934",
+        "oklch": "oklch(84.9% 0.16 92)",
+        "tonalRamp": [
+          "oklch(15% 0.053 92)",
+          "oklch(26% 0.104 92)",
+          "oklch(37% 0.138 92)",
+          "oklch(48% 0.157 92)",
+          "oklch(60% 0.159 92)",
+          "oklch(72% 0.141 92)",
+          "oklch(84% 0.104 92)",
+          "oklch(95% 0.053 92)"
+        ]
+      },
+      "dark-grade-low": {
+        "role": "secondary",
+        "displayName": "Cinza-Azulado Baixo Noturno",
+        "canonical": "#8796AC",
+        "oklch": "oklch(66.9% 0.037 257.9)",
+        "tonalRamp": [
+          "oklch(15% 0.012 257.9)",
+          "oklch(26% 0.024 257.9)",
+          "oklch(37% 0.032 257.9)",
+          "oklch(48% 0.036 257.9)",
+          "oklch(60% 0.037 257.9)",
+          "oklch(72% 0.032 257.9)",
+          "oklch(84% 0.024 257.9)",
+          "oklch(95% 0.012 257.9)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Veredito",
+        "purpose": "Frase de despacho na faixa de veredito."
+      },
+      "display-tower": {
+        "displayName": "Veredito (torre)",
+        "purpose": "Veredito no modo torre, legível a 2–3 m."
+      },
+      "headline": {
+        "displayName": "Título de tela",
+        "purpose": "Telas isoladas: login, acesso bloqueado, convite."
+      },
+      "title": {
+        "displayName": "Título do aviso",
+        "purpose": "Título de cada linha de aviso."
+      },
+      "section": {
+        "displayName": "Cabeçalho de bloco",
+        "purpose": "Régua de vigência, barra de filtros, seções secundárias."
+      },
+      "dispatch": {
+        "displayName": "Despacho",
+        "purpose": "A linha 'o que fazer' de cada aviso."
+      },
+      "body": {
+        "displayName": "Corpo",
+        "purpose": "Texto corrido e justificativas."
+      },
+      "label": {
+        "displayName": "Metadado",
+        "purpose": "Metadados, eixos da régua, selos; piso de 12px."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "hairline-hover",
+        "value": "border-color .15s ease",
+        "purpose": "Hover de cartões: só o fio muda de cor."
+      },
+      {
+        "name": "shell-collapse",
+        "value": ".24s ease",
+        "purpose": "Recolher/expandir a barra lateral (largura, margem, grid)."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "work-stack",
+        "value": "1100px"
+      },
+      {
+        "name": "auth-single",
+        "value": "760px"
+      },
+      {
+        "name": "verdict-stack",
+        "value": "640px"
+      },
+      {
+        "name": "news-compact",
+        "value": "560px"
+      }
+    ],
+    "themes": {
+      "default": "light",
+      "storageKey": "roadnews.theme",
+      "dark": "[data-theme=\"dark\"] — turno da noite, mesma gramática, graus clareados.",
+      "tower": "body.tower-mode (/torre) — escuro, sem navegação, tipo grande; só veredito, avisos e régua."
+    }
+  },
+  "components": [
+    {
+      "name": "Botão primário",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação principal: azul-tinta, texto branco, canto de 6px.",
+      "html": "<button class=\"ds-btn-primary\">Acompanhar evento</button>",
+      "css": ".ds-btn-primary{background:#10233F;color:#fff;border:1px solid #10233F;border-radius:6px;padding:9px 16px;font:700 14px Archivo,'Segoe UI',system-ui,sans-serif;font-variant-numeric:tabular-nums;cursor:pointer;transition:background .15s ease}.ds-btn-primary:hover{background:#1B355C}.ds-btn-primary:focus-visible{outline:2px solid #1D4F91;outline-offset:2px}"
+    },
+    {
+      "name": "Botão secundário",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Ação de apoio: superfície branca com fio de 1px.",
+      "html": "<button class=\"ds-btn-secondary\">Compartilhar</button>",
+      "css": ".ds-btn-secondary{background:#fff;color:#10233F;border:1px solid #CAD2DC;border-radius:6px;padding:9px 16px;font:700 14px Archivo,'Segoe UI',system-ui,sans-serif;cursor:pointer;transition:border-color .15s ease}.ds-btn-secondary:hover{border-color:#536177}.ds-btn-secondary:focus-visible{outline:2px solid #1D4F91;outline-offset:2px}"
+    },
+    {
+      "name": "Filtro de grau",
+      "kind": "chip",
+      "refersTo": "grade-filter",
+      "description": "Pílula de filtro com ponto na cor do grau; pressionado vira azul-tinta.",
+      "html": "<div class=\"ds-filters\"><button class=\"ds-filter\" aria-pressed=\"true\">Todos</button><button class=\"ds-filter\" aria-pressed=\"false\"><i style=\"background:#C8201A\"></i>Crítico</button><button class=\"ds-filter\" aria-pressed=\"false\"><i style=\"background:#E46C00\"></i>Alto</button></div>",
+      "css": ".ds-filters{display:flex;gap:8px}.ds-filter{font:700 13px Archivo,'Segoe UI',system-ui,sans-serif;padding:6px 12px;border-radius:999px;border:1px solid #CAD2DC;background:#fff;color:#10233F;cursor:pointer}.ds-filter[aria-pressed=true]{background:#10233F;color:#fff;border-color:#10233F}.ds-filter i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}.ds-filter:focus-visible{outline:2px solid #1D4F91;outline-offset:2px}"
+    },
+    {
+      "name": "Campo de texto",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Superfície recuada, fio de 1px, canto de 6px, altura mínima de 40px.",
+      "html": "<label class=\"ds-field\"><span>Rodovia</span><input placeholder=\"BR-116\"></label>",
+      "css": ".ds-field{display:grid;gap:4px;font:700 12px Archivo,'Segoe UI',system-ui,sans-serif;color:#536177}.ds-field input{min-height:40px;border:1px solid #CAD2DC;border-radius:6px;background:#F5F7FA;color:#10233F;padding:9px 11px;font:400 14px Archivo,'Segoe UI',system-ui,sans-serif}.ds-field input:focus-visible{outline:2px solid #1D4F91;outline-offset:2px}"
+    },
+    {
+      "name": "Navegação lateral",
+      "kind": "nav",
+      "refersTo": "nav-sidebar",
+      "description": "Barra azul-tinta; ativo em branco com texto azul-tinta.",
+      "html": "<nav class=\"ds-nav\"><div class=\"ds-nav-brand\"><i></i><strong>Road News</strong></div><a class=\"ds-nav-item active\" href=\"#\">Situação agora</a><a class=\"ds-nav-item\" href=\"#\">Avisos</a><a class=\"ds-nav-item\" href=\"#\">Minha Rota</a></nav>",
+      "css": ".ds-nav{background:#10233F;color:#E3E9F1;padding:16px 12px;display:grid;gap:4px;width:220px;font:400 14px Archivo,'Segoe UI',system-ui,sans-serif}.ds-nav-brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}.ds-nav-brand i{width:6px;height:28px;border-radius:2px;background-image:linear-gradient(#C8201A 0 25%,#E46C00 25% 50%,#EDB800 50% 75%,#5F6E83 75%)}.ds-nav-brand strong{color:#fff;font-weight:800;letter-spacing:-.01em}.ds-nav-item{color:#E3E9F1;text-decoration:none;padding:8px 10px;border-radius:6px}.ds-nav-item:hover{background:#1B355C;color:#fff}.ds-nav-item.active{background:#fff;color:#10233F;font-weight:700}.ds-nav-item:focus-visible{outline:2px solid #fff;outline-offset:2px}"
+    },
+    {
+      "name": "Faixa de veredito",
+      "kind": "custom",
+      "refersTo": "verdict-band",
+      "description": "Topo da Situação agora, na cor do grau mais alto, com selo carimbado e frase de despacho.",
+      "html": "<section class=\"ds-verdict\"><span class=\"ds-verdict-grade\">Crítico</span><h1>Segurar cargas pela BR-116 sentido sul</h1><p>2 trechos bloqueados · Dados de 14:00</p></section>",
+      "css": ".ds-verdict{display:grid;grid-template-columns:auto 1fr;gap:6px 20px;align-items:center;padding:18px 24px;background:#C8201A;color:#fff;font-family:Archivo,'Segoe UI',system-ui,sans-serif;font-variant-numeric:tabular-nums}.ds-verdict-grade{grid-row:span 2;font-size:13px;font-weight:800;border:2px solid currentColor;border-radius:4px;padding:6px 10px}.ds-verdict h1{margin:0;font-size:clamp(20px,2vw,27px);font-weight:800;line-height:1.2;letter-spacing:-.01em}.ds-verdict p{margin:0;font-size:15px;opacity:.92}"
+    },
+    {
+      "name": "Linha de aviso",
+      "kind": "custom",
+      "refersTo": "aviso-row",
+      "description": "Uma ocorrência por linha: coluna de grau de 6px, código EV, trecho, título, despacho e justificativa.",
+      "html": "<ul class=\"ds-avisos\"><li class=\"ds-aviso\" style=\"--g:#C8201A\"><div><div class=\"ds-aviso-meta\"><b>EV-0412</b><span>BR-116 km 230 · SP</span><span>Bloqueio</span><span>há 40 min</span></div><p class=\"ds-aviso-title\">Pista interditada após tombamento de carreta</p><p class=\"ds-aviso-do\">Segurar saídas pelo trecho até liberação.</p><details class=\"ds-aviso-why\"><summary>Por que crítico?</summary><p>Bloqueio total é sempre Crítico.</p></details></div></li></ul>",
+      "css": ".ds-avisos{list-style:none;margin:0;padding:0;background:#fff;border:1px solid #CAD2DC;font-family:Archivo,'Segoe UI',system-ui,sans-serif;font-variant-numeric:tabular-nums}.ds-aviso{display:grid;grid-template-columns:6px 1fr;border-bottom:1px solid #E2E7ED}.ds-aviso::before{content:'';background:var(--g)}.ds-aviso>div{padding:12px 18px 14px;display:grid;gap:4px}.ds-aviso-meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;font-weight:700;color:#536177}.ds-aviso-meta b{color:#10233F}.ds-aviso-title{margin:0;font-size:16px;font-weight:700;line-height:1.35;color:#10233F}.ds-aviso-do{margin:0;font-size:15px;font-weight:700;color:#10233F}.ds-aviso-why{font-size:13px;color:#536177}.ds-aviso-why summary{cursor:pointer;font-weight:700;color:#1D4F91}.ds-aviso-why p{margin:4px 0 0}"
+    },
+    {
+      "name": "Régua de vigência",
+      "kind": "custom",
+      "refersTo": "regua-band",
+      "description": "Banda por trecho do primeiro registro até agora; cauda esmaecida = sem previsão.",
+      "html": "<div class=\"ds-regua\"><div class=\"ds-regua-label\"><b>BR-116 km 230</b><small>SP · sul</small></div><div class=\"ds-regua-track\"><div class=\"ds-band\" style=\"left:30%;width:45%\">Crítico · 5h</div><div class=\"ds-tail\" style=\"left:75%;width:25%\"></div><div class=\"ds-now\" style=\"left:75%\"><span>agora</span></div></div></div>",
+      "css": ".ds-regua{display:grid;grid-template-columns:148px 1fr;font-family:Archivo,'Segoe UI',system-ui,sans-serif;font-variant-numeric:tabular-nums;background:#fff;color:#10233F;padding:8px 0}.ds-regua-label{padding:8px 10px 8px 0;border-bottom:1px solid #E2E7ED}.ds-regua-label b{display:block;font-size:14px}.ds-regua-label small{font-size:12px;color:#536177;font-weight:600}.ds-regua-track{position:relative;min-height:46px;border-bottom:1px solid #E2E7ED;background-image:repeating-linear-gradient(90deg,#E2E7ED 0 1px,transparent 1px calc(100% / 5))}.ds-band{position:absolute;top:11px;height:24px;line-height:24px;padding:0 8px;border-radius:3px 0 0 3px;background:#C8201A;color:#fff;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden}.ds-tail{position:absolute;top:11px;height:24px;background:linear-gradient(90deg,rgba(200,32,26,.45),rgba(200,32,26,0))}.ds-now{position:absolute;top:0;bottom:0;width:2px;background:#10233F}.ds-now span{position:absolute;top:-2px;left:50%;transform:translateX(-50%);padding:0 4px;background:#fff;font-size:12px;font-weight:800;line-height:18px}"
+    },
+    {
+      "name": "Selos de grau",
+      "kind": "chip",
+      "refersTo": "grade-badge-critical",
+      "description": "Os quatro graus em bloco sólido com texto de contraste.",
+      "html": "<div class=\"ds-grades\"><span class=\"ds-grade\" style=\"background:#C8201A;color:#fff\">Crítico</span><span class=\"ds-grade\" style=\"background:#E46C00;color:#10233F\">Alto</span><span class=\"ds-grade\" style=\"background:#EDB800;color:#10233F\">Médio</span><span class=\"ds-grade\" style=\"background:#5F6E83;color:#fff\">Baixo</span></div>",
+      "css": ".ds-grades{display:flex;gap:6px}.ds-grade{font:800 12px Archivo,'Segoe UI',system-ui,sans-serif;padding:4px 8px;border-radius:4px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "O Boletim de Aviso",
+    "overview": "Cada ocorrência é um aviso oficial, no molde do INMET e da Defesa Civil: tem grau, trecho, vigência e despacho. Não é uma notícia nem um cartão de manchete. O sistema existe para que o analista de risco responda de relance \"posso liberar a carga agora, por onde?\", seja no monitor fixo da torre, no desktop antes de liberar uma carga ou no celular em campo.\n\nO mundo é institucional e sóbrio. Shell (barra lateral, cabeçalho de login, cabeçalho do cartão de compartilhamento) em azul-tinta; fundo de boletim cinza-frio claro; superfícies brancas separadas por fios de 1px, sem sombra e sem matiz decorativo. A cor forte é um recurso escasso e tem um único dono: o grau. Vermelho Crítico, laranja Alto, amarelo Médio, cinza-azulado Baixo, sempre em bloco sólido (faixa de veredito, selo, faixa de linha, banda da régua), nunca em degradê decorativo, nunca em outra função. A densidade é de quadro de operação: linhas compactas, números tabulares, uma decisão por linha.\n\nTema claro é o principal (padrão `light` salvo em `roadnews.theme`). O tema escuro é o turno da noite com a mesma gramática. O modo torre (`/torre`) é uma variante escura em tipo grande, sem navegação, que mostra só veredito, avisos e régua, legível a 2–3 m.",
+    "keyCharacteristics": [
+      "Shell azul-tinta, papel de boletim frio, superfícies brancas com fio de 1px.",
+      "Cor forte reservada aos quatro graus; categorias vivem numa família azul-acinzentada.",
+      "Uma única face sans de trabalho (Archivo) com números tabulares em tudo.",
+      "Plano: profundidade por fio e tom, nunca por sombra.",
+      "Assinatura: a régua de vigência, uma banda por trecho do primeiro registro até agora, com cauda esmaecida onde não há previsão."
+    ],
+    "rules": [
+      {
+        "name": "The Grade Owns Color Rule",
+        "body": "Vermelho, laranja, amarelo e o cinza-azulado de Baixo significam grau e nada mais. Se um elemento não carrega o grau de uma ocorrência, ele não usa essas cores — nem categoria, nem destaque, nem ilustração.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Decorative Hue Rule",
+        "body": "O shell e as superfícies são neutros. Não há gradiente de marca, tinta de fundo colorida ou destaque cromático fora da escala de grau e do azul de interação.",
+        "section": "colors"
+      },
+      {
+        "name": "The Solid Grade Rule",
+        "body": "O grau aparece em bloco sólido com texto de contraste. A única translucidez permitida é a cauda da régua de vigência (o grau desvanecendo de 45% a 0%), que significa \"sem previsão de término\".",
+        "section": "colors"
+      },
+      {
+        "name": "The One Face Rule",
+        "body": "Archivo para tudo. Hierarquia vem de peso (400/700/800) e tamanho, nunca de uma segunda família ou de mono como fantasia técnica.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Todo número é tabular. Horário, km, contagem de fontes e código EV precisam alinhar sem esforço.",
+        "section": "typography"
+      },
+      {
+        "name": "The Hairline Rule",
+        "body": "Superfícies se separam por fio de 1px em `line`, nunca por sombra. A exceção de espessura é semântica: rodovia bloqueada ganha fio de 2px em Vermelho Crítico.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do reservar vermelho, laranja, amarelo e o cinza-azulado de Baixo exclusivamente ao grau de uma ocorrência, em bloco sólido com texto de contraste (branco sobre Crítico e Baixo, azul-tinta sobre Alto e Médio).",
+      "Do separar superfícies com fio de 1px e manter tudo sem sombra.",
+      "Do usar Archivo com numerais tabulares em todo texto, com hierarquia por peso 400/700/800.",
+      "Do dar a cada aviso grau, trecho, vigência e uma linha de despacho, e manter o código EV estável entre atualizações.",
+      "Do nomear o grau também em texto (selo, \"Por que [grau]?\"), além da cor.",
+      "Do manter 12px como menor tamanho de texto e contorno de foco de 2px em todo elemento interativo."
+    ],
+    "donts": [
+      "Don't usar cor de grau para categoria, destaque, ilustração ou decoração; categorias ficam na família azul-acinzentada.",
+      "Don't montar a tela como painel de KPIs, carrossel ou grade de cartões de manchete; a unidade é o aviso.",
+      "Don't introduzir sombras, degradês de marca ou matiz decorativo no shell ou nas superfícies.",
+      "Don't usar faixa lateral colorida em elementos que não carregam grau; a coluna de grau existe só na linha de aviso e na caixa de despacho do cartão de compartilhamento.",
+      "Don't adicionar uma segunda família tipográfica ou mono como fantasia técnica."
+    ]
+  }
+}

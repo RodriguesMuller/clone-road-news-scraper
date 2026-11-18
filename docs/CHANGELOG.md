@@ -2,6 +2,19 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-18 — Redesign "Boletim de Aviso": o painel responde se a carga pode sair
+- **Alterado**: nova identidade visual em todo o painel. Cada ocorrência aparece como um aviso oficial (grau, trecho, vigência, despacho).
+  - Barra lateral azul-tinta e fundo claro de boletim; o **tema claro passa a ser o padrão** (o escuro continua no seletor).
+  - Fonte Archivo em tudo, com números tabulares.
+  - As únicas cores fortes são de **grau**, iguais às do INMET: vermelho Crítico, laranja Alto, amarelo Médio, cinza-azulado Baixo. Mapa, gráficos, selos e card de resumo usam a mesma régua; categorias passaram para tons azul-acinzentados.
+- **Alterado**: a tela inicial virou **"Situação agora"** (antes "Dashboard"). No topo, o veredito (ex.: "Atenção: 5 trechos com risco alto"); abaixo, os avisos das últimas 24h por grau, cada um com número EV, ação de despacho e "Por que alto?"; ao lado, a **régua de vigência** de cada trecho. O carrossel de destaques e os 6 indicadores de volume saíram; tendência, temas, mapa e últimas notícias ficam em "Panorama do período".
+- **Adicionado**: **Modo torre** (`/torre`): tela cheia escura, sem menu, com letra grande, para monitor fixo ou TV. Mostra só o veredito, os avisos e a régua; redesenha a cada minuto sem chamar a API.
+- **Alterado**: Minha Rota mostra a recomendação operacional antes dos indicadores e do mapa (também no celular). No traçado, fluxo normal azul, lento amarelo, congestionado laranja; vermelho só para ocorrência crítica.
+- **Alterado**: Notícias com miniatura pequena (título e impacto em destaque); Central de Evento, Alertas, Mapa, Resumo e telas de gestão no mesmo visual; login em duas colunas ("Entrar no painel").
+- **Alterado**: card de resumo (PNG de "Gerar resumo") redesenhado como aviso: faixa do grau, "O que fazer", resumo e "Por que crítico".
+- **Alterado**: e-mail do resumo semanal no mesmo visual: papel claro, cabeçalho azul-tinta e selos de grau preenchidos com as cores do INMET (antes fundo escuro e verde neon). No mapa da Minha Rota, origem azul, destino azul-tinta e paradas brancas (antes verde, azul e amarelo, que se confundiam com o grau Médio).
+- **Corrigido**: título do card com o começo do resumo grudado ("…em Governador Valadares Na região da BR-381"); reticências em texto que cabia inteiro; acentos nas páginas de Privacidade e Termos; impressão do resumo semanal agora em papel branco com texto mínimo de 10px.
+
 ## 2026-11-18 — Alertas vira "Meus trechos"
 - **Adicionado**: na tela **Alertas**, o cliente cadastra as rodovias (ex.: BR-116, SP-330) e os estados (ex.: PR) onde a frota roda. A lista de alertas passa a mostrar só o que acontece neles, com o link "Ver também N em outros trechos". Sem trecho cadastrado, a tela continua como antes. A lista fica salva no navegador.
 - **Removido**: os cards "Última coleta / Última hora / Últimas 24h / Total de notícias" da tela Alertas. Eram métricas internas da coleta e não ajudavam a decidir; o horário do dado continua no selo do topo.

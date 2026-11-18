@@ -151,3 +151,10 @@ test("atualização automática: de hora em hora, depois da coleta, só com a ab
   assert.equal(ctx.should(at("2026-11-17T11:20:00Z")), false, "falha: espera 10 min para tentar de novo");
   assert.equal(ctx.should(at("2026-11-17T11:27:00Z")), true);
 });
+
+test("Situação agora/torre redesenha a cada minuto sem chamar a API", () => {
+  const tick = html.slice(html.indexOf("setInterval(() => {\n      if (!state.dataLoadedAt && !state.dataLoadError) return;"));
+  const body = tick.slice(0, tick.indexOf("}, 60 * 1000);"));
+  assert.match(body, /state\.activeClientPage === "dashboard" && !document\.hidden\) window\.RoadDashboard\?\.render\(\)/);
+  assert.doesNotMatch(body.replace(/autoRefresh\(\)/g, ""), /refresh\(|fetch\(/, "o tique de 1 min não consome cota");
+});
