@@ -27,8 +27,11 @@ DEFAULT_MODEL = "gpt-4.1-mini"
 LEVEL_COLORS = {"critical": "#FC3700", "high": "#FFCD00", "medium": "#00ACFF", "low": "#1EFF95"}
 
 
-def fetch_weekly_news(database_url: str, days: int = 14, limit: int = 800) -> list[dict]:
-    """Semana atual + anterior (para o comparativo)."""
+def fetch_weekly_news(database_url: str, days: int = 14, limit: int = 10000) -> list[dict]:
+    """Semana atual + anterior (para o comparativo).
+
+    O teto é só proteção: com 800 linhas a janela de 14 dias era cortada e a semana anterior chegava vazia.
+    """
     since = brasilia_now() - timedelta(days=days)
     query = """
         SELECT title, url, source, category, published_at, summary, scraped_at, type, created_at

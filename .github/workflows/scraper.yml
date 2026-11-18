@@ -5,8 +5,9 @@ on:
     branches:
       - main
   schedule:
-    # Runs every hour in UTC.
-    - cron: "0 * * * *"
+    # De hora em hora, no minuto 17 (UTC). O minuto 00 é o mais congestionado do GitHub: com
+    # "0 * * * *" só ~1,4 de 24 execuções por dia aconteciam (78 em 54 dias, até 18/11/2026).
+    - cron: "17 * * * *"
   workflow_dispatch:
 
 permissions:

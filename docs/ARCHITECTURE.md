@@ -45,12 +45,12 @@ graph LR
 ## Os três componentes
 
 ### 1. Coleta (`main.py` + `scraper/`)
-Python 3.11, agendado pelo GitHub Actions (`.github/workflows/scraper.yml`, `cron: "0 * * * *"` — de hora em hora, mais disparo em push na `main` e manual). Lê `config/sources.yaml`, roda cada fonte (`scraper/sources/*.py`), filtra por keyword (`scraper/utils/filters.py`), grava no Postgres com dedup por `UNIQUE(url)` (`scraper/storage/postgres.py`), e roda a triagem de eventos logísticos críticos (`scraper/event_intelligence.py`) quando `EVENT_INTELLIGENCE_ENABLED=true`. Sem browser headless — só `feedparser`/`requests`/`BeautifulSoup4`.
+Python 3.11, agendado pelo GitHub Actions (`.github/workflows/scraper.yml`, `cron: "17 * * * *"` — de hora em hora, fora do minuto 00 congestionado, mais disparo em push na `main` e manual). Lê `config/sources.yaml`, roda cada fonte (`scraper/sources/*.py`), filtra por keyword (`scraper/utils/filters.py`), grava no Postgres com dedup por `UNIQUE(url)` (`scraper/storage/postgres.py`), e roda a triagem de eventos logísticos críticos (`scraper/event_intelligence.py`) quando `EVENT_INTELLIGENCE_ENABLED=true`. Sem browser headless — só `feedparser`/`requests`/`BeautifulSoup4`.
 
 Dono: `scraping-engineer` (fontes/coleta) + `data-pipeline-engineer` (persistência/dedup/entidade) — ver [`docs/AGENTS.md`](AGENTS.md).
 
 ### 2. API + Frontend (Vercel)
-- **Frontend**: `public/index.html`, um único arquivo (~6.800 linhas) de HTML/CSS/JS vanilla — landing pública e painel logado (dashboard, alertas, mapa, Minha Rota, admin/gestor/developer) no mesmo arquivo, roteado no cliente via os `rewrites` de `vercel.json`. Sem build step, sem framework.
+- **Frontend**: `public/index.html`, um único arquivo (~6.800 linhas) de HTML/CSS/JS vanilla — landing pública e painel logado (dashboard, alertas, mapa, Minha Rota, admin/gestor/developer) no mesmo arquivo, roteado no cliente via os `rewrites` de `vercel.json`. Sem build step, sem framework. Os dados vêm de `/api/news-feed` no login e depois de hora em hora (`shouldAutoRefresh`: aba visível, minuto ≥ 15, retentativa a cada 10 min). Cada leitura consome 1 `news_query` da cota. Falha mantém a última leitura boa (`state.dataLoadedAt`). Sem nenhuma leitura, as telas mostram "Sem dados", nunca um estado vazio.
 - **API**: `api/*.js`, Vercel Serverless Functions em Node.js puro (CommonJS), sem dependências npm, sem `package.json`. Cada arquivo exporta um `handler(req, res)`. Toda leitura/escrita de dado passa por chamadas REST diretas ao PostgREST do Supabase (`supabaseFetch` em `api/_auth.js`).
 
 Dono: `frontend-engineer` (painel) + `backend-engineer` (endpoints de produto) + `saas-platform-engineer` (motor de auth/tenancy: `_auth.js`, `_admin.js`, `admin-*.js`).

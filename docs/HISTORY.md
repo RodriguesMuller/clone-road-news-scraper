@@ -2,6 +2,63 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-18 — Tela Alertas reaproveitada como "Meus trechos"
+**O que mudou:**
+- `public/index.html`:
+  - `#clientAlertsPage` trocou `#stats` por `.watch-panel` (`#watchForm`, `#watchChips`) e ganhou `#watchFilterNote`.
+  - Novos `normalizeWatchTarget`, `loadWatchTargets`/`persistWatchTargets` (localStorage `roadnews_watch_targets`), `matchesWatchTarget`/`matchesWatch` e `renderWatchTargets`. Novos campos `state.watchTargets` e `state.alertsShowAll`.
+  - `renderRecentAlerts` filtra pelos trechos e avisa coleta atrasada. `renderStats` tolera `#stats` ausente.
+- Testes: `tests/test_alerts_watch.js` (3 casos, extraindo as funções reais do HTML).
+
+**Por quê:** o usuário apontou que a tela Alertas "não servia para nada". Ela repetia o Dashboard ("Situação agora" já lista os avisos vigentes das últimas 24h) mais quatro métricas internas de coleta. Faltava no app a resposta "isso afeta a minha operação?".
+
+**Impacto medido:** JS 100/100. Sem verificação visual: não havia navegador e o painel exige login.
+
+**Alternativas descartadas:**
+- Remover a tela: perderia o único lugar para filtrar por trecho de operação.
+- Salvar os trechos no banco, por empresa: exige migration e endpoint novos (o deploy já está no teto de 12 funções da Vercel Hobby). Fica para quando houver demanda de compartilhar entre usuários, ou de alertas por e-mail/WhatsApp por trecho.
+
+**ADR relacionado:** nenhum.
+
+## 2026-11-18 — Deduplicação entre veículos e comparativo do resumo semanal
+**O que mudou:**
+- `public/brief.js` e `scraper/weekly_brief.py` (espelhos): `clusterEvents`/`_cluster_events` não usam mais chave fixa (rodovia ou `uf:XX`). Cada grupo guarda a rodovia e a UF conhecidas e só recusa junção com rodovia ou UF diferentes. Novo `KIND_FAMILY` (incident, planned, strike, cargo, weather). A regra por rodovia vale com a mesma família em 24h (mesma UF) ou 12h (UF ausente em uma das notícias).
+- `public/risk.js` e `scraper/utils/risk.py`: em `fatality`, `mat(?:a|ou|aram|ando)` virou `mat(?:ou|aram|ando)` mais `matam? <vítima>`.
+- `api/weekly-summary.js`: `fetchTwoWeeks` pagina de 1000 em 1000 (até 10 páginas). `scraper/weekly_news.py`: `limit` padrão de 800 para 10000.
+- Testes: 5 casos novos em `tests/test_weekly_brief.js` e o espelho em `tests/test_weekly_brief.py`. `tests/fixtures/weekly_brief_expected.json` regenerado: 33 para 32 eventos e 14 para 13 vítimas fatais (as duas notícias da BR-226/RN de 08/11 viraram um evento).
+
+**Por quê:** o resumo de 11/11 a 18/11 mostrou 75 bloqueios, 114 acidentes com veículo pesado e 167 acidentes fatais, todos com "semana anterior (0)". Reproduzido: notícias iguais em que só uma citava a BR ou a UF viravam eventos separados, e "Zona da Mata" contava como morte.
+
+**Impacto medido:** JS 97/97 e Python 63/63, com a paridade JS/Python confirmada pelo snapshot. Não medido em produção: o resumo real não foi regerado (sem acesso ao banco).
+
+**Alternativas descartadas:**
+- Juntar pela mesma rodovia em 24h sem exigir UF: juntou dois acidentes diferentes na Raposo Tavares (tombamento em 06/11 e batida entre carretas 18h depois). Por isso a janela de 12h sem UF.
+- Similaridade de título mais frouxa (Jaccard menor que 0,35): veículos reescrevem o título inteiro ("deixa dois mortos" x "mata duas pessoas"), e o limiar baixo juntaria fatos diferentes com palavras comuns.
+
+**ADR relacionado:** nenhum.
+
+## 2026-11-17 — Confiabilidade do dado no painel (crítica de design, P0)
+**O que mudou:**
+- `public/index.html`:
+  - `refresh({ silent })` mantém a última leitura boa quando só o feed falha. Falha de acesso continua limpando os dados.
+  - Novos `state.dataLoadedAt`, `dataUnavailable()`, `dataUnavailableMarkup()`, `dataPanelStatus()`, `renderDataFreshness()`, `shouldAutoRefresh()` e `autoRefresh()`.
+  - Selo `#dataFreshness` no topo. `#notice` com `role="status"` e `aria-live`, e cor do token `--color-warning` (antes `#FFCD00` fixo).
+  - Estado "Sem dados" em `renderRecentAlerts` e `renderOperationalSummary`.
+  - `followedAiNote` com prazo de 2h. `featureBlockedMessage` distingue limite do mês de recurso fora do pacote.
+- `public/dashboard.js`: o destaque e o sino usam o estado "Sem dados". A barra lateral separa painel desatualizado de coleta atrasada.
+- Testes: `tests/test_data_freshness.js` (9 casos; extrai as funções reais do HTML e roda em `vm`).
+
+**Por quê:** a crítica de design (`/impeccable critique`, nota 21/40, em `.impeccable/critique/`) achou um P0. O feed só carregava no login, o botão "Atualizar" ficava oculto no app, e uma falha de carga esvaziava as listas. Com isso, Dashboard, Resumo operacional e Alertas diziam "sem ocorrência"/"Normal", um falso "tudo limpo" na tela fixa da torre de controle.
+
+**Impacto medido:** JS 91/91. Python não rodou (interpretador ausente nesta máquina; nenhum arquivo Python mudou). Detector do Impeccable: 13 achados antes e depois (nenhum novo). Sem verificação visual: não havia navegador e o painel exige login.
+
+**Alternativas descartadas:**
+- Atualizar a cada 5 min: cada leitura de `/api/news-feed` reserva 1 `news_query`, até cerca de 288 por dia por usuário, e a coleta é horária, então não traria dado novo.
+- Atualização automática sem custo de cota: muda a regra de cobrança no backend (dono: `saas-platform-engineer`).
+- Só atualização manual: o usuário escolheu de hora em hora.
+
+**ADR relacionado:** nenhum.
+
 ## 2026-11-10 — Página de Notícias pelo mockup e ilustrações em cena de estrada
 **O que mudou:**
 - `public/dashboard.js`: `illustration()` reescrita com `SCENE` por tema, mais a variante "Neblina" pelo texto. Passa a exportar `newsMedia`, `themeOfItem`, `icon`, `THEME_COLOR` e `LEVEL`, com ícones novos (car, ban, cone, cloud, dots, layers, calendar, source).

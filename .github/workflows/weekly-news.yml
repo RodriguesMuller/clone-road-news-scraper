@@ -2,8 +2,9 @@ name: Weekly Road News
 
 on:
   schedule:
-    # Segunda-feira, 08:00 em Brasilia (11:00 UTC).
-    - cron: "0 11 * * 1"
+    # Segunda-feira, ~08:07 em Brasilia (11:07 UTC). Fora do minuto 00, o mais congestionado do
+    # GitHub (em 16/11/2026 o envio das 08:00 só saiu às 17:44).
+    - cron: "7 11 * * 1"
   workflow_dispatch:
     inputs:
       test_email:

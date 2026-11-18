@@ -212,27 +212,49 @@ def _enrich(item: dict) -> dict:
     }
 
 
+# Espelho de KIND_FAMILY em public/brief.js: o mesmo fato recebe tipos diferentes em veículos diferentes.
+KIND_FAMILY = {
+    "heavy_vehicle": "incident", "hazmat": "incident", "fatal_accident": "incident", "accident": "incident",
+    "accident_partial": "incident", "accident_jam": "incident", "block_total": "incident", "block_partial": "incident",
+    "small_fire": "incident", "fire": "incident", "structural": "incident", "jam": "incident",
+    "block_planned": "planned", "block_partial_planned": "planned",
+    "strike": "strike", "strike_block": "strike", "strike_over": "strike",
+    "cargo_theft": "cargo", "cargo_theft_police": "cargo",
+    "weather": "weather", "visibility": "weather",
+}
+
+
+def _family(kind: str) -> str:
+    return KIND_FAMILY.get(kind, kind)
+
+
 def _cluster_events(items: list) -> list:
+    # Rodovia ou UF ausente em uma das notícias é compatível; só rodovia ou UF diferentes separam.
     clusters = []
     ordered = sorted(items, key=lambda i: (i["time"] is None, i["time"] or 0, i["title"]))
     for item in ordered:
-        key = item["road"] or (f"uf:{item['uf']}" if item["uf"] else "")
         match = None
         for cluster in clusters:
-            if cluster["key"] != key:
+            if item["road"] and cluster["road"] and item["road"] != cluster["road"]:
+                continue
+            if item["uf"] and cluster["uf"] and item["uf"] != cluster["uf"]:
                 continue
             gap = abs((item["time"] or 0) - (cluster["last"] or 0))
-            if item["uf"] and cluster["rep"]["uf"] and item["uf"] != cluster["rep"]["uf"]:
+            if gap > 2 * DAY_MS:
                 continue
-            if item["road"] and item["uf"] and item["uf"] == cluster["rep"]["uf"] and cluster["rep"]["risk"]["kind"] == item["risk"]["kind"] and gap <= DAY_MS:
+            # 24h com a mesma UF; 12h se uma das notícias não cita a UF (espelho de public/brief.js).
+            road_window = DAY_MS if item["uf"] and cluster["uf"] else DAY_MS // 2
+            if item["road"] and item["road"] == cluster["road"] and gap <= road_window and _family(item["risk"]["kind"]) == _family(cluster["rep"]["risk"]["kind"]):
                 match = cluster
                 break
-            if gap <= 2 * DAY_MS and _jaccard(item["tokens"], cluster["tokens"]) >= 0.35:
+            if _jaccard(item["tokens"], cluster["tokens"]) >= 0.35:
                 match = cluster
                 break
         if match:
             match["items"].append(item)
             match["last"] = item["time"] if item["time"] is not None else match["last"]
+            match["road"] = match["road"] or item["road"]
+            match["uf"] = match["uf"] or item["uf"]
             match["tokens"] |= item["tokens"]
             if item["risk"]["rank"] > match["rep"]["risk"]["rank"]:
                 match["rep"] = item
@@ -242,7 +264,7 @@ def _cluster_events(items: list) -> list:
                 match["sources"].add(item["source"])
         else:
             clusters.append({
-                "key": key, "rep": item, "items": [item], "last": item["time"], "tokens": set(item["tokens"]),
+                "road": item["road"], "uf": item["uf"], "rep": item, "items": [item], "last": item["time"], "tokens": set(item["tokens"]),
                 "fatal": bool(item["risk"].get("fatal")), "sources": {item["source"]} if item["source"] else set(),
             })
     return clusters

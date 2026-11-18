@@ -9,8 +9,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" integrity="sha384-wgw+aLYNQ7dlhK47ZPK7FRACiq7ROZwgFNg0m04avm4CaXS+Z9Y7nMu8yNjBKYC+" crossorigin="anonymous">
   <script>
     // Tema antes da primeira pintura (evita piscar). Preferência salva em localStorage.
-    try { document.documentElement.dataset.theme = localStorage.getItem("roadnews.theme") || "dark"; }
-    catch (e) { document.documentElement.dataset.theme = "dark"; }
+    // Claro é o principal (boletim); escuro fica disponível no seletor.
+    try { document.documentElement.dataset.theme = localStorage.getItem("roadnews.theme") || "light"; }
+    catch (e) { document.documentElement.dataset.theme = "light"; }
   </script>
   <style>
 
@@ -149,7 +150,7 @@
     button:disabled { cursor: wait; opacity: .65; }
     main { padding: 28px 22px 72px; }
     footer { padding: 0 22px 30px; color: var(--color-muted); font-size: 12px; }
-    .notice { display: none; margin-bottom: 18px; border: 1px solid rgba(var(--risk-high-rgb), .42); background: rgba(var(--risk-high-rgb), .12); border-radius: 8px; padding: 12px 14px; color: #FFCD00; font-size: 14px; }
+    .notice { display: none; margin-bottom: 18px; border: 1px solid rgba(var(--risk-high-rgb), .42); background: rgba(var(--risk-high-rgb), .12); border-radius: 8px; padding: 12px 14px; color: var(--color-warning); font-size: 14px; }
     .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
     .stat, .panel, .item, .alert-card {
       background: var(--color-surface);
@@ -202,6 +203,17 @@
     .segmented button { background: transparent; box-shadow: none; color: var(--color-muted); border-radius: 6px; padding: 7px 10px; font-size: 12px; }
     .segmented button.active { background: var(--color-primary); color: var(--color-brand-text); }
     .alert-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .watch-panel { margin-bottom: 18px; }
+    .watch-note { margin: 4px 0 0; color: var(--color-muted); font-size: 12px; line-height: 1.45; }
+    .alerts-panel .watch-note { margin: 0 0 12px; }
+    .watch-note button { padding: 0; border: 0; background: none; box-shadow: none; color: var(--color-primary); font: inherit; font-weight: 800; cursor: pointer; text-decoration: underline; }
+    .watch-form { display: flex; gap: 8px; flex-wrap: wrap; }
+    .watch-form input { flex: 1 1 220px; min-width: 0; }
+    .watch-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .watch-chips:empty { display: none; }
+    .watch-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--color-border-soft); border-radius: 999px; background: transparent; box-shadow: none; color: var(--color-text); font-size: 12px; font-weight: 800; cursor: pointer; }
+    .watch-chip:hover, .watch-chip:focus-visible { border-color: var(--color-primary); }
+    .watch-chip span { color: var(--color-muted); font-weight: 400; }
     .alert-card { padding: 14px; }
     .alert-card h3 { margin: 9px 0 6px; color: var(--color-text); font-size: 15px; line-height: 1.35; }
     .alert-card h3 a, .title a { text-decoration: none; }
@@ -1587,6 +1599,21 @@
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-muted); }
     .status-dot.ok { background: var(--color-success); box-shadow: 0 0 0 4px rgba(var(--risk-low-rgb), .16); }
     .status-dot.late { background: var(--color-warning); }
+    .status-dot.error { background: var(--color-danger); }
+    /* Selo de atualidade dos dados: o painel nunca parece "tranquilo" com dado velho ou ausente. */
+    .data-freshness { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-muted-strong); font-size: 13px; font-weight: 600; white-space: nowrap; box-shadow: var(--shadow-card); }
+    .data-freshness:hover { color: var(--color-text); border-color: rgba(var(--accent-rgb), .45); }
+    .data-freshness .freshness-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--color-success); }
+    .data-freshness[data-state="loading"] .freshness-dot { background: var(--color-muted); }
+    .data-freshness[data-state="stale"] { border-color: rgba(var(--risk-high-rgb), .55); color: var(--color-text); }
+    .data-freshness[data-state="stale"] .freshness-dot { background: var(--color-warning); }
+    .data-freshness[data-state="error"] { border-color: var(--color-danger); background: rgba(var(--risk-critical-rgb), .12); color: var(--color-text); }
+    .data-freshness[data-state="error"] .freshness-dot { background: var(--color-danger); }
+    .data-freshness:disabled { cursor: progress; opacity: 1; }
+    .data-unavailable { display: grid; gap: 6px; padding: 16px 18px; border: 1px solid var(--color-danger); border-radius: 12px; background: rgba(var(--risk-critical-rgb), .08); }
+    .data-unavailable strong { color: var(--color-text); font-size: 16px; }
+    .data-unavailable p { margin: 0; color: var(--color-muted-strong); }
+    @media (max-width: 640px) { .data-freshness { height: 38px; padding: 0 10px; } }
     .sidebar.collapsed .sidebar-status { display: none; }
 
     /* Cabeçalho superior */
@@ -2030,6 +2057,172 @@
     @media (max-width: 700px) { .featured-overlay { background: linear-gradient(180deg, rgba(15, 24, 20, .5), rgba(15, 24, 20, .95)); } }
     .featured-body, .featured-meta, .featured-body p { color: #CFD1D0; }
     .featured-body h2, .featured-action strong { color: #F4F9FA; }
+
+    /* =====================================================================
+       Boletim de Aviso (redesign 2026-11). Camada final: vence as anteriores.
+       Mundo: aviso oficial (INMET/Defesa Civil). Shell azul-tinta, fundo de boletim
+       frio, superfícies brancas com fio de 1px. As únicas cores fortes são de grau:
+       vermelho Crítico, laranja Alto, amarelo Médio, cinza-azulado Baixo.
+       Tema claro é o principal; escuro para o turno da noite; modo torre escuro.
+       ===================================================================== */
+    :root, :root[data-theme="light"] {
+      --font-sans: 'Archivo', "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+      --font-mono: var(--font-sans);
+      --ink: #10233F; --ink-2: #1B355C; --ink-line: #2B4466; --ink-text: #E3E9F1; --ink-muted: #9DAEC4;
+      --color-brand: #10233F; --color-brand-text: #FFFFFF;
+      --accent: #1D4F91; --accent-rgb: 29, 79, 145; --accent-strong: #163E73; --accent-2: #1D4F91;
+      --color-primary: #10233F; --color-primary-strong: #10233F;
+      --color-brand-soft: rgba(29, 79, 145, .10); --color-primary-soft: rgba(29, 79, 145, .10);
+      --color-bg: #EDF0F4; --color-bg-deep: #E4E8EE;
+      --color-surface: #FFFFFF; --color-surface-alt: #F5F7FA; --color-surface-high: #E8ECF1;
+      --color-border: #CAD2DC; --color-border-soft: #E2E7ED;
+      --color-text: #10233F; --color-muted: #536177; --color-muted-strong: #2C3D55;
+      --risk-critical: #C8201A; --risk-critical-rgb: 200, 32, 26; --risk-critical-ink: #FFFFFF; --risk-critical-text: #B01B15;
+      --risk-high: #E46C00; --risk-high-rgb: 228, 108, 0; --risk-high-ink: #10233F; --risk-high-text: #9C4A00;
+      --risk-medium: #EDB800; --risk-medium-rgb: 237, 184, 0; --risk-medium-ink: #10233F; --risk-medium-text: #775A00;
+      --risk-low: #5F6E83; --risk-low-rgb: 95, 110, 131; --risk-low-ink: #FFFFFF; --risk-low-text: #4D5B6F;
+      --color-success: #2E7A4C; --color-warning: #9C4A00; --color-danger: #B01B15; --color-info: #1D4F91;
+      --violet: #1D4F91;
+      --shadow-card: none;
+      --radius: 8px;
+      color-scheme: light;
+    }
+    :root[data-theme="dark"] {
+      --ink: #0A1220; --ink-2: #16243A; --ink-line: #24354F; --ink-text: #DCE4EF; --ink-muted: #8E9FB6;
+      --color-brand: #E3E9F1; --color-brand-text: #0A1220;
+      --accent: #8DB4EE; --accent-rgb: 141, 180, 238; --accent-strong: #B5CEF5; --accent-2: #8DB4EE;
+      --color-primary: #E3E9F1; --color-primary-strong: #E3E9F1;
+      --color-brand-soft: rgba(141, 180, 238, .14); --color-primary-soft: rgba(141, 180, 238, .14);
+      --color-bg: #0F1828; --color-bg-deep: #0B1220;
+      --color-surface: #152134; --color-surface-alt: #1A283E; --color-surface-high: #22334D;
+      --color-border: #2C3D57; --color-border-soft: #213048;
+      --color-text: #E8EDF4; --color-muted: #9DAABD; --color-muted-strong: #CAD3DF;
+      --risk-critical: #F2493D; --risk-critical-rgb: 242, 73, 61; --risk-critical-ink: #FFFFFF; --risk-critical-text: #FF7A70;
+      --risk-high: #FF9433; --risk-high-rgb: 255, 148, 51; --risk-high-ink: #10233F; --risk-high-text: #FFAA5C;
+      --risk-medium: #F3C934; --risk-medium-rgb: 243, 201, 52; --risk-medium-ink: #10233F; --risk-medium-text: #F3C934;
+      --risk-low: #8796AC; --risk-low-rgb: 135, 150, 172; --risk-low-ink: #0A1220; --risk-low-text: #A9B6C8;
+      --color-success: #5FBF85; --color-warning: #FFAA5C; --color-danger: #FF7A70; --color-info: #8DB4EE;
+      --violet: #8DB4EE;
+      --shadow-card: none;
+      color-scheme: dark;
+    }
+    body { background: var(--color-bg); color: var(--color-text); font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
+    button, .button-link, .mini-button, .chip, .segmented button, .nav-item, .nav-group-toggle, .nav-label,
+    .eyebrow, .label, .field label, .kpi-label, .ops-eyebrow, .ops-kpi span, .featured-tag, .featured-cta, .latest-link,
+    .sev-badge, .theme-badge, .alert-badge, .info-badge, .weekly-badge, .tag, th, .dash-link, .dropdown-head span,
+    .trend-legend, .trend-pill, .kpi-delta, .bell-count, .status-row strong, .sidebar-title span, .news-credit { font-family: var(--font-sans); }
+    h2, .ops-card h4 { letter-spacing: 0; }
+
+    /* Foco visível em tudo que é interativo. */
+    :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    ::selection { background: rgba(var(--accent-rgb), .22); }
+
+    /* Superfícies de boletim: fio de 1px, sem sombra. */
+    .panel, .dash-card, .ops-card, .admin-card, .modal-card, .news-card, .alert-card, .route-panel, .weekly-hero {
+      box-shadow: none; border-color: var(--color-border);
+    }
+
+    /* Shell azul-tinta (barra lateral). */
+    .sidebar, :root[data-theme="light"] .sidebar { background: var(--ink); border-color: var(--ink); color: var(--ink-text); }
+    .sidebar .sidebar-title strong { color: #fff; font-weight: 800; letter-spacing: -.01em; }
+    .sidebar .sidebar-title span { color: var(--ink-muted); font-size: 12px; }
+    .sidebar .brand-mark { background: none; width: 6px; height: 28px; border-radius: 2px; box-shadow: none;
+      background-image: linear-gradient(var(--risk-critical) 0 25%, var(--risk-high) 25% 50%, var(--risk-medium) 50% 75%, var(--risk-low) 75%); }
+    .sidebar .nav-item, :root[data-theme="light"] .sidebar .nav-item { color: var(--ink-text); background: transparent; }
+    .sidebar .nav-item:hover, :root[data-theme="light"] .sidebar .nav-item:hover { background: var(--ink-2); color: #fff; }
+    .sidebar .nav-item.active, :root[data-theme="light"] .sidebar .nav-item.active { background: #fff; color: var(--ink); font-weight: 700; }
+    .sidebar .nav-item.active::before { display: none; }
+    .sidebar .nav-item.active .nav-icon, .sidebar .nav-icon { color: inherit; }
+    .sidebar .nav-group-toggle, .sidebar .nav-label { color: var(--ink-muted); }
+    .sidebar .sidebar-status, .sidebar .sidebar-user, .sidebar .sidebar-env { background: var(--ink-2); border-color: var(--ink-line); color: var(--ink-text); }
+    .sidebar .sidebar-status small, .sidebar .sidebar-user small { color: var(--ink-muted); }
+    .sidebar .mini-button { background: transparent; color: var(--ink-text); border-color: var(--ink-line); }
+    .sidebar :where(a, button):focus-visible { outline-color: #fff; }
+
+    /* Cabeçalho superior e controles. */
+    .topbar { border-bottom: 1px solid var(--color-border); padding-bottom: 14px; }
+    .icon-button, .topbar-user, .data-freshness, .topbar-search input { box-shadow: none; }
+    .topbar-user .sidebar-avatar { background: var(--ink); color: #fff; }
+    button, .button-link { background: var(--color-primary); color: var(--color-brand-text); border: 1px solid var(--color-primary); border-radius: 6px; font-weight: 700; }
+    button.secondary, .button-link.secondary, .mini-button { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
+    .segmented button.active, .chip.active, :root[data-theme="light"] .segmented button.active { background: var(--color-primary); color: var(--color-brand-text); border-color: var(--color-primary); }
+    .topbar-period { box-shadow: none; }
+    a { color: var(--accent); }
+
+    /* Régua de gravidade: uma cor por grau, igual em todas as telas. */
+    .sev-critical, .alert-badge.critical, .info-badge.risk-critical, .weekly-badge.risk-critico { color: var(--risk-critical-ink); background: var(--risk-critical); border-color: var(--risk-critical); }
+    .sev-high, .alert-badge.high, .info-badge.risk-high, .weekly-badge.risk-alto { color: var(--risk-high-ink); background: var(--risk-high); border-color: var(--risk-high); }
+    .sev-medium, .alert-badge.medium, .info-badge.risk-medium, .weekly-badge.risk-medio { color: var(--risk-medium-ink); background: var(--risk-medium); border-color: var(--risk-medium); }
+    .sev-low, .info-badge.risk-low, .weekly-badge.risk-baixo { color: var(--risk-low-ink); background: var(--risk-low); border-color: var(--risk-low); }
+    .block-banner { background: var(--risk-critical); color: var(--risk-critical-ink); font-size: 14px; }
+    .notice { color: var(--color-text); border-color: rgba(var(--risk-high-rgb), .6); background: rgba(var(--risk-high-rgb), .10); }
+
+    /* ---------------- Situação agora (tela inicial) ---------------- */
+    .sit { display: grid; gap: 0; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); overflow: hidden; }
+    .sit-verdict { --v: var(--risk-low); --v-ink: var(--risk-low-ink); display: grid; grid-template-columns: auto 1fr; gap: 6px 20px; align-items: center; padding: 18px 24px; background: var(--v); color: var(--v-ink); }
+    .sit-verdict[data-level="critical"] { --v: var(--risk-critical); --v-ink: var(--risk-critical-ink); }
+    .sit-verdict[data-level="high"] { --v: var(--risk-high); --v-ink: var(--risk-high-ink); }
+    .sit-verdict[data-level="medium"] { --v: var(--risk-medium); --v-ink: var(--risk-medium-ink); }
+    .sit-verdict[data-level="none"] { --v: var(--color-surface-high); --v-ink: var(--color-text); }
+    .sit-grade { grid-row: span 2; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; border: 2px solid currentColor; border-radius: 4px; padding: 6px 10px; white-space: nowrap; }
+    .sit-verdict h1 { margin: 0; font-size: clamp(20px, 2vw, 27px); font-weight: 800; line-height: 1.2; letter-spacing: -.01em; color: inherit; }
+    .sit-verdict p { margin: 0; font-size: 15px; color: inherit; opacity: .92; }
+    .sit-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px 24px; border-bottom: 1px solid var(--color-border); }
+    .sit-toolbar h2 { margin: 0 auto 0 0; font-size: 16px; font-weight: 800; }
+    .sit-filter { font: 700 13px var(--font-sans); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); }
+    .sit-filter[aria-pressed="true"] { background: var(--color-primary); color: var(--color-brand-text); border-color: var(--color-primary); }
+    .sit-filter i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+    .sit-work { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); min-height: 0; }
+    .sit-list { border-right: 1px solid var(--color-border); margin: 0; padding: 0; list-style: none; max-height: 640px; overflow: auto; }
+    .aviso { --g: var(--risk-low); display: grid; grid-template-columns: 6px 1fr; border-bottom: 1px solid var(--color-border-soft); }
+    .aviso[data-level="critical"] { --g: var(--risk-critical); } .aviso[data-level="high"] { --g: var(--risk-high); } .aviso[data-level="medium"] { --g: var(--risk-medium); }
+    .aviso::before { content: ""; background: var(--g); }
+    .aviso-body { padding: 12px 18px 14px; display: grid; gap: 4px; min-width: 0; }
+    .aviso-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; font-weight: 700; color: var(--color-muted); text-transform: uppercase; letter-spacing: .04em; }
+    .aviso-meta .ev { color: var(--color-text); }
+    .aviso-title { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.35; color: var(--color-text); overflow-wrap: anywhere; }
+    .aviso-title a { color: inherit; text-decoration: none; } .aviso-title a:hover { text-decoration: underline; }
+    .aviso-do { margin: 0; font-size: 15px; font-weight: 700; color: var(--color-text); }
+    .aviso-why { font-size: 13px; color: var(--color-muted); }
+    .aviso-why summary { cursor: pointer; font-weight: 700; color: var(--accent); width: max-content; }
+    .aviso-why p { margin: 4px 0 0; }
+    .sit-empty { padding: 28px 24px; color: var(--color-muted); }
+    .sit-empty strong { display: block; color: var(--color-text); font-size: 16px; margin-bottom: 4px; }
+    /* Régua de vigência: cada trecho, do primeiro registro até agora; depois de agora, "sem previsão". */
+    .regua { padding: 16px 22px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+    .regua-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .regua-head h3 { margin: 0; font-size: 15px; font-weight: 800; }
+    .regua-head small { color: var(--color-muted); font-size: 12px; }
+    .regua-grid { position: relative; display: grid; grid-template-columns: 148px 1fr; }
+    .regua-axis { grid-column: 2; position: relative; height: 20px; border-bottom: 1px solid var(--color-border); font-size: 12px; font-weight: 700; color: var(--color-muted); }
+    .regua-axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+    .regua-row { display: contents; }
+    .regua-label { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--color-border-soft); min-width: 0; }
+    .regua-label b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .regua-label small { font-size: 12px; color: var(--color-muted); font-weight: 600; }
+    .regua-track { position: relative; border-bottom: 1px solid var(--color-border-soft); min-height: 46px;
+      background-image: repeating-linear-gradient(90deg, var(--color-border-soft) 0 1px, transparent 1px calc(100% / 5)); }
+    .regua-band { --g: var(--risk-low); --gi: var(--risk-low-ink); position: absolute; top: 11px; height: 24px; border-radius: 3px 0 0 3px; background: var(--g); color: var(--gi); font-size: 12px; font-weight: 800; line-height: 24px; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .regua-band[data-level="critical"] { --g: var(--risk-critical); --gi: var(--risk-critical-ink); }
+    .regua-band[data-level="high"] { --g: var(--risk-high); --gi: var(--risk-high-ink); }
+    .regua-band[data-level="medium"] { --g: var(--risk-medium); --gi: var(--risk-medium-ink); }
+    .regua-band.closed { border-radius: 3px; }
+    .regua-tail { position: absolute; top: 11px; height: 24px; background: linear-gradient(90deg, rgba(var(--g-rgb), .45), rgba(var(--g-rgb), 0)); }
+    .regua-tail[data-level="critical"] { --g-rgb: var(--risk-critical-rgb); } .regua-tail[data-level="high"] { --g-rgb: var(--risk-high-rgb); }
+    .regua-tail[data-level="medium"] { --g-rgb: var(--risk-medium-rgb); } .regua-tail[data-level="low"] { --g-rgb: var(--risk-low-rgb); }
+    .regua-side { position: absolute; top: 11px; line-height: 24px; font-size: 12px; font-weight: 800; color: var(--color-text); white-space: nowrap; }
+    .regua-now { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--color-text); pointer-events: none; }
+    .regua-now span { position: absolute; top: 0; left: 50%; transform: translateX(-50%); padding: 0 4px; background: var(--color-surface); font-size: 12px; font-weight: 800; line-height: 18px; color: var(--color-text); white-space: nowrap; }
+    .regua-note { margin: 2px 0 0; font-size: 12px; color: var(--color-muted); }
+    .sit-actions { display: grid; gap: 8px; margin: 0; padding: 0 22px 18px; list-style: none; }
+    .sit-actions li { padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface-alt); font-size: 14px; }
+    .sit-secondary-title { margin: 22px 0 10px; font-size: 16px; font-weight: 800; }
+    @media (max-width: 1100px) { .sit-work { grid-template-columns: 1fr; } .sit-list { border-right: 0; max-height: none; } }
+    @media (max-width: 640px) {
+      .sit-verdict { grid-template-columns: 1fr; padding: 16px; } .sit-grade { grid-row: auto; justify-self: start; }
+      .sit-toolbar, .regua { padding-left: 16px; padding-right: 16px; } .aviso-body { padding: 12px 14px; }
+      .regua-grid { grid-template-columns: 104px 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -2144,6 +2337,7 @@
             <button id="topbarBell" class="icon-button" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Alertas importantes"><span class="icon-slot" data-icon="bell"></span><span id="topbarBellCount" class="bell-count" hidden>0</span></button>
             <div id="topbarBellPanel" class="topbar-dropdown" hidden></div>
           </div>
+          <button id="dataFreshness" class="data-freshness" type="button" data-state="loading" title="Atualizar os dados agora"><span class="freshness-dot" aria-hidden="true"></span><span id="dataFreshnessText">Carregando dados…</span></button>
           <button id="themeToggle" class="icon-button" type="button" aria-label="Alternar tema claro/escuro"><span class="icon-slot" data-icon="moon"></span></button>
           <div id="topbarPeriod" class="segmented topbar-period" role="group" aria-label="Período do dashboard">
             <button type="button" data-dash-days="1">24h</button>
@@ -2156,7 +2350,7 @@
           </div>
         </div>
       </div>
-      <div id="notice" class="notice"></div>
+      <div id="notice" class="notice" role="status" aria-live="polite"></div>
       <nav id="mainTabs" class="view-tabs" aria-label="Visualizações do Road News" hidden>
         <button class="view-tab active" type="button" data-view="occurrences">Ocorrências</button>
         <button class="view-tab" type="button" data-view="map">Mapa <span id="mapTabCount" class="count">0</span></button>
@@ -2180,20 +2374,34 @@
       </section>
 
       <section id="occurrencesView" class="view-panel">
-        <section id="clientDashboardPage" class="client-page dash" data-client-page="dashboard" aria-label="Dashboard executivo">
+        <section id="clientDashboardPage" class="client-page dash" data-client-page="dashboard" aria-label="Situação agora">
+          <section class="sit" aria-labelledby="sitTitle">
+            <header id="sitVerdict" class="sit-verdict" data-level="none" aria-live="polite">
+              <span id="sitGrade" class="sit-grade">Carregando</span>
+              <h1 id="sitTitle">Situação agora</h1>
+              <p id="sitText">Lendo os avisos das últimas 24 horas…</p>
+            </header>
+            <div class="sit-toolbar">
+              <h2 id="sitCount">Avisos vigentes</h2>
+              <div id="sitFilters" role="group" aria-label="Filtrar avisos por grau"></div>
+            </div>
+            <div class="sit-work">
+              <ol id="sitAvisos" class="sit-list" aria-label="Avisos vigentes por grau"></ol>
+              <section class="regua" aria-labelledby="reguaTitle">
+                <div class="regua-head"><h3 id="reguaTitle">Vigência por trecho</h3><small id="reguaRange">últimas 12h</small></div>
+                <div id="sitRegua" class="regua-grid"></div>
+                <p class="regua-note">Cada faixa vai do primeiro registro até agora (ou até a notícia de liberação). Depois de agora, a faixa esmaece: as fontes não informam previsão de liberação.</p>
+              </section>
+            </div>
+            <ul id="sitActions" class="sit-actions" aria-label="Ações recomendadas"></ul>
+          </section>
           <div class="dash-head">
             <div>
-              <p class="eyebrow">Inteligência rodoviária</p>
-              <h1 id="dashTitle">Panorama das rodovias</h1>
+              <h2 id="dashTitle" class="sit-secondary-title">Panorama do período</h2>
               <p id="dashSubtitle" class="admin-note">Carregando dados das fontes monitoradas…</p>
             </div>
           </div>
           <div class="dash-grid">
-            <article id="dashFeatured" class="dash-card dash-featured"><div class="skeleton skeleton-block"></div></article>
-            <div id="dashKpis" class="dash-kpis">
-              <div class="dash-card skeleton skeleton-kpi"></div><div class="dash-card skeleton skeleton-kpi"></div><div class="dash-card skeleton skeleton-kpi"></div>
-              <div class="dash-card skeleton skeleton-kpi"></div><div class="dash-card skeleton skeleton-kpi"></div><div class="dash-card skeleton skeleton-kpi"></div>
-            </div>
             <article id="dashTrend" class="dash-card dash-trend"><div class="skeleton skeleton-block"></div></article>
             <article id="dashThemes" class="dash-card dash-themes"><div class="skeleton skeleton-block"></div></article>
             <article class="dash-card dash-panorama">
@@ -2229,7 +2437,19 @@
 
         <section id="clientAlertsPage" class="client-page" data-client-page="alerts">
           <section id="activeEventBanner" class="event-alert-strip" hidden></section>
-          <section class="stats" id="stats"></section>
+          <section class="panel watch-panel" aria-labelledby="watchTitle">
+            <div class="panel-head">
+              <div>
+                <h2 id="watchTitle">Meus trechos</h2>
+                <p class="watch-note">Rodovias e estados onde sua frota roda. Os alertas abaixo mostram só o que acontece neles.</p>
+              </div>
+            </div>
+            <form id="watchForm" class="watch-form" autocomplete="off">
+              <input id="watchInput" type="text" maxlength="12" placeholder="Ex.: BR-116, SP-330 ou PR" aria-label="Adicionar rodovia ou estado">
+              <button class="mini-button" type="submit">Adicionar</button>
+            </form>
+            <div id="watchChips" class="watch-chips" aria-label="Trechos monitorados"></div>
+          </section>
           <section class="panel alerts-panel">
             <div class="panel-head">
               <h2>Alertas recentes</h2>
@@ -2240,6 +2460,7 @@
                 <button type="button" data-hours="24">24h</button>
               </div>
             </div>
+            <p id="watchFilterNote" class="watch-note" hidden></p>
             <div id="recentAlerts" class="alert-list"></div>
           </section>
         </section>
@@ -2741,7 +2962,16 @@
     ];
     const MAP_CATEGORIES = ["Acidente", "Interdição", "Obra", "Paralisação", "Trânsito", "Clima", "Roubo de carga", "Manifestação", "Outros"];
     // Escala de gravidade da identidade Overhaul (igual a public/dashboard.js e às classes .sev-*).
-    const MAP_RISK_COLORS = { critical: "#FC3700", high: "#FFCD00", medium: "#00ACFF", low: "#1EFF95" };
+    // Cores de grau do tema ativo (tokens --risk-*), as mesmas dos selos e da régua de vigência.
+    const MAP_RISK_COLORS = {
+      get critical() { return riskColor("critical", "#C8201A"); },
+      get high() { return riskColor("high", "#E46C00"); },
+      get medium() { return riskColor("medium", "#EDB800"); },
+      get low() { return riskColor("low", "#5F6E83"); },
+    };
+    function riskColor(level, fallback) {
+      try { return getComputedStyle(document.documentElement).getPropertyValue(`--risk-${level}`).trim() || fallback; } catch { return fallback; }
+    }
     const STATE_COORDS = {
       AC: { name: "Acre", lat: -8.77, lng: -70.55 },
       AL: { name: "Alagoas", lat: -9.57, lng: -36.78 },
@@ -2826,6 +3056,8 @@
       mapItems: [],
       total: 0,
       alertHours: 6,
+      watchTargets: [],
+      alertsShowAll: false,
       activeView: "occurrences",
       activeRoute: "/dashboard",
       activeScrollTarget: "top",
@@ -2841,6 +3073,10 @@
       viewMode: null,
       access: null,
       dataLoadError: "",
+      // Momento da última leitura bem-sucedida do feed (0 = nunca carregou nesta sessão).
+      dataLoadedAt: 0,
+      refreshing: false,
+      autoRefreshAttemptAt: 0,
       followedEvents: [],
       selectedMajorEventId: null,
       admin: { users: [], clients: [], packages: [], userPackages: [], usage: [], logs: [] },
@@ -3568,7 +3804,7 @@ function showAuthView() {
         [Number(usage.pdf || 0), Number(limits.monthly_pdf_limit || 0)],
       ].filter(([, limit]) => limit > 0).map(([used, limit]) => used / limit);
       const highest = Math.max(0, ...ratios);
-      if (highest >= 1) return "Limite atingido. Recurso bloqueado até a renovação do ciclo ou alteração do pacote.";
+      if (highest >= 1) return "Limite do pacote atingido: o recurso fica bloqueado até a renovação do ciclo. Fale com o gestor da sua empresa para ampliar o pacote.";
       if (highest >= .9) return "Atenção: você está próximo de atingir o limite do pacote.";
       if (highest >= .8) return "Você já utilizou 80% do limite deste recurso no pacote.";
       return "";
@@ -3641,15 +3877,29 @@ function showAuthView() {
         weekly_summary: Boolean(state.access?.can_generate_weekly_summary),
         pdf_generation: Boolean(state.access?.can_generate_pdf),
       }[feature];
-      const messages = {
-        map: "Mapa rodoviário não está disponível no seu pacote.",
-        route_analysis: "Minha Rota não está disponível no seu pacote ou o limite mensal de consultas foi atingido.",
-        image_generation: "Resumo individual não está disponível no seu pacote ou o limite mensal de IA foi atingido.",
-        weekly_summary: "Resumo semanal não está disponível no seu pacote ou o limite mensal de IA foi atingido.",
-        pdf_generation: "Você atingiu o limite mensal de PDFs.",
-      };
-      if (!allowed && !silent) setNotice(messages[feature] || "Recurso não disponível no pacote atual.");
+      if (!allowed && !silent) setNotice(featureBlockedMessage(feature));
       return allowed;
+    }
+
+    // Diz se o bloqueio é por limite do mês ou por falta do recurso no pacote, e qual o próximo passo.
+    function featureBlockedMessage(feature) {
+      const quotas = {
+        route_analysis: ["Minha Rota", "route", "monthly_route_limit", "consultas de rota"],
+        image_generation: ["O resumo individual", "ai", "monthly_ai_summary_limit", "resumos de IA"],
+        weekly_summary: ["O resumo semanal", "ai", "monthly_ai_summary_limit", "resumos de IA"],
+        pdf_generation: ["A geração de PDF", "pdf", "monthly_pdf_limit", "PDFs"],
+      };
+      const contact = "Fale com o gestor da sua empresa para ampliar o pacote.";
+      if (feature === "map") return `O mapa rodoviário não faz parte do seu pacote. ${contact}`;
+      const quota = quotas[feature];
+      if (!quota) return `Recurso não disponível no seu pacote. ${contact}`;
+      const [name, usageKey, limitKey, unit] = quota;
+      const limit = Number(state.access?.limits?.[limitKey] || 0);
+      const used = Number(state.access?.usage_this_month?.[usageKey] || 0);
+      if (limit > 0 && used >= limit) {
+        return `Você usou ${limit} de ${limit} ${unit} deste mês. O limite renova no próximo ciclo. ${contact}`;
+      }
+      return `${name} não faz parte do seu pacote. ${contact}`;
     }
 
     async function consumeUsage(eventType, metadata = {}) {
@@ -3916,7 +4166,8 @@ function showAuthView() {
         ["Total de notícias", state.total, ""],
       ];
 
-      document.getElementById("stats").innerHTML = cards.map(([label, value, hint]) => `
+      const statsTarget = document.getElementById("stats");
+      if (statsTarget) statsTarget.innerHTML = cards.map(([label, value, hint]) => `
         <article class="stat">
           <div class="label">${label}</div>
           <div class="value">${statValue(value)}</div>
@@ -4061,6 +4312,12 @@ function showAuthView() {
       document.querySelectorAll("#opsPeriod [data-ops-hours]").forEach((button) => {
         button.classList.toggle("active", Number(button.dataset.opsHours) === hours);
       });
+      if (dataUnavailable()) {
+        const updatedLabel = document.getElementById("trendUpdatedAt");
+        if (updatedLabel) updatedLabel.textContent = "Sem dados carregados";
+        target.innerHTML = dataUnavailableMarkup();
+        return;
+      }
       const now = Date.now();
       const brief = window.RoadBrief.buildWeeklyBrief(uniqueMapItems(), now, { windowMs: hours * 3600e3, includeEvents: true });
       const comparable = brief.earliest !== null && brief.earliest <= now - 2 * hours * 3600e3;
@@ -4281,7 +4538,31 @@ function showAuthView() {
     }
 
     function renderRecentAlerts() {
-      const alerts = getRecentAlerts();
+      const note = document.getElementById("watchFilterNote");
+      if (note) note.hidden = true;
+      if (dataUnavailable()) {
+        document.getElementById("recentAlerts").innerHTML = dataUnavailableMarkup();
+        return;
+      }
+      const allAlerts = getRecentAlerts();
+      const watching = state.watchTargets.length > 0;
+      const mine = watching ? allAlerts.filter(matchesWatch) : allAlerts;
+      const alerts = watching && state.alertsShowAll ? allAlerts : mine;
+      if (note && watching) {
+        const others = allAlerts.length - mine.length;
+        note.hidden = false;
+        note.innerHTML = state.alertsShowAll
+          ? `Mostrando todos os ${allAlerts.length} alertas (${mine.length} nos seus trechos). <button type="button" data-alerts-show-all="0">Mostrar só meus trechos</button>`
+          : `${mine.length} alerta(s) em ${escapeHtml(state.watchTargets.join(", "))}.${others > 0 ? ` <button type="button" data-alerts-show-all="1">Ver também ${others} em outros trechos</button>` : ""}`;
+      }
+      // Lista vazia por falta de coleta recente não é "sem risco": diz de quando é o último dado.
+      const latest = [...state.recentItems, ...state.items].map(collectionDateValue).filter(Boolean).sort((a, b) => b - a)[0] || 0;
+      const staleForWindow = latest && latest < Date.now() - state.alertHours * 3600 * 1000;
+      const emptyMessage = staleForWindow
+        ? `Sem dado novo nas últimas ${state.alertHours}h: a última coleta foi há ${escapeHtml(age(latest))}. Isso não indica ausência de risco; aumente a janela ou confira a coleta.`
+        : watching && !state.alertsShowAll
+          ? `Nenhum alerta acionável em ${escapeHtml(state.watchTargets.join(", "))} nas últimas ${state.alertHours}h.`
+          : `Nenhum alerta operacional acionável nas últimas ${state.alertHours}h.`;
       document.getElementById("recentAlerts").innerHTML = alerts.length
         ? alerts.map((item) => {
             const [riskClassName, riskLabel] = operationalRisk(item);
@@ -4304,7 +4585,7 @@ function showAuthView() {
               </article>
             `;
           }).join("")
-        : `<div class="hint">Nenhum alerta operacional acionável nas últimas ${state.alertHours}h.</div>`;
+        : `<div class="hint">${emptyMessage}</div>`;
     }
 
     // Central de Evento: o CLIENTE escolhe o evento ("Acompanhar evento" numa notícia) e a IA o
@@ -4363,10 +4644,20 @@ function showAuthView() {
       return labels[event.ai?.dispatch_decision] || null;
     }
 
+    // A coleta é de hora em hora: passadas 2h sem análise, a IA falhou ou atrasou, e o
+    // painel diz isso em vez de prometer uma análise que pode não vir.
+    const FOLLOWED_AI_OVERDUE_MS = 2 * 3600 * 1000;
+
     function followedAiNote(event) {
-      return event.ai?.analyzed_at
-        ? `Atualizado pela IA em ${formatDate(event.ai.analyzed_at)}. A IA revisa o evento a cada coleta de notícias (de hora em hora).`
-        : "Aguardando a primeira análise da IA, que acontece na próxima coleta (de hora em hora). Até lá, a lista abaixo mostra as notícias candidatas pela rodovia e pelo local.";
+      if (event.ai?.analyzed_at) {
+        return `Atualizado pela IA em ${formatDate(event.ai.analyzed_at)}. A IA revisa o evento a cada coleta de notícias (de hora em hora).`;
+      }
+      const followedAt = parseBrasiliaDate(event.created_at)?.getTime() || 0;
+      if (isActiveFollowedEvent(event) && followedAt && Date.now() - followedAt > FOLLOWED_AI_OVERDUE_MS) {
+        const hours = Math.floor((Date.now() - followedAt) / 3600e3);
+        return `A análise da IA não saiu nas últimas coletas (evento acompanhado há ${hours}h). Decida pelas notícias abaixo e confirme a situação do trecho antes de liberar.`;
+      }
+      return "Aguardando a primeira análise da IA, que acontece na próxima coleta (de hora em hora). Até lá, a lista abaixo mostra as notícias candidatas pela rodovia e pelo local.";
     }
 
     function renderFollowedTimeline(event) {
@@ -4597,6 +4888,52 @@ function showAuthView() {
 
     function persistSavedNewsKeys() {
       try { localStorage.setItem(SAVED_NEWS_KEY, JSON.stringify([...state.savedNewsKeys])); } catch (error) { /* ignore */ }
+    }
+
+    // Meus trechos (tela Alertas): rodovias ("BR-116") e UFs ("SP") onde a frota roda. Guardado no navegador.
+    const WATCH_TARGETS_KEY = "roadnews_watch_targets";
+    const WATCH_UFS = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
+
+    function normalizeWatchTarget(value) {
+      const raw = String(value || "").trim().toUpperCase().replace(/\s+/g, "");
+      const road = raw.match(/^(BR|[A-Z]{2})-?(\d{2,4})$/);
+      if (road && (road[1] === "BR" || WATCH_UFS.includes(road[1]))) return `${road[1]}-${road[2]}`;
+      return WATCH_UFS.includes(raw) ? raw : "";
+    }
+
+    function loadWatchTargets() {
+      try {
+        const values = JSON.parse(localStorage.getItem(WATCH_TARGETS_KEY) || "[]");
+        return Array.isArray(values) ? [...new Set(values.map(normalizeWatchTarget).filter(Boolean))] : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function persistWatchTargets() {
+      try { localStorage.setItem(WATCH_TARGETS_KEY, JSON.stringify(state.watchTargets)); } catch (error) { /* ignore */ }
+    }
+
+    function matchesWatchTarget(item, target) {
+      const text = `${item.title || ""} ${item.summary || ""} ${item.highway || ""}`;
+      if (target.includes("-")) {
+        const [prefix, number] = target.split("-");
+        return new RegExp(`\\b${prefix}[-\\s]?0*${Number(number)}\\b`, "i").test(text);
+      }
+      if (String(item.state || "").toUpperCase() === target) return true;
+      return window.RoadBrief?.ufFromText ? window.RoadBrief.ufFromText(text) === target : false;
+    }
+
+    function matchesWatch(item) {
+      return state.watchTargets.some((target) => matchesWatchTarget(item, target));
+    }
+
+    function renderWatchTargets() {
+      const target = document.getElementById("watchChips");
+      if (!target) return;
+      target.innerHTML = state.watchTargets.map((value) => `
+        <button class="watch-chip" type="button" data-watch-remove="${escapeHtml(value)}" title="Remover ${escapeHtml(value)}" aria-label="Remover ${escapeHtml(value)}">${escapeHtml(value)} <span aria-hidden="true">×</span></button>
+      `).join("");
     }
 
     function isSavedNews(item) {
@@ -7460,27 +7797,124 @@ function showAuthView() {
       notice.style.display = message ? "block" : "none";
     }
 
-    async function refresh() {
+    // Dado com mais de 75 min (coleta é de hora em hora + folga) é tratado como velho.
+    const STALE_DATA_MS = 75 * 60 * 1000;
+
+    function dataLoadTime() {
+      return state.dataLoadedAt
+        ? new Date(state.dataLoadedAt).toLocaleTimeString("pt-BR", { timeZone: BRASILIA_TIME_ZONE, hour: "2-digit", minute: "2-digit" })
+        : "";
+    }
+
+    // Falha de carga sem nenhuma leitura anterior: as telas não podem dizer "sem risco".
+    function dataUnavailable() {
+      return Boolean(state.dataLoadError) && !state.dataLoadedAt;
+    }
+
+    // Atualização automática de hora em hora. A coleta roda no minuto 0 (UTC) e leva até
+    // 15 min, então só atualiza depois do minuto 15, com a aba visível. Falhas são
+    // retentadas no máximo a cada 10 min, para não queimar cota em sequência.
+    const AUTO_REFRESH_MIN_AGE_MS = 55 * 60 * 1000;
+    const AUTO_REFRESH_AFTER_MINUTE = 15;
+    const AUTO_REFRESH_RETRY_MS = 10 * 60 * 1000;
+
+    function shouldAutoRefresh(now = new Date()) {
+      if (state.refreshing || document.visibilityState !== "visible") return false;
+      if (state.authEnabled && !state.session) return false; // deslogado: nada a atualizar
+      if (!state.dataLoadedAt && !state.dataLoadError) return false; // ainda não fez a primeira carga
+      if (state.autoRefreshAttemptAt && now - state.autoRefreshAttemptAt < AUTO_REFRESH_RETRY_MS) return false;
+      if (state.dataLoadError) return true; // última tentativa falhou: tenta de novo
+      return now - state.dataLoadedAt >= AUTO_REFRESH_MIN_AGE_MS && now.getUTCMinutes() >= AUTO_REFRESH_AFTER_MINUTE;
+    }
+
+    function autoRefresh() {
+      state.autoRefreshAttemptAt = Date.now();
+      return refresh({ silent: true });
+    }
+
+    // Usado pela barra lateral (dashboard.js) para separar "painel desatualizado" de "coleta atrasada".
+    function dataPanelStatus() {
+      return {
+        error: Boolean(state.dataLoadError),
+        stale: Boolean(state.dataLoadedAt) && Date.now() - state.dataLoadedAt > STALE_DATA_MS,
+        loadedTime: dataLoadTime(),
+      };
+    }
+
+    function dataUnavailableMarkup() {
+      return `<div class="data-unavailable" role="alert"><strong>Sem dados: não interprete como ausência de risco</strong><p>${escapeHtml(state.dataLoadError || "Os dados não foram carregados.")} Use o botão de atualização no topo da tela ou confirme a situação da rota por outro canal antes de liberar cargas.</p></div>`;
+    }
+
+    function renderDataFreshness() {
+      const button = document.getElementById("dataFreshness");
+      const text = document.getElementById("dataFreshnessText");
+      if (!button || !text) return;
+      const time = dataLoadTime();
+      let mode = "ok";
+      let label = `Dados de ${time}`;
+      let title = `Última leitura às ${time}. A coleta de notícias roda de hora em hora. Clique para atualizar agora.`;
+      if (state.refreshing) {
+        mode = state.dataLoadedAt ? "ok" : "loading";
+        label = state.dataLoadedAt ? `Atualizando… (dados de ${time})` : "Carregando dados…";
+      } else if (state.dataLoadError) {
+        mode = "error";
+        label = state.dataLoadedAt ? `Falha ao atualizar · dados de ${time}` : "Sem dados · tentar de novo";
+        title = `${state.dataLoadError} Clique para tentar de novo.`;
+      } else if (!state.dataLoadedAt) {
+        mode = "loading";
+        label = "Carregando dados…";
+      } else if (Date.now() - state.dataLoadedAt > STALE_DATA_MS) {
+        mode = "stale";
+        label = `Dados de ${time} · atualizar`;
+        title = `Os dados foram lidos às ${time} e podem estar desatualizados. Clique para atualizar.`;
+      }
+      button.dataset.state = mode;
+      button.disabled = state.refreshing;
+      button.title = title;
+      button.setAttribute("aria-label", `${label}. ${title}`);
+      text.textContent = label;
+    }
+
+    async function refresh({ silent = false } = {}) {
+      if (state.refreshing) return;
+      state.refreshing = true;
       const button = document.getElementById("refresh");
       if (button) button.disabled = true;
-      setNotice("");
+      if (!silent) setNotice("");
       state.dataLoadError = "";
+      renderDataFreshness();
+      let newsLoaded = false;
       try {
         await loadNews();
+        newsLoaded = true;
+        state.dataLoadedAt = Date.now();
         if (state.authEnabled) {
           await loadMyAccess();
           const usageMessage = usageThresholdMessage();
           if (usageMessage) setNotice(usageMessage);
         }
+        if (silent) setNotice("");
       } catch (error) {
-        state.items = [];
-        state.recentItems = [];
-        state.mapItems = [];
-        state.followedEvents = [];
-        state.total = 0;
-        state.dataLoadError = getFriendlyErrorMessage(error, "Erro ao carregar dados.");
-        setNotice(state.dataLoadError);
+        const message = getFriendlyErrorMessage(error, "Erro ao carregar dados.");
+        // Falha só no feed com leitura anterior: mantém o último dado bom, marcado como velho,
+        // em vez de esvaziar as telas (lista vazia seria lida como "sem ocorrências").
+        // Falha de acesso (perfil/usuário inativo) continua limpando tudo.
+        const keepLastGood = !newsLoaded && state.dataLoadedAt;
+        if (!keepLastGood) {
+          state.items = [];
+          state.recentItems = [];
+          state.mapItems = [];
+          state.followedEvents = [];
+          state.total = 0;
+          state.dataLoadedAt = 0;
+        }
+        state.dataLoadError = message;
+        setNotice(keepLastGood
+          ? `Não foi possível atualizar os dados. As telas mostram a última leitura, das ${dataLoadTime()}. ${message}`
+          : message);
       } finally {
+        state.refreshing = false;
+        renderDataFreshness();
         renderStats();
         renderRecentAlerts();
         renderMajorEvents();
@@ -7496,6 +7930,8 @@ function showAuthView() {
     async function bootstrap() {
       renderMapFilterButtons();
       state.savedNewsKeys = loadSavedNewsKeys();
+      state.watchTargets = loadWatchTargets();
+      renderWatchTargets();
       await loadAuthConfig();
       const allowed = await initAuth({ configLoaded: true });
       if (!allowed) return;
@@ -7784,6 +8220,22 @@ function showAuthView() {
       setSidebarButtonState();
     });
     document.getElementById("refresh")?.addEventListener("click", refresh);
+    document.getElementById("dataFreshness")?.addEventListener("click", () => refresh());
+    // A cada minuto: reavalia se o dado ficou velho (selo + barra lateral) e, se for a hora,
+    // atualiza sozinho. Cada leitura de /api/news-feed consome 1 consulta da cota, por isso
+    // a atualização automática é de hora em hora (o mesmo ritmo da coleta), só com a aba visível.
+    setInterval(() => {
+      if (!state.dataLoadedAt && !state.dataLoadError) return;
+      if (shouldAutoRefresh()) {
+        autoRefresh();
+        return;
+      }
+      renderDataFreshness();
+      window.RoadDashboard?.renderChrome();
+    }, 60 * 1000);
+    document.addEventListener("visibilitychange", () => {
+      if (shouldAutoRefresh()) autoRefresh();
+    });
     document.getElementById("mainTabs")?.addEventListener("click", (event) => {
       const button = event.target.closest(".view-tab[data-view]");
       if (!button) return;
@@ -7794,6 +8246,34 @@ function showAuthView() {
       if (!button) return;
       state.alertHours = Number(button.dataset.hours);
       document.querySelectorAll("#alertWindows button").forEach((item) => item.classList.toggle("active", item === button));
+      renderRecentAlerts();
+    });
+    document.getElementById("watchForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const input = document.getElementById("watchInput");
+      const value = normalizeWatchTarget(input.value);
+      if (!value) {
+        setNotice("Informe uma rodovia (ex.: BR-116, SP-330) ou a sigla de um estado (ex.: PR).");
+        return;
+      }
+      if (!state.watchTargets.includes(value)) state.watchTargets = [...state.watchTargets, value];
+      input.value = "";
+      persistWatchTargets();
+      renderWatchTargets();
+      renderRecentAlerts();
+    });
+    document.getElementById("watchChips").addEventListener("click", (event) => {
+      const chip = event.target.closest("[data-watch-remove]");
+      if (!chip) return;
+      state.watchTargets = state.watchTargets.filter((value) => value !== chip.dataset.watchRemove);
+      persistWatchTargets();
+      renderWatchTargets();
+      renderRecentAlerts();
+    });
+    document.getElementById("watchFilterNote").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-alerts-show-all]");
+      if (!button) return;
+      state.alertsShowAll = button.dataset.alertsShowAll === "1";
       renderRecentAlerts();
     });
     document.getElementById("mapPeriod").addEventListener("change", (event) => {

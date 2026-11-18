@@ -86,7 +86,8 @@
     smallFire: /principio de incendio|incendio (?:atinge|em) pneus/,
     fire: /pega(?:m)? fogo|incendio|em chamas/,
     hazmat: /produtos? perigosos?|inflamave|combustivel|toxic|quimic|explosiv|derramamento de (?:oleo|combustivel|produto)|vazamento|caminhao-tanque|\bgas\b/,
-    fatality: /\bmort[eoa]s?\b|\bmorr(?:e|eu|em|eram|endo)\b|\bmat(?:a|ou|aram|ando)\b|\bfatal\b|\bobito\b|perde a vida|perdeu a vida/,
+    // "mata/matam" só como verbo seguido da vítima: "Zona da Mata" e "incêndio em mata" não são morte.
+    fatality: /\bmort[eoa]s?\b|\bmorr(?:e|eu|em|eram|endo)\b|\bmat(?:ou|aram|ando)\b|\bmatam? (?:\d+|uma?|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|o|a|os|as|motoristas?|caminhoneiros?|condutor(?:a|es)?|passageir[oa]s?|pessoas?|homem|homens|mulher(?:es)?|jovem|jovens|crianca|criancas|idos[oa]s?|casal|familia|motociclistas?|ciclistas?|pedestres?|motoqueiros?|trabalhador(?:a|es)?|policia(?:l|is))\b|\bfatal\b|\bobito\b|perde a vida|perdeu a vida/,
     noCasualties: /sem feridos?\b|sem vitimas?\b|sem mortos?\b|nenhuma vitima|nao houve (?:ferido|morte|vitima)/,
     bigJam: /\b(?:[5-9]|\d{2,})\s*km de (?:fila|congestionamento|lentidao)/,
     traffic: /congestion|lentid|\bfila\b|transito (?:parado|lento|complicad)|complica (?:o )?transito|afeta (?:o )?transito|atrasos?\b/,
@@ -194,5 +195,18 @@
     return { ...base, fatal };
   }
 
-  return { LEVELS, normalize, classifyRisk, roadBlockLevel, BLOCK_ROAD_CONTEXT, BLOCK_RELEASED, BLOCK_STILL_ACTIVE };
+  // Número estável do evento (EV-1234), derivado da URL da notícia-base: o mesmo evento
+  // mostra o mesmo número em alerta, mapa, Central e resumo. FNV-1a de 32 bits.
+  function eventCode(key) {
+    const text = String(key || "");
+    if (!text) return "";
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < text.length; i += 1) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return `EV-${1000 + (hash % 9000)}`;
+  }
+
+  return { LEVELS, normalize, classifyRisk, roadBlockLevel, eventCode, BLOCK_ROAD_CONTEXT, BLOCK_RELEASED, BLOCK_STILL_ACTIVE };
 });

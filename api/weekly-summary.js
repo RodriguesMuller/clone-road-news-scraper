@@ -5,11 +5,20 @@ const { buildWeeklyBrief } = require("./_weekly_brief");
 const { repairNewsItem } = require("./_text_repair");
 
 // Semana atual + semana anterior (para o comparativo dos números).
+// Paginado: com um único limit=800 a janela de 14 dias era cortada e a semana anterior chegava vazia ("vs 0").
+const PAGE_SIZE = 1000; // max-rows padrão do PostgREST no Supabase
+const MAX_PAGES = 10;
 async function fetchTwoWeeks() {
   const since = encodeURIComponent(new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString());
   const columns = "title,url,source,category,published_at,scraped_at,created_at,type,summary";
-  const response = await supabaseFetch(`/rest/v1/news?select=${columns}&created_at=gte.${since}&order=created_at.desc&limit=800`);
-  return (await response.json()).map(repairNewsItem);
+  const rows = [];
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const response = await supabaseFetch(`/rest/v1/news?select=${columns}&created_at=gte.${since}&order=created_at.desc,id.desc&limit=${PAGE_SIZE}&offset=${page * PAGE_SIZE}`);
+    const batch = await response.json();
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+  }
+  return rows.map(repairNewsItem);
 }
 
 function extractText(data) {

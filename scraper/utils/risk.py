@@ -101,7 +101,10 @@ P = {
         r"produtos? perigosos?|inflamave|combustivel|toxic|quimic|explosiv|derramamento de (?:oleo|combustivel|produto)|vazamento|caminhao-tanque|\bgas\b"
     ),
     "fatality": re.compile(
-        r"\bmort[eoa]s?\b|\bmorr(?:e|eu|em|eram|endo)\b|\bmat(?:a|ou|aram|ando)\b|\bfatal\b|\bobito\b|perde a vida|perdeu a vida"
+        # "mata/matam" só como verbo seguido da vítima (espelho de public/risk.js).
+        r"\bmort[eoa]s?\b|\bmorr(?:e|eu|em|eram|endo)\b|\bmat(?:ou|aram|ando)\b"
+        r"|\bmatam? (?:\d+|uma?|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|o|a|os|as|motoristas?|caminhoneiros?|condutor(?:a|es)?|passageir[oa]s?|pessoas?|homem|homens|mulher(?:es)?|jovem|jovens|crianca|criancas|idos[oa]s?|casal|familia|motociclistas?|ciclistas?|pedestres?|motoqueiros?|trabalhador(?:a|es)?|policia(?:l|is))\b"
+        r"|\bfatal\b|\bobito\b|perde a vida|perdeu a vida"
     ),
     "no_casualties": re.compile(r"sem feridos?\b|sem vitimas?\b|sem mortos?\b|nenhuma vitima|nao houve (?:ferido|morte|vitima)"),
     "big_jam": re.compile(r"\b(?:[5-9]|\d{2,})\s*km de (?:fila|congestionamento|lentidao)"),

@@ -190,29 +190,48 @@
     return a.title < b.title ? -1 : a.title > b.title ? 1 : 0;
   }
 
-  // Agrupa a mesma ocorrência noticiada por vários veículos.
+  // Tipos que o mesmo fato pode receber em veículos diferentes ("carreta tomba" x "acidente com morte"
+  // x "interdita a BR"): para agrupar pela rodovia basta a mesma família, não o mesmo tipo.
+  const KIND_FAMILY = {
+    heavy_vehicle: "incident", hazmat: "incident", fatal_accident: "incident", accident: "incident",
+    accident_partial: "incident", accident_jam: "incident", block_total: "incident", block_partial: "incident",
+    small_fire: "incident", fire: "incident", structural: "incident", jam: "incident",
+    block_planned: "planned", block_partial_planned: "planned",
+    strike: "strike", strike_block: "strike", strike_over: "strike",
+    cargo_theft: "cargo", cargo_theft_police: "cargo",
+    weather: "weather", visibility: "weather",
+  };
+  const familyOf = (kind) => KIND_FAMILY[kind] || kind;
+
+  // Agrupa a mesma ocorrência noticiada por vários veículos. Rodovia ou UF ausente em uma das notícias
+  // é compatível (um veículo cita a BR, outro só a cidade); só rodovia ou UF diferentes separam.
   function clusterEvents(items) {
     const clusters = [];
     for (const item of [...items].sort(byTimeThenTitle)) {
-      const key = item.road || (item.uf ? `uf:${item.uf}` : "");
-      // Mesma rodovia + mesmo tipo em 24h, ou títulos parecidos em 48h = mesma ocorrência.
       const match = clusters.find((cluster) => {
-        if (cluster.key !== key) return false;
+        if (item.road && cluster.road && item.road !== cluster.road) return false;
+        // Rodovias federais cruzam estados: UF diferente nunca é a mesma ocorrência.
+        if (item.uf && cluster.uf && item.uf !== cluster.uf) return false;
         const gap = Math.abs((item.time ?? 0) - (cluster.last ?? 0));
-        // Rodovias federais cruzam estados: UF diferente (ou desconhecida) não pode juntar só pelo tipo.
-        if (item.uf && cluster.rep.uf && item.uf !== cluster.rep.uf) return false;
-        if (item.road && item.uf && item.uf === cluster.rep.uf && cluster.rep.risk.kind === item.risk.kind && gap <= DAY_MS) return true;
-        return gap <= 2 * DAY_MS && jaccard(item.tokens, cluster.tokens) >= 0.35;
+        if (gap > 2 * DAY_MS) return false;
+        // Mesma rodovia + mesma família de ocorrência: 24h com a mesma UF; 12h se uma das notícias não cita a UF
+        // (rodovias são longas: sem UF, só o mesmo ciclo de notícia indica que é o mesmo fato).
+        const roadWindow = item.uf && cluster.uf ? DAY_MS : DAY_MS / 2;
+        if (item.road && item.road === cluster.road && gap <= roadWindow && familyOf(item.risk.kind) === familyOf(cluster.rep.risk.kind)) return true;
+        // Títulos parecidos em 48h.
+        return jaccard(item.tokens, cluster.tokens) >= 0.35;
       });
       if (match) {
         match.items.push(item);
         match.last = item.time ?? match.last;
+        match.road = match.road || item.road;
+        match.uf = match.uf || item.uf;
         for (const word of item.tokens) match.tokens.add(word);
         if (item.risk.rank > match.rep.risk.rank) match.rep = item;
         if (item.risk.fatal) match.fatal = true;
         if (item.source) match.sources.add(item.source);
       } else {
-        clusters.push({ key, rep: item, items: [item], last: item.time, tokens: new Set(item.tokens), fatal: Boolean(item.risk.fatal), sources: new Set(item.source ? [item.source] : []) });
+        clusters.push({ road: item.road, uf: item.uf, rep: item, items: [item], last: item.time, tokens: new Set(item.tokens), fatal: Boolean(item.risk.fatal), sources: new Set(item.source ? [item.source] : []) });
       }
     }
     return clusters;
