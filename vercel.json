@@ -22,6 +22,7 @@
   "rewrites": [
     { "source": "/login", "destination": "/" },
     { "source": "/dashboard", "destination": "/" },
+    { "source": "/torre", "destination": "/" },
     { "source": "/alertas", "destination": "/" },
     { "source": "/central-eventos", "destination": "/" },
     { "source": "/noticias", "destination": "/" },

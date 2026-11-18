@@ -158,7 +158,6 @@
       border-radius: 8px;
     }
     .stat { position: relative; min-height: 108px; padding: 16px; overflow: hidden; }
-    .stat::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--color-primary); opacity: .86; }
     .label, h2 { color: var(--color-muted); font-size: 11px; font-weight: 900; letter-spacing: .11em; text-transform: uppercase; }
     h2 { margin: 0 0 14px; color: var(--color-muted-strong); }
     .value { margin-top: 10px; color: var(--color-text); font-size: 34px; font-weight: 900; line-height: 1; letter-spacing: 0; }
@@ -189,7 +188,7 @@
     .block-banner small { font-weight: 700; letter-spacing: 0; text-transform: none; opacity: .92; }
     .fleet-impact {
       margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid var(--color-primary);
-      background: rgba(255,255,255,.04); border-radius: 0 6px 6px 0;
+      background: var(--color-surface-alt); border-radius: 0 6px 6px 0;
       color: var(--color-muted-strong); font-size: 13px; line-height: 1.45;
     }
     .fleet-impact strong { color: var(--color-text); }
@@ -199,7 +198,7 @@
     .alerts-panel { margin-bottom: 18px; }
     .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
     .panel-head h2 { margin: 0; }
-    .segmented { display: inline-flex; gap: 4px; padding: 3px; border: 1px solid var(--color-border-soft); border-radius: 8px; background: rgba(255,255,255,.04); }
+    .segmented { display: inline-flex; gap: 4px; padding: 3px; border: 1px solid var(--color-border-soft); border-radius: 8px; background: var(--color-surface-alt); }
     .segmented button { background: transparent; box-shadow: none; color: var(--color-muted); border-radius: 6px; padding: 7px 10px; font-size: 12px; }
     .segmented button.active { background: var(--color-primary); color: var(--color-brand-text); }
     .alert-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -223,8 +222,8 @@
     .alert-badge, .info-badge, .weekly-badge {
       border-radius: 999px;
       padding: 4px 8px;
-      border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.07);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-alt);
       color: var(--color-muted-strong);
       font-size: 11px;
       font-weight: 900;
@@ -254,7 +253,7 @@
       padding: 0;
       border-radius: 999px;
       border: 1px solid rgba(var(--accent-rgb), .24);
-      background: rgba(15, 24, 20, .72);
+      background: var(--color-surface);
       color: var(--color-muted-strong);
       box-shadow: none;
       display: inline-grid;
@@ -280,7 +279,7 @@
     .pagination .mini-button { min-width: 88px; }
     .mini-button {
       border: 1px solid var(--color-border-soft);
-      background: rgba(255,255,255,.055);
+      background: var(--color-surface-alt);
       color: var(--color-text);
       box-shadow: none;
       border-radius: 6px;
@@ -291,7 +290,7 @@
     .mini-button:hover, .button-link.secondary:hover { border-color: rgba(var(--accent-rgb), .42); background: rgba(var(--accent-rgb), .10); box-shadow: none; }
     .mini-button.danger { color: #FC3700; border-color: rgba(var(--risk-critical-rgb), .34); background: rgba(var(--risk-critical-rgb), .10); }
     .mini-button.danger:hover { border-color: rgba(var(--risk-critical-rgb), .58); background: rgba(var(--risk-critical-rgb), .18); }
-    .button-link.secondary { border: 1px solid var(--color-border-soft); background: rgba(255,255,255,.055); color: var(--color-text); box-shadow: none; padding: 8px 11px; font-size: 12px; }
+    .button-link.secondary { border: 1px solid var(--color-border-soft); background: var(--color-surface-alt); color: var(--color-text); box-shadow: none; padding: 8px 11px; font-size: 12px; }
     .source { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--color-border-soft); padding-bottom: 10px; color: var(--color-muted); font-size: 13px; }
     .source:last-child { border-bottom: 0; padding-bottom: 0; }
     .source b { color: var(--color-primary); }
@@ -308,7 +307,7 @@
       width: min(100%, 440px);
       border: 1px solid rgba(var(--accent-rgb), .28);
       border-radius: 8px;
-      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.045));
+      background: var(--color-surface);
       box-shadow: var(--shadow-panel);
       padding: 22px;
     }
@@ -361,7 +360,7 @@
     .auth-error.show { display: block; }
     .app-shell[hidden], .auth-view[hidden], .blocked-view[hidden], .accept-invite-view[hidden] { display: none !important; }
     .blocked-view { display: grid; place-items: center; min-height: 54vh; }
-    .blocked-view .auth-card { border-color: rgba(var(--accent-rgb), .32); background: linear-gradient(160deg, rgba(42, 62, 51, .92), rgba(15, 24, 20, .98)); box-shadow: 0 24px 70px rgba(0, 0, 0, .32); }
+    .blocked-view .auth-card { border-color: rgba(var(--accent-rgb), .32); background: var(--color-surface); box-shadow: 0 24px 70px rgba(0, 0, 0, .32); }
     .blocked-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
     .accept-invite-view { display: grid; place-items: center; min-height: 70vh; }
     .admin-grid { display: grid; gap: 16px; }
@@ -420,10 +419,10 @@
     .admin-record-body { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 10px; }
     .admin-record-field {
       min-width: 0;
-      border: 1px solid rgba(255,255,255,.08);
+      border: 1px solid var(--color-border);
       border-radius: 8px;
       padding: 10px;
-      background: rgba(0,0,0,.10);
+      background: var(--color-surface-alt);
       color: var(--color-muted-strong);
       font-size: 12px;
       line-height: 1.45;
@@ -462,7 +461,7 @@
       border-radius: 8px;
       color: var(--color-muted-strong);
       padding: 14px;
-      background: rgba(255,255,255,.035);
+      background: var(--color-surface-alt);
     }
     .admin-error { border-color: rgba(255, 205, 0, .42); color: #FFCD00; }
     .admin-badge {
@@ -483,14 +482,14 @@
     }
     .admin-badge.warn { color: #FFCD00; border-color: rgba(255, 205, 0, .36); background: rgba(255, 205, 0, .10); }
     .admin-badge.danger { color: #FC3700; border-color: rgba(var(--risk-critical-rgb), .34); background: rgba(var(--risk-critical-rgb), .12); }
-    .admin-badge.neutral { color: var(--color-muted-strong); border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.06); }
+    .admin-badge.neutral { color: var(--color-muted-strong); border-color: var(--color-border); background: var(--color-surface-alt); }
     .admin-progress {
       width: 130px;
       height: 8px;
       border-radius: 999px;
       overflow: hidden;
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.10);
+      background: var(--color-surface-alt);
+      border: 1px solid var(--color-border);
       margin: 5px 0;
     }
     .admin-progress span {
@@ -520,7 +519,7 @@
       border: 1px solid var(--color-card-border);
       border-radius: 8px;
       padding: 14px;
-      background: rgba(255,255,255,.045);
+      background: var(--color-surface-alt);
       display: grid;
       gap: 8px;
       min-width: 0;
@@ -559,10 +558,10 @@
       align-items: center;
       min-height: 25px;
       padding: 4px 8px;
-      border: 1px solid rgba(255,255,255,.15);
+      border: 1px solid var(--color-border);
       border-radius: 999px;
       color: var(--color-muted-strong);
-      background: rgba(255,255,255,.065);
+      background: var(--color-surface-alt);
       font-size: 10px;
       font-weight: 950;
       letter-spacing: .06em;
@@ -573,14 +572,14 @@
     .event-badge.monitoring { color: #FFCD00; border-color: rgba(var(--risk-high-rgb), .42); background: rgba(var(--risk-high-rgb), .12); }
     .event-hero h2 { margin: 14px 0 8px; color: var(--color-text); font-size: clamp(24px, 4vw, 38px); line-height: 1.08; letter-spacing: 0; text-transform: none; }
     .event-lead { max-width: 900px; margin: 0; color: var(--color-muted-strong); font-size: 15px; line-height: 1.58; }
-    .event-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid rgba(255,255,255,.10); background: rgba(0,0,0,.14); }
-    .event-metric { min-width: 0; padding: 14px 18px; border-right: 1px solid rgba(255,255,255,.10); }
+    .event-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--color-border); background: var(--color-surface-alt); }
+    .event-metric { min-width: 0; padding: 14px 18px; border-right: 1px solid var(--color-border); }
     .event-metric:nth-child(3n) { border-right: 0; }
-    .event-metric:nth-child(-n+3) { border-bottom: 1px solid rgba(255,255,255,.10); }
+    .event-metric:nth-child(-n+3) { border-bottom: 1px solid var(--color-border); }
     .event-metric span { display: block; color: var(--color-muted); font-size: 9px; font-weight: 950; letter-spacing: .10em; text-transform: uppercase; }
     .event-metric strong { display: block; margin-top: 6px; color: var(--color-text); font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
     .event-detail-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr); gap: 16px; align-items: start; }
-    .event-section { border: 1px solid var(--color-card-border); border-radius: 8px; background: rgba(255,255,255,.045); padding: 18px; }
+    .event-section { border: 1px solid var(--color-card-border); border-radius: 8px; background: var(--color-surface-alt); padding: 18px; }
     .event-section h3 { margin: 0 0 12px; color: var(--color-text); font-size: 15px; }
     .event-section h4 { margin: 16px 0 8px; color: var(--color-primary); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
     .event-section p { margin: 0; color: var(--color-muted-strong); font-size: 13px; line-height: 1.55; }
@@ -593,12 +592,12 @@
     .event-timeline-item:last-child::after { display: none; }
     .event-timeline-item strong { display: block; color: var(--color-text); font-size: 12px; }
     .event-timeline-item span { display: block; margin-top: 3px; color: var(--color-muted); font-size: 11px; line-height: 1.4; }
-    .event-analysis-row { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.09); }
+    .event-analysis-row { padding: 10px 0; border-bottom: 1px solid var(--color-border); }
     .event-analysis-row:last-child { border-bottom: 0; }
     .event-analysis-row span { display: block; color: var(--color-muted); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
     .event-analysis-row strong { display: block; margin-top: 5px; color: var(--color-text); font-size: 13px; line-height: 1.45; }
     .event-evidence-list, .event-history-list { display: grid; gap: 10px; }
-    .event-evidence { padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,.09); }
+    .event-evidence { padding: 13px 0; border-bottom: 1px solid var(--color-border); }
     .event-evidence:last-child { border-bottom: 0; }
     .event-evidence a { color: var(--color-text); font-size: 13px; font-weight: 850; line-height: 1.4; text-decoration: none; }
     .event-evidence a:hover { color: var(--color-primary); }
@@ -659,15 +658,15 @@
       width: 44px;
       height: 44px;
       border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-alt);
       color: var(--color-text);
       display: grid;
       place-items: center;
       cursor: pointer;
       transition: background .2s ease, transform .2s ease;
     }
-    .sidebar-toggle:hover { background: rgba(255,255,255,.12); }
+    .sidebar-toggle:hover { background: var(--color-surface-alt); }
     .sidebar-toggle:focus { outline: 2px solid rgba(var(--accent-rgb), .45); outline-offset: 2px; }
     .sidebar-menu { display: grid; gap: 0; }
     .nav-group { display: grid; gap: 6px; padding: 12px 0 0; }
@@ -820,7 +819,7 @@
     .map-shell {
       border: 1px solid rgba(var(--accent-rgb), .24);
       border-radius: 8px;
-      background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.04));
+      background: var(--color-surface);
       box-shadow: var(--shadow-panel);
       overflow: hidden;
     }
@@ -829,7 +828,7 @@
       gap: 12px;
       padding: 16px;
       border-bottom: 1px solid var(--color-border-soft);
-      background: rgba(15, 24, 20, .72);
+      background: var(--color-surface);
     }
     .map-title-row {
       display: flex;
@@ -845,7 +844,7 @@
       min-height: 38px;
       border: 1px solid var(--color-border-soft);
       border-radius: 6px;
-      background: rgba(255,255,255,.075);
+      background: var(--color-surface-alt);
       color: var(--color-text);
       padding: 8px 10px;
       font-weight: 900;
@@ -892,7 +891,7 @@
       padding: 24px;
       border: 1px dashed rgba(var(--accent-rgb), .28);
       border-radius: 8px;
-      background: rgba(15, 24, 20, .84);
+      background: var(--color-surface);
       color: var(--color-muted-strong);
       text-align: center;
       z-index: 450;
@@ -907,7 +906,7 @@
       padding: 12px 16px;
       border-top: 1px solid var(--color-border-soft);
       color: var(--color-muted);
-      background: rgba(15, 24, 20, .78);
+      background: var(--color-surface);
       font-size: 12px;
     }
     .map-footer strong { color: var(--color-primary); }
@@ -925,7 +924,7 @@
       width: 18px;
       height: 18px;
       display: block;
-      border: 2px solid rgba(255,255,255,.78);
+      border: 2px solid var(--color-border);
       border-radius: 999px;
       box-shadow: 0 0 0 4px rgba(255,255,255,.07), 0 10px 18px rgba(0,0,0,.34);
     }
@@ -940,7 +939,7 @@
       border-color: rgba(0,0,0,.12);
     }
     .leaflet-control-attribution {
-      background: rgba(15, 24, 20, .78) !important;
+      background: var(--color-surface) !important;
       color: var(--color-muted) !important;
     }
     .leaflet-control-attribution a { color: var(--color-primary) !important; }
@@ -966,7 +965,7 @@
       border: 1px solid rgba(var(--accent-rgb), .26);
       border-top: 3px solid var(--color-primary);
       border-radius: 8px;
-      background: linear-gradient(145deg, rgba(42, 62, 51, .96), rgba(15, 24, 20, .96));
+      background: var(--color-surface);
       box-shadow: var(--shadow-panel);
       padding: 18px;
     }
@@ -1011,7 +1010,7 @@
       min-height: 38px;
       border: 1px solid var(--color-border-soft);
       border-radius: 6px;
-      background: rgba(255,255,255,.04);
+      background: var(--color-surface-alt);
       color: var(--color-text);
       padding: 0 11px;
       font-size: 13px;
@@ -1071,7 +1070,7 @@
       grid-template-columns: repeat(5, minmax(0, 1fr));
       border: 1px solid var(--color-card-border);
       border-radius: 8px;
-      background: rgba(255,255,255,.04);
+      background: var(--color-surface-alt);
       overflow: hidden;
     }
     .route-kpi { min-width: 0; padding: 14px; border-right: 1px solid var(--color-border-soft); }
@@ -1083,7 +1082,7 @@
     .route-map-shell, .route-decision, .route-alerts-panel {
       border: 1px solid var(--color-card-border);
       border-radius: 8px;
-      background: rgba(255,255,255,.045);
+      background: var(--color-surface-alt);
       overflow: hidden;
     }
     .route-map-shell { align-self: start; }
@@ -1177,7 +1176,7 @@
     .modal.open { display: flex; }
     .modal-card { width: min(100%, 980px); max-height: 94vh; overflow: auto; background: var(--color-surface); border-radius: 8px; border: 1px solid rgba(var(--accent-rgb), .24); box-shadow: 0 24px 80px rgba(0,0,0,.48); }
     .modal-card.form-modal { width: min(100%, 760px); }
-    .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--color-border-soft); padding: 14px 16px; background: rgba(255,255,255,.035); }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--color-border-soft); padding: 14px 16px; background: var(--color-surface-alt); }
     .modal-head strong { color: var(--color-text); font-size: 15px; }
     .modal-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .canvas-wrap { background: var(--color-bg-deep); padding: 16px; display: grid; place-items: center; }
@@ -1206,16 +1205,16 @@
     .risk-pill { display: inline-block; margin-top: 14px; border-radius: 999px; padding: 7px 12px; background: var(--color-primary); color: var(--color-brand-text); font-weight: 950; }
     .weekly-period { margin-top: 12px; color: var(--color-muted); font-size: 12px; font-weight: 800; }
     .weekly-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-    .weekly-kpi { border: 1px solid var(--color-card-border); border-radius: 8px; padding: 12px; background: rgba(255,255,255,.055); min-height: 82px; }
+    .weekly-kpi { border: 1px solid var(--color-card-border); border-radius: 8px; padding: 12px; background: var(--color-surface-alt); min-height: 82px; }
     .weekly-kpi strong { display: block; margin-top: 8px; color: var(--color-text); font-size: 22px; line-height: 1.05; }
     .weekly-kpi span { color: var(--color-muted); font-size: 10px; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
     .weekly-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr); gap: 12px; }
-    .weekly-section { border: 1px solid var(--color-card-border); border-radius: 8px; padding: 14px; background: rgba(255,255,255,.055); }
+    .weekly-section { border: 1px solid var(--color-card-border); border-radius: 8px; padding: 14px; background: var(--color-surface-alt); }
     .weekly-section h4 { margin: 0 0 10px; color: var(--color-text); font-size: 12px; text-transform: uppercase; letter-spacing: .09em; }
     .weekly-section ul { margin: 0; padding-left: 18px; }
     .weekly-section li { margin: 7px 0; color: var(--color-muted-strong); line-height: 1.45; }
     .weekly-occurrences { display: grid; gap: 10px; }
-    .weekly-occurrence { border: 1px solid var(--color-border-soft); border-radius: 8px; padding: 12px; background: rgba(0,0,0,.12); }
+    .weekly-occurrence { border: 1px solid var(--color-border-soft); border-radius: 8px; padding: 12px; background: var(--color-surface-alt); }
     .weekly-occurrence h5 { margin: 8px 0 6px; color: var(--color-text); font-size: 14px; line-height: 1.35; }
     .weekly-occurrence p { margin: 0; color: var(--color-muted-strong); font-size: 13px; line-height: 1.45; }
     .weekly-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--color-muted); font-size: 11px; font-weight: 800; }
@@ -1235,7 +1234,7 @@
     .weekly-delta.same { color: var(--color-muted); }
     .weekly-attention { border-color: rgba(var(--risk-high-rgb), .55); }
     .weekly-watch-list { display: grid; gap: 8px; }
-    .weekly-watch-item { border: 1px solid var(--color-border-soft); border-left: 3px solid #FFCD00; border-radius: 6px; padding: 10px 12px; background: rgba(0,0,0,.12); }
+    .weekly-watch-item { border: 1px solid var(--color-border-soft); border-left: 3px solid #FFCD00; border-radius: 6px; padding: 10px 12px; background: var(--color-surface-alt); }
     .weekly-watch-item.urgent { border-left-color: var(--risk-critical); }
     .weekly-watch-item h5, .weekly-occurrence h5 { margin: 6px 0 4px; font-size: 14px; line-height: 1.35; color: var(--color-text); }
     .weekly-watch-item p { margin: 0; color: var(--color-muted-strong); font-size: 13px; line-height: 1.45; }
@@ -1265,9 +1264,9 @@
       .client-filter-grid { grid-template-columns: 1fr; }
       .event-detail-grid { grid-template-columns: 1fr; }
       .event-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .event-metric:nth-child(3n) { border-right: 1px solid rgba(255,255,255,.10); }
+      .event-metric:nth-child(3n) { border-right: 1px solid var(--color-border); }
       .event-metric:nth-child(2n) { border-right: 0; }
-      .event-metric:nth-child(-n+4) { border-bottom: 1px solid rgba(255,255,255,.10); }
+      .event-metric:nth-child(-n+4) { border-bottom: 1px solid var(--color-border); }
       .event-alert-strip { grid-template-columns: 1fr; }
       .admin-record-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .view-tabs { overflow-x: auto; flex-wrap: nowrap; }
@@ -1326,7 +1325,7 @@
       .route-risk-label { max-width: 120px; }
       .event-hero-main { padding: 18px; }
       .event-metrics { grid-template-columns: 1fr; }
-      .event-metric:nth-child(n) { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.10); }
+      .event-metric:nth-child(n) { border-right: 0; border-bottom: 1px solid var(--color-border); }
       .event-metric:last-child { border-bottom: 0; }
       .route-kpis { grid-template-columns: 1fr; }
       .route-kpi:nth-child(n) { border-right: 0; border-bottom: 1px solid var(--color-border-soft); }
@@ -1337,8 +1336,8 @@
       html, body {
         width: 210mm;
         min-height: 297mm;
-        background: #0F1814 !important;
-        color: #F4F9FA !important;
+        background: #FFFFFF !important;
+        color: #10233F !important;
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
       }
@@ -1352,8 +1351,8 @@
         width: 100%;
         min-height: calc(297mm - 16mm);
         padding: 0;
-        background: #0F1814 !important;
-        color: #F4F9FA !important;
+        background: #FFFFFF !important;
+        color: #10233F !important;
         gap: 7px;
       }
       header, main, footer, .weekly-fab, .modal-head, #imageModal, .modal-actions, button { display: none !important; }
@@ -1365,39 +1364,39 @@
         margin: 0 !important;
         max-height: none !important;
         overflow: visible !important;
-        background: #0F1814 !important;
+        background: #FFFFFF !important;
         border: 0 !important;
         box-shadow: none !important;
       }
       .weekly-hero, .weekly-section, .weekly-kpi, .weekly-occurrence {
         break-inside: avoid;
         box-shadow: none !important;
-        color: #F4F9FA !important;
+        color: #10233F !important;
       }
       .weekly-hero {
         padding: 12px 14px !important;
-        background: linear-gradient(135deg, #0F1814, #2A3E33) !important;
+        background: #FFFFFF !important;
         border: 1px solid rgba(var(--accent-rgb), .50) !important;
         border-top: 4px solid var(--color-brand) !important;
         border-radius: 8px !important;
       }
-      .weekly-logo { color: #F4F9FA !important; font-size: 22px !important; }
+      .weekly-logo { color: #10233F !important; font-size: 22px !important; }
       .weekly-logo:before { border-top-color: var(--color-brand) !important; }
       .weekly-sub { color: var(--color-brand) !important; font-size: 10px !important; letter-spacing: .12em !important; }
-      .weekly-hero h3 { color: #F4F9FA !important; font-size: 22px !important; line-height: 1.12 !important; margin: 10px 0 5px !important; }
+      .weekly-hero h3 { color: #10233F !important; font-size: 22px !important; line-height: 1.12 !important; margin: 10px 0 5px !important; }
       .weekly-hero p { color: #CFD1D0 !important; font-size: 11px !important; line-height: 1.36 !important; }
       .risk-pill { background: var(--color-brand) !important; color: var(--color-brand-text) !important; font-size: 11px !important; padding: 5px 9px !important; margin-top: 8px !important; }
       .weekly-period { color: #9FA3A1 !important; font-size: 9px !important; margin-top: 8px !important; }
       .weekly-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 6px !important; }
       .weekly-grid { grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr) !important; gap: 7px !important; }
       .weekly-section, .weekly-kpi, .weekly-occurrence {
-        background: rgba(255, 255, 255, .06) !important;
+        background: var(--color-surface-alt) !important;
         border: 1px solid rgba(var(--accent-rgb), .24) !important;
         border-radius: 8px !important;
       }
       .weekly-section { padding: 9px 10px !important; }
       .weekly-section h4 {
-        color: #F4F9FA !important;
+        color: #10233F !important;
         font-size: 9px !important;
         letter-spacing: .10em !important;
         margin-bottom: 6px !important;
@@ -1406,10 +1405,10 @@
       .weekly-section li { color: #CFD1D0 !important; font-size: 10px !important; line-height: 1.28 !important; margin: 4px 0 !important; }
       .weekly-kpi { min-height: 52px !important; padding: 8px 9px !important; }
       .weekly-kpi span { color: #9FA3A1 !important; font-size: 8px !important; letter-spacing: .09em !important; }
-      .weekly-kpi strong { color: #F4F9FA !important; font-size: 17px !important; margin-top: 5px !important; }
+      .weekly-kpi strong { color: #10233F !important; font-size: 17px !important; margin-top: 5px !important; }
       .weekly-occurrences { gap: 6px !important; }
-      .weekly-occurrence { padding: 8px 9px !important; background: rgba(0, 0, 0, .18) !important; }
-      .weekly-occurrence h5 { color: #F4F9FA !important; font-size: 11px !important; line-height: 1.25 !important; margin: 5px 0 4px !important; }
+      .weekly-occurrence { padding: 8px 9px !important; background: var(--color-surface-alt) !important; }
+      .weekly-occurrence h5 { color: #10233F !important; font-size: 11px !important; line-height: 1.25 !important; margin: 5px 0 4px !important; }
       .weekly-occurrence p { color: #CFD1D0 !important; font-size: 10px !important; line-height: 1.28 !important; }
       .weekly-meta { color: #9FA3A1 !important; font-size: 8px !important; gap: 4px !important; }
       .weekly-roads { gap: 5px !important; }
@@ -1422,7 +1421,7 @@
       }
       .weekly-spacer { height: 5px !important; }
       .weekly-footer {
-        border-top: 1px solid rgba(255, 255, 255, .12) !important;
+        border-top: 1px solid var(--color-border) !important;
         color: #9FA3A1 !important;
         font-size: 9px !important;
         padding-top: 6px !important;
@@ -1473,7 +1472,6 @@
     }
     .panel { padding: 20px; }
     .item:hover, .alert-card:hover { border-color: rgba(var(--accent-rgb), .28); }
-    .stat::before { width: 2px; opacity: .7; }
 
     /* Botões: primário sólido, secundários discretos */
     button, .button-link { font-weight: 700; border-radius: 8px; letter-spacing: .01em; }
@@ -1487,7 +1485,7 @@
     .sidebar-title strong { font-weight: 700; letter-spacing: .01em; }
     .sidebar-title span, .nav-group-toggle, .nav-label { letter-spacing: .08em; font-weight: 700; }
     .nav-item { font-weight: 550; color: var(--color-muted-strong); position: relative; }
-    .nav-item:hover { background: rgba(255,255,255,.035); border-color: transparent; color: var(--color-text); }
+    .nav-item:hover { background: var(--color-surface-alt); border-color: transparent; color: var(--color-text); }
     .nav-item.active { background: rgba(var(--accent-rgb), .08); color: var(--color-text); border-color: transparent; }
     .nav-item.active::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: var(--color-brand); }
     .nav-item.active .nav-icon { color: var(--color-brand); }
@@ -1708,11 +1706,11 @@
     .featured-tag { background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 4px 9px; border-radius: 6px; }
     .featured-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: auto; color: #CFD1D0; font-size: 13px; }
     .featured-meta span { display: inline-flex; align-items: center; gap: 6px; } .featured-meta span svg { width: 15px; height: 15px; }
-    .featured-cta { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22); color: #fff; text-decoration: none; font-weight: 600; backdrop-filter: blur(6px); }
+    .featured-cta { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px; background: var(--color-surface-alt); border: 1px solid var(--color-border); color: #fff; text-decoration: none; font-weight: 600; backdrop-filter: blur(6px); }
     .featured-cta svg { width: 15px; height: 15px; }
     .featured-cta:hover { background: var(--accent); border-color: var(--accent); }
     .featured-dots { position: absolute; z-index: 2; left: 28px; bottom: 12px; display: flex; gap: 6px; }
-    .featured-dots button { width: 8px; height: 8px; padding: 0; border-radius: 99px; border: 0; background: rgba(255,255,255,.35); transition: width .2s ease, background .2s ease; }
+    .featured-dots button { width: 8px; height: 8px; padding: 0; border-radius: 99px; border: 0; background: var(--color-surface-alt); transition: width .2s ease, background .2s ease; }
     .featured-dots button.active { width: 22px; background: #fff; }
     .featured-empty { display: flex; gap: 16px; align-items: center; padding: 28px; }
     .featured-empty h2 { margin: 0 0 6px; font-size: 18px; color: var(--color-text); text-transform: none; letter-spacing: 0; }
@@ -1753,7 +1751,7 @@
     .news-card.road-blocked { border: 2px solid var(--risk-critical); }
     .news-card-media .news-media { position: relative; height: 130px; border-radius: 10px; overflow: hidden; background: #0F1814; }
     .news-card-media .news-illustration, .news-card-media .news-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .news-card-media .news-credit { position: absolute; left: 6px; bottom: 6px; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #fff; background: rgba(15,24,20,.7); }
+    .news-card-media .news-credit { position: absolute; left: 6px; bottom: 6px; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #fff; background: var(--color-surface); }
     .news-card-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 2px 2px 0 0; }
     .news-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .news-theme-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 7px; font-size: 11.5px; font-weight: 700; color: var(--theme); background: color-mix(in srgb, var(--theme) 16%, transparent); }
@@ -1774,7 +1772,7 @@
     .news-tag.risk-critical { color: #fff; background: var(--risk-critical); }
     .news-tag.risk-high { color: #1E0D43; background: #FFCD00; }
     .news-tag.risk-medium { color: #fff; background: #0079B8; }
-    .news-tag.risk-low { color: #0F1814; background: #1EFF95; }
+    .news-tag.risk-low { color: var(--risk-low-ink); background: var(--risk-low); }
     .news-card .fleet-impact.news-card-impact { margin: 0; padding: 0 0 0 8px; border: 0; border-left: 2px solid var(--theme); border-radius: 0; background: none; font-size: 12px; line-height: 1.4; color: var(--color-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .news-card .fleet-impact.news-card-impact strong { color: var(--color-text); }
     .news-card-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
@@ -2034,7 +2032,6 @@
     }
     .block-banner { background: #FC3700; color: #F4F9FA; }
     .block-banner.partial { background: rgba(var(--risk-critical-rgb), .14); color: var(--risk-critical); border-color: rgba(var(--risk-critical-rgb), .5); }
-    .marker-dot.blocked { border-color: #FC3700; box-shadow: 0 0 0 5px rgba(252, 55, 0, .28), 0 0 16px rgba(252, 55, 0, .6); }
     .weekly-watch-item.urgent { border-left-color: var(--risk-critical); }
     .weekly-attention { border-color: rgba(var(--risk-high-rgb), .5); }
     .weekly-watch-item { border-left-color: var(--risk-high); }
@@ -2048,7 +2045,7 @@
     .news-media { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--color-surface-high); }
     .news-media > svg, .news-media > .news-photo { position: absolute; inset: 0; width: 100%; height: 100%; }
     .news-photo { object-fit: cover; display: block; }
-    .news-credit { position: absolute; right: 8px; bottom: 6px; z-index: 2; padding: 2px 6px; border-radius: 4px; background: rgba(15, 24, 20, .7); color: #F4F9FA; font: 500 10px var(--font-mono); pointer-events: none; }
+    .news-credit { position: absolute; right: 8px; bottom: 6px; z-index: 2; padding: 2px 6px; border-radius: 4px; background: var(--color-surface); color: #F4F9FA; font: 500 10px var(--font-mono); pointer-events: none; }
     .featured-media .news-credit { right: 12px; bottom: 10px; }
     .latest-thumb .news-credit { display: none; }
 
@@ -2179,7 +2176,10 @@
     .aviso::before { content: ""; background: var(--g); }
     .aviso-body { padding: 12px 18px 14px; display: grid; gap: 4px; min-width: 0; }
     .aviso-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; font-weight: 700; color: var(--color-muted); text-transform: uppercase; letter-spacing: .04em; }
-    .aviso-meta .ev { color: var(--color-text); }
+    .aviso-meta .ev, .aviso-meta .aviso-grade { color: var(--color-text); }
+    /* Controles nativos seguem o tema (o CSS antigo fixava color-scheme: dark nos campos). */
+    :root[data-theme="light"] :where(input, select, textarea) { color-scheme: light; }
+    #shareCanvas { box-shadow: none; border: 1px solid var(--color-border); }
     .aviso-title { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.35; color: var(--color-text); overflow-wrap: anywhere; }
     .aviso-title a { color: inherit; text-decoration: none; } .aviso-title a:hover { text-decoration: underline; }
     .aviso-do { margin: 0; font-size: 15px; font-weight: 700; color: var(--color-text); }
@@ -2217,6 +2217,115 @@
     .sit-actions { display: grid; gap: 8px; margin: 0; padding: 0 22px 18px; list-style: none; }
     .sit-actions li { padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface-alt); font-size: 14px; }
     .sit-secondary-title { margin: 22px 0 10px; font-size: 16px; font-weight: 800; }
+    /* ---------------- Telas do cliente no mundo do boletim ----------------
+       O CSS anterior desenhava para fundo escuro (gradientes verdes, branco translúcido,
+       faixas de destaque). Aqui tudo volta a superfície neutra com fio de 1px; cor só no grau. */
+    .stat, .panel, .item, .alert-card, .event-section, .map-shell, .route-query-panel, .weekly-hero, .ops-status,
+    .auth-card, .client-header-panel, .route-panel, .modal-card, .admin-card {
+      background: var(--color-surface); background-image: none; border: 1px solid var(--color-border); border-radius: var(--radius); box-shadow: none;
+    }
+    .news-card::before { display: none; }
+    .ops-status { border-left-width: 1px; }
+    .route-query-panel, .weekly-hero { border-top-width: 1px; }
+    .item:hover, .alert-card:hover { border-color: var(--color-muted); }
+    .fleet-impact { border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface-alt); color: var(--color-text); }
+    .weekly-watch-item, .weekly-watch-item.urgent { border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface-alt); }
+    .weekly-watch-item.urgent { border-color: var(--risk-critical); }
+    .event-section, .event-evidence, .event-analysis-row { border-color: var(--color-border-soft); }
+    .event-section { background: var(--color-surface); }
+    .event-empty { border-color: var(--color-border); background: var(--color-surface); }
+    /* Central de Evento: o evento acompanhado é um aviso, com o grau no topo em vez de gradiente. */
+    .event-hero { background: var(--color-surface); background-image: none; border: 1px solid var(--color-border); border-top-width: 1px; border-radius: var(--radius); color: var(--color-text); box-shadow: none; }
+    .event-hero h2, .event-hero h3, .event-hero strong { color: var(--color-text); }
+    .event-lead { color: var(--color-muted-strong); }
+    .event-metrics { background: var(--color-surface-alt); border-top: 1px solid var(--color-border); }
+    .event-metric { border-right-color: var(--color-border); }
+    .event-metric span { font-size: 12px; color: var(--color-muted); }
+    .event-badge { border-radius: 4px; }
+    .event-alert-strip { background: rgba(var(--risk-critical-rgb), .08); background-image: none; border: 1px solid var(--risk-critical); border-left-width: 1px; border-radius: var(--radius); color: var(--color-text); }
+    .item.road-blocked, .alert-card.road-blocked, .route-alert-item.road-blocked, .map-popup.road-blocked, .news-card.road-blocked { border: 2px solid var(--risk-critical); background: var(--color-surface); background-image: none; }
+    /* Notícias são material de apoio: miniatura pequena, título e impacto mandam. */
+    .news-card { grid-template-columns: 120px minmax(0, 1fr); border-radius: var(--radius); box-shadow: none; transition: border-color .15s ease; }
+    .news-card:hover { transform: none; border-color: var(--color-muted); }
+    .news-card-media .news-media { height: 84px; border-radius: 4px; background: var(--color-surface-high); }
+    .news-theme-badge { color: var(--color-text); background: var(--color-surface-high); border-radius: 4px; }
+    @media (max-width: 560px) { .news-card { grid-template-columns: 88px minmax(0, 1fr); } .news-card-media .news-media { height: 64px; } }
+    /* Mapa: agrupamento neutro (cor é só do grau, nos marcadores). */
+    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large { background: rgba(16, 35, 63, .22); }
+    .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div { background: var(--ink); color: #fff; font-family: var(--font-sans); font-weight: 800; }
+    .marker-dot.blocked { border-color: var(--risk-critical); box-shadow: 0 0 0 4px rgba(var(--risk-critical-rgb), .3); }
+    /* Selos, rótulos minúsculos e pílulas: tamanho mínimo legível, canto de boletim. */
+    .tag, .chip, .event-badge, .sev-badge, .theme-badge, .alert-badge, .info-badge, .weekly-badge { border-radius: 4px; }
+    .route-kpi span, .event-metric span, .ops-kpi span, .route-decision-label, .route-decision-status, .eyebrow { font-size: 12px; letter-spacing: .03em; }
+    .route-decision-label { color: var(--color-muted); }
+
+    .route-decision-top { margin: 0 0 14px; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); }
+    .route-decision-top h3 { font-size: clamp(18px, 1.6vw, 22px); margin: 0; }
+    .route-main-grid { grid-template-columns: 1fr; }
+    .route-kpi-blocked { color: var(--risk-critical-text); font-weight: 800; }
+    /* ---------------- Modo torre (/torre) ----------------
+       Monitor fixo ou TV da torre de controle: escuro, sem navegação, letra legível a 2–3 m.
+       Só o veredito, os avisos e a régua; o restante do app some. */
+    .tower-exit { display: none; }
+    body.tower-mode {
+      --color-bg: #0A1220; --color-surface: #101B2E; --color-surface-alt: #15233A; --color-surface-high: #1D2E4A;
+      --color-border: #2A3C58; --color-border-soft: #1E2D45; --color-text: #EEF2F8; --color-muted: #A3B1C4; --color-muted-strong: #D0D8E3;
+      --risk-critical: #F2493D; --risk-critical-rgb: 242, 73, 61; --risk-high: #FF9433; --risk-high-rgb: 255, 148, 51;
+      --risk-medium: #F3C934; --risk-medium-rgb: 243, 201, 52; --risk-low: #8796AC; --risk-low-rgb: 135, 150, 172; --risk-low-ink: #0A1220;
+      --accent: #8DB4EE; --accent-rgb: 141, 180, 238; --color-primary: #EEF2F8; --color-brand-text: #0A1220;
+      background: var(--color-bg); color: var(--color-text); color-scheme: dark;
+    }
+    body.tower-mode .sidebar, body.tower-mode .sidebar-backdrop, body.tower-mode .shell-toolbar, body.tower-mode #clientHeaderPanel,
+    body.tower-mode #mainTabs, body.tower-mode .topbar-search, body.tower-mode .topbar-menu, body.tower-mode #themeToggle, body.tower-mode #topbarPeriod,
+    body.tower-mode #clientDashboardPage > .dash-head, body.tower-mode #clientDashboardPage > .dash-grid, body.tower-mode .weekly-fab { display: none !important; }
+    body.tower-mode .tower-exit { display: inline-flex; }
+    body.tower-mode .app-layout { display: block; }
+    body.tower-mode .content-shell { margin-left: 0 !important; }
+    body.tower-mode main { max-width: none !important; padding: 16px 24px 24px; }
+    body.tower-mode .topbar { border: 0; padding: 4px 0 12px; min-height: 56px; justify-content: flex-end; }
+    body.tower-mode .regua-track { min-height: 56px; }
+    body.tower-mode .regua-band, body.tower-mode .regua-tail, body.tower-mode .regua-side { top: 12px; height: 32px; line-height: 32px; }
+    body.tower-mode .regua-band, body.tower-mode .regua-side { font-size: clamp(14px, 1.05vw, 18px); }
+    body.tower-mode .regua-now span { font-size: clamp(14px, 1vw, 17px); line-height: 22px; }
+    body.tower-mode .regua-head h3 { font-size: clamp(16px, 1.2vw, 20px); }
+    body.tower-mode .regua-note { font-size: clamp(13px, .9vw, 15px); }
+    body.tower-mode .sit-verdict { padding: 26px 32px; }
+    body.tower-mode .sit-verdict h1 { font-size: clamp(30px, 3.2vw, 52px); }
+    body.tower-mode .sit-verdict p { font-size: clamp(17px, 1.4vw, 24px); }
+    body.tower-mode .sit-grade { font-size: clamp(14px, 1.1vw, 18px); }
+    body.tower-mode .sit-list { max-height: none; }
+    body.tower-mode .aviso-title { font-size: clamp(18px, 1.5vw, 26px); }
+    body.tower-mode .aviso-do { font-size: clamp(16px, 1.3vw, 22px); }
+    body.tower-mode .aviso-meta, body.tower-mode .regua-label small, body.tower-mode .regua-axis { font-size: clamp(13px, 1vw, 16px); }
+    body.tower-mode .regua-label b { font-size: clamp(15px, 1.2vw, 20px); }
+    body.tower-mode .aviso-why, body.tower-mode .sit-filter { display: none; }
+    body.tower-mode .sit-actions { display: none; }
+
+    /* ---------------- Login e acesso ---------------- */
+    .auth-view:not([hidden]) { display: grid; grid-template-columns: minmax(280px, 420px) minmax(0, 440px); justify-content: center; align-items: stretch; gap: 0; min-height: 78vh; padding: 32px 20px; }
+    .auth-masthead { display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 40px 36px; background: var(--ink); color: var(--ink-text); border-radius: var(--radius) 0 0 var(--radius); }
+    .auth-masthead strong { font-size: 30px; font-weight: 800; letter-spacing: -.01em; color: #fff; }
+    .auth-masthead p { margin: 0; font-size: 18px; line-height: 1.4; color: var(--ink-text); }
+    .auth-mark { width: 8px; height: 40px; border-radius: 2px; background-image: linear-gradient(var(--risk-critical) 0 25%, var(--risk-high) 25% 50%, var(--risk-medium) 50% 75%, var(--risk-low) 75%); }
+    .auth-scale { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+    .auth-scale li { font-size: 12px; font-weight: 800; padding: 4px 8px; border-radius: 4px; }
+    .auth-scale li[data-level="critical"] { background: var(--risk-critical); color: var(--risk-critical-ink); }
+    .auth-scale li[data-level="high"] { background: var(--risk-high); color: var(--risk-high-ink); }
+    .auth-scale li[data-level="medium"] { background: var(--risk-medium); color: var(--risk-medium-ink); }
+    .auth-scale li[data-level="low"] { background: var(--risk-low); color: var(--risk-low-ink); }
+    .auth-view .auth-card { width: auto; border-radius: 0 var(--radius) var(--radius) 0; border-left: 0; padding: 40px 36px; align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
+    .auth-card h1 { font-size: 26px; font-weight: 800; margin: 0 0 6px; color: var(--color-text); }
+    .auth-card p { color: var(--color-muted); }
+    .auth-logo { display: none; }
+    .blocked-view .auth-card, .accept-invite-view .auth-card { background: var(--color-surface); background-image: none; border: 1px solid var(--color-border); box-shadow: none; }
+    .blocked-view .weekly-logo, .accept-invite-view .weekly-logo { color: var(--color-text); font-size: 18px; letter-spacing: 0; }
+    @media (max-width: 760px) {
+      .auth-view:not([hidden]) { grid-template-columns: 1fr; align-content: start; padding: 16px; }
+      .auth-masthead { display: none; }
+      .auth-view .auth-card { border-radius: var(--radius); border-left: 1px solid var(--color-border); padding: 28px 20px; }
+      .auth-logo { display: block; font-size: 20px; letter-spacing: 0; margin-bottom: 8px; }
+    }
+
     @media (max-width: 1100px) { .sit-work { grid-template-columns: 1fr; } .sit-list { border-right: 0; max-height: none; } }
     @media (max-width: 640px) {
       .sit-verdict { grid-template-columns: 1fr; padding: 16px; } .sit-grade { grid-row: auto; justify-self: start; }
@@ -2241,10 +2350,16 @@
 
   <main>
     <section id="authView" class="auth-view" hidden>
+      <aside class="auth-masthead" aria-hidden="true">
+        <span class="auth-mark"></span>
+        <strong>Road News</strong>
+        <p>Posso liberar a carga agora, e por onde?</p>
+        <ul class="auth-scale"><li data-level="critical">Crítico</li><li data-level="high">Alto</li><li data-level="medium">Médio</li><li data-level="low">Baixo</li></ul>
+      </aside>
       <form id="loginForm" class="auth-card" aria-describedby="authError">
-        <div class="weekly-logo">ROAD NEWS</div>
-        <h1>Realizar Login</h1>
-        <p>Insira seu e-mail e senha para acessar o painel. Mantenha suas credenciais em segurança.</p>
+        <div class="weekly-logo auth-logo">Road News</div>
+        <h1>Entrar no painel</h1>
+        <p>Use o e-mail e a senha cadastrados pelo gestor da sua empresa.</p>
         <div id="authError" class="auth-error"></div>
         <div class="form-grid">
           <div class="field">
@@ -2337,6 +2452,7 @@
             <button id="topbarBell" class="icon-button" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Alertas importantes"><span class="icon-slot" data-icon="bell"></span><span id="topbarBellCount" class="bell-count" hidden>0</span></button>
             <div id="topbarBellPanel" class="topbar-dropdown" hidden></div>
           </div>
+          <button class="mini-button tower-exit" type="button" data-route="/dashboard" data-scroll="top">Sair do modo torre</button>
           <button id="dataFreshness" class="data-freshness" type="button" data-state="loading" title="Atualizar os dados agora"><span class="freshness-dot" aria-hidden="true"></span><span id="dataFreshnessText">Carregando dados…</span></button>
           <button id="themeToggle" class="icon-button" type="button" aria-label="Alternar tema claro/escuro"><span class="icon-slot" data-icon="moon"></span></button>
           <div id="topbarPeriod" class="segmented topbar-period" role="group" aria-label="Período do dashboard">
@@ -2969,6 +3085,9 @@
       get medium() { return riskColor("medium", "#EDB800"); },
       get low() { return riskColor("low", "#5F6E83"); },
     };
+    function cssToken(name, fallback) {
+      try { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback; } catch { return fallback; }
+    }
     function riskColor(level, fallback) {
       try { return getComputedStyle(document.documentElement).getPropertyValue(`--risk-${level}`).trim() || fallback; } catch { return fallback; }
     }
@@ -3108,7 +3227,7 @@
     const SAVED_NEWS_KEY = "roadnews_saved_news";
     const NEWS_PER_PAGE = 10;
     const CLIENT_PAGE_META = {
-      dashboard: { title: "Dashboard", subtitle: "Visão executiva das rodovias e do impacto na frota." },
+      dashboard: { title: "Situação agora", subtitle: "Posso liberar as cargas agora, e por onde?" },
       news: { title: "Notícias", subtitle: "Busca, filtros e acompanhamento das notícias recentes." },
       alerts: { title: "Alertas", subtitle: "Ocorrências recentes com impacto operacional." },
       events: { title: "Central de Evento", subtitle: "Eventos que sua empresa escolheu acompanhar, atualizados pela IA a cada nova notícia até o encerramento." },
@@ -3120,7 +3239,7 @@
       settings: { title: "Configurações", subtitle: "Preferências básicas do ambiente Cliente." },
     };
     // Fontes e Configurações não fazem parte do ambiente Cliente (só Gestor/Admin).
-    const CLIENT_ROUTES = new Set(["/dashboard", "/noticias", "/mapa", "/minha-rota", "/alertas", "/central-eventos", "/salvos", "/resumo-operacional", "/relatorios"]);
+    const CLIENT_ROUTES = new Set(["/dashboard", "/torre", "/noticias", "/mapa", "/minha-rota", "/alertas", "/central-eventos", "/salvos", "/resumo-operacional", "/relatorios"]);
     const VIEW_MODES = {
       client: "Cliente",
       manager: "Gestor da plataforma",
@@ -3146,12 +3265,14 @@
       activity: '<path d="M22 12h-4l-3 8-6-16-3 8H2"></path>',
       plug: '<path d="M12 22v-5"></path><path d="M9 8V2"></path><path d="M15 8V2"></path><path d="M6 8h12v4a6 6 0 0 1-12 0V8Z"></path>',
       database: '<ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"></path><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"></path>',
+      tower: '<rect x="3" y="4" width="18" height="12" rx="1"></rect><path d="M8 20h8"></path><path d="M12 16v4"></path>',
       logs: '<path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path>',
     };
     const SIDEBAR_GROUPS = {
       client: [
         { label: "Operação", items: [
-          { label: "Dashboard", icon: "dashboard", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Situação agora", icon: "dashboard", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Modo torre", icon: "tower", route: "/torre", view: "occurrences", scroll: "top" },
           { label: "Alertas", icon: "bell", route: "/alertas", view: "occurrences", scroll: "clientAlertsPage" },
           { label: "Central de Evento", icon: "event", route: "/central-eventos", view: "occurrences", scroll: "clientEventsPage", countId: "activeEventSidebarCount" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
@@ -3164,7 +3285,8 @@
       ],
       manager: [
         { label: "Operação", items: [
-          { label: "Dashboard", icon: "dashboard", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Situação agora", icon: "dashboard", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Modo torre", icon: "tower", route: "/torre", view: "occurrences", scroll: "top" },
           { label: "Alertas", icon: "bell", route: "/alertas", view: "occurrences", scroll: "clientAlertsPage" },
           { label: "Central de Evento", icon: "event", route: "/central-eventos", view: "occurrences", scroll: "clientEventsPage", countId: "activeEventSidebarCount" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
@@ -3183,7 +3305,8 @@
       ],
       developer: [
         { label: "Operação", items: [
-          { label: "Dashboard", icon: "dashboard", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Situação agora", icon: "dashboard", route: "/dashboard", view: "occurrences", scroll: "top" },
+          { label: "Modo torre", icon: "tower", route: "/torre", view: "occurrences", scroll: "top" },
           { label: "Alertas", icon: "bell", route: "/alertas", view: "occurrences", scroll: "clientAlertsPage" },
           { label: "Central de Evento", icon: "event", route: "/central-eventos", view: "occurrences", scroll: "clientEventsPage", countId: "activeEventSidebarCount" },
           { label: "Notícias", icon: "newspaper", route: "/noticias", view: "occurrences", scroll: "news" },
@@ -5542,23 +5665,35 @@ function showAuthView() {
           </div>
           <span class="route-live-pill">Atualizado em ${escapeHtml(updatedAt)}</span>
         </section>
+        <aside class="route-decision route-decision-top">
+          <span class="route-decision-label">Recomendação operacional</span>
+          <span class="route-decision-status ${statusClass}">${escapeHtml(statusLabel)}</span>
+          <h3>${escapeHtml(analysis.headline || "Análise operacional da rota")}</h3>
+          <p>${escapeHtml(analysis.recommendation || "Valide as condições antes da liberação do veículo.")}</p>
+          <ul class="route-points">${operationalPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}</ul>
+          <div>
+            <span class="route-decision-label">Rodovias identificadas</span>
+            <div class="route-roads" style="margin-top:8px;">${roads.length ? roads.map((road) => `<span>${escapeHtml(road)}</span>`).join("") : `<span>Traçado definido pela API</span>`}</div>
+          </div>
+          <p class="admin-note">Confiança da análise: ${escapeHtml(analysis.confidence || "Baixa")}. ${analysis.ai_used ? "Síntese inteligente aplicada aos dados encontrados." : "Síntese automática baseada nos dados disponíveis."} Valide restrições do caminhão com concessionárias e autoridades.</p>
+        </aside>
         <section class="route-kpis" aria-label="Indicadores da rota">
           <div class="route-kpi"><span>Distância</span><strong>${Math.round(Number(route.distance_meters || 0) / 1000).toLocaleString("pt-BR")} km</strong><small>trajeto calculado</small></div>
           <div class="route-kpi"><span>Tempo estimado</span><strong>${escapeHtml(formatRouteDuration(route.duration_seconds))}</strong><small>com trânsito</small></div>
           <div class="route-kpi"><span>Atraso estimado</span><strong>${escapeHtml(formatRouteDuration(route.delay_seconds))}</strong><small>comparado ao fluxo livre</small></div>
           <div class="route-kpi"><span>Trânsito</span><strong>${escapeHtml(trafficLabel)}</strong><small>${Number(route.traffic?.slow_percent || 0)}% lento · ${Number(route.traffic?.jam_percent || 0)}% congestionado</small></div>
-          <div class="route-kpi"><span>Ocorrências</span><strong>${alerts.length}</strong><small>${totalBlockages ? `<span style="color:#ff3b3b;font-weight:900">${totalBlockages} rodovia(s) bloqueada(s)</span>` : `${blockages} bloqueio(s) parcial(is)`}</small></div>
+          <div class="route-kpi"><span>Ocorrências</span><strong>${alerts.length}</strong><small>${totalBlockages ? `<span class="route-kpi-blocked">${totalBlockages} rodovia(s) bloqueada(s)</span>` : `${blockages} bloqueio(s) parcial(is)`}</small></div>
         </section>
         <section class="route-main-grid">
           <div class="route-map-shell">
             <div class="route-map-head">
               <strong>Condição do trajeto</strong>
               <div class="route-legend" aria-label="Legenda de trânsito">
-                <span><i style="background:#1eff95"></i>Fluxo normal</span>
-                <span><i style="background:#FFCD00"></i>Lento / pare e siga</span>
-                <span><i style="background:#FC3700"></i>Congestionado (trânsito)</span>
-                <span><i class="dashed" style="color:#FFCD00"></i>Ocorrência - atenção</span>
-                <span><i class="dashed" style="color:#FC3700"></i>Ocorrência - crítica</span>
+                <span><i style="background:var(--accent)"></i>Fluxo normal</span>
+                <span><i style="background:var(--risk-medium)"></i>Lento / pare e siga</span>
+                <span><i style="background:var(--risk-high)"></i>Congestionado (trânsito)</span>
+                <span><i class="dashed" style="color:var(--risk-high)"></i>Ocorrência - atenção</span>
+                <span><i class="dashed" style="color:var(--risk-critical)"></i>Ocorrência - crítica</span>
               </div>
             </div>
             <div id="routeMap" aria-label="Mapa da rota analisada"></div>
@@ -5568,18 +5703,6 @@ function showAuthView() {
               <span>${alerts.length} ocorrência(s) cruzada(s)</span>
             </div>
           </div>
-          <aside class="route-decision">
-            <span class="route-decision-label">Recomendação operacional</span>
-            <span class="route-decision-status ${statusClass}">${escapeHtml(statusLabel)}</span>
-            <h3>${escapeHtml(analysis.headline || "Análise operacional da rota")}</h3>
-            <p>${escapeHtml(analysis.recommendation || "Valide as condições antes da liberação do veículo.")}</p>
-            <ul class="route-points">${operationalPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("")}</ul>
-            <div>
-              <span class="route-decision-label">Rodovias identificadas</span>
-              <div class="route-roads" style="margin-top:8px;">${roads.length ? roads.map((road) => `<span>${escapeHtml(road)}</span>`).join("") : `<span>Traçado definido pela API</span>`}</div>
-            </div>
-            <p class="admin-note">Confiança da análise: ${escapeHtml(analysis.confidence || "Baixa")}. ${analysis.ai_used ? "Síntese inteligente aplicada aos dados encontrados." : "Síntese automática baseada nos dados disponíveis."} Valide restrições do caminhão com concessionárias e autoridades.</p>
-          </aside>
         </section>
         <section class="route-alerts-panel">
           <div class="route-query-head">
@@ -5610,9 +5733,9 @@ function showAuthView() {
       layers.clearLayers();
       const points = decodeRoutePolyline(data.route.polyline);
       if (points.length < 2) return;
-      L.polyline(points, { color: "#020907", weight: 9, opacity: .86, lineCap: "round" }).addTo(layers);
+      L.polyline(points, { color: cssToken("--ink", "#10233F"), weight: 9, opacity: .5, lineCap: "round" }).addTo(layers);
       const intervals = Array.isArray(data.route.traffic_intervals) ? data.route.traffic_intervals : [];
-      const colors = { NORMAL: "#1eff95", SLOW: "#FFCD00", TRAFFIC_JAM: "#FC3700" };
+      const colors = { NORMAL: cssToken("--accent", "#1D4F91"), SLOW: riskColor("medium", "#EDB800"), TRAFFIC_JAM: riskColor("high", "#E46C00") };
       const trafficWeights = { NORMAL: 5, SLOW: 7, TRAFFIC_JAM: 9 };
       if (intervals.length) {
         intervals.forEach((interval) => {
@@ -5625,7 +5748,7 @@ function showAuthView() {
         L.polyline(points, { color: colors.NORMAL, weight: trafficWeights.NORMAL, opacity: .96, lineCap: "round" }).addTo(layers);
       }
       if (state.route.haloInterval) { clearInterval(state.route.haloInterval); state.route.haloInterval = null; }
-      const segmentColors = { critical: "#FC3700", attention: "#FFCD00" };
+      const segmentColors = { critical: riskColor("critical", "#C8201A"), attention: riskColor("high", "#E46C00") };
       const segmentWeights = { critical: 10, attention: 8 };
       const haloLayers = [];
       // Espessura em pixels de tela ja e constante em qualquer zoom (Leaflet nao escala weight);
@@ -5660,11 +5783,11 @@ function showAuthView() {
           haloLayers.forEach((layer) => layer.setStyle({ opacity }));
         }, 120);
       }
-      L.circleMarker(points[0], { radius: 7, color: "#F4F9FA", weight: 2, fillColor: "#1eff95", fillOpacity: 1 }).bindTooltip("Origem").addTo(layers);
-      L.circleMarker(points.at(-1), { radius: 7, color: "#F4F9FA", weight: 2, fillColor: "#00ACFF", fillOpacity: 1 }).bindTooltip("Destino").addTo(layers);
+      L.circleMarker(points[0], { radius: 7, color: "#FFFFFF", weight: 2, fillColor: cssToken("--accent", "#1D4F91"), fillOpacity: 1 }).bindTooltip("Origem").addTo(layers);
+      L.circleMarker(points.at(-1), { radius: 7, color: "#FFFFFF", weight: 2, fillColor: cssToken("--ink", "#10233F"), fillOpacity: 1 }).bindTooltip("Destino").addTo(layers);
       (Array.isArray(data.route.stop_points) ? data.route.stop_points : []).forEach((point, index) => {
         if (!Number.isFinite(Number(point.latitude)) || !Number.isFinite(Number(point.longitude))) return;
-        L.circleMarker([Number(point.latitude), Number(point.longitude)], { radius: 6, color: "#F4F9FA", weight: 2, fillColor: "#FFCD00", fillOpacity: 1 })
+        L.circleMarker([Number(point.latitude), Number(point.longitude)], { radius: 6, color: cssToken("--ink", "#10233F"), weight: 2, fillColor: "#FFFFFF", fillOpacity: 1 })
           .bindTooltip(`Parada ${index + 1}`)
           .addTo(layers);
       });
@@ -5823,6 +5946,8 @@ function showAuthView() {
       const route = normalizeRoute(path);
       const routes = {
         "/dashboard": { view: "occurrences", scroll: "top", page: "dashboard" },
+        // Modo torre: a mesma Situação agora, em tela cheia escura e letra grande (monitor fixo/TV).
+        "/torre": { view: "occurrences", scroll: "top", page: "dashboard" },
         "/alertas": { view: "occurrences", scroll: "clientAlertsPage", page: "alerts" },
         "/central-eventos": { view: "occurrences", scroll: "clientEventsPage", page: "events" },
         "/minha-rota": { view: "occurrences", scroll: "clientRoutePage", page: "route" },
@@ -5917,7 +6042,7 @@ function showAuthView() {
         return;
       }
 
-      const knownRoutes = new Set(["/dashboard", "/alertas", "/central-eventos", "/minha-rota", "/noticias", "/salvos", "/resumo-operacional", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/developer/clientes", "/developer/fontes", "/developer/relatorios", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
+      const knownRoutes = new Set(["/dashboard", "/torre", "/alertas", "/central-eventos", "/minha-rota", "/noticias", "/salvos", "/resumo-operacional", "/tendencias", "/fontes", "/relatorios", "/configuracoes", "/mapa", "/resumo-semanal", "/admin", "/gestor", "/clientes", "/usuarios", "/pacotes", "/consumo", "/fontes-gestor", "/relatorios-gestor", "/developer", "/developer/clientes", "/developer/fontes", "/developer/relatorios", "/monitoramento", "/integracoes", "/banco", "/logs", "/developer/usuarios", "/developer/pacotes", "/developer/consumo", "/developer/configuracoes"]);
       const target = routeTarget(route);
       if (target.mode && !availableViewModes().includes(target.mode)) {
         setNotice("");
@@ -5953,6 +6078,7 @@ function showAuthView() {
       state.activeClientPage = target.page || clientPageFromTarget(state.activeScrollTarget);
       setBrowserPath(state.activeRoute, Boolean(options.replace));
       setActiveView(target.view, { skipRoute: true, scroll: state.activeScrollTarget, page: state.activeClientPage });
+      document.body.classList.toggle("tower-mode", state.activeRoute === "/torre");
       if (target.action === "weekly-summary") openWeeklySummary();
     }
 
@@ -7085,7 +7211,10 @@ function showAuthView() {
       const lines = [];
       let line = "";
 
+      // Reticências só quando o texto foi de fato cortado.
+      let truncated = false;
       for (const word of words) {
+        if (lines.length === maxLines) { truncated = true; break; }
         const test = line ? `${line} ${word}` : word;
         if (ctx.measureText(test).width <= maxWidth) {
           line = test;
@@ -7093,11 +7222,11 @@ function showAuthView() {
           if (line) lines.push(line);
           line = word;
         }
-        if (lines.length === maxLines) break;
       }
       if (line && lines.length < maxLines) lines.push(line);
+      else if (line) truncated = true;
 
-      if (words.length && lines.length === maxLines) {
+      if (truncated && lines.length === maxLines) {
         const last = lines[maxLines - 1];
         let trimmed = last;
         while (ctx.measureText(`${trimmed}...`).width > maxWidth && trimmed.length > 8) {
@@ -7188,7 +7317,7 @@ function showAuthView() {
         /\bem\s+([A-ZÀ-ÿ][\wÀ-ÿ' -]{2,60}(?:\/[A-Z]{2}|,\s*[A-Z]{2})?)/,
         /\bentre\s+([A-ZÀ-ÿ][\wÀ-ÿ' -]{2,60})\s+e\s+[A-ZÀ-ÿ]/,
       ]);
-      if (city) return city.replace(/\s+/g, " ").replace(/\s+(após|com|por|tem|registra|fica|está|foi)\b.*$/i, "").trim();
+      if (city) return city.replace(/\s+/g, " ").replace(/\s+(após|com|por|tem|registra|fica|está|foi)\b.*$/i, "").replace(/\s+(?:Na|No|Nas|Nos)\s+regi(?:ão|ao)\b.*$/, "").trim();
 
       return firstMatch(text, [
         /\b(Mato Grosso do Sul|Mato Grosso|Minas Gerais|Rio Grande do Sul|Rio Grande do Norte|Rio de Janeiro|Santa Catarina|São Paulo|Espírito Santo|Distrito Federal|Pará|Paraná|Ceará|Maranhão|Amazonas|Bahia|Goiás|Pernambuco|Rondônia|Tocantins)\b/i,
@@ -7225,7 +7354,8 @@ function showAuthView() {
       const text = `${originalTitle} ${summary}`;
       const road = findRoad(text);
       const km = findKm(text);
-      const place = findPlace(text);
+      // O local vem do título primeiro: o resumo costuma começar com "Na região da BR-...".
+      const place = findPlace(originalTitle) || findPlace(text);
 
       if (item.type === "INMET") {
         const weather = originalTitle.match(/^([A-Za-zÀ-ÿ ]+)\s*-\s*([A-Za-zÀ-ÿ ]+)$/);
@@ -7294,42 +7424,6 @@ function showAuthView() {
       return completeCardSummary(text, 285);
     }
 
-    function drawGrid(ctx, width, height) {
-      ctx.strokeStyle = "rgba(30, 255, 149, .10)";
-      ctx.lineWidth = 2;
-      for (let x = -120; x < width + 120; x += 92) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.bezierCurveTo(x + 80, 260, x - 120, 600, x + 70, height);
-        ctx.stroke();
-      }
-      for (let y = -80; y < height + 80; y += 86) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.bezierCurveTo(300, y + 70, 620, y - 95, width, y + 40);
-        ctx.stroke();
-      }
-    }
-
-    function compactRiskValue(value) {
-      const text = cleanDisplayText(value);
-      const normalized = normalizeText(text);
-      if (/critico|critica/.test(normalized)) return "Crítico";
-      if (/alto|alta/.test(normalized)) return "Alto";
-      if (/medio|media/.test(normalized)) return "Médio";
-      if (/baixo|baixa/.test(normalized)) return "Baixo";
-      return shortText(text, 18);
-    }
-
-    function compactRelevanceValue(value) {
-      const text = cleanDisplayText(value);
-      const normalized = normalizeText(text);
-      if (/alto|alta/.test(normalized)) return "Alta";
-      if (/medio|media/.test(normalized)) return "Média";
-      if (/baixo|baixa/.test(normalized)) return "Baixa";
-      return shortText(text, 18);
-    }
-
     function fitCanvasText(ctx, text, maxWidth) {
       let clean = cleanDisplayText(text);
       if (ctx.measureText(clean).width <= maxWidth) return clean;
@@ -7339,31 +7433,39 @@ function showAuthView() {
       return `${clean}...`;
     }
 
-    function severityCanvasColor(compactLabel) {
-      const normalized = normalizeText(compactLabel);
-      if (/critico/.test(normalized)) return { fill: "rgba(214, 95, 95, .18)", stroke: "rgba(214, 95, 95, .5)", text: "#FC3700" };
-      if (/alto/.test(normalized)) return { fill: "rgba(232, 176, 66, .18)", stroke: "rgba(232, 176, 66, .5)", text: "#FFCD00" };
-      if (/medio/.test(normalized)) return { fill: "rgba(107, 158, 199, .18)", stroke: "rgba(107, 158, 199, .5)", text: "#00ACFF" };
-      if (/baixo/.test(normalized)) return { fill: "rgba(124, 170, 111, .18)", stroke: "rgba(124, 170, 111, .5)", text: "#487E72" };
-      return { fill: "rgba(30, 255, 149, .16)", stroke: "rgba(30, 255, 149, .42)", text: "#1eff95" };
+    // Card de compartilhamento (PNG 1080x1080) no mundo do boletim: um aviso impresso.
+    // Cabeçalho azul-tinta com a marca e o número do evento, faixa na cor do grau (mesma régua
+    // das telas), título, ação de despacho ("Impacto na frota"), resumo e dados de origem.
+    const SHARE_COLORS = {
+      ink: "#10233F", paper: "#EDF0F4", surface: "#FFFFFF", line: "#CAD2DC", text: "#10233F", muted: "#536177", soft: "#2C3D55",
+      critical: ["#C8201A", "#FFFFFF"], high: ["#E46C00", "#10233F"], medium: ["#EDB800", "#10233F"], low: ["#5F6E83", "#FFFFFF"],
+    };
+    const SHARE_FONT = "Archivo, 'Segoe UI', Arial, sans-serif";
+
+    function canvasLineCount(ctx, text, maxWidth, maxLines) {
+      let count = 1;
+      let line = "";
+      for (const word of String(text || "").replace(/s+/g, " ").trim().split(" ")) {
+        const test = line ? `${line} ${word}` : word;
+        if (ctx.measureText(test).width <= maxWidth || !line) line = test;
+        else { count += 1; line = word; }
+      }
+      return Math.min(count, maxLines);
     }
 
-    function drawCanvasBadges(ctx, badges, x, y, maxWidth) {
-      ctx.font = "800 20px Segoe UI, Arial, sans-serif";
-      let badgeX = x;
-      for (const badge of badges.slice(0, 3)) {
-        const label = fitCanvasText(ctx, badge.text, Math.min(310, maxWidth - 28));
-        const badgeW = Math.min(ctx.measureText(label).width + 28, maxWidth);
-        if (badgeX + badgeW > x + maxWidth) break;
-        const color = badge.color || { fill: "rgba(30, 255, 149, .16)", stroke: "rgba(30, 255, 149, .42)", text: "#1eff95" };
-        ctx.fillStyle = color.fill;
-        ctx.fillRect(badgeX, y, badgeW, 36);
-        ctx.strokeStyle = color.stroke;
-        ctx.strokeRect(badgeX, y, badgeW, 36);
-        ctx.fillStyle = color.text;
-        ctx.fillText(label, badgeX + 14, y + 25);
-        badgeX += badgeW + 10;
-      }
+    function drawShareChip(ctx, text, x, y, maxRight) {
+      ctx.font = `700 22px ${SHARE_FONT}`;
+      const label = fitCanvasText(ctx, text, 420);
+      const width = ctx.measureText(label).width + 28;
+      if (x + width > maxRight) return x;
+      ctx.fillStyle = "#E8ECF1";
+      ctx.fillRect(x, y, width, 40);
+      ctx.strokeStyle = SHARE_COLORS.line;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + .5, y + .5, width - 1, 39);
+      ctx.fillStyle = SHARE_COLORS.text;
+      ctx.fillText(label, x + 14, y + 28);
+      return x + width + 10;
     }
 
     function drawShareImage(item) {
@@ -7371,96 +7473,141 @@ function showAuthView() {
       const ctx = canvas.getContext("2d");
       const w = canvas.width;
       const h = canvas.height;
+      const pad = 72;
+      const inner = w - pad * 2;
       const summary = smartSummary(item);
       const imageTitle = buildImageTitle(item);
-      const source = [item.source, item.category].filter(Boolean).join(" · ");
-      const published = formatDate(item.published_at || item.scraped_at || item.created_at);
+      const risk = classifyRisk(item);
+      const level = SHARE_COLORS[risk.level] ? risk.level : "low";
+      const [fill, onFill] = SHARE_COLORS[level];
+      const impact = fleetImpact(item);
       const road = cleanDisplayText(item.highway) || roadFromText(`${item.title || ""} ${item.summary || ""}`);
       const region = cleanDisplayText(item.region || item.city || item.state || "");
-      const routeLabel = [road, region].filter(Boolean).join(" · ");
-      const riskLabel = item.risk_level && compactRiskValue(item.risk_level);
-      const badges = [
-        riskLabel && { text: `Risco ${riskLabel}`, color: severityCanvasColor(riskLabel) },
-        routeLabel && { text: routeLabel, color: null },
-        item.operational_relevance && { text: `Relevância ${compactRelevanceValue(item.operational_relevance)}`, color: null },
-      ].filter(Boolean);
+      const source = [item.source, item.category].filter(Boolean).join(" · ");
+      const published = formatDate(item.published_at || item.scraped_at || item.created_at);
 
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = "#0F1814";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = SHARE_COLORS.paper;
       ctx.fillRect(0, 0, w, h);
-      drawGrid(ctx, w, h);
 
-      const cardX = 86;
-      const cardY = 84;
-      const cardW = w - 172;
-      const cardH = h - 168;
-      ctx.fillStyle = "rgba(255,255,255,.055)";
-      ctx.fillRect(cardX, cardY, cardW, cardH);
-      ctx.strokeStyle = "rgba(30, 255, 149, .48)";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(cardX, cardY, cardW, cardH);
+      // Cabeçalho azul-tinta: marca (escala de graus), nome e número do evento.
+      ctx.fillStyle = SHARE_COLORS.ink;
+      ctx.fillRect(0, 0, w, 150);
+      ["critical", "high", "medium", "low"].forEach((key, i) => {
+        ctx.fillStyle = SHARE_COLORS[key][0];
+        ctx.fillRect(pad, 44 + i * 16, 12, 16);
+      });
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = `800 46px ${SHARE_FONT}`;
+      ctx.fillText("Road News", pad + 32, 92);
+      ctx.fillStyle = "#9DAEC4";
+      ctx.font = `600 22px ${SHARE_FONT}`;
+      ctx.fillText("Aviso de ocorrência rodoviária", pad + 34, 124);
 
-      ctx.fillStyle = "#1eff95";
-      ctx.beginPath();
-      ctx.moveTo(158, 84);
-      ctx.lineTo(224, 84);
-      ctx.lineTo(191, 128);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = "#F4F9FA";
-      ctx.font = "900 48px Segoe UI, Arial, sans-serif";
-      ctx.fillText("ROAD NEWS", 248, 126);
-      ctx.fillStyle = "#1eff95";
-      ctx.font = "800 22px Segoe UI, Arial, sans-serif";
-      ctx.fillText("INTELIGÊNCIA OPERACIONAL RODOVIÁRIA", 250, 164);
-
-      ctx.fillStyle = "#1eff95";
-      ctx.font = "800 28px Segoe UI, Arial, sans-serif";
-      ctx.fillText("Resumo de inteligência rodoviária", 136, 258);
-
-      ctx.fillStyle = "#f5fbf8";
-      ctx.font = "900 42px Segoe UI, Arial, sans-serif";
-      let nextY = wrapCanvasText(ctx, imageTitle, 136, 322, 808, 54, 3);
-      nextY += 20;
-
-      ctx.fillStyle = "rgba(255,255,255,.09)";
-      ctx.fillRect(136, nextY + 18, 808, 330);
-      ctx.strokeStyle = "rgba(30, 255, 149, .35)";
-      ctx.strokeRect(136, nextY + 18, 808, 330);
-
-      ctx.fillStyle = "#CFD1D0";
-      ctx.font = "600 26px Segoe UI, Arial, sans-serif";
-      wrapCanvasText(ctx, summary, 168, nextY + 76, 744, 38, 7);
-
-      if (badges.length) {
-        drawCanvasBadges(ctx, badges, 168, nextY + 300, 744);
+      // Faixa do grau, na cor da régua.
+      ctx.fillStyle = fill;
+      ctx.fillRect(0, 150, w, 76);
+      ctx.fillStyle = onFill;
+      ctx.font = `800 30px ${SHARE_FONT}`;
+      const grade = `GRAU ${String(risk.label || "").toUpperCase()}`;
+      ctx.fillText(grade, pad, 200);
+      if (impact) {
+        const gx = pad + ctx.measureText(grade).width + 14;
+        ctx.font = `700 26px ${SHARE_FONT}`;
+        ctx.fillText(fitCanvasText(ctx, `· ${impact[1]}`, w - pad - gx), gx, 199);
       }
 
-      ctx.fillStyle = "#1eff95";
-      ctx.font = "800 23px Segoe UI, Arial, sans-serif";
-      ctx.fillText("Fonte", 136, 894);
-      ctx.fillStyle = "#f5fbf8";
-      ctx.font = "700 27px Segoe UI, Arial, sans-serif";
-      wrapCanvasText(ctx, source || "Road News", 136, 932, 560, 34, 2);
+      // Título.
+      ctx.fillStyle = SHARE_COLORS.text;
+      ctx.font = `800 50px ${SHARE_FONT}`;
+      let y = 310;
+      y += (canvasLineCount(ctx, imageTitle, inner, 3) - 1) * 60;
+      wrapCanvasText(ctx, imageTitle, pad, 310, inner, 60, 3);
 
-      ctx.fillStyle = "#CFD1D0";
-      ctx.font = "700 22px Segoe UI, Arial, sans-serif";
+      // Ação de despacho, como no card "Impacto na frota".
+      if (impact) {
+        y += 44;
+        ctx.font = `700 27px ${SHARE_FONT}`;
+        const lines = canvasLineCount(ctx, impact[2], inner - 56, 2);
+        const boxH = 66 + lines * 36;
+        ctx.fillStyle = SHARE_COLORS.surface;
+        ctx.fillRect(pad, y, inner, boxH);
+        ctx.fillStyle = fill;
+        ctx.fillRect(pad, y, 10, boxH);
+        ctx.strokeStyle = SHARE_COLORS.line;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(pad + .5, y + .5, inner - 1, boxH - 1);
+        ctx.fillStyle = SHARE_COLORS.muted;
+        ctx.font = `700 20px ${SHARE_FONT}`;
+        ctx.fillText("O QUE FAZER", pad + 32, y + 38);
+        ctx.fillStyle = SHARE_COLORS.text;
+        ctx.font = `700 27px ${SHARE_FONT}`;
+        wrapCanvasText(ctx, impact[2], pad + 32, y + 76, inner - 56, 36, 2);
+        y += boxH;
+      }
+
+      // Resumo, só quando diz algo além do título.
+      const same = (t) => normalizeText(t).replace(/[^a-z0-9]+/g, " ").trim();
+      const summaryAdds = summary && !same(item.title || "").includes(same(summary)) && !same(summary).includes(same(imageTitle));
+      ctx.font = `500 28px ${SHARE_FONT}`;
+      if (summaryAdds) {
+        y += 58;
+        ctx.fillStyle = SHARE_COLORS.soft;
+        const lines = canvasLineCount(ctx, summary, inner, 5);
+        wrapCanvasText(ctx, summary, pad, y, inner, 42, 5);
+        y += (lines - 1) * 42;
+      }
+
+      // Por que o grau: a justificativa da régua, para o grau ser auditável fora do painel.
+      const room = h - 196 - 40 - y;
+      if (risk.reason && room > 110) {
+        y += 64;
+        ctx.fillStyle = SHARE_COLORS.muted;
+        ctx.font = `700 20px ${SHARE_FONT}`;
+        ctx.fillText(`POR QUE ${String(risk.label || "").toUpperCase()}`, pad, y);
+        ctx.fillStyle = SHARE_COLORS.soft;
+        ctx.font = `500 25px ${SHARE_FONT}`;
+        wrapCanvasText(ctx, risk.reason, pad, y + 38, inner, 36, Math.max(1, Math.min(3, Math.floor((room - 64) / 36))));
+      }
+
+      // Rodapé: rodovia/região, fonte e horário.
+      const footerY = h - 196;
+      ctx.fillStyle = SHARE_COLORS.line;
+      ctx.fillRect(pad, footerY, inner, 2);
+      let chipX = pad;
+      if (road) chipX = drawShareChip(ctx, road, chipX, footerY + 28, w - pad);
+      if (region) chipX = drawShareChip(ctx, region, chipX, footerY + 28, w - pad);
+      ctx.fillStyle = SHARE_COLORS.muted;
+      ctx.font = `700 20px ${SHARE_FONT}`;
+      ctx.fillText("Fonte", pad, footerY + 112);
+      ctx.fillStyle = SHARE_COLORS.text;
+      ctx.font = `700 25px ${SHARE_FONT}`;
+      ctx.fillText(fitCanvasText(ctx, source || "Road News", 560), pad, footerY + 146);
       ctx.textAlign = "right";
-      ctx.fillText("Publicado em", 944, 910);
-      ctx.fillStyle = "#f5fbf8";
-      ctx.font = "800 24px Segoe UI, Arial, sans-serif";
-      ctx.fillText(published, 944, 946);
-      ctx.fillStyle = "#1eff95";
-      ctx.font = "800 24px Segoe UI, Arial, sans-serif";
-      ctx.fillText("ROAD NEWS", 944, 984);
+      ctx.fillStyle = SHARE_COLORS.muted;
+      ctx.font = `700 20px ${SHARE_FONT}`;
+      ctx.fillText("Publicado em", w - pad, footerY + 112);
+      ctx.fillStyle = SHARE_COLORS.text;
+      ctx.font = `800 25px ${SHARE_FONT}`;
+      ctx.fillText(published, w - pad, footerY + 146);
       ctx.textAlign = "left";
+    }
+
+    // A fonte Archivo precisa estar carregada antes de desenhar no canvas.
+    function drawShareImageWhenReady(item) {
+      drawShareImage(item);
+      if (document.fonts?.load) {
+        Promise.all([document.fonts.load("800 44px Archivo"), document.fonts.load("500 27px Archivo")])
+          .then(() => drawShareImage(item)).catch(() => {});
+      }
     }
 
     function openImageModal(index) {
       const item = state.items[index];
       if (!item) return;
-      drawShareImage(item);
+      drawShareImageWhenReady(item);
       document.getElementById("imageTitle").textContent = buildImageTitle(item) || "Resumo da notícia";
       document.getElementById("imageModal").classList.add("open");
     }
@@ -7703,59 +7850,56 @@ function showAuthView() {
         return;
       }
       const printStyles = `
+        /* Resumo semanal impresso como boletim: papel branco, cabeçalho azul-tinta, cores de grau do INMET, texto mínimo de 10px. */
         @font-face { font-family: 'Archivo'; src: url('${location.origin}/assets/fonts/archivo/Archivo-Variable-latin.woff2') format('woff2'); font-weight: 400 700; }
-        @font-face { font-family: 'GeistMono'; src: url('${location.origin}/assets/fonts/geist-mono/GeistMono-Regular.woff2') format('woff2'); font-weight: 400; }
-        @font-face { font-family: 'GeistMono'; src: url('${location.origin}/assets/fonts/geist-mono/GeistMono-Bold.woff2') format('woff2'); font-weight: 700 900; }
-        .weekly-badge, .weekly-sub, .weekly-kpi span, .weekly-section h4, .weekly-meta, .risk-pill { font-family: 'GeistMono', ui-monospace, monospace; }
-        @page { size: A4; margin: 8mm; }
+        @page { size: A4; margin: 10mm; }
         * { box-sizing: border-box; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-        html, body { margin: 0; min-height: 100%; background: #0F1814; color: #F4F9FA; font-family: 'Archivo', Arial, sans-serif; }
-        body { padding: 0; }
-        #weekly-summary-report { width: 100%; min-height: calc(297mm - 16mm); display: grid; gap: 7px; background: #0F1814; color: #F4F9FA; }
-        .weekly-hero, .weekly-section, .weekly-kpi, .weekly-occurrence { break-inside: avoid; box-shadow: none; color: #F4F9FA; }
-        .weekly-hero { padding: 12px 14px; background: linear-gradient(135deg, #0F1814, #2A3E33); border: 1px solid rgba(30, 255, 149, .50); border-top: 4px solid #1eff95; border-radius: 8px; }
-        .weekly-logo { color: #F4F9FA; font-size: 22px; font-weight: 950; letter-spacing: .04em; }
-        .weekly-logo:before { content: ""; display: inline-block; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 22px solid #1eff95; margin-right: 10px; transform: translateY(4px); }
-        .weekly-sub { color: #1eff95; font-size: 10px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; margin-top: 6px; }
-        .weekly-hero h3 { color: #F4F9FA; font-size: 22px; line-height: 1.12; margin: 10px 0 5px; }
-        .weekly-hero p { color: #CFD1D0; font-size: 11px; line-height: 1.36; margin: 0; }
-        .risk-pill { display: inline-block; background: #1eff95; color: #1e0d43; font-size: 11px; font-weight: 950; padding: 5px 9px; margin-top: 8px; border-radius: 999px; }
-        .weekly-period { color: #9FA3A1; font-size: 9px; margin-top: 8px; font-weight: 800; }
+        html, body { margin: 0; background: #FFFFFF; color: #10233F; font-family: 'Archivo', Arial, sans-serif; font-variant-numeric: tabular-nums; }
+        #weekly-summary-report { width: 100%; display: grid; gap: 8px; background: #FFFFFF; color: #10233F; }
+        .weekly-hero, .weekly-section, .weekly-kpi, .weekly-occurrence, .weekly-watch-item { break-inside: avoid; box-shadow: none; color: #10233F; }
+        .weekly-hero { padding: 12px 14px; background: #10233F; color: #FFFFFF; border-radius: 6px; }
+        .weekly-hero h3, .weekly-hero p, .weekly-logo, .weekly-sub, .weekly-period { color: #FFFFFF; }
+        .weekly-logo { font-size: 20px; font-weight: 800; letter-spacing: 0; }
+        .weekly-sub { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-top: 4px; opacity: .85; }
+        .weekly-hero h3 { font-size: 22px; line-height: 1.15; margin: 10px 0 5px; }
+        .weekly-hero p { font-size: 12px; line-height: 1.4; margin: 0; opacity: .92; }
+        .weekly-period { font-size: 11px; margin-top: 8px; font-weight: 700; opacity: .8; }
+        .risk-pill { display: inline-block; background: #FFFFFF; color: #10233F; font-size: 11px; font-weight: 800; padding: 4px 8px; margin-top: 8px; border-radius: 4px; }
         .weekly-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-        .weekly-grid { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr); gap: 7px; }
-        .weekly-section, .weekly-kpi, .weekly-occurrence { background: rgba(255, 255, 255, .06); border: 1px solid rgba(30, 255, 149, .24); border-radius: 8px; }
+        .weekly-grid { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr); gap: 8px; }
+        .weekly-section, .weekly-kpi, .weekly-occurrence { background: #FFFFFF; border: 1px solid #CAD2DC; border-radius: 6px; }
         .weekly-section { padding: 9px 10px; }
-        .weekly-section h4 { color: #F4F9FA; font-size: 9px; letter-spacing: .10em; text-transform: uppercase; margin: 0 0 6px; }
+        .weekly-section h4 { color: #10233F; font-size: 12px; font-weight: 800; letter-spacing: 0; margin: 0 0 6px; }
         .weekly-section ul { margin: 0; padding-left: 14px; }
-        .weekly-section li { color: #CFD1D0; font-size: 10px; line-height: 1.28; margin: 4px 0; }
-        .weekly-kpi { min-height: 52px; padding: 8px 9px; }
-        .weekly-kpi span { display: block; color: #9FA3A1; font-size: 8px; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
-        .weekly-kpi strong { display: block; color: #F4F9FA; font-size: 17px; line-height: 1.05; margin-top: 5px; }
+        .weekly-section li { color: #2C3D55; font-size: 11px; line-height: 1.35; margin: 4px 0; }
+        .weekly-kpi { padding: 8px 9px; }
+        .weekly-kpi span { display: block; color: #536177; font-size: 10px; font-weight: 700; }
+        .weekly-kpi strong { display: block; color: #10233F; font-size: 18px; line-height: 1.05; margin-top: 4px; }
         .weekly-occurrences { display: grid; gap: 6px; }
-        .weekly-occurrence { padding: 8px 9px; background: rgba(0, 0, 0, .18); }
-        .weekly-occurrence h5 { color: #F4F9FA; font-size: 11px; line-height: 1.25; margin: 5px 0 4px; }
-        .weekly-occurrence p { color: #CFD1D0; font-size: 10px; line-height: 1.28; margin: 0; }
-        .weekly-meta { display: flex; flex-wrap: wrap; gap: 4px; color: #9FA3A1; font-size: 8px; font-weight: 800; }
+        .weekly-occurrence { padding: 8px 9px; background: #F5F7FA; }
+        .weekly-occurrence h5 { color: #10233F; font-size: 12px; line-height: 1.25; margin: 5px 0 4px; }
+        .weekly-occurrence p { color: #2C3D55; font-size: 11px; line-height: 1.32; margin: 0; }
+        .weekly-meta { display: flex; flex-wrap: wrap; gap: 6px; color: #536177; font-size: 10px; font-weight: 700; }
         .weekly-roads { display: flex; flex-wrap: wrap; gap: 5px; }
-        .weekly-roads span { background: rgba(30, 255, 149, .12); border: 1px solid rgba(30, 255, 149, .42); color: #1eff95; border-radius: 999px; font-size: 9px; font-weight: 900; padding: 4px 6px; }
+        .weekly-roads span { background: #E8ECF1; border: 1px solid #CAD2DC; color: #10233F; border-radius: 4px; font-size: 10px; font-weight: 800; padding: 3px 6px; }
         .weekly-spacer { height: 5px; }
-        .weekly-footer { border-top: 1px solid rgba(255, 255, 255, .12); color: #9FA3A1; font-size: 9px; padding-top: 6px; }
-        .hint { color: #9FA3A1; font-size: 9px; }
+        .weekly-footer { border-top: 1px solid #CAD2DC; color: #536177; font-size: 10px; padding-top: 6px; }
+        .hint { color: #536177; font-size: 10px; }
         .weekly-kpis { grid-template-columns: repeat(7, minmax(0, 1fr)); }
         .weekly-verdict { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-        .weekly-badge { border-radius: 999px; padding: 3px 7px; font-size: 8px; font-weight: 900; text-transform: uppercase; border: 1px solid rgba(255,255,255,.2); }
-        .risk-critico { color: #ff6b6b; border-color: rgba(255,59,59,.5); } .risk-alto { color: #FFCD00; border-color: rgba(232,176,66,.5); }
-        .risk-medio { color: #00ACFF; border-color: rgba(107,158,199,.5); } .risk-baixo { color: #487E72; border-color: rgba(124,170,111,.5); }
-        .weekly-delta { display: block; font-size: 7px; margin-top: 3px; } .weekly-delta.up { color: #ff6b6b; } .weekly-delta.down { color: #487E72; } .weekly-delta.same { color: #9FA3A1; }
+        .weekly-badge { border-radius: 4px; padding: 3px 7px; font-size: 10px; font-weight: 800; text-transform: uppercase; border: 1px solid transparent; }
+        .risk-critico { background: #C8201A; color: #FFFFFF; } .risk-alto { background: #E46C00; color: #10233F; }
+        .risk-medio { background: #EDB800; color: #10233F; } .risk-baixo { background: #5F6E83; color: #FFFFFF; }
+        .weekly-delta { display: block; font-size: 10px; margin-top: 3px; } .weekly-delta.up { color: #B01B15; } .weekly-delta.down { color: #2E7A4C; } .weekly-delta.same { color: #536177; }
         .weekly-watch-list, .weekly-list { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
-        .weekly-watch-item { border-left: 3px solid #FFCD00; padding: 5px 8px; background: rgba(0,0,0,.18); border-radius: 4px; break-inside: avoid; }
-        .weekly-watch-item.urgent { border-left-color: #ff3b3b; }
-        .weekly-watch-item h5 { color: #F4F9FA; font-size: 10px; margin: 3px 0 2px; } .weekly-watch-item p, .weekly-list li { color: #CFD1D0; font-size: 9px; margin: 0; }
-        .weekly-actions ol { margin: 0; padding-left: 14px; } .weekly-actions li { color: #F4F9FA; font-size: 10px; margin: 3px 0; }
-        .weekly-table { width: 100%; border-collapse: collapse; font-size: 9px; } .weekly-table th { text-align: left; color: #9FA3A1; font-size: 7px; text-transform: uppercase; padding: 3px; }
-        .weekly-table td { color: #CFD1D0; padding: 3px; border-top: 1px solid rgba(255,255,255,.08); vertical-align: top; } .weekly-table td strong { color: #F4F9FA; }
-        .weekly-empty { color: #9FA3A1; font-size: 9px; margin: 0; }
-        a { color: #1eff95; text-decoration: none; }
+        .weekly-watch-item { border: 1px solid #CAD2DC; padding: 6px 8px; background: #F5F7FA; border-radius: 4px; }
+        .weekly-watch-item.urgent { border-color: #C8201A; }
+        .weekly-watch-item h5 { color: #10233F; font-size: 11px; margin: 3px 0 2px; } .weekly-watch-item p, .weekly-list li { color: #2C3D55; font-size: 10px; margin: 0; }
+        .weekly-actions ol { margin: 0; padding-left: 14px; } .weekly-actions li { color: #10233F; font-size: 11px; margin: 3px 0; }
+        .weekly-table { width: 100%; border-collapse: collapse; font-size: 10px; } .weekly-table th { text-align: left; color: #536177; font-size: 10px; font-weight: 700; padding: 3px; }
+        .weekly-table td { color: #2C3D55; padding: 3px; border-top: 1px solid #E2E7ED; vertical-align: top; } .weekly-table td strong { color: #10233F; }
+        .weekly-empty { color: #536177; font-size: 10px; margin: 0; }
+        a { color: #1D4F91; text-decoration: none; }
       `;
       printWindow.document.open();
       printWindow.document.write(`<!doctype html><html><head><title>Road News - Resumo semanal</title><style>${printStyles}</style></head><body>${report.outerHTML}<script>window.onload = function(){ setTimeout(function(){ window.focus(); window.print(); }, 250); };<\/script></body></html>`);
@@ -8231,7 +8375,10 @@ function showAuthView() {
         return;
       }
       renderDataFreshness();
-      window.RoadDashboard?.renderChrome();
+      // Na Situação agora (e no modo torre) redesenha com o dado já carregado: a linha "agora"
+      // da régua anda, as faixas crescem e o "há X min" acompanha. Sem chamada à API.
+      if (state.activeClientPage === "dashboard" && !document.hidden) window.RoadDashboard?.render();
+      else window.RoadDashboard?.renderChrome();
     }, 60 * 1000);
     document.addEventListener("visibilitychange", () => {
       if (shouldAutoRefresh()) autoRefresh();

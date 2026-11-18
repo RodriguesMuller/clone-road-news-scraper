@@ -98,3 +98,25 @@ test("resumo operacional usa a janela escolhida e compara com o período anterio
   assert.ok(day.earliest <= now - 48 * 3600e3);
   assert.ok(!("events" in buildWeeklyBrief(items, now)), "resumo semanal não muda de formato");
 });
+
+test("modo torre: rota própria, tela cheia escura, sem navegação, com saída", () => {
+  assert.match(html, /"\/torre": \{ view: "occurrences", scroll: "top", page: "dashboard" \}/);
+  assert.match(html, /const CLIENT_ROUTES = new Set\(\[[^\]]*"\/torre"/, "cliente acessa o modo torre");
+  assert.match(html, /document\.body\.classList\.toggle\("tower-mode", state\.activeRoute === "\/torre"\)/);
+  assert.match(html, /body\.tower-mode \.sidebar, [^{]*\{ display: none !important; \}/);
+  assert.match(html, /class="mini-button tower-exit" type="button" data-route="\/dashboard"/);
+  const vercel = JSON.parse(fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"));
+  assert.ok(vercel.rewrites.some((r) => r.source === "/torre" && r.destination === "/"), "rota publicada no Vercel");
+});
+
+test("card de resumo (PNG) no mundo do boletim: grau pela régua, ação e justificativa", () => {
+  const start = html.indexOf("    function drawShareImage(item) {");
+  const draw = html.slice(start, html.indexOf("    function drawShareImageWhenReady(item) {"));
+  assert.ok(start > 0);
+  assert.doesNotMatch(draw, /#0F1814|#1eff95|drawGrid/i, "sem o fundo escuro, a grade e o verde neon antigos");
+  assert.match(draw, /const risk = classifyRisk\(item\);/, "grau pela mesma régua das telas");
+  assert.match(draw, /const impact = fleetImpact\(item\);/, "ação igual ao 'Impacto na frota' dos cards");
+  assert.match(draw, /POR QUE \$\{/, "justificativa do grau no card");
+  assert.match(html, /const place = findPlace\(originalTitle\) \|\| findPlace\(text\);/, "local do título não pega 'Na região da' do resumo");
+  assert.match(html, /if \(truncated && lines\.length === maxLines\) \{/, "reticências só quando cortou o texto");
+});

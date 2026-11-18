@@ -1,6 +1,6 @@
 # Features — Road News
 
-> Mantido por `product-docs-agent`. Última revisão: 2026-11-17 (atualidade do dado e atualização automática). Cada feature abaixo existe de verdade no código (verificado contra `api/_auth.js: FEATURE_RULES` e as rotas de `vercel.json`) — nada aqui é aspiracional; itens futuros estão em [`../docs/ROADMAP.md`](../docs/ROADMAP.md).
+> Mantido por `product-docs-agent`. Última revisão: 2026-11-18 (redesign "Boletim de Aviso": Situação agora e modo torre). Cada feature abaixo existe de verdade no código (verificado contra `api/_auth.js: FEATURE_RULES` e as rotas de `vercel.json`) — nada aqui é aspiracional; itens futuros estão em [`../docs/ROADMAP.md`](../docs/ROADMAP.md).
 
 ## Features controladas por pacote (o que pode ser limitado/vendido)
 
@@ -17,11 +17,13 @@ O pacote é contratado pelo **cliente (empresa)**: todos os usuários dela herda
 
 ## Telas do painel (cliente)
 
-Dashboard · Alertas · Central de Evento (o cliente escolhe a notícia com "Acompanhar evento" e a IA atualiza o evento a cada coleta até o encerramento, com a decisão de despacho) · Notícias · Mapa rodoviário · Minha Rota · Salvos · Resumo operacional · Relatórios (resumo semanal). (Fontes e Configurações ficam só para Gestor/Admin.) Tema claro ou escuro à escolha do usuário.
+Situação agora · Modo torre · Alertas · Central de Evento (o cliente escolhe a notícia com "Acompanhar evento" e a IA atualiza o evento a cada coleta até o encerramento, com a decisão de despacho) · Notícias · Mapa rodoviário · Minha Rota · Salvos · Resumo operacional · Relatórios (resumo semanal). (Fontes e Configurações ficam só para Gestor/Admin.) Tema claro ou escuro à escolha do usuário.
 
 **Atualidade do dado sempre visível:** o selo "Dados de HH:MM" no topo mostra quando o painel leu os dados pela última vez e serve para atualizar na hora. O painel se atualiza sozinho de hora em hora, no ritmo da coleta, com a aba aberta. Cada atualização conta 1 consulta de notícias do pacote. Se o dado falhar ou ficar velho, o selo fica âmbar ou vermelho, e as telas dizem "Sem dados: não interprete como ausência de risco" em vez de "sem ocorrência".
 
-**Dashboard executivo:** indicadores do período com comparativo (notícias coletadas, com impacto na frota, alertas importantes, críticas, rodovias afetadas, fontes ativas), ocorrência em destaque com a ação recomendada, tendência, principais temas, panorama no mapa do Brasil e últimas notícias com filtros, além de busca global e alertas das últimas 24h no cabeçalho.
+**Situação agora (tela inicial):** responde "posso liberar a carga agora, e por onde?". No topo, o veredito na cor do grau mais alto (ex.: "Atenção: 5 trechos com risco alto"). Abaixo, os avisos das últimas 24h ordenados por grau, cada um com número de evento (EV-1234), a ação de despacho e a justificativa do grau; ao lado, a **régua de vigência**, que mostra há quanto tempo cada trecho está com ocorrência, sem inventar previsão de liberação. Em seguida, o panorama do período: tendência, principais temas, mapa do Brasil e últimas notícias, além de busca global e alertas das últimas 24h no cabeçalho.
+
+**Modo torre:** a Situação agora em tela cheia escura, sem menu e com letra grande, para o monitor fixo ou a TV da torre de controle; se atualiza sozinho.
 
 **Resumo operacional:** situação das últimas 6h/24h/72h/7 dias comparada ao período anterior: rodovias com bloqueio ou restrição (há quanto tempo e o que fazer), ações imediatas, pontos de atenção dos próximos dias, risco por estado, evolução no período, segurança da carga e clima.
 

@@ -2,6 +2,37 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-18 — Redesign "Boletim de Aviso" (Impeccable: critique → harden → shape → build)
+**O que mudou:**
+- `public/index.html`:
+  - Camada final de CSS "Boletim de Aviso": tokens claro (padrão) e escuro, `--ink`, cores de grau INMET com variantes `--risk-*-ink`/`--risk-*-text`, foco visível, superfícies com fio de 1px.
+  - 69 cores do mundo escuro antigo (branco/preto translúcido, gradientes verdes) trocadas por tokens.
+  - Home "Situação agora" (`#sitVerdict`, `#sitAvisos`, `#sitRegua`); rota `/torre` com `body.tower-mode`; item de menu "Modo torre".
+  - Minha Rota com a recomendação no topo; cores do traçado via `riskColor()`/`cssToken()`; `MAP_RISK_COLORS` lê os tokens.
+  - Login em duas colunas; CSS de impressão do resumo semanal reescrito; `drawShareImage` reescrito (aviso); `wrapCanvasText` só põe reticências quando corta; `findPlace` procura no título primeiro.
+  - O tique de 1 min redesenha a Situação agora/torre com o dado já carregado.
+- `public/dashboard.js`: `renderSituation` (veredito, avisos, régua de vigência); `LEVEL` lê `--risk-*`; `THEMES` em família azul-acinzentada; carrossel, KPIs e código morto removidos.
+- `public/risk.js`: `eventCode()` (EV-1234 estável por URL, FNV-1a).
+- `public/privacidade.html`, `public/termos.html`: novo visual, acentos restaurados, conteúdo idêntico.
+- `vercel.json`: rewrite `/torre`.
+- `scraper/weekly_news.py`: HTML do e-mail semanal com as cores do boletim (`LEVEL_COLORS` INMET + `LEVEL_INK`); só valores de estilo mudaram, sem lógica.
+- `PRODUCT.md`, `DESIGN.md` e `.impeccable/` (crítica, brief da superfície com o contrato de direção, `design.json`).
+- Testes: identidade nova, Situação agora, modo torre, redesenho por minuto e card de resumo em `tests/test_client_panel.js` e `tests/test_data_freshness.js`.
+
+**Por quê:** a crítica de design (21/40) mostrou que o painel parecia portal de notícias/ferramenta de dev: o veredito ficava no 8º item do menu, a escala de gravidade tinha 4 vocabulários e as cores de categoria imitavam as de grau. O usuário pediu redesign completo voltado para operação rodoviária. A direção foi sorteada pelo processo da skill (`seed:6b06dea130edd687`) e escolhida pelo usuário na página de decisão.
+
+**Impacto medido:** JS 103/103. Detector do Impeccable: 13 achados no início, 3 no fim (falsos positivos: shimmer de carregamento, amostra tracejada de legenda, pulso de status do marcador bloqueado). Situação agora e estado "Sem dados" conferidos em jsdom com o fixture; card de resumo renderizado em PNG e inspecionado. O usuário conferiu `/dashboard` e `/torre` em captura. Python não rodou (interpretador ausente). Em `scraper/weekly_news.py` só mudaram strings de estilo; `tests/test_weekly_brief.py` renderiza o e-mail e precisa rodar no CI.
+
+**Alternativas descartadas:**
+- Direções "Placa de Rodovia" (a mais óbvia para o tema), "Quadro de Partidas" (mundo de aeroporto) e "Padrão da categoria" (indistinguível da concorrência).
+- Régua com previsão de liberação: as fontes não informam fim; o INMET tem "Fim", mas o scraper só grava "Início". A régua mostra só o que é verdade e esmaece depois de agora.
+- Número EV nos cards de Alertas e no card de resumo: o número da home vem da notícia-base do agrupamento; um card isolado pode ser outra notícia do mesmo evento e mostraria outro número.
+- Remover as camadas de CSS antigas por inteiro: definem variáveis usadas só nelas; ficaram anuladas pela camada nova (pendência de limpeza).
+
+**Pendências:** revisão final independente com capturas de todas as telas no novo visual (Minha Rota e Central só foram vistas na versão anterior); UF inferida errada em alguns eventos do resumo ("BR-356 · PA" para notícia de MG), dono `data-pipeline-engineer`; CPF e telefone pedidos no convite e ausentes na Privacidade, dono `compliance-advisor`; rotas duplicadas `/developer/*`, dono `saas-platform-engineer`; gravar o "Fim" do aviso INMET para a régua, dono `scraping-engineer`; PDF da documentação não regenerado (dependências do `build-docs-pdf.js` ausentes).
+
+**ADR relacionado:** nenhum (sem dependência nova; fontes e bibliotecas já existentes).
+
 ## 2026-11-18 — Tela Alertas reaproveitada como "Meus trechos"
 **O que mudou:**
 - `public/index.html`:

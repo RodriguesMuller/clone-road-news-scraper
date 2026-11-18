@@ -4,42 +4,51 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Road News - Privacidade</title>
+  <script>
+    try { document.documentElement.dataset.theme = localStorage.getItem("roadnews.theme") || "light"; }
+    catch (e) { document.documentElement.dataset.theme = "light"; }
+  </script>
   <style>
-    :root { color-scheme: dark; --bg: #061b14; --panel: #0b2a20; --line: rgba(32, 242, 155, .26); --text: #f3f7f5; --muted: #a7b8b1; --green: #20f29b; }
+    @font-face { font-family: 'Archivo'; src: url('/assets/fonts/archivo/Archivo-Variable-latin.woff2') format('woff2'); font-weight: 400 700; font-display: swap; }
+    :root { color-scheme: light; --ink: #10233F; --bg: #EDF0F4; --paper: #FFFFFF; --line: #CAD2DC; --text: #10233F; --muted: #536177; --link: #1D4F91; }
+    :root[data-theme="dark"] { color-scheme: dark; --bg: #0F1828; --paper: #152134; --line: #2C3D57; --text: #E8EDF4; --muted: #9DAABD; --link: #8DB4EE; }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); font-family: Arial, sans-serif; line-height: 1.55; }
-    main { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 64px; }
-    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
-    .mark { width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 24px solid var(--green); }
-    h1 { margin: 0; font-size: clamp(30px, 5vw, 52px); line-height: 1; }
-    h2 { color: var(--green); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; margin-top: 30px; }
-    p, li { color: #d7e4de; }
-    .card { background: linear-gradient(135deg, rgba(11, 42, 32, .92), rgba(6, 27, 20, .96)); border: 1px solid var(--line); border-top: 4px solid var(--green); border-radius: 8px; padding: 26px; }
-    a { color: var(--green); font-weight: 800; text-decoration: none; }
-    .muted { color: var(--muted); font-size: 13px; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Archivo', "Segoe UI", system-ui, sans-serif; line-height: 1.6; }
+    header { background: var(--ink); color: #fff; }
+    header div, main { width: min(760px, calc(100% - 32px)); margin: 0 auto; }
+    header div { display: flex; align-items: center; gap: 12px; padding: 16px 0; font-weight: 800; font-size: 18px; }
+    .mark { width: 6px; height: 26px; border-radius: 2px; background-image: linear-gradient(#C8201A 0 25%, #E46C00 25% 50%, #EDB800 50% 75%, #5F6E83 75%); }
+    main { padding: 32px 0 64px; }
+    article { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: clamp(20px, 4vw, 40px); }
+    h1 { margin: 0 0 4px; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; }
+    h2 { margin: 28px 0 6px; font-size: 18px; }
+    p, li { max-width: 68ch; }
+    .muted { color: var(--muted); font-size: 14px; margin-top: 0; }
+    a { color: var(--link); font-weight: 700; text-underline-offset: 3px; }
+    a:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
   </style>
 </head>
 <body>
+  <header><div><span class="mark" aria-hidden="true"></span>Road News</div></header>
   <main>
-    <div class="brand"><span class="mark"></span><strong>ROAD NEWS</strong></div>
-    <section class="card">
+    <article>
       <h1>Privacidade</h1>
-      <p class="muted">Ultima atualizacao: 06/07/2026</p>
-      <p>O Road News monitora noticias e alertas publicos relevantes para operacoes rodoviarias. Quando o login esta ativo, usamos dados de cadastro e uso apenas para controle de acesso, seguranca, auditoria e limites de pacote.</p>
+      <p class="muted">Última atualização: 06/07/2026</p>
+      <p>O Road News monitora notícias e alertas públicos relevantes para operações rodoviárias. Quando o login está ativo, usamos dados de cadastro e uso apenas para controle de acesso, segurança, auditoria e limites de pacote.</p>
       <h2>Dados tratados</h2>
       <ul>
-        <li>Nome, e-mail, empresa, perfil de acesso e status do usuario.</li>
-        <li>Registros de uso de recursos como resumo com IA, PDF, mapa e visualizacao do painel.</li>
-        <li>Logs administrativos para auditoria de convites, pacotes e alteracoes de acesso.</li>
+        <li>Nome, e-mail, empresa, perfil de acesso e status do usuário.</li>
+        <li>Registros de uso de recursos como resumo com IA, PDF, mapa e visualização do painel.</li>
+        <li>Logs administrativos para auditoria de convites, pacotes e alterações de acesso.</li>
       </ul>
       <h2>Finalidade</h2>
-      <p>Os dados sao usados para autenticar usuarios, aplicar limites contratados, melhorar a seguranca da conta e manter rastreabilidade operacional.</p>
-      <h2>Seguranca</h2>
-      <p>As chaves sensiveis ficam somente nas funcoes de servidor. O front-end usa apenas chave publica do Supabase e token de sessao do usuario autenticado.</p>
+      <p>Os dados são usados para autenticar usuários, aplicar limites contratados, melhorar a segurança da conta e manter rastreabilidade operacional.</p>
+      <h2>Segurança</h2>
+      <p>As chaves sensíveis ficam somente nas funções de servidor. O front-end usa apenas chave pública do Supabase e token de sessão do usuário autenticado.</p>
       <h2>Direitos LGPD</h2>
-      <p>Usuarios podem solicitar acesso, correcao, bloqueio ou exclusao de dados pessoais pelo canal de atendimento da empresa responsavel pelo Road News.</p>
+      <p>Usuários podem solicitar acesso, correção, bloqueio ou exclusão de dados pessoais pelo canal de atendimento da empresa responsável pelo Road News.</p>
       <p><a href="/">Voltar ao painel</a></p>
-    </section>
+    </article>
   </main>
 </body>
 </html>
