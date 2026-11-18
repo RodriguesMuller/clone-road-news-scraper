@@ -45,33 +45,39 @@
   };
   const icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ""}</svg>`;
 
-  // Paleta Overhaul: gravidade em Deep Orange / Burnt Yellow / Sky Blue / Vivid Green.
+  // Régua de gravidade do Boletim de Aviso (cores do INMET). A cor vem do token CSS do tema
+  // ativo (--risk-*), então mapa, gráficos e selos seguem claro/escuro sem hex fixo no JS.
+  const cssVar = (name, fallback) => {
+    try { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback; } catch (e) { return fallback; }
+  };
+  const level = (label, cls, token, fallback) => ({ label, cls, get color() { return cssVar(token, fallback); } });
   const LEVEL = {
-    critical: { label: "Crítico", cls: "sev-critical", color: "#FC3700" },
-    high: { label: "Alto", cls: "sev-high", color: "#FFCD00" },
-    medium: { label: "Médio", cls: "sev-medium", color: "#00ACFF" },
-    low: { label: "Baixo", cls: "sev-low", color: "#1EFF95" },
+    critical: level("Crítico", "sev-critical", "--risk-critical", "#C8201A"),
+    high: level("Alto", "sev-high", "--risk-high", "#E46C00"),
+    medium: level("Médio", "sev-medium", "--risk-medium", "#EDB800"),
+    low: level("Baixo", "sev-low", "--risk-low", "#5F6E83"),
   };
 
-  // Temas (rosca e selos) a partir do tipo de ocorrência da régua — cores da paleta secundária.
+  // Temas (rosca e selos) a partir do tipo de ocorrência. Família azul-acinzentada de propósito:
+  // vermelho, laranja e amarelo são exclusivos da gravidade e não podem aparecer como categoria.
   const THEMES = [
-    ["Acidentes", "#7758FF", (k) => ["accident", "accident_partial", "accident_jam", "fatal_accident", "heavy_vehicle", "hazmat", "small_fire", "fire"].includes(k)],
-    ["Interdições", "#FC3700", (k) => ["block_total", "block_partial", "block_partial_planned", "block_planned", "strike_block"].includes(k)],
-    ["Obras", "#FFCD00", (k, t) => k === "traffic" && /obra|manutenc|recapeam|pare.e.siga|pavimenta/.test(t)],
-    ["Trânsito", "#00ACFF", (k) => ["traffic", "jam"].includes(k)],
-    ["Clima", "#C6BDFC", (k) => ["weather", "visibility", "inmet", "inmet_red", "inmet_orange", "inmet_yellow"].includes(k)],
-    ["Roubo de carga", "#F78D87", (k) => ["cargo_theft", "cargo_theft_police"].includes(k)],
-    ["Greves", "#E4C1F9", (k) => k === "strike"],
-    ["Infraestrutura", "#487E72", (k) => k === "structural"],
-    ["Combustíveis e pedágios", "#1EFF95", (k, t) => /diesel|combustive|pedagio/.test(t)],
+    ["Acidentes", "#1D4F91", (k) => ["accident", "accident_partial", "accident_jam", "fatal_accident", "heavy_vehicle", "hazmat", "small_fire", "fire"].includes(k)],
+    ["Interdições", "#10233F", (k) => ["block_total", "block_partial", "block_partial_planned", "block_planned", "strike_block"].includes(k)],
+    ["Obras", "#5B7FB0", (k, t) => k === "traffic" && /obra|manutenc|recapeam|pare.e.siga|pavimenta/.test(t)],
+    ["Trânsito", "#2C7A8C", (k) => ["traffic", "jam"].includes(k)],
+    ["Clima", "#7FA6D6", (k) => ["weather", "visibility", "inmet", "inmet_red", "inmet_orange", "inmet_yellow"].includes(k)],
+    ["Roubo de carga", "#6B5B95", (k) => ["cargo_theft", "cargo_theft_police"].includes(k)],
+    ["Greves", "#9A8FC2", (k) => k === "strike"],
+    ["Infraestrutura", "#4F8A7F", (k) => k === "structural"],
+    ["Combustíveis e pedágios", "#8FA3B8", (k, t) => /diesel|combustive|pedagio/.test(t)],
   ];
   function themeOf(kind, text) {
     const found = THEMES.find(([, , test]) => test(kind, text));
     return found ? found[0] : "Outros";
   }
-  const THEME_COLOR = Object.fromEntries([...THEMES.map(([n, c]) => [n, c]), ["Outros", "#9FA3A1"]]);
+  const THEME_COLOR = Object.fromEntries([...THEMES.map(([n, c]) => [n, c]), ["Outros", "#A3ADBA"]]);
 
-  const dash = { days: 7, filter: "all", featuredIndex: 0, featuredTimer: null, map: null, layer: null, lastCounts: {} };
+  const dash = { days: 7, filter: "all", sitFilter: "all", map: null, layer: null, lastCounts: {} };
 
   // ---------------- dados ----------------
   function itemTime(item) {
@@ -115,15 +121,6 @@
     };
   }
 
-  const METRICS = [
-    { key: "collected", label: "Notícias coletadas", icon: "file", tone: "blue", help: "Notícias e avisos coletados das fontes monitoradas no período.", count: (list) => list.length },
-    { key: "impact", label: "Com impacto na frota", icon: "target", tone: "cyan", help: "Notícias classificadas como Médio, Alto ou Crítico pela régua de risco (afetam rota, horário ou carga).", count: (list) => list.filter((e) => e.risk.rank >= 2).length },
-    { key: "important", label: "Alertas importantes", icon: "alert", tone: "orange", help: "Notícias de risco Alto ou Crítico.", count: (list) => list.filter((e) => e.risk.rank >= 3).length },
-    { key: "critical", label: "Notícias críticas", icon: "octagon", tone: "red", help: "Risco Crítico: via indisponível agora ou carga sob ameaça imediata.", count: (list) => list.filter((e) => e.risk.rank === 4).length },
-    { key: "roads", label: "Rodovias afetadas", icon: "truck", tone: "violet", help: "Rodovias distintas citadas em notícias com impacto (Médio ou acima).", count: (list) => new Set(list.filter((e) => e.road && e.risk.rank >= 2).map((e) => e.road)).size },
-    { key: "sources", label: "Fontes ativas", icon: "radio", tone: "green", help: "Fontes que publicaram ao menos uma notícia coletada no período.", count: (list) => new Set(list.map((e) => e.source).filter(Boolean)).size },
-  ];
-
   function buckets(data) {
     const size = dash.days === 1 ? 2 * 3600e3 : dash.days === 7 ? DAY : 2 * DAY;
     const n = Math.round(data.windowMs / size);
@@ -157,21 +154,6 @@
     return value.length <= limit ? value : `${value.slice(0, limit - 1).replace(/\s+\S*$/, "")}…`;
   }
 
-  function animateNumber(el, to) {
-    const from = Number(el.dataset.value || 0);
-    el.dataset.value = String(to);
-    if (reduceMotion() || from === to) { el.textContent = to.toLocaleString("pt-BR"); return; }
-    const start = performance.now();
-    const duration = 700;
-    const step = (now) => {
-      const p = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      el.textContent = Math.round(from + (to - from) * eased).toLocaleString("pt-BR");
-      if (p < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }
-
   function sparkline(values, tone) {
     const w = 120, h = 36;
     const max = Math.max(1, ...values);
@@ -182,14 +164,6 @@
     return `<svg class="sparkline tone-${tone}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
       <defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".35"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>
       <path d="${line} L${w} ${h} L0 ${h} Z" fill="url(#${id})"/><path d="${line}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
-  }
-
-  function delta(cur, prev, comparable) {
-    if (!comparable) return `<span class="kpi-delta muted" title="Os dados carregados não cobrem o período anterior inteiro.">sem base de comparação</span>`;
-    if (!prev) return cur ? `<span class="kpi-delta up">novo no período</span>` : `<span class="kpi-delta muted">= período anterior</span>`;
-    const pct = Math.round(((cur - prev) / prev) * 100);
-    if (!pct) return `<span class="kpi-delta muted">= período anterior</span>`;
-    return `<span class="kpi-delta ${pct > 0 ? "up" : "down"}">${pct > 0 ? "↑" : "↓"} ${Math.abs(pct)}% <small>vs período anterior</small></span>`;
   }
 
   // Ilustração de reserva por tema, usada quando a fonte não publica imagem: cena de estrada em
@@ -303,89 +277,168 @@
   const place = (e) => [e.road, e.uf].filter(Boolean).join(" / ");
 
   // ---------------- seções ----------------
-  function renderKpis(data, bucketData) {
-    const target = document.getElementById("dashKpis");
-    if (!target) return;
-    if (!target.querySelector(".kpi-card")) {
-      target.innerHTML = METRICS.map((m) => `
-        <article class="dash-card kpi-card tone-${m.tone}" data-kpi="${m.key}" tabindex="0" title="${esc(m.help)}">
-          <div class="kpi-top"><span class="kpi-icon">${icon(m.icon)}</span><strong class="kpi-value" data-value="0">0</strong></div>
-          <span class="kpi-label">${esc(m.label)}</span>
-          <div class="kpi-bottom"><span class="kpi-delta-slot"></span><span class="kpi-spark"></span></div>
-          <span class="kpi-tooltip" role="tooltip">${esc(m.help)}</span>
-        </article>`).join("");
-    }
-    for (const m of METRICS) {
-      const card = target.querySelector(`[data-kpi="${m.key}"]`);
-      const cur = m.count(data.current);
-      const prev = m.count(data.previous);
-      animateNumber(card.querySelector(".kpi-value"), cur);
-      card.querySelector(".kpi-delta-slot").innerHTML = delta(cur, prev, data.comparable);
-      card.querySelector(".kpi-spark").innerHTML = sparkline(bucketData.list.map((b) => m.count(b.items)), m.tone);
-    }
+  // Funções globais do script principal (index.html); ausentes em teste isolado.
+  function noData() {
+    return typeof dataUnavailable === "function" && dataUnavailable();
   }
 
-  function featuredEvents(data) {
-    const brief = window.RoadBrief.buildWeeklyBrief(data.all.map((e) => e.item), data.now, { windowMs: data.windowMs, includeEvents: true });
-    const byUrl = new Map(data.current.map((e) => [e.item.url, e]));
-    const rank = { critical: 4, high: 3, medium: 2, low: 1 };
-    // Bloqueio com notícia de liberação posterior na mesma rodovia não é destaque.
-    const releasedLater = (ev) => ["block_total", "strike_block"].includes(ev.kind)
-      && (brief.released || []).some((r) => r.road && r.road === ev.road && r.time && ev.time && r.time > ev.time);
-    return brief.events
-      .filter((ev) => rank[ev.level] >= 3 && !releasedLater(ev))
-      .sort((a, b) => (rank[b.level] - rank[a.level]) || (b.sources - a.sources) || ((b.time || 0) - (a.time || 0)))
-      .slice(0, 3)
-      .map((ev) => {
-        const source = byUrl.get(ev.url);
-        const summary = source && typeof smartSummary === "function" ? smartSummary(source.item) : "";
-        return { ...ev, summary, item: source?.item || { url: ev.url }, theme: source?.theme || themeOf(ev.kind, ""), source: source?.source || "" };
-      });
+  // ---------------- Situação agora (tela inicial) ----------------
+  // Responde "posso liberar agora?": veredito, avisos vigentes por grau e a régua de vigência.
+  // Janela fixa de 24h (o período do topo vale para o panorama abaixo).
+  const SIT_WINDOW = DAY;
+  const REGUA_BACK = 12 * 3600e3;
+  const REGUA_AHEAD = 3 * 3600e3;
+  const RANK = { critical: 4, high: 3, medium: 2, low: 1 };
+  const BLOCK_KINDS = ["block_total", "strike_block"];
+
+  function situationAvisos(data) {
+    const brief = window.RoadBrief.buildWeeklyBrief(data.all.map((e) => e.item), data.now, { windowMs: SIT_WINDOW, includeEvents: true });
+    const released = brief.released || [];
+    const releaseOf = (ev) => released
+      .filter((r) => r.road && r.road === ev.road && r.time && ev.time && r.time > ev.time)
+      .reduce((min, r) => (min === null || r.time < min ? r.time : min), null);
+    const kind = window.RoadBrief.KIND || {};
+    const events = brief.events.map((ev) => ({
+      code: window.RoadRisk.eventCode(ev.url || `${ev.title}|${ev.time}`),
+      level: ev.level, title: ev.title, road: ev.road, uf: ev.uf, time: ev.time, url: ev.url,
+      kindLabel: ev.kind_label, action: ev.action, sources: ev.sources, block: BLOCK_KINDS.includes(ev.kind),
+      releasedAt: releaseOf(ev), inmet: false,
+    }));
+    // Avisos do INMET das últimas 24h (o resumo os trata à parte; aqui entram como avisos).
+    const since = data.now - SIT_WINDOW;
+    const inmet = data.all
+      .filter((e) => e.inmet && e.time && e.time >= since && e.risk.rank >= 2)
+      .map((e) => ({
+        code: "INMET", level: e.risk.level, title: e.item.title || "Aviso INMET", road: "", uf: window.RoadBrief.ufFromText(`${e.item.title || ""} ${e.item.summary || ""}`),
+        time: e.time, url: e.item.url, kindLabel: (kind[e.risk.kind] || ["Aviso INMET"])[0], action: (kind[e.risk.kind] || [, "Atenção ao clima."])[1],
+        sources: 1, block: false, releasedAt: null, inmet: true, reason: e.risk.reason,
+      }));
+    const reasons = new Map(data.all.map((e) => [e.item.url, e.risk.reason]));
+    return [...events.map((ev) => ({ ...ev, reason: reasons.get(ev.url) || "" })), ...inmet]
+      .filter((ev) => !(ev.block && ev.releasedAt))
+      .sort((a, b) => (RANK[b.level] - RANK[a.level]) || (b.sources - a.sources) || ((b.time || 0) - (a.time || 0)));
   }
 
-  function renderFeatured(data) {
-    const target = document.getElementById("dashFeatured");
-    if (!target) return;
-    const events = featuredEvents(data);
-    clearInterval(dash.featuredTimer);
-    if (!events.length) {
-      target.innerHTML = `<div class="featured-empty"><span class="kpi-icon">${icon("target")}</span><div><h2>Sem ocorrência de risco alto ou crítico no período</h2><p>As fontes monitoradas não registraram bloqueio, acidente grave ou alerta importante. Mantenha a checagem padrão antes das saídas.</p></div></div>`;
+  function situationVerdict(avisos) {
+    const count = (level) => avisos.filter((a) => a.level === level).length;
+    const roadsOf = (list) => [...new Set(list.map((a) => [a.road, a.uf].filter(Boolean).join("/")).filter(Boolean))].slice(0, 3);
+    const blocked = avisos.filter((a) => a.block && a.level === "critical");
+    const critical = avisos.filter((a) => a.level === "critical");
+    const parts = [["critical", "crítico", "críticos"], ["high", "alto", "altos"], ["medium", "médio", "médios"]]
+      .map(([level, one, many]) => [count(level), one, many]).filter(([n]) => n)
+      .map(([n, one, many]) => `${n} ${n === 1 ? one : many}`);
+    const text = parts.length ? `${parts.join(", ")} nas últimas 24h.` : "Nenhum aviso com impacto operacional nas últimas 24h.";
+    if (blocked.length) {
+      const roads = roadsOf(blocked);
+      return { level: "critical", grade: "Grau crítico", title: roads.length ? `Segurar saídas por ${roads.join(", ")}: rodovia bloqueada` : "Segurar saídas pelos trechos bloqueados", text };
+    }
+    if (critical.length) {
+      const roads = roadsOf(critical);
+      return { level: "critical", grade: "Grau crítico", title: roads.length ? `Confirmar antes de liberar: ${roads.join(", ")}` : "Confirmar cada aviso crítico antes de liberar", text };
+    }
+    if (count("high")) return { level: "high", grade: "Grau alto", title: `Atenção: ${count("high")} ${count("high") === 1 ? "trecho com risco alto" : "trechos com risco alto"}`, text };
+    if (count("medium")) return { level: "medium", grade: "Grau médio", title: "Atenção nos trechos sinalizados", text };
+    return { level: "low", grade: "Sem restrição", title: "Despacho normal", text };
+  }
+
+  function avisoMarkup(a) {
+    const url = urlOf(a.url);
+    const where = [a.road, a.uf].filter(Boolean).join(" · ");
+    const title = url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(a.title)}</a>` : esc(a.title);
+    return `<li class="aviso" data-level="${a.level}">
+      <div class="aviso-body">
+        <div class="aviso-meta"><span class="ev">${esc(a.code)}</span>${where ? `<span>${esc(where)}</span>` : ""}<span>${esc(a.kindLabel || "")}</span><span>${esc(relative(a.time))}</span>${a.sources > 1 ? `<span>${a.sources} fontes</span>` : ""}</div>
+        <p class="aviso-title">${title}</p>
+        <p class="aviso-do">${esc(a.action)}</p>
+        ${a.reason ? `<details class="aviso-why"><summary>Por que ${esc((LEVEL[a.level] || LEVEL.low).label.toLowerCase())}?</summary><p>${esc(a.reason)}</p></details>` : ""}
+      </div>
+    </li>`;
+  }
+
+  function reguaMarkup(avisos, now) {
+    const start = now - REGUA_BACK;
+    const span = REGUA_BACK + REGUA_AHEAD;
+    const x = (t) => `${(((Math.min(Math.max(t, start), start + span) - start) / span) * 100).toFixed(2)}%`;
+    const hour = (t) => new Date(t).toLocaleTimeString("pt-BR", { timeZone: tz(), hour: "2-digit", minute: "2-digit" });
+    const ticks = [0, 1, 2, 3, 4, 5].map((i) => start + (i * span) / 5);
+    // O marco das 12h coincide com "agora": no lugar dele vai o rótulo do marcador.
+    const axis = `<div class="regua-axis" aria-hidden="true">${ticks.map((t, i) => (i === 4 ? "" : `<span style="left:${(i * 20)}%;${i === 0 ? "transform:none" : i === 5 ? "transform:translateX(-100%)" : ""}">${hour(t)}</span>`)).join("")}</div>`;
+    const rows = avisos.filter((a) => a.time).slice(0, 8).map((a) => {
+      const from = Math.max(a.time, start);
+      const until = a.releasedAt && a.releasedAt > a.time ? Math.min(a.releasedAt, now) : now;
+      const width = `calc(${x(until)} - ${x(from)})`;
+      const label = a.releasedAt ? `liberado ${hour(a.releasedAt)}` : `desde ${hour(a.time)}`;
+      const name = a.road || a.uf || a.kindLabel || "Aviso";
+      // Faixa curta (menos de ~3h) não comporta o texto: o rótulo vai para a ponta "sem previsão".
+      const wide = (until - from) / span >= 0.2;
+      return `<div class="regua-row">
+        <div class="regua-label"><b title="${esc(a.title)}">${esc(name)}</b><small>${esc(a.code)}</small></div>
+        <div class="regua-track">
+          <span class="regua-band${a.releasedAt ? " closed" : ""}" data-level="${a.level}" style="left:${x(from)};width:${width}" title="${esc(`${a.title} (${label})`)}">${wide ? esc(label) : ""}</span>
+          ${a.releasedAt ? "" : `<span class="regua-tail" data-level="${a.level}" style="left:${x(now)};width:calc(100% - ${x(now)})" title="Sem previsão de liberação informada pelas fontes"></span>`}
+          ${wide ? "" : `<span class="regua-side" style="${a.releasedAt ? `left:calc(${x(until)} + 6px)` : `right:4px`}">${esc(label)}</span>`}
+        </div>
+      </div>`;
+    }).join("");
+    const nowLine = `<div class="regua-now" style="left:calc(148px + (100% - 148px) * ${((now - start) / span).toFixed(4)})"><span>agora ${hour(now)}</span></div>`;
+    return rows ? `<div></div>${axis}${rows}${nowLine}` : `<div class="sit-empty" style="grid-column:1/-1">Nenhum trecho com aviso nas últimas 12h.</div>`;
+  }
+
+  function renderSituation(data) {
+    const verdictEl = document.getElementById("sitVerdict");
+    const list = document.getElementById("sitAvisos");
+    const regua = document.getElementById("sitRegua");
+    if (!verdictEl || !list || !regua) return;
+    const grade = document.getElementById("sitGrade");
+    const title = document.getElementById("sitTitle");
+    const text = document.getElementById("sitText");
+    const count = document.getElementById("sitCount");
+    const filters = document.getElementById("sitFilters");
+    const actions = document.getElementById("sitActions");
+    // Falha de carga não pode virar "despacho normal": avisa que não há dado.
+    if (noData()) {
+      verdictEl.dataset.level = "none";
+      grade.textContent = "Sem dados";
+      title.textContent = "Sem dados: não interprete como ausência de risco";
+      text.textContent = "Os avisos não foram carregados. Confirme a situação da rota por outro canal antes de liberar cargas.";
+      count.textContent = "Avisos vigentes";
+      filters.innerHTML = "";
+      list.innerHTML = `<li>${dataUnavailableMarkup()}</li>`;
+      regua.innerHTML = "";
+      if (actions) actions.innerHTML = "";
       return;
     }
-    dash.featuredIndex = Math.min(dash.featuredIndex, events.length - 1);
-    const show = (index) => {
-      dash.featuredIndex = index;
-      const ev = events[index];
-      const url = urlOf(ev.url);
-      target.innerHTML = `
-        <div class="featured-media">${newsMedia(ev.item, ev.theme, ev.level, "hero")}</div>
-        <div class="featured-overlay"></div>
-        <div class="featured-body">
-          <div class="featured-tags"><span class="featured-tag">Destaque</span>${sevBadge(ev.level)}${themeBadge(ev.theme)}</div>
-          <h2>${esc(ev.title)}</h2>
-          ${ev.summary ? `<p>${esc(shorten(ev.summary, 190))}</p>` : ""}
-          <p class="featured-action"><strong>O que fazer:</strong> ${esc(ev.action)}</p>
-          <div class="featured-meta">
-            <span>${icon("clock")}${esc(dateLabel(ev.time))}</span>
-            ${place(ev) ? `<span>${icon("pin")}${esc(place(ev))}</span>` : ""}
-            ${ev.sources > 1 ? `<span>${ev.sources} fontes</span>` : ev.source ? `<span>${esc(ev.source)}</span>` : ""}
-            ${url ? `<a class="featured-cta" href="${esc(url)}" target="_blank" rel="noopener">Ver notícia completa ${icon("arrow")}</a>` : ""}
-          </div>
-        </div>
-        ${events.length > 1 ? `<div class="featured-dots" role="tablist">${events.map((_, i) => `<button type="button" role="tab" aria-label="Destaque ${i + 1}" aria-selected="${i === index}" data-featured="${i}" class="${i === index ? "active" : ""}"></button>`).join("")}</div>` : ""}`;
+    const all = situationAvisos(data);
+    const verdict = situationVerdict(all);
+    verdictEl.dataset.level = verdict.level;
+    grade.textContent = verdict.grade;
+    title.textContent = verdict.title;
+    text.textContent = verdict.text;
+
+    const levels = ["critical", "high", "medium"].filter((l) => all.some((a) => a.level === l));
+    if (dash.sitFilter !== "all" && !levels.includes(dash.sitFilter)) dash.sitFilter = "all";
+    filters.innerHTML = [["all", `Todos ${all.length}`], ...levels.map((l) => [l, `${LEVEL[l].label} ${all.filter((a) => a.level === l).length}`])]
+      .map(([key, label]) => `<button type="button" class="sit-filter" data-sit-filter="${key}" aria-pressed="${dash.sitFilter === key}">${key === "all" ? "" : `<i style="background:var(--risk-${key})"></i>`}${esc(label)}</button>`).join(" ");
+    filters.onclick = (event) => {
+      const button = event.target.closest("[data-sit-filter]");
+      if (!button) return;
+      dash.sitFilter = button.dataset.sitFilter;
+      renderSituation(dataset());
     };
-    show(dash.featuredIndex);
-    target.onclick = (event) => {
-      const dot = event.target.closest("[data-featured]");
-      if (dot) show(Number(dot.dataset.featured));
-    };
-    if (events.length > 1 && !reduceMotion()) {
-      dash.featuredTimer = setInterval(() => {
-        if (!target.matches(":hover") && !document.hidden) show((dash.featuredIndex + 1) % events.length);
-      }, 9000);
+    const shown = dash.sitFilter === "all" ? all : all.filter((a) => a.level === dash.sitFilter);
+    count.textContent = `Avisos vigentes · ${all.length}`;
+    const time = typeof dataLoadTime === "function" ? dataLoadTime() : "";
+    list.innerHTML = shown.length
+      ? shown.map(avisoMarkup).join("")
+      : `<li class="sit-empty"><strong>Nenhum aviso vigente</strong>As fontes não registraram ocorrência com impacto operacional nas últimas 24h${time ? ` (dados de ${esc(time)})` : ""}. Mantenha a checagem padrão antes das saídas.</li>`;
+    regua.innerHTML = reguaMarkup(shown, data.now);
+    if (actions) {
+      const brief = window.RoadBrief.buildWeeklyBrief(data.all.map((e) => e.item), data.now, { windowMs: SIT_WINDOW });
+      const items = all.length ? brief.actions.slice(0, 3) : [];
+      actions.innerHTML = items.map((a) => `<li>${esc(a)}</li>`).join("");
+      actions.hidden = !items.length;
     }
   }
-
   function renderTrend(data, bucketData) {
     const target = document.getElementById("dashTrend");
     if (!target) return;
@@ -566,8 +619,7 @@
     const data = dataset();
     const bucketData = buckets(data);
     renderHead(data);
-    renderKpis(data, bucketData);
-    renderFeatured(data);
+    renderSituation(data);
     renderTrend(data, bucketData);
     renderThemes(data);
     renderLatest(data);
@@ -614,7 +666,7 @@
         ${alerts.length ? `<ul>${alerts.slice(0, 6).map((e) => {
           const url = urlOf(e.item.url);
           return `<li>${sevBadge(e.risk.level)}<div><a ${url ? `href="${esc(url)}" target="_blank" rel="noopener"` : ""}>${esc(shorten(e.item.title, 90))}</a><small>${esc([e.road, relative(e.time)].filter(Boolean).join(" · "))}</small></div></li>`;
-        }).join("")}</ul>` : `<p class="dash-empty">Nenhum alerta alto ou crítico nas últimas 24h.</p>`}
+        }).join("")}</ul>` : noData() ? `<p class="dash-empty">Sem dados carregados: não interprete como ausência de alertas.</p>` : `<p class="dash-empty">Nenhum alerta alto ou crítico nas últimas 24h.</p>`}
         <button type="button" class="mini-button" data-route="/alertas" data-scroll="clientAlertsPage">Ver alertas</button>`;
     }
 
@@ -631,8 +683,14 @@
     }
 
     // Status da coleta na sidebar (sem afirmar "online" sem evidência: usa a última coleta).
+    // Problema do próprio painel (falha ao carregar ou leitura velha) não é atribuído à coleta.
     const status = document.getElementById("sidebarStatus");
-    if (status) {
+    const dataStatus = typeof dataPanelStatus === "function" ? dataPanelStatus() : {};
+    if (status && (dataStatus.error || dataStatus.stale)) {
+      const title = dataStatus.error ? (dataStatus.loadedTime ? "Painel sem atualizar" : "Sem dados") : "Painel desatualizado";
+      const detail = dataStatus.loadedTime ? `Última leitura às ${dataStatus.loadedTime}` : "Não foi possível carregar os dados";
+      status.innerHTML = `<div class="status-row"><span class="status-dot ${dataStatus.error ? "error" : "late"}"></span><strong>${title}</strong></div><small>${esc(detail)}</small>`;
+    } else if (status) {
       const latest = data.all.reduce((max, e) => Math.max(max, e.time || 0), 0);
       const fresh = latest && Date.now() - latest < 3 * 3600e3;
       const last24 = Array.from({ length: 12 }, (_, i) => data.all.filter((e) => e.time && e.time >= Date.now() - (12 - i) * 2 * 3600e3 && e.time < Date.now() - (11 - i) * 2 * 3600e3).length);

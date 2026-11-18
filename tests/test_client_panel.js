@@ -32,19 +32,37 @@ test("dashboard executivo é a página inicial e carrega antes do script princip
   assert.doesNotMatch(dashboard, /Math\.random\(\) \* \d|fake|mock/i, "sem números inventados");
 });
 
-test("identidade visual Overhaul: paleta oficial e fontes Archivo + Geist Mono", () => {
+test("identidade Boletim de Aviso: shell azul-tinta, cores de grau do INMET, Archivo, claro principal", () => {
   const css = html.slice(html.indexOf("<style>"), html.indexOf("</style>"));
-  const dark = css.slice(css.lastIndexOf(':root, :root[data-theme="dark"] {'));
-  for (const token of ["--color-brand: #1EFF95", "--color-brand-text: #1E0D43", "--color-bg: #0F1814", "--color-text: #F4F9FA", "--risk-critical: #FC3700", "--risk-high: #FFCD00", "--risk-medium: #00ACFF"]) {
-    assert.ok(dark.includes(token), `token ${token}`);
+  const layer = css.slice(css.indexOf("Boletim de Aviso (redesign"));
+  const light = layer.slice(layer.indexOf(':root, :root[data-theme="light"] {'), layer.indexOf(':root[data-theme="dark"] {'));
+  for (const token of ["--ink: #10233F", "--risk-critical: #C8201A", "--risk-high: #E46C00", "--risk-medium: #EDB800", "--risk-low: #5F6E83", "--font-mono: var(--font-sans)"]) {
+    assert.ok(light.includes(token), `token ${token}`);
   }
-  assert.match(css, /--accent: #5029FF;/, "tema claro usa Vivid Purple como destaque");
+  assert.match(layer, /:root\[data-theme="dark"\] \{[^}]*--risk-critical: /, "tema escuro redefine as cores de grau");
+  assert.match(html.slice(0, html.indexOf("<style>")), /localStorage\.getItem\("roadnews\.theme"\) \|\| "light"/, "claro é o tema principal");
   assert.match(css, /font-family: 'Archivo';\s*src: url\('\/assets\/fonts\/archivo\/Archivo-Variable-latin\.woff2'\)/);
-  assert.match(css, /--font-mono: 'GeistMono'/);
   assert.ok(fs.existsSync(path.join(ROOT, "public", "assets", "fonts", "archivo", "Archivo-Variable-latin.woff2")));
   assert.ok(fs.existsSync(path.join(ROOT, "public", "assets", "fonts", "archivo", "OFL.txt")), "licença da fonte junto do arquivo");
   assert.doesNotMatch(css, /url\('assets\/fonts/, "fontes com caminho absoluto (funciona em /developer/...)");
-  assert.match(html, /const MAP_RISK_COLORS = \{ critical: "#FC3700", high: "#FFCD00", medium: "#00ACFF", low: "#1EFF95" \}/);
+  // Mapa e gráficos leem a cor do token do tema, não hex fixo.
+  assert.match(html, /const MAP_RISK_COLORS = \{\s*get critical\(\) \{ return riskColor\("critical"/);
+  const dashboard = fs.readFileSync(path.join(ROOT, "public", "dashboard.js"), "utf8");
+  assert.match(dashboard, /critical: level\("Crítico", "sev-critical", "--risk-critical"/);
+  // Categoria nunca usa as cores de grau.
+  const themes = dashboard.slice(dashboard.indexOf("const THEMES = ["), dashboard.indexOf("function themeOf("));
+  assert.doesNotMatch(themes, /#C8201A|#E46C00|#EDB800|#FC3700|#FFCD00/i);
+});
+
+test("Situação agora: veredito, avisos por grau, régua de vigência sem previsão inventada", () => {
+  const dashboard = fs.readFileSync(path.join(ROOT, "public", "dashboard.js"), "utf8");
+  for (const id of ["sitVerdict", "sitAvisos", "sitRegua", "sitFilters"]) assert.match(html, new RegExp(`id="${id}"`));
+  assert.doesNotMatch(html, /id="dashFeatured"|id="dashKpis"/, "carrossel e KPIs de volume saíram da home");
+  assert.doesNotMatch(dashboard, /featuredTimer|setInterval\(\(\) => \{\s*if \(!target\.matches/, "nada gira sozinho");
+  assert.match(dashboard, /Sem previsão de liberação informada pelas fontes/);
+  const { eventCode } = require(path.join(ROOT, "public", "risk.js"));
+  assert.equal(eventCode("https://x/1"), eventCode("https://x/1"), "número do evento é estável");
+  assert.match(eventCode("https://x/1"), /^EV-\d{4}$/);
 });
 
 test("dropdowns e itens ocultos respeitam o atributo hidden", () => {

@@ -65,7 +65,7 @@ terminal (modo de teste, não grava no banco).
 ## Execução agendada (GitHub Actions)
 
 O workflow [`.github/workflows/scraper.yml`](.github/workflows/scraper.yml) roda
-a cada 2h. Configure o secret `DATABASE_URL` em **Settings → Secrets and
+de hora em hora (minuto 17 UTC). Configure o secret `DATABASE_URL` em **Settings → Secrets and
 variables → Actions** — use a connection string do *Session pooler* do Supabase
 (compatível com IPv4, exigido pelos runners do GitHub).
 

@@ -2,6 +2,28 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-18 — Alertas vira "Meus trechos"
+- **Adicionado**: na tela **Alertas**, o cliente cadastra as rodovias (ex.: BR-116, SP-330) e os estados (ex.: PR) onde a frota roda. A lista de alertas passa a mostrar só o que acontece neles, com o link "Ver também N em outros trechos". Sem trecho cadastrado, a tela continua como antes. A lista fica salva no navegador.
+- **Removido**: os cards "Última coleta / Última hora / Últimas 24h / Total de notícias" da tela Alertas. Eram métricas internas da coleta e não ajudavam a decidir; o horário do dado continua no selo do topo.
+- **Corrigido**: com a coleta atrasada, a lista vazia dizia "Nenhum alerta operacional acionável". Agora diz que não há dado novo na janela e de quando é a última coleta.
+
+## 2026-11-18 — Resumo semanal sem números inflados por notícia repetida
+- **Corrigido**: a mesma ocorrência noticiada por veículos diferentes contava várias vezes nos números do resumo semanal (painel e e-mail) quando só um veículo citava a rodovia ou a UF. Agora:
+  - rodovia ou UF ausente em uma das notícias não impede juntar; só rodovia ou UF **diferentes** separam;
+  - mesma rodovia e mesma família de ocorrência (ex.: "carreta tomba" e "acidente com morte") vira um evento só em até 24h com a mesma UF, ou em até 12h quando uma das notícias não cita a UF.
+- **Corrigido**: "Acidentes com vítima fatal" contava notícias sem morte que citavam "Zona da Mata" ou "incêndio em mata". "Mata/matam" só conta como morte seguido da vítima ("mata motorista", "mata 3 pessoas").
+- **Corrigido**: "vs semana anterior (0)" em todos os números. A busca parava em 800 notícias e não chegava à semana anterior. Agora a API pagina (até 10 mil linhas) e o e-mail usa teto de 10 mil.
+
+## 2026-11-17 — Painel nunca mostra "tudo tranquilo" com dado ausente ou velho
+- **Adicionado**: selo **"Dados de HH:MM"** no topo do painel, que também é o botão de atualizar. Fica âmbar com leitura de mais de 75 min e vermelho em falha ("Falha ao atualizar · dados de HH:MM" ou "Sem dados · tentar de novo").
+- **Adicionado**: o painel se atualiza sozinho **de hora em hora** (depois do minuto 15, quando a coleta já terminou), só com a aba visível. Cada atualização consome 1 consulta da cota de notícias, como a carga manual. Falhas são retentadas no máximo a cada 10 min.
+- **Corrigido**: falha ao carregar o feed fazia Dashboard, Alertas, Resumo operacional e o sino mostrarem "sem ocorrência"/"Normal". Agora:
+  - sem nenhuma leitura, mostram **"Sem dados: não interprete como ausência de risco"**;
+  - com leitura anterior, mantêm o último dado e avisam o horário dele.
+- **Alterado**: a barra lateral separa "Painel desatualizado"/"Painel sem atualizar" de "Coleta atrasada".
+- **Alterado**: na Central de Evento, sem análise da IA 2h depois de acompanhar, o aviso diz que a análise não saiu e orienta decidir pelas notícias, em vez de "Aguardando" indefinidamente.
+- **Alterado**: mensagens de recurso bloqueado dizem se o motivo é o limite do mês ("Você usou 10 de 10 consultas de rota deste mês") ou o pacote, e mandam falar com o gestor da empresa. O aviso do topo passou a ser anunciado por leitor de tela e usa a cor do tema (legível no tema claro).
+
 ## 2026-11-10 — Novo design da página de Notícias e das imagens
 - **Alterado**: a página de Notícias segue o mockup aprovado, nas cores Overhaul.
   - Filtros por categoria com ícone e contagem (Todas, Acidentes, Interdições, Obras, Clima, Outros) e seletor de período.
