@@ -36,9 +36,9 @@
   {
    "key": "fatal",
    "label": "Acidentes com vítima fatal",
-   "value": 13,
+   "value": 12,
    "previous": 8,
-   "delta": 5
+   "delta": 4
   },
   {
    "key": "cargo",
@@ -62,6 +62,10 @@
    "delta": -1
   }
  ],
+ "comparison": {
+  "available": true,
+  "note": ""
+ },
  "watchlist": [
   {
    "type": "Bloqueio programado",
@@ -156,8 +160,8 @@
   {
    "type": "Pode seguir bloqueado",
    "title": "Ponte sobre arroio Capané está interditada na ERS-705 - DAER-RS",
-   "road": "ERS-705",
-   "uf": "",
+   "road": "RS-705",
+   "uf": "RS",
    "date": "07/11",
    "level": "critical",
    "level_label": "Crítico",
@@ -215,8 +219,8 @@
    "worst_url": "https://example.com/BR-277%20%C3%A9%20interditada%20ap%C3%B3"
   },
   {
-   "road": "ERS-705",
-   "uf": "",
+   "road": "RS-705",
+   "uf": "RS",
    "score": 8,
    "events": 1,
    "critical_high": 1,
@@ -321,8 +325,8 @@
   },
   {
    "title": "Ponte sobre arroio Capané está interditada na ERS-705 - DAER-RS",
-   "road": "ERS-705",
-   "uf": "",
+   "road": "RS-705",
+   "uf": "RS",
    "date": "07/11",
    "level": "critical",
    "level_label": "Crítico",

@@ -58,8 +58,11 @@ def fetch_weekly_news(database_url: str, days: int = 14, limit: int = 10000) -> 
 def _facts_for_ai(brief: dict) -> dict:
     def pick(items, n):
         return [{k: v for k, v in item.items() if k not in {"url", "worst_url"}} for item in items[:n]]
+    # Sem base de comparação, a IA não recebe a semana anterior (não pode escrever "dobrou").
+    comparable = brief.get("comparison", {}).get("available", True)
+    numbers = brief["numbers"] if comparable else [{"key": n["key"], "label": n["label"], "value": n["value"]} for n in brief["numbers"]]
     return {
-        "period": brief["period"], "verdict": brief["verdict"], "numbers": brief["numbers"],
+        "period": brief["period"], "verdict": brief["verdict"], "numbers": numbers, "comparison": brief.get("comparison"),
         "watchlist": pick(brief["watchlist"], 6), "hotspots": pick(brief["hotspots"], 3),
         "cargo_security": pick(brief["cargo_security"], 3), "weather": brief["weather"][:3], "actions": brief["actions"],
     }
@@ -130,12 +133,21 @@ def render_weekly_email(brief: dict, generated_at: str) -> str:
         return f'<p style="margin:0;color:#536177;font-size:13px">{esc(text)}</p>'
 
     level = brief["verdict"]["level"]
+    # Coleta parada na semana anterior: o "▲ vs semana anterior" seria falso.
+    comparable = brief.get("comparison", {}).get("available", True)
+
+    def delta_line(n) -> str:
+        if not comparable:
+            return '<div style="font-size:11px;color:#536177">sem base de comparação</div>'
+        color = "#B01B15" if n["delta"] > 0 else "#2E7A4C" if n["delta"] < 0 else "#536177"
+        arrow = "▲ " + str(n["delta"]) if n["delta"] > 0 else "▼ " + str(-n["delta"]) if n["delta"] < 0 else "="
+        return f'<div style="font-size:11px;color:{color}">{arrow} vs semana anterior ({n["previous"]})</div>'
+
     kpis = "".join(
         f'<td style="padding:8px;border:1px solid #CAD2DC;border-radius:6px;background:#F5F7FA;vertical-align:top;width:{100 // 4}%">'
         f'<div style="font-size:10px;color:#536177;text-transform:uppercase;font-weight:700">{esc(n["label"])}</div>'
         f'<div style="font-size:22px;font-weight:800;color:{"#10233F" if n["value"] else "#536177"}">{n["value"]}</div>'
-        f'<div style="font-size:11px;color:{"#B01B15" if n["delta"] > 0 else "#2E7A4C" if n["delta"] < 0 else "#536177"}">'
-        f'{"▲ " + str(n["delta"]) if n["delta"] > 0 else "▼ " + str(-n["delta"]) if n["delta"] < 0 else "="} vs semana anterior ({n["previous"]})</div></td>'
+        f'{delta_line(n)}</td>'
         + ("</tr><tr>" if i == 3 else "")
         for i, n in enumerate(brief["numbers"])
     )

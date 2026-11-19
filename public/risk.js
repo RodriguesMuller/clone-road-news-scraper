@@ -68,7 +68,8 @@
   const P = {
     foreign: /\b(?:bulgaria|estados unidos|argentina|chile|paraguai|uruguai|bolivia|colombia|venezuela|mexico|canada|china|india|japao|coreia|russia|ucrania|franca|alemanha|italia|espanha|portugal|reino unido|inglaterra|turquia|israel|egito|africa do sul|australia|nova zelandia)\b/,
     intlCorridor: /ormuz|hormuz|suez|mar vermelho|red sea|bab el.mandeb|canal do panama|panama canal/,
-    aftermath: /\b(?:denunciad|condenad|julgament|indenizac|processad[ao]|inquerito|velorio|sepultad|enterro|luto|homenage|relembra|superfaturamento)|identificad[ao]s? (?:as )?(?:\w+ )?vitimas|morre aos \d+ anos|\b(?:checagem|boato|fake news|desmente|negam)\b|e antig[ao]\b|fora de contexto/,
+    // Júri, perfil da vítima ("Quem era...") e cobrança de familiar falam de acidente já contado.
+    aftermath: /\b(?:denunciad|condenad|julgament|indenizac|processad[ao]|inquerito|velorio|sepultad|enterro|luto|homenage|relembra|superfaturamento)|identificad[ao]s? (?:as )?(?:\w+ )?vitimas|morre aos \d+ anos|\b(?:checagem|boato|fake news|desmente|negam)\b|e antig[ao]\b|fora de contexto|\bjuri\b|\bacusad[oa]s? de (?:causar|provocar)|^quem (?:e|era|eram)\b|cobram? esclarecimento/,
     simulation: /\bsimulado\b|\bexercicio simulado\b/,
     planned: /\b(?:tera|terao)\b|\bvai (?:ter|bloquear|interditar|fechar)|\bsera (?:totalmente |parcialmente )?(?:bloquead|interditad|fechad)|\bprogramad[ao]|\bagendad[ao]|previst[ao] (?:para|nest[ae]|no |na )|esta previst|para (?:reparos|obras|manutencao|desmonte)|a partir de (?:amanha|segunda|terca|quarta|quinta|sexta|sabado|domingo|\d)/,
     grandePerigo: /grande perigo/,
@@ -96,6 +97,26 @@
     minor: /\bobras?\b|manutencao|recapeamento|sinalizacao|chuva|fiscalizac|\bbalanca\b|radar|restric|proib/,
     location: new RegExp(`${ROAD_CODE.source}|rodovi|estrada|\\bkm\\s*\\d|\\bvia\\b|serra|ponte|viaduto|marginal|${NAMED_HIGHWAYS}|\\b(?:${STATE_NAMES})\\b|(?:\\bem|\\bno|\\bna|,|\\()\\s?(?:${UF.split("|").slice(1, 28).join("|")})\\b`),
   };
+
+  // Morte só de animal ("três bois morrem", "cavalo morre atropelado") não é vítima fatal: as frases em que
+  // quem morre é o animal saem do texto antes de procurar sinal de morte. "Motociclista e cachorro morrem" fica.
+  const ANIMAL = "(?:animal|animais|bois?|vacas?|cavalos?|eguas?|jumentos?|burros?|mulas?|cachorros?|caes|cadelas?|gatos?|oncas?(?:-pardas?)?|capivaras?|antas?|tamanduas?|lobos?-guaras?|veados?|jacares?|gado|bezerros?|porcos?|galinhas|frangos|aves|bovinos|suinos|carneiros|ovelhas|cabecas de gado)";
+  const ANIMAL_COUNT = "(?:\\d+|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|dezenas de|centenas de|mais de \\d+|cerca de \\d+|parte d[oa]s|alguns|varios)";
+  const ANIMAL_DEATH = new RegExp([
+    `(?:${ANIMAL_COUNT} )?${ANIMAL}(?: \\w+)?(?: que \\w+ (?:no|na) \\w+)? (?:morre|morrem|morreram|morreu)`,
+    `${ANIMAL} [^.;]{0,40}? e (?:morre|morrem|morreram)`,
+    `${ANIMAL}(?: \\w+)? (?:(?:e|foi|foram|ficam|ficaram) )?mort[oa]s?`,
+    `mat(?:a|am|ou|aram|ando) (?:${ANIMAL_COUNT} |o |a |os |as )?${ANIMAL}`,
+    `morte d[eo]s? (?:${ANIMAL_COUNT} )?${ANIMAL}`,
+    `${ANIMAL}(?: \\w+){0,2} encontrad[ao]s? mort[ao]s?`,
+    `${ANIMAL}(?: \\w+)? nao resist\\w+`,
+  ].join("|"), "g");
+  const PERSON_AND = /\b(?:motociclista|motorista|condutor|condutora|ciclista|pedestre|homem|mulher|jovem|idos[oa]|crianca|garupa|passageir[oa]|caminhoneiro|tutor|dono|dona) e $/;
+
+  function humanFatality(text) {
+    const rest = text.replace(ANIMAL_DEATH, (match, offset, whole) => (PERSON_AND.test(whole.slice(Math.max(0, offset - 40), offset)) ? match : " "));
+    return P.fatality.test(rest);
+  }
 
   // Tipo de ocorrência (usado pelo resumo semanal para agrupar e sugerir ação).
   const KIND_BY_REASON = [
@@ -170,7 +191,7 @@
       if (heavy && P.heavyDramatic.test(text)) return result("high", "Veículo pesado tombado ou incendiado: interdição de faixas e remoção demorada.");
       if (block === "partial") return result("high", "Acidente com interdição parcial: fila e atraso no trecho.");
       if (P.bigJam.test(text)) return result("high", "Acidente com congestionamento extenso.");
-      if (P.fatality.test(text) && !casualtiesDenied) return result("high", "Acidente com vítima fatal: a perícia costuma interditar o trecho por horas.");
+      if (humanFatality(text) && !casualtiesDenied) return result("high", "Acidente com vítima fatal: a perícia costuma interditar o trecho por horas.");
       return result("medium", "Acidente sem sinal de interdição: possível lentidão pontual.");
     }
 
@@ -188,7 +209,7 @@
     const base = rawClassify(item, text);
     // Sem localização identificável não pode ser Alto/Crítico (régua de logistics-intelligence).
     const located = P.location.test(text) || item?.highway || item?.city || item?.state || item?.region || isInmet(item, text);
-    const fatal = P.fatality.test(text) && !P.noCasualties.test(text) && P.accident.test(text);
+    const fatal = humanFatality(text) && !P.noCasualties.test(text) && P.accident.test(text);
     if (!located && base.rank >= 3) {
       return { ...result("medium", base.reason), reason: `${base.reason} Sem rodovia ou local identificado na notícia.`, kind: base.kind, fatal, needs_geo_review: true };
     }

@@ -2,6 +2,7 @@ const OPENAI_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-4.1-mini";
 const { assertCanUse, finalizeReservation, json, releaseUsage, reserveUsage, supabaseFetch } = require("./_auth");
 const { buildWeeklyBrief } = require("./_weekly_brief");
+const { weeklyReport } = require("./_weekly_report");
 const { repairNewsItem } = require("./_text_repair");
 
 // Semana atual + semana anterior (para o comparativo dos números).
@@ -57,10 +58,13 @@ function openAiApiKey() {
 // Só os fatos já calculados vão para a IA: ela redige a abertura, não decide nada.
 function factsForAi(brief) {
   const pick = (list, n) => list.slice(0, n).map(({ url, worst_url, ...rest }) => rest);
+  // Sem base de comparação, a IA não recebe a semana anterior (não pode escrever "dobrou").
+  const comparable = brief.comparison?.available !== false;
   return {
     period: brief.period,
     verdict: brief.verdict,
-    numbers: brief.numbers,
+    numbers: comparable ? brief.numbers : brief.numbers.map(({ key, label, value }) => ({ key, label, value })),
+    comparison: brief.comparison,
     watchlist: pick(brief.watchlist, 6),
     hotspots: pick(brief.hotspots, 3),
     cargo_security: pick(brief.cargo_security, 3),
@@ -134,7 +138,9 @@ module.exports = async function handler(req, res) {
       json(res, 200, { summary: null, context });
       return;
     }
-    const base = buildWeeklyBrief(items);
+    // As ocorrências agrupadas só alimentam os indicadores do PDF; a lista em si não sai do servidor.
+    const { events, released, earliest, ...base } = buildWeeklyBrief(items, Date.now(), { includeEvents: true });
+    const report = weeklyReport(events);
     // A IA só redige a abertura: reserva a geração antes; sem saldo (corrida) segue com o texto automático.
     let reserved = false;
     if (String(process.env.OPENAI_API_KEY || "").trim()) {
@@ -163,7 +169,7 @@ module.exports = async function handler(req, res) {
     } else if (reserved) {
       await releaseUsage(account);
     }
-    json(res, 200, { summary: { ...brief, ai_used: Boolean(ai) }, context: { ...context, total: brief.coverage.analyzed } });
+    json(res, 200, { summary: { ...brief, report, ai_used: Boolean(ai) }, context: { ...context, total: brief.coverage.analyzed } });
   } catch (error) {
     const safeMessage = publicErrorMessage(error);
     const status = /limite|pacote|login|sessao|sessão|acesso|recurso|perfil|inativo|senha temporaria/i.test(safeMessage) ? 403 : 500;

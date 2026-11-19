@@ -7683,7 +7683,9 @@ function showAuthView() {
       return safe ? `<a href="${escapeHtml(safe)}" target="_blank" rel="noopener">${escapeHtml(title)}</a>` : escapeHtml(title);
     }
 
-    function weeklyDelta(n) {
+    // comparison.available = false: a coleta parou na semana anterior e o "▲" seria falso.
+    function weeklyDelta(n, comparison) {
+      if (comparison && comparison.available === false) return `<small class="weekly-delta same">sem base de comparação</small>`;
       if (!n.delta) return `<small class="weekly-delta same">= semana anterior (${n.previous})</small>`;
       const worse = n.delta > 0;
       return `<small class="weekly-delta ${worse ? "up" : "down"}">${worse ? "▲" : "▼"} ${Math.abs(n.delta)} vs semana anterior (${n.previous})</small>`;
@@ -7749,6 +7751,7 @@ function showAuthView() {
     }
 
     function renderWeeklySummary(data) {
+      lastWeeklyData = data;
       const brief = data.summary;
       const context = data.context || {};
       const target = document.getElementById("weeklyContent");
@@ -7770,7 +7773,7 @@ function showAuthView() {
             <p>${escapeHtml(brief.executive_summary || "")}</p>
           </section>
           <section class="weekly-kpis">${(brief.numbers || []).map((n) => `
-            <div class="weekly-kpi ${n.value ? "" : "zero"}"><span>${escapeHtml(n.label)}</span><strong>${n.value}</strong>${weeklyDelta(n)}</div>`).join("")}
+            <div class="weekly-kpi ${n.value ? "" : "zero"}"><span>${escapeHtml(n.label)}</span><strong>${n.value}</strong>${weeklyDelta(n, brief.comparison)}</div>`).join("")}
           </section>
           <section class="weekly-section weekly-attention">
             <h4>Atenção para os próximos dias</h4>
@@ -7838,71 +7841,273 @@ function showAuthView() {
       document.getElementById("weeklyModal").classList.remove("open");
     }
 
+    // ---- Boletim semanal em PDF (documento para o cliente: sem links, com KPIs e panorama) ----
+    let lastWeeklyData = null;
+
+    const WEEKLY_KPI_HELP = {
+      block_total: "Interdições totais de pista, inclusive por manifestação",
+      block_planned: "Interdições anunciadas com antecedência",
+      heavy: "Tombamentos, incêndios e acidentes com carga perigosa",
+      fatal: "Ocorrências rodoviárias com morte confirmada",
+      cargo: "Roubos e saques de carga noticiados",
+      strike: "Greves, protestos e bloqueios de manifestantes",
+      inmet: "Alertas laranja/vermelho do INMET",
+    };
+
+    // Título limpo para o cliente: sem "»", sem nome do portal no fim.
+    function reportTitle(title, limit = 160) {
+      const text = String(title || "")
+        .replace(/^[\s»>•\-–—]+/, "")
+        .replace(/\s+[-–—|]\s+[^-–—|]{2,70}$/, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      return shortText(text, limit);
+    }
+
+    function reportPlace(item) {
+      return `<span class="place">${escapeHtml(weeklyPlace(item) || item.uf || "—")}</span>`;
+    }
+
+    function reportBadge(level, label) {
+      return `<span class="rb rb-${escapeHtml(level || "low")}">${escapeHtml(label || "-")}</span>`;
+    }
+
+    function reportDelta(n, comparison) {
+      if (comparison && comparison.available === false) return `<span class="kd same">sem base de comparação</span>`;
+      if (!n.delta) return `<span class="kd same">igual à semana anterior (${n.previous})</span>`;
+      const worse = n.delta > 0;
+      const pct = n.previous ? ` · ${worse ? "+" : "−"}${Math.round(Math.abs(n.delta) / n.previous * 100)}%` : "";
+      return `<span class="kd ${worse ? "up" : "down"}">${worse ? "▲" : "▼"} ${Math.abs(n.delta)} vs semana anterior (${n.previous})${pct}</span>`;
+    }
+
+    function reportBars(rows, emptyText) {
+      if (!rows.length) return `<p class="empty">${escapeHtml(emptyText)}</p>`;
+      const max = Math.max(...rows.map((r) => r.events), 1);
+      return `<div class="bars">${rows.map((r) => `
+        <div class="bar-row">
+          <span class="bar-label">${escapeHtml(r.label)}</span>
+          <span class="bar-track"><span class="bar-fill ${r.tone || ""}" style="width:${Math.max(2, Math.round(r.events / max * 100))}%"></span></span>
+          <span class="bar-value">${r.events}${r.severe ? ` <small>(${r.severe} graves)</small>` : ""}</span>
+        </div>`).join("")}</div>`;
+    }
+
+    function reportTable(head, rows, emptyText) {
+      if (!rows.length) return `<p class="empty">${escapeHtml(emptyText)}</p>`;
+      return `<table class="rt"><thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>`;
+    }
+
+    function buildWeeklyReportDocument(data) {
+      const brief = data.summary;
+      const context = data.context || {};
+      const report = brief.report || null;
+      const period = `${brief.period?.start || ""} a ${brief.period?.end || ""}`;
+      const numbers = brief.numbers || [];
+      const kpis = numbers.map((n) => `
+        <div class="kpi ${n.value ? "" : "zero"}">
+          <span class="kl">${escapeHtml(n.label)}</span>
+          <strong>${n.value}</strong>
+          ${reportDelta(n, brief.comparison)}
+          <span class="kh">${escapeHtml(WEEKLY_KPI_HELP[n.key] || "")}</span>
+        </div>`);
+      kpis.push(`
+        <div class="kpi kpi-base">
+          <span class="kl">Ocorrências distintas</span>
+          <strong>${brief.coverage.events}</strong>
+          <span class="kd same">${report ? `${report.severe} graves · ${report.roads} rodovias · ${report.states} UFs` : `de ${brief.coverage.analyzed} notícias`}</span>
+          <span class="kh">Notícias repetidas entre veículos contam uma vez</span>
+        </div>`);
+
+      const panorama = report ? `
+        <section class="sec">
+          <h2>Panorama da semana</h2>
+          <div class="grid3">
+            <div class="panel"><h3>Por gravidade</h3>${reportBars(report.by_level.map((l) => ({ label: l.label, events: l.events, tone: `t-${l.key}` })), "Sem ocorrências.")}</div>
+            <div class="panel"><h3>Por tipo de ocorrência</h3>${reportBars(report.by_category, "Sem ocorrências.")}</div>
+            <div class="panel"><h3>Estados com mais ocorrências</h3>${reportBars(report.by_state, "Sem UF identificada.")}</div>
+          </div>
+        </section>` : "";
+
+      const watchRows = (brief.watchlist || []).map((w) => `
+        <tr class="${w.type === "Pode seguir bloqueado" || w.type === "Paralisação/manifestação" ? "urgent" : ""}">
+          <td>${reportBadge(w.level, w.type)}</td>
+          <td><strong>${reportPlace(w)}</strong></td>
+          <td>${w.scheduled ? `<strong>${escapeHtml(w.scheduled)}</strong><br><small>agendado</small>` : w.date ? `${escapeHtml(w.date)}<br><small>notícia</small>` : "Vigente"}</td>
+          <td>${escapeHtml(w.type === "Aviso INMET" ? w.title : reportTitle(w.title))}${w.sources > 1 ? `<br><small>Confirmado por ${w.sources} fontes</small>` : ""}</td>
+          <td>${escapeHtml(w.action)}</td>
+        </tr>`);
+
+      const hotRows = (brief.hotspots || []).map((h) => `
+        <tr>
+          <td><strong>${reportPlace(h)}</strong></td>
+          <td class="num">${h.events}</td>
+          <td class="num">${h.critical_high || 0}</td>
+          <td>${escapeHtml(h.main_problem)}<br><small>Ex.: ${escapeHtml(reportTitle(h.worst_title, 110))}</small></td>
+          <td>${escapeHtml(h.action)}</td>
+        </tr>`);
+
+      const highlightRows = (brief.highlights || []).map((h) => `
+        <tr>
+          <td>${escapeHtml(h.date || "-")}</td>
+          <td><strong>${reportPlace(h)}</strong></td>
+          <td>${reportBadge(h.level, h.level_label)}</td>
+          <td><strong>${escapeHtml(reportTitle(h.title))}</strong><br><small>${escapeHtml(h.kind_label)}${h.sources > 1 ? ` · confirmado por ${h.sources} fontes` : ""} · ${escapeHtml(h.action)}</small></td>
+        </tr>`);
+
+      const cargoRows = (brief.cargo_security || []).map((c) => `
+        <tr>
+          <td>${escapeHtml(c.date || "-")}</td>
+          <td><strong>${reportPlace(c)}</strong></td>
+          <td>${escapeHtml(reportTitle(c.title, 120))}<br><small>${c.police ? "Trecho visado (ação policial)" : "Roubo/saque de carga"}</small></td>
+        </tr>`);
+
+      const weatherRows = (brief.weather || []).map((w) => `
+        <tr><td><strong>${escapeHtml(w.uf)}</strong></td><td class="num">${w.alerts}</td><td>${escapeHtml(w.max_level)}</td><td>${escapeHtml(w.phenomena.join(", "))}</td></tr>`);
+
+      const body = `
+        <header class="hero">
+          <div class="hero-top">
+            <div><div class="logo">ROAD NEWS</div><div class="sub">Boletim semanal de risco rodoviário</div></div>
+            <div class="hero-meta"><span>Período</span><strong>${escapeHtml(period)}</strong><span>Emitido em ${escapeHtml(context.generated_at || "-")}</span></div>
+          </div>
+          <div class="verdict">${reportBadge(brief.verdict?.level, `Nível da semana: ${brief.verdict?.label || "-"}`)}</div>
+          <h1>${escapeHtml(brief.headline || "Resumo semanal")}</h1>
+          <p>${escapeHtml(brief.executive_summary || "")}</p>
+          ${brief.comparison?.available === false ? `<p class="note">${escapeHtml(brief.comparison.note || "Sem base de comparação com a semana anterior.")}</p>` : ""}
+        </header>
+
+        <section class="sec">
+          <h2>Indicadores da semana</h2>
+          <div class="kpis">${kpis.join("")}</div>
+          <p class="foot-note">Uma mesma ocorrência pode entrar em mais de um indicador (ex.: tombamento de carreta com vítima fatal).</p>
+        </section>
+
+        ${panorama}
+
+        <section class="sec actions">
+          <h2>Recomendações para a operação</h2>
+          <ol>${(brief.actions || []).map((a) => `<li>${escapeHtml(reportTitle(a, 220))}</li>`).join("")}</ol>
+        </section>
+
+        <section class="sec">
+          <h2>Pontos de atenção para os próximos dias</h2>
+          ${reportTable(["Tipo", "Local", "Quando", "Situação", "Recomendação"], watchRows, "Nada programado ou pendente para os próximos dias nas fontes monitoradas.")}
+        </section>
+
+        <section class="sec">
+          <h2>Trechos mais críticos</h2>
+          ${reportTable(["Trecho", "Ocorr.", "Graves", "Principal problema", "Recomendação"], hotRows, "Nenhum trecho concentrou ocorrências graves na semana.")}
+        </section>
+
+        <section class="sec">
+          <h2>Principais ocorrências da semana</h2>
+          ${reportTable(["Data", "Local", "Gravidade", "Ocorrência e impacto"], highlightRows, "Nenhuma ocorrência de risco alto ou crítico na semana.")}
+        </section>
+
+        <div class="grid2">
+          <section class="sec">
+            <h2>Segurança da carga</h2>
+            ${reportTable(["Data", "Local", "Ocorrência"], cargoRows, "Nenhum roubo de carga noticiado na semana nas fontes monitoradas.")}
+          </section>
+          <section class="sec">
+            <h2>Clima (avisos INMET)</h2>
+            ${reportTable(["UF", "Avisos", "Nível máx.", "Fenômenos"], weatherRows, "Sem avisos do INMET no período.")}
+          </section>
+        </div>
+
+        <section class="sec method">
+          <h2>Metodologia</h2>
+          <p>Base: ${brief.coverage.analyzed} notícias publicadas nos últimos 7 dias por portais, concessionárias e órgãos públicos monitorados pelo Road News,
+          agrupadas em ${brief.coverage.events} ocorrências distintas com impacto operacional (${brief.coverage.discarded} sem impacto na frota foram descartadas).
+          ${brief.comparison?.available === false ? "Não há comparativo com a semana anterior neste boletim." : "Os indicadores são comparados com os 7 dias anteriores."}
+          A gravidade segue a régua do Road News (crítico, alto, médio). ${brief.ai_used ? "O texto de abertura foi redigido por IA a partir destes dados; números, gravidade e recomendações são calculados pelo Road News." : ""}</p>
+          <p>As informações vêm de fontes públicas e podem mudar rapidamente. Confirme sempre a situação do trecho com a concessionária ou a PRF antes de liberar o veículo.</p>
+        </section>`;
+
+      const styles = `
+        @font-face { font-family: 'Archivo'; src: url('${location.origin}/assets/fonts/archivo/Archivo-Variable-latin.woff2') format('woff2'); font-weight: 400 800; }
+        /* margin 0 tira o cabeçalho/rodapé do navegador (data e "about:blank"); thead/tfoot repetem as margens e o rodapé em toda página. */
+        @page { size: A4; margin: 0; }
+        * { box-sizing: border-box; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+        html, body { margin: 0; background: #FFFFFF; color: #10233F; font-family: 'Archivo', Arial, sans-serif; font-variant-numeric: tabular-nums; }
+        body { padding: 0 12mm; font-size: 10.5px; line-height: 1.38; }
+        .page { width: 100%; border-collapse: collapse; }
+        .page > thead td { height: 10mm; }
+        .page > tfoot td { height: 13mm; vertical-align: bottom; padding-bottom: 6mm; }
+        .running { display: flex; justify-content: space-between; border-top: 1px solid #CAD2DC; padding-top: 4px; color: #536177; font-size: 9px; }
+        .content { display: grid; gap: 10px; }
+        .hero { background: #10233F; color: #FFFFFF; border-radius: 8px; padding: 14px 16px; break-inside: avoid; }
+        .hero-top { display: flex; justify-content: space-between; gap: 16px; }
+        .logo { font-size: 20px; font-weight: 800; letter-spacing: .02em; }
+        .sub { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; opacity: .8; margin-top: 2px; }
+        .hero-meta { text-align: right; display: grid; gap: 1px; font-size: 9.5px; opacity: .9; }
+        .hero-meta strong { font-size: 13px; }
+        .verdict { margin-top: 10px; }
+        .hero h1 { font-size: 19px; line-height: 1.2; margin: 8px 0 6px; }
+        .hero p { margin: 0; font-size: 11px; line-height: 1.45; opacity: .94; }
+        .hero .note { margin-top: 6px; font-size: 10px; opacity: .8; font-style: italic; }
+        .sec { break-inside: avoid; }
+        .sec h2 { font-size: 12.5px; font-weight: 800; margin: 0 0 6px; padding-bottom: 4px; border-bottom: 2px solid #10233F; }
+        .panel h3 { font-size: 10.5px; margin: 0 0 6px; color: #2C3D55; }
+        .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+        .kpi { border: 1px solid #CAD2DC; border-radius: 6px; padding: 8px 9px; display: grid; gap: 2px; align-content: start; }
+        .kpi.kpi-base { background: #F2F5F8; }
+        .kpi .kl { font-size: 9.5px; font-weight: 700; color: #536177; text-transform: uppercase; letter-spacing: .02em; }
+        .kpi strong { font-size: 22px; line-height: 1.05; color: #10233F; }
+        .kpi.zero strong { color: #8A96A8; }
+        .kd { font-size: 9.5px; font-weight: 700; } .kd.up { color: #B01B15; } .kd.down { color: #2E7A4C; } .kd.same { color: #536177; }
+        .kh { font-size: 9px; color: #6B7890; }
+        .foot-note { margin: 5px 0 0; font-size: 9px; color: #6B7890; }
+        .grid3 { display: grid; grid-template-columns: .75fr 1.35fr .9fr; gap: 8px; }
+        .grid2 { display: grid; grid-template-columns: 1.15fr .85fr; gap: 10px; align-items: start; }
+        .panel { border: 1px solid #CAD2DC; border-radius: 6px; padding: 8px 9px; }
+        .bars { display: grid; gap: 4px; }
+        .bar-row { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) auto; align-items: center; gap: 6px; font-size: 9.5px; }
+        .bar-label { color: #2C3D55; line-height: 1.2; }
+        .place { white-space: nowrap; }
+        .bar-track { height: 8px; background: #EEF1F5; border-radius: 4px; overflow: hidden; }
+        .bar-fill { display: block; height: 100%; background: #1D4F91; border-radius: 0 4px 4px 0; }
+        .bar-fill.t-critical { background: #C8201A; } .bar-fill.t-high { background: #E46C00; } .bar-fill.t-medium { background: #C99A00; }
+        .bar-value { font-weight: 700; color: #10233F; white-space: nowrap; } .bar-value small { font-weight: 400; color: #6B7890; }
+        .actions ol { margin: 0; padding-left: 18px; display: grid; gap: 3px; } .actions li { font-size: 11px; }
+        .rt { width: 100%; border-collapse: collapse; }
+        .rt th { text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: .03em; color: #536177; padding: 4px 5px; background: #F2F5F8; border-bottom: 1px solid #CAD2DC; }
+        .rt td { padding: 5px; border-bottom: 1px solid #E2E7ED; vertical-align: top; font-size: 10px; color: #2C3D55; }
+        .rt td strong { color: #10233F; } .rt td small { color: #6B7890; font-size: 9px; }
+        .rt td.num { text-align: right; font-weight: 700; color: #10233F; }
+        .rt tr { break-inside: avoid; } .rt tr.urgent td:first-child { box-shadow: inset 3px 0 0 #C8201A; }
+        .rb { display: inline-block; border-radius: 4px; padding: 2px 6px; font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; }
+        .rb-critical { background: #C8201A; color: #FFFFFF; } .rb-high { background: #E46C00; color: #10233F; }
+        .rb-medium { background: #EDB800; color: #10233F; } .rb-low { background: #5F6E83; color: #FFFFFF; }
+        .hero .rb { font-size: 10px; padding: 3px 8px; }
+        .empty { margin: 0; color: #536177; font-size: 10px; }
+        .method p { margin: 0 0 4px; font-size: 9.5px; color: #536177; }
+      `;
+      const title = `Road News - Boletim semanal ${period}`.replace(/\//g, "-");
+      return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>${styles}</style></head><body>
+        <table class="page">
+          <thead><tr><td></td></tr></thead>
+          <tfoot><tr><td><div class="running"><span>Road News · Boletim semanal de risco rodoviário · ${escapeHtml(period)}</span><span>Confirme com a concessionária/PRF antes de liberar o veículo</span></div></td></tr></tfoot>
+          <tbody><tr><td><div class="content">${body}</div></td></tr></tbody>
+        </table>
+        <script>window.onload = function(){ setTimeout(function(){ window.focus(); window.print(); }, 300); };<\/script>
+      </body></html>`;
+    }
+
     async function printWeeklySummary() {
       if (!canUseFeature("pdf_generation")) return;
+      if (!lastWeeklyData?.summary?.coverage?.analyzed) {
+        setNotice("Gere o resumo semanal antes de exportar o PDF.");
+        return;
+      }
       const consumed = await consumeUsage("pdf_generated", { source: "weekly-summary" });
       if (!consumed) return;
-      const report = document.getElementById("weekly-summary-report");
-      if (!report) return;
       const printWindow = window.open("", "_blank", "width=920,height=1200");
       if (!printWindow) {
         window.print();
         return;
       }
-      const printStyles = `
-        /* Resumo semanal impresso como boletim: papel branco, cabeçalho azul-tinta, cores de grau do INMET, texto mínimo de 10px. */
-        @font-face { font-family: 'Archivo'; src: url('${location.origin}/assets/fonts/archivo/Archivo-Variable-latin.woff2') format('woff2'); font-weight: 400 700; }
-        @page { size: A4; margin: 10mm; }
-        * { box-sizing: border-box; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-        html, body { margin: 0; background: #FFFFFF; color: #10233F; font-family: 'Archivo', Arial, sans-serif; font-variant-numeric: tabular-nums; }
-        #weekly-summary-report { width: 100%; display: grid; gap: 8px; background: #FFFFFF; color: #10233F; }
-        .weekly-hero, .weekly-section, .weekly-kpi, .weekly-occurrence, .weekly-watch-item { break-inside: avoid; box-shadow: none; color: #10233F; }
-        .weekly-hero { padding: 12px 14px; background: #10233F; color: #FFFFFF; border-radius: 6px; }
-        .weekly-hero h3, .weekly-hero p, .weekly-logo, .weekly-sub, .weekly-period { color: #FFFFFF; }
-        .weekly-logo { font-size: 20px; font-weight: 800; letter-spacing: 0; }
-        .weekly-sub { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-top: 4px; opacity: .85; }
-        .weekly-hero h3 { font-size: 22px; line-height: 1.15; margin: 10px 0 5px; }
-        .weekly-hero p { font-size: 12px; line-height: 1.4; margin: 0; opacity: .92; }
-        .weekly-period { font-size: 11px; margin-top: 8px; font-weight: 700; opacity: .8; }
-        .risk-pill { display: inline-block; background: #FFFFFF; color: #10233F; font-size: 11px; font-weight: 800; padding: 4px 8px; margin-top: 8px; border-radius: 4px; }
-        .weekly-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-        .weekly-grid { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr); gap: 8px; }
-        .weekly-section, .weekly-kpi, .weekly-occurrence { background: #FFFFFF; border: 1px solid #CAD2DC; border-radius: 6px; }
-        .weekly-section { padding: 9px 10px; }
-        .weekly-section h4 { color: #10233F; font-size: 12px; font-weight: 800; letter-spacing: 0; margin: 0 0 6px; }
-        .weekly-section ul { margin: 0; padding-left: 14px; }
-        .weekly-section li { color: #2C3D55; font-size: 11px; line-height: 1.35; margin: 4px 0; }
-        .weekly-kpi { padding: 8px 9px; }
-        .weekly-kpi span { display: block; color: #536177; font-size: 10px; font-weight: 700; }
-        .weekly-kpi strong { display: block; color: #10233F; font-size: 18px; line-height: 1.05; margin-top: 4px; }
-        .weekly-occurrences { display: grid; gap: 6px; }
-        .weekly-occurrence { padding: 8px 9px; background: #F5F7FA; }
-        .weekly-occurrence h5 { color: #10233F; font-size: 12px; line-height: 1.25; margin: 5px 0 4px; }
-        .weekly-occurrence p { color: #2C3D55; font-size: 11px; line-height: 1.32; margin: 0; }
-        .weekly-meta { display: flex; flex-wrap: wrap; gap: 6px; color: #536177; font-size: 10px; font-weight: 700; }
-        .weekly-roads { display: flex; flex-wrap: wrap; gap: 5px; }
-        .weekly-roads span { background: #E8ECF1; border: 1px solid #CAD2DC; color: #10233F; border-radius: 4px; font-size: 10px; font-weight: 800; padding: 3px 6px; }
-        .weekly-spacer { height: 5px; }
-        .weekly-footer { border-top: 1px solid #CAD2DC; color: #536177; font-size: 10px; padding-top: 6px; }
-        .hint { color: #536177; font-size: 10px; }
-        .weekly-kpis { grid-template-columns: repeat(7, minmax(0, 1fr)); }
-        .weekly-verdict { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-        .weekly-badge { border-radius: 4px; padding: 3px 7px; font-size: 10px; font-weight: 800; text-transform: uppercase; border: 1px solid transparent; }
-        .risk-critico { background: #C8201A; color: #FFFFFF; } .risk-alto { background: #E46C00; color: #10233F; }
-        .risk-medio { background: #EDB800; color: #10233F; } .risk-baixo { background: #5F6E83; color: #FFFFFF; }
-        .weekly-delta { display: block; font-size: 10px; margin-top: 3px; } .weekly-delta.up { color: #B01B15; } .weekly-delta.down { color: #2E7A4C; } .weekly-delta.same { color: #536177; }
-        .weekly-watch-list, .weekly-list { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
-        .weekly-watch-item { border: 1px solid #CAD2DC; padding: 6px 8px; background: #F5F7FA; border-radius: 4px; }
-        .weekly-watch-item.urgent { border-color: #C8201A; }
-        .weekly-watch-item h5 { color: #10233F; font-size: 11px; margin: 3px 0 2px; } .weekly-watch-item p, .weekly-list li { color: #2C3D55; font-size: 10px; margin: 0; }
-        .weekly-actions ol { margin: 0; padding-left: 14px; } .weekly-actions li { color: #10233F; font-size: 11px; margin: 3px 0; }
-        .weekly-table { width: 100%; border-collapse: collapse; font-size: 10px; } .weekly-table th { text-align: left; color: #536177; font-size: 10px; font-weight: 700; padding: 3px; }
-        .weekly-table td { color: #2C3D55; padding: 3px; border-top: 1px solid #E2E7ED; vertical-align: top; } .weekly-table td strong { color: #10233F; }
-        .weekly-empty { color: #536177; font-size: 10px; margin: 0; }
-        a { color: #1D4F91; text-decoration: none; }
-      `;
       printWindow.document.open();
-      printWindow.document.write(`<!doctype html><html><head><title>Road News - Resumo semanal</title><style>${printStyles}</style></head><body>${report.outerHTML}<script>window.onload = function(){ setTimeout(function(){ window.focus(); window.print(); }, 250); };<\/script></body></html>`);
+      printWindow.document.write(buildWeeklyReportDocument(lastWeeklyData));
       printWindow.document.close();
     }
 

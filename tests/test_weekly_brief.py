@@ -57,5 +57,66 @@ class WeeklyBriefParityTest(unittest.TestCase):
         self.assertTrue(classify_risk({"title": "Colisão entre carretas mata motorista na BR-116"})["fatal"])
         self.assertTrue(classify_risk({"title": "Acidente na BR-101 mata 3 pessoas"})["fatal"])
 
+    def test_audit_cases_2026_11_18(self):
+        """Espelho dos casos reais da auditoria em tests/test_weekly_brief.js."""
+        from scraper.utils.risk import classify_risk
+
+        def ms(iso):
+            return int(datetime.fromisoformat(iso).timestamp() * 1000)
+
+        def fatal(title):
+            return classify_risk({"title": title})["fatal"]
+
+        # Morte só de animal não conta; morte de pessoa com animal envolvido conta.
+        self.assertFalse(fatal("Carreta com 45 bois tomba e três animais morrem na BR-354, em MG"))
+        self.assertFalse(fatal("Tombamento de carreta mata três bois e deixa animais feridos em rodovia de Minas Gerais"))
+        self.assertFalse(fatal("Cavalo morre atropelado na BR-393, em Barra do Piraí"))
+        self.assertFalse(fatal("Acidente com vários veículos na BR-262 deixa mais de 40 animais mortos em Uberaba"))
+        self.assertTrue(fatal("Motociclista e cachorro morrem em acidente na rodovia PR-495"))
+        self.assertTrue(fatal("Motociclista morre após atropelar cavalo na BR-277; animal também não resistiu"))
+        self.assertTrue(fatal("Caminhão com 140 porcos cai em ribanceira e motorista morre na MG-111"))
+
+        now = ms("2026-11-18T12:00:00-03:00")
+        # Publicada mais de 2 dias antes da coleta: conta na data de publicação.
+        old = [
+            {"title": "Acidente deixa 38 mortos na BR-116, em município de Teófilo Otoni (MG)", "source": "A",
+             "published_at": "2024-12-21T10:00:00-03:00", "created_at": "2026-11-13T10:00:00-03:00"},
+            {"title": "Carreta tomba e mata motorista na BR-381 em Betim, MG", "source": "B",
+             "published_at": "2026-11-13T08:00:00-03:00", "created_at": "2026-11-13T10:00:00-03:00"},
+        ]
+        numbers = {n["key"]: n for n in build_weekly_brief(old, now)["numbers"]}
+        self.assertEqual(numbers["fatal"]["value"], 1)
+
+        # ERS-135 e RS-135 são a mesma rodovia.
+        same_road = [
+            {"title": "Condutora morre em acidente com caminhão na ERS-135, entre Estação e Sertão", "source": "A", "created_at": "2026-11-14T08:00:00-03:00"},
+            {"title": "Mulher morre em colisão entre carro e caminhão na RS-135, em Estação", "source": "B", "created_at": "2026-11-14T15:00:00-03:00"},
+        ]
+        brief = build_weekly_brief(same_road, now)
+        self.assertEqual(brief["coverage"]["events"], 1)
+        self.assertEqual(brief["highlights"][0]["road"], "RS-135")
+
+        # Coleta parada na semana anterior: sem base de comparação.
+        gap = [
+            {"title": "Carreta tomba e interdita a BR-116 em Registro, SP", "source": "A", "created_at": "2026-11-09T15:00:00-03:00"},
+            {"title": "Carreta tomba e interdita a BR-381 em Betim, MG", "source": "B", "created_at": "2026-11-15T09:00:00-03:00"},
+            # Publicada dentro do buraco mas coletada depois: não prova que a coleta funcionou naqueles dias.
+            {"title": "Caminhão tomba e interdita a BR-040 em Juiz de Fora, MG", "source": "C",
+             "published_at": "2026-11-06T09:00:00-03:00", "created_at": "2026-11-15T09:00:00-03:00"},
+        ]
+        brief = build_weekly_brief(gap, now)
+        self.assertFalse(brief["comparison"]["available"])
+        self.assertIn("sem base de comparação com a semana anterior", brief["executive_summary"])
+
+    def test_email_without_comparison(self):
+        from scraper.weekly_news import render_weekly_email
+
+        now = int(datetime.fromisoformat("2026-11-18T12:00:00-03:00").timestamp() * 1000)
+        items = [{"title": "Carreta tomba e interdita a BR-381 em Betim, MG", "source": "B", "created_at": "2026-11-15T09:00:00-03:00"}]
+        body = render_weekly_email(build_weekly_brief(items, now), "18/11/2026 12:00")
+        self.assertIn("sem base de comparação", body)
+        self.assertNotIn("vs semana anterior", body)
+
+
 if __name__ == "__main__":
     unittest.main()
