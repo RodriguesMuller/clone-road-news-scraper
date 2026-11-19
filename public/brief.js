@@ -85,7 +85,24 @@
     return inmet ? title : title.replace(/\s[-–—|]\s[^-–—|]{2,60}$/, "").trim();
   }
 
+  // Data sem fuso conta como UTC, como em scraper/weekly_brief.py.
+  function parseTime(value) {
+    const text = String(value || "").trim();
+    if (!text) return null;
+    const t = Date.parse(/[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/.test(text) ? `${text}Z` : text);
+    return Number.isFinite(t) ? t : null;
+  }
+
+  // Notícia publicada mais de 2 dias antes de ser coletada (portal antigo, coleta que voltou de uma pausa)
+  // conta na data em que aconteceu, não na semana da coleta. Aviso INMET fica na coleta: o aviso segue valendo.
+  const REPUBLISHED_MS = 2 * DAY_MS;
+
   function itemTime(item) {
+    if (!isInmet(item)) {
+      const created = parseTime(item.created_at);
+      const published = parseTime(item.published_at);
+      if (created !== null && published !== null && created - published > REPUBLISHED_MS) return published;
+    }
     for (const value of [item.created_at, item.published_at, item.scraped_at]) {
       const t = Date.parse(value || "");
       if (Number.isFinite(t)) return t;
@@ -132,7 +149,11 @@
 
   function roadOf(raw, norm) {
     const code = raw.match(/\b((?:BR|ERS|RSC|MGC|AMG|PRC|SPA|SPI|AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO))[-\s]?(\d{2,4})\b/i);
-    if (code) return `${code[1].toUpperCase()}-${code[2]}`;
+    if (code) {
+      // "ERS-135" e "RS-135", "MT-40" e "MT-040" são a mesma rodovia.
+      const prefix = code[1].toUpperCase() === "ERS" ? "RS" : code[1].toUpperCase();
+      return `${prefix}-${String(Number(code[2])).padStart(3, "0")}`;
+    }
     const named = NAMED_ROADS.find(([key]) => norm.includes(key));
     return named ? named[1] : "";
   }
@@ -177,6 +198,8 @@
       source: clean(item.source),
       inmet,
       time: itemTime(item),
+      // Quando a notícia entrou na base (cobertura da coleta), mesmo que conte na data de publicação.
+      collected: parseTime(item.created_at) ?? parseTime(item.scraped_at) ?? itemTime(item),
       risk,
       road,
       uf: ufOf(raw, norm, road),
@@ -349,6 +372,19 @@
       .map(({ max_rank, ...rest }) => ({ ...rest, action: max_rank >= 3 ? "Avalie adiar saídas nos horários de tempestade na área do aviso." : "Atenção a chuva e vento; sem restrição de saída." }));
   }
 
+  // A janela anterior só serve de base se a coleta funcionou nela (pela data de coleta, não do fato): mais de 2/7 da janela sem nenhuma notícia
+  // (2 dias na semana) indica coleta parada, e "▲ vs semana anterior" mostraria uma alta que não existe.
+  function comparisonOf(items, previousStart, currentStart, windowMs) {
+    const times = items.map((item) => item.collected).filter((t) => t !== null && t >= previousStart && t < currentStart).sort((a, b) => a - b);
+    const points = [previousStart, ...times, currentStart];
+    let gap = 0;
+    for (let i = 1; i < points.length; i += 1) gap = Math.max(gap, points[i] - points[i - 1]);
+    if (gap > Math.max((windowMs * 2) / 7, DAY_MS / 2)) {
+      return { available: false, note: "Sem base de comparação: a coleta de notícias ficou parada no período anterior." };
+    }
+    return { available: true, note: "" };
+  }
+
   // options.windowMs: tamanho da janela (padrão 7 dias), comparada com a janela anterior de mesmo tamanho.
   // options.includeEvents: devolve também as ocorrências agrupadas (usado pelo Resumo operacional).
   function buildWeeklyBrief(rawItems, nowMs = Date.now(), options = {}) {
@@ -367,6 +403,7 @@
     const now = count(currentClusters, currentInmet);
     const before = count(previousClusters, inmetOf(previous));
     const numbers = NUMBER_LABELS.map(([key, label]) => ({ key, label, value: now[key], previous: before[key], delta: now[key] - before[key] }));
+    const comparison = comparisonOf(items, previousStart, currentStart, windowMs);
 
     // Atenção para os próximos dias.
     const released = current.filter((item) => item.risk.kind === "released");
@@ -437,7 +474,7 @@
     const verdictText = facts.length ? `${facts.join(", ")}.` : "Nenhuma ocorrência com impacto operacional relevante.";
 
     const trend = numbers.slice(0, 5).reduce((sum, n) => sum + n.value, 0) - numbers.slice(0, 5).reduce((sum, n) => sum + n.previous, 0);
-    const trendText = trend > 0 ? "mais ocorrências graves que na semana anterior" : trend < 0 ? "menos ocorrências graves que na semana anterior" : "volume de ocorrências graves igual ao da semana anterior";
+    const trendText = !comparison.available ? "sem base de comparação com a semana anterior" : trend > 0 ? "mais ocorrências graves que na semana anterior" : trend < 0 ? "menos ocorrências graves que na semana anterior" : "volume de ocorrências graves igual ao da semana anterior";
     const summaryParts = [`Semana ${verdictLabel.toLowerCase()}: ${verdictText.replace(/\.$/, "")}, ${trendText}.`];
     if (spots.length) summaryParts.push(`Trechos mais críticos: ${spots.slice(0, 3).map((s) => `${s.road}${s.uf ? `/${s.uf}` : ""}`).join(", ")}.`);
     if (watchlist.length) summaryParts.push(`${watchlist.length} ponto(s) de atenção para os próximos dias.`);
@@ -448,6 +485,7 @@
       headline: `Semana ${verdictLabel.toLowerCase()}${facts.length ? `: ${facts.slice(0, 2).join(" e ")}` : ""}`,
       executive_summary: summaryParts.join(" "),
       numbers,
+      comparison,
       watchlist,
       hotspots: spots,
       cargo_security: cargo,

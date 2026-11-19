@@ -66,6 +66,8 @@ P = {
     "aftermath": re.compile(
         r"\b(?:denunciad|condenad|julgament|indenizac|processad[ao]|inquerito|velorio|sepultad|enterro|luto|homenage|relembra|superfaturamento)"
         r"|identificad[ao]s? (?:as )?(?:\w+ )?vitimas|morre aos \d+ anos|\b(?:checagem|boato|fake news|desmente|negam)\b|e antig[ao]\b|fora de contexto"
+        # Júri, perfil da vítima ("Quem era...") e cobrança de familiar falam de acidente já contado.
+        r"|\bjuri\b|\bacusad[oa]s? de (?:causar|provocar)|^quem (?:e|era|eram)\b|cobram? esclarecimento"
     ),
     "simulation": re.compile(r"\bsimulado\b|\bexercicio simulado\b"),
     "planned": re.compile(
@@ -116,6 +118,37 @@ P = {
         rf"{ROAD_CODE}|rodovi|estrada|\bkm\s*\d|\bvia\b|serra|ponte|viaduto|marginal|{NAMED_HIGHWAYS}|\b(?:{STATE_NAMES})\b|(?:\bem|\bno|\bna|,|\()\s?(?:{UF_STATES})\b"
     ),
 }
+
+
+# Morte só de animal ("três bois morrem", "cavalo morre atropelado") não é vítima fatal: as frases em que
+# quem morre é o animal saem do texto antes de procurar sinal de morte. "Motociclista e cachorro morrem" fica.
+_ANIMAL = (
+    r"(?:animal|animais|bois?|vacas?|cavalos?|eguas?|jumentos?|burros?|mulas?|cachorros?|caes|cadelas?|gatos?|oncas?(?:-pardas?)?"
+    r"|capivaras?|antas?|tamanduas?|lobos?-guaras?|veados?|jacares?|gado|bezerros?|porcos?|galinhas|frangos|aves|bovinos|suinos"
+    r"|carneiros|ovelhas|cabecas de gado)"
+)
+_ANIMAL_COUNT = r"(?:\d+|um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|dezenas de|centenas de|mais de \d+|cerca de \d+|parte d[oa]s|alguns|varios)"
+ANIMAL_DEATH = re.compile("|".join([
+    rf"(?:{_ANIMAL_COUNT} )?{_ANIMAL}(?: \w+)?(?: que \w+ (?:no|na) \w+)? (?:morre|morrem|morreram|morreu)",
+    rf"{_ANIMAL} [^.;]{{0,40}}? e (?:morre|morrem|morreram)",
+    rf"{_ANIMAL}(?: \w+)? (?:(?:e|foi|foram|ficam|ficaram) )?mort[oa]s?",
+    rf"mat(?:a|am|ou|aram|ando) (?:{_ANIMAL_COUNT} |o |a |os |as )?{_ANIMAL}",
+    rf"morte d[eo]s? (?:{_ANIMAL_COUNT} )?{_ANIMAL}",
+    rf"{_ANIMAL}(?: \w+){{0,2}} encontrad[ao]s? mort[ao]s?",
+    rf"{_ANIMAL}(?: \w+)? nao resist\w+",
+]))
+PERSON_AND = re.compile(
+    r"\b(?:motociclista|motorista|condutor|condutora|ciclista|pedestre|homem|mulher|jovem|idos[oa]|crianca|garupa|passageir[oa]"
+    r"|caminhoneiro|tutor|dono|dona) e $"
+)
+
+
+def _human_fatality(text: str) -> bool:
+    def strip(match):
+        before = match.string[max(0, match.start() - 40):match.start()]
+        return match.group(0) if PERSON_AND.search(before) else " "
+
+    return bool(P["fatality"].search(ANIMAL_DEATH.sub(strip, text)))
 
 
 def _text_of(item: dict) -> str:
@@ -223,7 +256,7 @@ def _raw_classify(item: dict, text: str) -> dict:
             return _result("high", "Acidente com interdição parcial: fila e atraso no trecho.")
         if P["big_jam"].search(text):
             return _result("high", "Acidente com congestionamento extenso.")
-        if P["fatality"].search(text) and not casualties_denied:
+        if _human_fatality(text) and not casualties_denied:
             return _result("high", "Acidente com vítima fatal: a perícia costuma interditar o trecho por horas.")
         return _result("medium", "Acidente sem sinal de interdição: possível lentidão pontual.")
 
@@ -250,7 +283,7 @@ def classify_risk(item: dict) -> dict:
         or item.get("highway") or item.get("city") or item.get("state") or item.get("region")
         or _is_inmet(item)
     )
-    fatal = bool(P["fatality"].search(text) and not P["no_casualties"].search(text) and P["accident"].search(text))
+    fatal = bool(_human_fatality(text) and not P["no_casualties"].search(text) and P["accident"].search(text))
     if not located and base["rank"] >= 3:
         capped = _result("medium", f"{base['reason']} Sem rodovia ou local identificado na notícia.")
         capped["kind"] = base["kind"]

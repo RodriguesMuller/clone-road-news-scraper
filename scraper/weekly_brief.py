@@ -105,12 +105,30 @@ def _parse_time(value):
     return int(round(dt.timestamp() * 1000))
 
 
+# Notícia publicada mais de 2 dias antes de ser coletada (portal antigo, coleta que voltou de uma pausa)
+# conta na data em que aconteceu, não na semana da coleta. Aviso INMET fica na coleta: o aviso segue valendo.
+REPUBLISHED_MS = 2 * DAY_MS
+
+
 def _item_time(item: dict):
+    if not _is_inmet(item):
+        created = _parse_time(item.get("created_at"))
+        published = _parse_time(item.get("published_at"))
+        if created is not None and published is not None and created - published > REPUBLISHED_MS:
+            return published
     for key in ("created_at", "published_at", "scraped_at"):
         t = _parse_time(item.get(key))
         if t is not None:
             return t
     return None
+
+
+def _collected_time(item: dict):
+    for value in (item.get("created_at"), item.get("scraped_at")):
+        t = _parse_time(value)
+        if t is not None:
+            return t
+    return _item_time(item)
 
 
 def _local(t: int) -> datetime:
@@ -156,7 +174,9 @@ def _scheduled_date(title: str, published_at):
 def _road_of(raw: str, norm: str) -> str:
     code = ROAD_RE.search(raw)
     if code:
-        return f"{code.group(1).upper()}-{code.group(2)}"
+        # "ERS-135" e "RS-135", "MT-40" e "MT-040" são a mesma rodovia.
+        prefix = "RS" if code.group(1).upper() == "ERS" else code.group(1).upper()
+        return f"{prefix}-{int(code.group(2)):03d}"
     return next((label for key, label in NAMED_ROADS if key in norm), "")
 
 
@@ -205,6 +225,8 @@ def _enrich(item: dict) -> dict:
         "source": _clean(item.get("source")),
         "inmet": inmet,
         "time": _item_time(item),
+        # Quando a notícia entrou na base (cobertura da coleta), mesmo que conte na data de publicação.
+        "collected": _collected_time(item),
         "risk": risk,
         "road": road,
         "uf": _uf_of(raw, norm, road),
@@ -376,6 +398,20 @@ def _weather_by_state(inmet_items: list) -> list:
     return out
 
 
+def _comparison(items: list, previous_start: int, current_start: int, window_ms: int) -> dict:
+    """A janela anterior só serve de base se a coleta funcionou nela, pela data de coleta (espelho de comparisonOf em public/brief.js).
+
+    Mais de 2/7 da janela sem nenhuma notícia (2 dias na semana) indica coleta parada, e
+    "▲ vs semana anterior" mostraria uma alta que não existe.
+    """
+    times = sorted(i["collected"] for i in items if i["collected"] is not None and previous_start <= i["collected"] < current_start)
+    points = [previous_start, *times, current_start]
+    gap = max(b - a for a, b in zip(points, points[1:]))
+    if gap > max(window_ms * 2 / 7, DAY_MS / 2):
+        return {"available": False, "note": "Sem base de comparação: a coleta de notícias ficou parada no período anterior."}
+    return {"available": True, "note": ""}
+
+
 def build_weekly_brief(raw_items: list, now_ms: int | None = None) -> dict:
     if now_ms is None:
         now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
@@ -397,6 +433,7 @@ def build_weekly_brief(raw_items: list, now_ms: int | None = None) -> dict:
     now = _count(current_clusters, current_inmet)
     before = _count(previous_clusters, inmet_of(previous))
     numbers = [{"key": k, "label": label, "value": now[k], "previous": before[k], "delta": now[k] - before[k]} for k, label in NUMBER_LABELS]
+    comparison = _comparison(items, previous_start, current_start, 7 * DAY_MS)
 
     released = [i for i in current if i["risk"]["kind"] == "released"]
     today = _ymd(now_ms)
@@ -476,7 +513,8 @@ def build_weekly_brief(raw_items: list, now_ms: int | None = None) -> dict:
 
     trend = sum(n["value"] for n in numbers[:5]) - sum(n["previous"] for n in numbers[:5])
     trend_text = (
-        "mais ocorrências graves que na semana anterior" if trend > 0
+        "sem base de comparação com a semana anterior" if not comparison["available"]
+        else "mais ocorrências graves que na semana anterior" if trend > 0
         else "menos ocorrências graves que na semana anterior" if trend < 0
         else "volume de ocorrências graves igual ao da semana anterior"
     )
@@ -492,6 +530,7 @@ def build_weekly_brief(raw_items: list, now_ms: int | None = None) -> dict:
         "headline": f"Semana {verdict_label.lower()}{': ' + ' e '.join(facts[:2]) if facts else ''}",
         "executive_summary": " ".join(parts),
         "numbers": numbers,
+        "comparison": comparison,
         "watchlist": watchlist,
         "hotspots": spots,
         "cargo_security": cargo,

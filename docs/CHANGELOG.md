@@ -2,6 +2,19 @@
 
 > Mantido por `tech-docs-agent`, uma entrada por mudança de **comportamento observável** (não por refactor interno sem efeito externo). Não confundir com o changelog interno do PDF em `docs/dist/.docs-pdf-manifest.json` (esse é só sobre a publicação do PDF em si) nem com [`docs/HISTORY.md`](HISTORY.md) (registro fiel de toda mudança, incluindo internas, mantido por `project-historian`).
 
+## 2026-11-19 — Resumo semanal: PDF vira boletim para o cliente
+- **Alterado**: "Exportar resumo em PDF" gera um boletim próprio para enviar ao cliente, em vez de imprimir o modal. O boletim não tem links e tira dos títulos o "»" e o nome do portal. Seções: cabeçalho com período e nível da semana, resumo executivo, 8 indicadores (os 7 do resumo e mais ocorrências distintas), com variação em número e % e a definição de cada um, panorama por gravidade, tipo e UF, recomendações, pontos de atenção, trechos críticos, principais ocorrências com impacto e confirmação por fontes, segurança da carga, clima INMET e metodologia.
+- **Alterado**: o PDF não mostra mais "about:blank" e a data do navegador no topo e no rodapé. Toda página tem rodapé do Road News, e o nome do arquivo sugerido traz o período.
+- **API**: `/api/weekly-summary` devolve `summary.report` (`events`, `severe`, `roads`, `states`, `by_level[]`, `by_category[]`, `by_state[]`), calculado por `api/_weekly_report.js`. A lista de ocorrências não sai do servidor. O e-mail e a paridade JS/Python não mudam.
+
+## 2026-11-18 — Resumo semanal: comparação honesta e sem notícia velha, desdobramento ou morte de animal
+- **Corrigido**: quando a coleta fica parada na semana anterior (houve um buraco de 05/10 a 09/11/2026), o resumo deixa de mostrar "▲ vs semana anterior" e diz "sem base de comparação", no painel, no e-mail e no texto da IA. Antes, 86 bloqueios contra 44 pareciam uma alta, mas a semana anterior tinha só 2 dias de coleta.
+- **Corrigido**: notícia publicada mais de 2 dias antes de ser coletada conta na data em que saiu, não na semana da coleta. Ex.: o acidente de Teófilo Otoni de dez/2024 (38 mortos) entrava como acidente desta semana.
+- **Corrigido**: júri, perfil da vítima ("Quem era…") e cobrança de familiar sobre acidente antigo passam a ser desdobramento (Baixo), sem contar como novo acidente com morte.
+- **Corrigido**: ERS-135 e RS-135 (e MT-40 e MT-040) são a mesma rodovia: o mesmo acidente não conta duas vezes.
+- **Corrigido**: morte só de animal ("três bois morrem", "cavalo morre atropelado") não conta como acidente com vítima fatal. Morte de pessoa em acidente com animal continua contando.
+- Efeito no resumo de 18/11/2026: 86/30/112/170/4/5/9 → 78/29/110/154/4/4/9 (bloqueios totais, programados, pesados, fatais, roubos, paralisações, INMET), sem comparação com a semana anterior.
+
 ## 2026-11-18 — Redesign "Boletim de Aviso": o painel responde se a carga pode sair
 - **Alterado**: nova identidade visual em todo o painel. Cada ocorrência aparece como um aviso oficial (grau, trecho, vigência, despacho).
   - Barra lateral azul-tinta e fundo claro de boletim; o **tema claro passa a ser o padrão** (o escuro continua no seletor).

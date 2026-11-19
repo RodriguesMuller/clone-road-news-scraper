@@ -2,6 +2,65 @@
 
 > Mantido por `project-historian`. Uma entrada por mudança concluída, mais recente no topo. Para mudanças de comportamento observável em formato resumido, ver [`CHANGELOG.md`](CHANGELOG.md).
 
+## 2026-11-19 — PDF do resumo semanal vira boletim para o cliente
+**O que mudou:**
+- `public/index.html`: `printWeeklySummary` deixou de copiar o HTML do modal. Agora monta um documento próprio com `buildWeeklyReportDocument(lastWeeklyData)`. O documento não tem `<a>`, e os títulos passam por `reportTitle`, que tira "»" e o nome do portal no fim (aviso INMET fica intacto). Seções:
+  - resumo executivo;
+  - 8 KPIs com variação em número e %, mais a definição de cada um;
+  - panorama por gravidade, tipo e UF em barras;
+  - recomendações;
+  - pontos de atenção, trechos críticos e principais ocorrências em tabela;
+  - segurança da carga, clima e metodologia.
+  
+  A página usa `@page { margin: 0 }`, então o navegador não imprime data nem "about:blank". O rodapé do Road News se repete em cada página via `thead`/`tfoot`. O título do documento traz o período e vira o nome do arquivo sugerido.
+- `api/_weekly_report.js` (novo): `weeklyReport(events)` conta as ocorrências por gravidade, por grupo de tipo (7 grupos e "Outros") e por UF (top 8), além de rodovias e UFs distintas.
+- `api/weekly-summary.js`: chama `buildWeeklyBrief(..., { includeEvents: true })`, devolve `summary.report` e descarta `events`, `released` e `earliest`.
+- Teste novo em `tests/test_weekly_brief.js` (JS 108/108).
+
+**Por quê:** o usuário pediu um PDF que o gerente executivo possa analisar e mandar aos clientes, com informações relevantes, sem links e com KPIs. O PDF anterior tinha estes problemas:
+- links azuis;
+- 7 KPIs espremidos numa linha, com rótulo cortado ("Paralisações/manif…");
+- página 1 quase vazia;
+- "about:blank" e a data do navegador no topo e no rodapé.
+
+**Alternativas descartadas:**
+- Usar o campo `summary` das notícias como resumo: na base real ele só reescreve o título e acrescenta o nome do portal ("Na região de… G1"). Cada ocorrência mostra o título limpo, o tipo, a confirmação por fontes e o impacto/ação.
+- Pedir à IA um resumo por ocorrência: custo por geração e risco de inventar detalhe.
+- Calcular o panorama em `public/brief.js`: mudaria a saída compartilhada com o Python e o fixture de paridade, e o e-mail não usa esses dados.
+
+**Pendências:**
+- O layout não foi conferido em PDF real, porque o Chrome/Edge sem janela não concluía nesta máquina; só a estrutura foi verificada com jsdom sobre a base real.
+- O acidente da BR-101 em Rio Novo do Sul (ES) ainda aparece em dois eventos, ambos com 13 fontes; a causa não foi investigada (fica com a pendência de dedup).
+- "Viaduto na BR-364 chega a 45% das obras" é classificado como paralisação (régua de `logistics-intelligence`).
+- O PDF da documentação não foi regenerado.
+
+**ADR relacionado:** nenhum.
+
+## 2026-11-18 — Auditoria dos números do resumo semanal (notícia velha, desdobramento, alias, animal, comparação)
+**O que mudou:**
+- `public/risk.js` e `scraper/utils/risk.py` (espelhos): `aftermath` ganhou `\bjuri\b`, `acusad[oa]s? de (causar|provocar)`, `^quem (e|era|eram)` e `cobram? esclarecimento`. Novo `ANIMAL_DEATH` + `PERSON_AND` e `humanFatality`/`_human_fatality`: frases em que quem morre é o animal saem do texto antes de `fatality` (nos dois pontos que usavam `fatality`).
+- `public/brief.js` e `scraper/weekly_brief.py` (espelhos):
+  - `parseTime` (data sem fuso = UTC, igual ao Python); `itemTime`/`_item_time` usam `published_at` quando é mais de 2 dias anterior a `created_at` (`REPUBLISHED_MS`), exceto INMET.
+  - `roadOf`/`_road_of`: ERS vira RS e o número ganha 3 dígitos ("MT-40" → "MT-040"); com isso a UF sai do prefixo também para ERS.
+  - Novo campo `collected` (data de coleta) e `comparisonOf`/`_comparison`: `comparison.available=false` quando há mais de max(2/7 da janela, 12h) sem nenhuma notícia coletada na janela anterior; `trend` vira "sem base de comparação com a semana anterior". Novo campo `comparison` na saída.
+- `public/index.html` (`weeklyDelta`), `scraper/weekly_news.py` (`delta_line`, `_facts_for_ai`) e `api/weekly-summary.js` (`factsForAi`): sem comparação, mostram "sem base de comparação" e a IA recebe só `value`.
+- Testes: 4 casos novos em `tests/test_weekly_brief.js`, espelho em `tests/test_weekly_brief.py` (+ e-mail sem comparação), 3 casos de desdobramento em `docs/domain/risk_golden.json`. `tests/fixtures/weekly_brief_expected.json` regenerado: campo `comparison`; 13 para 12 vítimas fatais ("Tombamento de carreta mata três bois…"); ERS-705 virou RS-705 com UF RS.
+
+**Por quê:** o usuário pediu auditoria dos números do resumo de 18/11 (86/30/112/170/4/5/9). Reproduzidos exatamente sobre o export de `news` (25.220 linhas). A base não tem notícia de 05/10 a 09/11: a "semana anterior" tinha 2 dias. O lote coletado na volta trouxe 39 notícias publicadas mais de 7 dias antes (12 com morte, incluindo dez/2024). O júri da BR-470 virou 4 eventos com morte. O usuário decidiu manter o escopo de "vítima fatal" (inclui vias urbanas) e não contar morte de animal.
+
+**Impacto medido (export real, cálculo de produção):** 18/11: 86/30/112/170/4/5/9 → 78/29/110/154/4/4/9, comparação indisponível. Semanas de 17/08 e 28/09: variação de −1 a −4 por número, comparação disponível. Regra de animal: 44 notícias marcadas como animal no histórico, todas corretas, nenhuma morte de pessoa descartada; ~4 ambíguas continuam contando ("oito morreram" só no resumo). JS 107/107. Python não rodou (interpretador ausente): `tests/test_weekly_brief.py`, `tests/test_risk.py` e a paridade do snapshot precisam do CI.
+
+**Alternativas descartadas:**
+- Usar sempre `published_at`: lotes coletados horas depois mudavam de semana na borda (170 → 141 por efeito de borda, não de notícia velha). Por isso o limiar de 2 dias.
+- Medir a cobertura da semana anterior pela data do fato: a correção de data colocava as notícias republicadas dentro do buraco e a comparação voltava a parecer válida. Por isso o campo `collected`.
+- Converter nome de rodovia em código (Dutra → BR-116, Fernão Dias → BR-381): tirava mais 20 eventos, mas juntou BR-116 em Mandirituba (PR) com a Dutra em São José dos Campos.
+- Segunda passada juntando eventos pela cidade citada: 15–20 duplicatas reais restantes (Kombi no PR em 4 eventos, Fernão Dias em 3, Itaí em 3), mas só ~10 de 15 junções certas. Precisa de identificação confiável de município.
+- Remover `previous`/`delta` do JSON quando não há comparação: quebraria o contrato numérico (testes e consumidores); o campo `comparison` resolve sem mudar o formato.
+
+**Pendências:** duplicatas por cidade e por nome de rodovia (dono `data-pipeline-engineer`, precisa de gazetteer de municípios); acidente pode contar em "pesados" e "fatal" ao mesmo tempo e o texto de tendência soma os dois; "Bloqueios totais" não foi auditado caso a caso.
+
+**ADR relacionado:** nenhum (sem dependência nova).
+
 ## 2026-11-18 — Redesign "Boletim de Aviso" (Impeccable: critique → harden → shape → build)
 **O que mudou:**
 - `public/index.html`:
@@ -54,7 +113,7 @@
 ## 2026-11-18 — Deduplicação entre veículos e comparativo do resumo semanal
 **O que mudou:**
 - `public/brief.js` e `scraper/weekly_brief.py` (espelhos): `clusterEvents`/`_cluster_events` não usam mais chave fixa (rodovia ou `uf:XX`). Cada grupo guarda a rodovia e a UF conhecidas e só recusa junção com rodovia ou UF diferentes. Novo `KIND_FAMILY` (incident, planned, strike, cargo, weather). A regra por rodovia vale com a mesma família em 24h (mesma UF) ou 12h (UF ausente em uma das notícias).
-- `public/risk.js` e `scraper/utils/risk.py`: em `fatality`, `mat(?:a|ou|aram|ando)` virou `mat(?:ou|aram|ando)` mais `matam? <vítima>`.
+- `public/risk.js` e `scraper/utils/risk.py`: em `fatality`, `\bmat(?:a|ou|aram|ando)\b` virou `mat(?:ou|aram|ando)` mais `matam? <vítima>`.
 - `api/weekly-summary.js`: `fetchTwoWeeks` pagina de 1000 em 1000 (até 10 páginas). `scraper/weekly_news.py`: `limit` padrão de 800 para 10000.
 - Testes: 5 casos novos em `tests/test_weekly_brief.js` e o espelho em `tests/test_weekly_brief.py`. `tests/fixtures/weekly_brief_expected.json` regenerado: 33 para 32 eventos e 14 para 13 vítimas fatais (as duas notícias da BR-226/RN de 08/11 viraram um evento).
 
